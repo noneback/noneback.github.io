@@ -1,0 +1,1316 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>NoneBack</title>
+    <link>http://localhost:1313/</link>
+    <description>Recent content on NoneBack</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>@noneback</copyright>
+    <lastBuildDate>Sun, 20 Aug 2017 00:00:00 +0000</lastBuildDate>
+    
+        <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>About</title>
+      <link>http://localhost:1313/about/</link>
+      <pubDate>Sun, 20 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/about/</guid>
+      
+        <description>&lt;p&gt;Hugo is a static site engine written in Go.&lt;/p&gt;
+&lt;p&gt;It makes use of a variety of open source projects including:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/spf13/cobra&#34;&gt;Cobra&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/spf13/viper&#34;&gt;Viper&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/spf13/jWalterWeatherman&#34;&gt;J Walter Weatherman&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/spf13/cast&#34;&gt;Cast&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Learn more and contribute on &lt;a href=&#34;https://github.com/gohugoio&#34;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>基于朴素贝叶斯的中文垃圾电子邮件分类</title>
+      <link>http://localhost:1313/post/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/</link>
+      <pubDate>Wed, 06 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/</guid>
+      
+        <description>&lt;h1 id=&#34;基于朴素贝叶斯的中文垃圾电子邮件分类&#34;&gt;基于朴素贝叶斯的中文垃圾电子邮件分类&lt;/h1&gt;
+&lt;h2 id=&#34;训练数据和测试数据&#34;&gt;训练数据和测试数据&lt;/h2&gt;
+&lt;p&gt;本次主要使用了&lt;a href=&#34;https://github.com/shijing888/BayesSpam&#34;&gt;github上的开源数据&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;数据处理&#34;&gt;数据处理&lt;/h2&gt;
+&lt;p&gt;首先使用正则表达式对训练集中的中文邮件的内容进行过滤，去除其中中文之外的其他字符，再将剩下的内容使用&lt;a href=&#34;https://github.com/fxsjy/jieba&#34;&gt;jieba&lt;/a&gt;进行分词，过滤掉中文停用字表中的内容。将垃圾邮件以及正常邮件的处理结果分别存放。&lt;/p&gt;
+&lt;p&gt;用两个字典spam_voca和normal_voca用于保存不同邮件中不同词语的词频，数据处理完成。&lt;/p&gt;
+&lt;h2 id=&#34;训练与预测&#34;&gt;训练与预测&lt;/h2&gt;
+&lt;p&gt;训练和预测的过程主要使计算$P(Spam|word_1,word_2,&amp;hellip;,word_n)$的概率，当这个概率大于某个阈值的时候，这个邮件被分类为垃圾邮件。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;根据朴素贝叶斯的条件独立假设，并设先验概率$P(s)=P(s^{&#39;})=0.5$,则有：		P(s|w_1,w_2,&amp;hellip;,w_n)=$\frac {P(s,w_1,w_2,&amp;hellip;,w_n)}{P(w_1,w_2,&amp;hellip;,w_n)}$&lt;/p&gt;
+&lt;p&gt;=$\frac {P(w_1,w_2,&amp;hellip;,w_n|s)P(s)}{P(w_1,w_2,&amp;hellip;,w_n)}$=$\frac {P(w_1,w_2,&amp;hellip;,w_n|s)P(s)}{P(w_1,w_2,&amp;hellip;,w_n|s)\cdot p(s)+P(w_1,w_2,&amp;hellip;,w_n|s^{&#39;})\cdot p(s^{&#39;})}\qquad\qquad$&lt;/p&gt;
+&lt;p&gt;因为P(spam)=P(not spam),则有&lt;/p&gt;
+&lt;p&gt;$\frac {\prod\limits_{j=1}^nP(w_j|s)}{\prod\limits_{j=1}^nP(w_j|s)+\prod\limits_{j=1}^nP(w_j|s^{&#39;})}$
+再利用贝叶斯$P(w_j|s)=\frac{P(s|w_j)\cdot P(w_j)}{P(s)}$,式子化为
+$\frac {\prod\limits_{j=1}^nP(s|w_j)}{\prod\limits_{j=1}^nP(s|w_j)+\prod\limits_{j=1}^nP(s^{&#39;}|w_j)}$&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;具体流程&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;对测试集中的每一封邮件做同样的处理，并计算得到$P(s|w)$最高的n个词，在计算过程中，若该词只出现在垃圾邮件的词典中，则令$P(w|s^{&#39;})=0.01$，反之亦然；若都未出现，则令$P(s|w)=0.4$。PS.这里做的几个假设基于前人做的一些研究工作得出的。&lt;/li&gt;
+&lt;li&gt;对得到的每封邮件中重要的15个词利用式2计算概率，若概率$&amp;gt;$阈值$\alpha(一般设为0.9)$，则判为垃圾邮件，否则判为正常邮件。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;具体的代码细节可以参见附加的代码。&lt;/p&gt;
+&lt;h2 id=&#34;结果&#34;&gt;结果&lt;/h2&gt;
+&lt;p&gt;通过调整预测是使用的词汇的数量，针对本次数据集，最佳的结果是&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;选择&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;29&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;个词汇&lt;/span&gt; : &lt;span style=&#34;color:#ae81ff&#34;&gt;0.9642857142857143&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;附加&#34;&gt;附加&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;项目结构
+├── data
+│   ├── 中文停用词表.txt
+│   ├── normal
+│   ├── spam
+│   └── test
+├── main.py
+├── normal_voca.json
+├── &lt;strong&gt;pycache&lt;/strong&gt;
+│   └── utils.cpython-36.pyc
+├── spam_voca.json
+└── utils.py&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;具体代码&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# utils.py&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; jieba
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; numpy
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; re
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; os
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; collections &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; defaultdict
+  
+spam_file_num&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;7775&lt;/span&gt; 
+normal_file_num&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;7063&lt;/span&gt;
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;#todo 原始邮件数据的预处理&lt;/span&gt;
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;获取中文的停用词表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;【停用词】（https://zh.wikipedia.org/wiki/&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%E&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;5&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%81%&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;9C&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%E&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;7&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%94%&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;A8&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%E&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;8%AF%8D）
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_stopwords&lt;/span&gt;():
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; [
+        i&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;strip() &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; open(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./data/中文停用词表.txt&amp;#39;&lt;/span&gt;, encoding&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gbk&amp;#39;&lt;/span&gt;)
+    ]
+  
+  
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    读取原始文件，进行简单的处理和分词，返回分词列表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;      
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+  
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_raw_str_list&lt;/span&gt;(path):
+    stop_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_stopwords()
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path, encoding&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gbk&amp;#39;&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
+        raw_str &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; f&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;read()
+    pattern &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;[^&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\u4E00&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\u9FA5&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;]&amp;#39;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;#中文的unicode编码的范围&lt;/span&gt;
+    regex &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; re&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;compile(pattern)
+    ret &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; regex&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;findall(raw_str)
+    handled_str &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; re&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sub(pattern, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;, raw_str)
+    str_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+        word &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; jieba&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;cut(handled_str) &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; stop_list
+    ]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; str_list
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;#分词以及统计词频，得到词汇表&lt;/span&gt;
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;返回一个字典，记录了分词后的词汇表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;path:k可以使dir或者file路径，默认为存放文本的dir
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;is_file_path:表示输入路径是不是文件
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;  
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+  
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_voca&lt;/span&gt;(path, is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; is_file_path:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; read_voca_from_file(path)
+  
+    voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; defaultdict(int)
+    &lt;span style=&#34;color:#75715e&#34;&gt;# 获取垃圾邮件列表&lt;/span&gt;
+    file_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [file &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; os&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listdir(path)]
+    &lt;span style=&#34;color:#75715e&#34;&gt;#获得词汇表&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; file_list:  &lt;span style=&#34;color:#75715e&#34;&gt;#测试用&lt;/span&gt;
+        raw_str_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_raw_str_list(path &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; str(file))
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; raw_str &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; raw_str_list:
+            voca[raw_str] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; voca[raw_str] &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+  
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; voca
+  
+  
+  
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    将得到的词汇表保存到json文件中，以便下次读取
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    voca:词汇表字典
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    path:文件的保存路径
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    sort_by_value:是否按value值排序
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;  
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+  
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;save_voca2json&lt;/span&gt;(voca, path, sort_by_value&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False,indent_&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; sort_by_value:
+        sorted_by_value(voca)
+          
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;w+&amp;#39;&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
+        f&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;write(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(voca, ensure_ascii&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;indent_))
+  
+  
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;从json文件中读取voca
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;read_voca_from_file&lt;/span&gt;(path):
+    voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
+        voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;load(f)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; voca
+  
+  
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;将字典基于value排序
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;sorted_by_value&lt;/span&gt;(_dict):
+    _dict &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; dict(sorted(spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;items(), key&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;lambda&lt;/span&gt; x: x[&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;], reverse&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True))
+      
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;#计算 P(Spam|word)&lt;/span&gt;
+  
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    计算邮件和邮件分类最相关词语及其 P(spam|word)
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    words_size:最终使用词语的数量，用于最后的预测
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;      
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_top_words_prob&lt;/span&gt;(path,spam_voca,normal_voca,words_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):
+    critical_words&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;[]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; get_raw_str_list(path):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+            &lt;span style=&#34;color:#75715e&#34;&gt;# 如果word在两边都出现&lt;/span&gt;
+            p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;spam_voca[word]&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;spam_file_num
+            p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;normal_voca[word]&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;normal_file_num
+            p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;(p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;p_w_s)
+              
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;elif&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+            &lt;span style=&#34;color:#75715e&#34;&gt;# 如果word只在spam出现&lt;/span&gt;
+            p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;spam_voca[word]&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;spam_file_num
+            p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.01&lt;/span&gt;
+            p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;(p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;p_w_s)
+              
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;elif&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+            &lt;span style=&#34;color:#75715e&#34;&gt;# 如果word只在normal出现&lt;/span&gt;
+            p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.01&lt;/span&gt;
+            p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;normal_voca[word]&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;normal_file_num
+            p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;(p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;p_w_s)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
+            &lt;span style=&#34;color:#75715e&#34;&gt;#如果都不出现&lt;/span&gt;
+            p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.4&lt;/span&gt;
+        &lt;span style=&#34;color:#75715e&#34;&gt;#以上设定的数值均是基于前人的研究得到的数据&lt;/span&gt;
+        critical_words&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append([word,p_s_w])
+          
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; dict(sorted(critical_words[:words_size],key&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;lambda&lt;/span&gt; x:x[&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;],reverse&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True))
+  
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    计算贝叶斯概率
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    words_prob：包含词汇以及其P(spam|word)概率的一个字典
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    spam_voca:垃圾邮件词汇表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    normal_voca:正常邮件词汇表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+  
+          
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;caculate_bayes&lt;/span&gt;(words_prob,spam_voca,normal_voca):
+    p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+    p_s_nw&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word,prob &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; words_prob&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;items():
+        p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;*=&lt;/span&gt;prob
+        p_s_nw&lt;span style=&#34;color:#f92672&#34;&gt;*=&lt;/span&gt;(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;prob)
+          
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;(p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;p_s_nw)
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;predict&lt;/span&gt;(bayes,threshold&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.9&lt;/span&gt;):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; bayes&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;=&lt;/span&gt;threshold    
+  
+  
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    返回文件名和label
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+      
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_files_labels&lt;/span&gt;(dir_path,is_spam&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True):
+    raw_files_list&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;os&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listdir(dir_path)
+    files_list&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [dir_path&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;file &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; raw_files_list]
+    labels&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;[is_spam &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(len(files_list))]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; files_list,labels
+  
+  
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    预测测试集结果并打印
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    file_list：测试集文件路径集合
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    y:测试集结果标签
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    word_size：预测的指标
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;predict_result&lt;/span&gt;(file_list,y,spam_voca,normal_voca,word_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):
+    ret&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;[]
+    right&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; file_list:
+&lt;span style=&#34;color:#75715e&#34;&gt;#         raw_strs=get_raw_str_list(str(file))&lt;/span&gt;
+        words_prob&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_top_words_prob(file,spam_voca,normal_voca,words_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;word_size)
+        bayes&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;caculate_bayes(words_prob,spam_voca,normal_voca)
+        ret&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(predict(bayes))
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(len(ret)):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; ret[i]&lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt;y[i]:
+            right&lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+             
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(right&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;len(y))
+      
+  
+          
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#main.py&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; utils &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;
+  
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__&lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;__main__&amp;#39;&lt;/span&gt;:
+    &lt;span style=&#34;color:#75715e&#34;&gt;#获取词典并保存，一遍下次读取&lt;/span&gt;
+    spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_voca(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./spam_voca.json&amp;#39;&lt;/span&gt;,is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True)
+    normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_voca(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./normal_voca.json&amp;#39;&lt;/span&gt;,is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True)
+    &lt;span style=&#34;color:#75715e&#34;&gt;#保存方便下次读取&lt;/span&gt;
+    save_voca2json(spam_voca,&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./spam_voca.json&amp;#39;&lt;/span&gt;)
+    save_voca2json(normal_voca,&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./snormal_voca.json&amp;#39;&lt;/span&gt;)
+    &lt;span style=&#34;color:#75715e&#34;&gt;#预处理测试数据&lt;/span&gt;
+    s_x,s_y&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_files_labels(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./data/test/spam/&amp;#39;&lt;/span&gt;)
+    n_x,n_y&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_files_labels(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./data/test/normal/&amp;#39;&lt;/span&gt;,is_spam&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False)
+    x,y&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;list(s_x&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;n_x),s_y&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;n_y
+    &lt;span style=&#34;color:#75715e&#34;&gt;#预测结果&lt;/span&gt;
+      
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;,&lt;span style=&#34;color:#ae81ff&#34;&gt;40&lt;/span&gt;):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(str(i)&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39; : &amp;#39;&lt;/span&gt;,end&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
+        predict_result(x,y,spam_voca,normal_voca,word_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;i)
+      
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>C&#43;&#43;中左值和右值的区别</title>
+      <link>http://localhost:1313/post/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/</link>
+      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/</guid>
+      
+        <description>&lt;h1 id=&#34;c中左值和右值的区别&#34;&gt;C++中左值和右值的区别&lt;/h1&gt;
+&lt;blockquote&gt;
+&lt;p&gt;最近在复习C++的语法，有一些忘记了的东西，想在这里记录一下&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;什么是左值和右值&#34;&gt;什么是左值和右值&lt;/h2&gt;
+&lt;h3 id=&#34;抽象解释&#34;&gt;抽象解释&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;In C++ an &lt;strong&gt;lvalue&lt;/strong&gt; is something that points to a &lt;strong&gt;specific memory location&lt;/strong&gt;. On the other hand, a &lt;strong&gt;rvalue&lt;/strong&gt; is something that &lt;strong&gt;doesn&amp;rsquo;t point anywhere&lt;/strong&gt;. In general, &lt;strong&gt;rvalues are temporary and short lived&lt;/strong&gt;, while &lt;strong&gt;lvalues&lt;/strong&gt; live a longer life since they exist as variables.&lt;/p&gt;
+&lt;p&gt;参考：&lt;a href=&#34;https://www.internalpointers.com/post/understanding-meaning-lvalues-and-rvalues-c&#34;&gt;Understanding the meaning of lvalues and rvalues in C++&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;具体&#34;&gt;具体&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;左值&lt;/strong&gt;实际上就是有变量名的变量，变量名实际上指向了这个变量分配的内存地址，这个变量名在作用域内可以长期保存&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;右值&lt;/strong&gt;实际上是没有变量名的临时变量，变量的内存地址没有实际的变量名去保存，所以说它是临时的，生命周期短的&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;左值&lt;/strong&gt;可以转换成&lt;strong&gt;右值&lt;/strong&gt;，反之，则不行&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; a&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;;
+std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string str&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Hello&amp;#34;&lt;/span&gt;;
+&lt;span style=&#34;color:#75715e&#34;&gt;//此处的a和str是左值，它们有实际的变量名，并保存其内存的地址，而 10 和 &amp;#34;Hello&amp;#34;则是右值，他们只是临时变量。
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;b&lt;span style=&#34;color:#f92672&#34;&gt;=&amp;amp;&lt;/span&gt;a;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;a_p&lt;span style=&#34;color:#f92672&#34;&gt;=&amp;amp;&lt;/span&gt;a;
+&lt;span style=&#34;color:#75715e&#34;&gt;//左值往往可以进行取地址操作，而右值则不行
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;a_ptr&lt;span style=&#34;color:#f92672&#34;&gt;=&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;;&lt;span style=&#34;color:#75715e&#34;&gt;//error
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;//左值转右值
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; x &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; y &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; z &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; x&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;y;
+&lt;span style=&#34;color:#75715e&#34;&gt;//这里 x,y本来是左值的，但放在右边相加之后的结果是一个临时的变量，成为了一个右值
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;左值右值作为函数的返回值&#34;&gt;左值右值作为函数的返回值&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//左值作为函数返回值
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; tem&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; getlZero(){
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; tem;
+}
+getlZero() &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;//works
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;//右值最为返回值
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; getrZero(){
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+}
+
+getrZero() &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//fails
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;左值引用和右值引用&#34;&gt;左值引用和右值引用&lt;/h2&gt;
+&lt;h3 id=&#34;定义&#34;&gt;定义&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;左值引用&lt;/strong&gt;就是对一个左值进行引用的类型。&lt;strong&gt;右值引用&lt;/strong&gt;就是对一个右值进行引用的类型&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;右值引用和左值引用都是属于引用类型。无论是声明一个左值引用还是右值引用，都必须立即进行初始化。&lt;/p&gt;
+&lt;p&gt;而其原因可以理解为是引用类型本身自己并不拥有所绑定对象的内存，只是该对象的一个别名。左值引用是具名变量值的别名，而右值引用则是不具名（匿名）变量的别名。&lt;/p&gt;
+&lt;p&gt;对引用变量的修改会作用到原变量上。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;通常左值引用通常也不能绑定到右值，但右值可以借用const+左值引用变量来引用&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//左右值引用的语法
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; a&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;b&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;a;	&lt;span style=&#34;color:#75715e&#34;&gt;//b是a的引用，左值引用
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;b&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;20&lt;/span&gt;;	&lt;span style=&#34;color:#75715e&#34;&gt;//此时a=b=20
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt;c&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;;		&lt;span style=&#34;color:#75715e&#34;&gt;//c是右值‘10’的引用
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;c&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;20&lt;/span&gt; 	&lt;span style=&#34;color:#75715e&#34;&gt;//此时c变成了‘20’的引用
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    
+b&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;；&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//error。 10是一个右值，所以报错
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;c&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;a;	&lt;span style=&#34;color:#75715e&#34;&gt;//error。a是一个左值
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; a&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;;	&lt;span style=&#34;color:#75715e&#34;&gt;//works
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//	在后台，编译器会创建一个隐藏变量（即左值），以在其中存储原始文字常量，然后将该隐藏变量绑定到引用中
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;引用作为函数的参数&#34;&gt;引用作为函数的参数&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;getSelfL&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; a){
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; a;
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;getSelfR&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; b){
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; b;  
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;getSelfLR&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; a){
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; a;
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; a&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;;
+getSelfL(a);	&lt;span style=&#34;color:#75715e&#34;&gt;//works
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;getSelfL(&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;);	&lt;span style=&#34;color:#75715e&#34;&gt;//fails
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+getSelfR(&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;);	&lt;span style=&#34;color:#75715e&#34;&gt;//works
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;getSelfR(a);	&lt;span style=&#34;color:#75715e&#34;&gt;//fails
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+getSelfRL(&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;);	&lt;span style=&#34;color:#75715e&#34;&gt;//works
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;将亡值&#34;&gt;将亡值&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;在C++11之前的右值和C++11中的纯右值是等价的。C++11中的将亡值是随着右值引用的引入而新引入的。&lt;/p&gt;
+&lt;p&gt;换言之，“将亡值”概念的产生，是由右值引用的产生而引起的，将亡值与右值引用息息相关。所谓的将亡值表达式，就是下列表达式：
+1）返回右值引用的函数的调用表达式&lt;/p&gt;
+&lt;p&gt;2）转换为右值引用的转换函数的调用表达式&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;在C++11中，我们用左值去初始化一个对象或为一个已有对象赋值时，会调用拷贝构造函数或拷贝赋值运算符来拷贝资源（所谓资源，就是指new出来的东西）。&lt;/p&gt;
+&lt;p&gt;而当我们用一个右值（包括纯右值和将亡值）来初始化或赋值时，会调用移动构造函数或移动赋值运算符来移动资源，从而避免拷贝，提高效率。&lt;/p&gt;
+&lt;p&gt;当该右值完成初始化或赋值的任务时，它的资源已经移动给了被初始化者或被赋值者，同时该右值也将会马上被销毁（析构）。也就是说，当一个右值准备完成初始化或赋值任务时，它已经“将亡”了。而上面1和2两种表达式的结果都是不具名的右值引用，它们属于右值&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>Java 多线程编程</title>
+      <link>http://localhost:1313/post/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/</link>
+      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/</guid>
+      
+        <description>&lt;p&gt;昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。&lt;/p&gt;
+&lt;h2 id=&#34;java-多线程编程&#34;&gt;Java 多线程编程&lt;/h2&gt;
+&lt;p&gt;Java 给多线程编程提供了内置的支持。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;一条线程指的是进程中一个单一顺序的控制流，一个进程中可以并发多个线程，每条线程并行执行不同的任务。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;多线程&lt;/strong&gt;是多任务的一种特别的形式，但多线程使用了更小的资源开销。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;进程&lt;/strong&gt;：一个进程包括由操作系统分配的内存空间，包含一个或多个线程。一个线程不能独立的存在，它必须是进程的一部分。一个进程一直运行，直到所有的非守护线程都结束运行后才能结束。&lt;/li&gt;
+&lt;li&gt;多线程能满足程序员编写高效率的程序来达到充分利用 CPU 的目的。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;线程的状态&#34;&gt;线程的状态&lt;/h3&gt;
+&lt;p&gt;线程是一个动态执行的过程，它也有一个从产生到死亡的过程（状态）。
+&lt;img src=&#34;https://www.runoob.com/wp-content/uploads/2014/01/java-thread.jpg&#34; alt=&#34;线程的状态&#34;&gt;&lt;/p&gt;
+&lt;p&gt;1.&lt;strong&gt;新建状态&lt;/strong&gt;:
+使用 new 关键字和 Thread 类或其子类建立一个线程对象后，该线程对象就处于新建状态。它保持这个状态直到程序 start() 这个线程。&lt;/p&gt;
+&lt;p&gt;2.&lt;strong&gt;就绪状态&lt;/strong&gt;:
+当线程对象调用了start()方法之后，该线程就进入就绪状态。就绪状态的线程处于就绪队列中，要等待JVM里线程调度器的调度。&lt;/p&gt;
+&lt;p&gt;3.&lt;strong&gt;运行状态&lt;/strong&gt;:
+如果就绪状态的线程获取 CPU 资源，就可以执行 run()，此时线程便处于运行状态。处于运行状态的线程最为复杂，它可以变为阻塞状态、就绪状态和死亡状态。&lt;/p&gt;
+&lt;p&gt;4.&lt;strong&gt;阻塞状态&lt;/strong&gt;:
+如果一个线程执行了sleep（睡眠）、suspend（挂起）等方法，失去所占用资源之后，该线程就从运行状态进入阻塞状态。在睡眠时间已到或获得设备资源后可以重新进入就绪状态。可以分为三种：&lt;/p&gt;
+&lt;p&gt;5.&lt;strong&gt;等待阻塞&lt;/strong&gt;：运行状态中的线程执行 wait() 方法，使线程进入到等待阻塞状态。&lt;/p&gt;
+&lt;p&gt;6.&lt;strong&gt;同步阻塞&lt;/strong&gt;：线程在获取 synchronized 同步锁失败(因为同步锁被其他线程占用)。&lt;/p&gt;
+&lt;p&gt;7.&lt;strong&gt;其他阻塞&lt;/strong&gt;：通过调用线程的 sleep() 或 join() 发出了 I/O 请求时，线程就会进入到阻塞状态。当sleep() 状态超时，join() 等待线程终止或超时，或者 I/O 处理完毕，线程重新转入就绪状态。&lt;/p&gt;
+&lt;p&gt;8.&lt;strong&gt;死亡状态&lt;/strong&gt;:
+一个运行状态的线程完成任务或者其他终止条件发生时，该线程就切换到终止状态。&lt;/p&gt;
+&lt;h3 id=&#34;创建任务类与线程&#34;&gt;创建任务类与线程&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;任务就是一种对象&lt;/strong&gt;，其必须实现Runable接口（Runable接口中只有run()函数），并且需要重写run()，以便线程创建时调用。&lt;/li&gt;
+&lt;li&gt;线程的创建是通过&lt;strong&gt;Thread类&lt;/strong&gt;来构造的，Thread类中还包含了控制线程的方法。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;一个线程的创建必须基于某个任务，即：&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;	Thread thread&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; Thread&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;（&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; TaskClass&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;）&lt;/span&gt;
+ &lt;span style=&#34;color:#75715e&#34;&gt;/**
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; *调用thread.start()时立即调用TaskClass中的run（）
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; */&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;thread中的其他方法&#34;&gt;Thread中的其他方法&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;yield()：为其他线程临时让出cpu时间&lt;/li&gt;
+&lt;li&gt;sleep()：为线程设定休眠时间，以便其他线程的执行&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;sleep()可能抛出一个InterruptException异常，这是一个必检异常，java强制捕获，故而sleep函数必须在try代码块中。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;线程的优先级&#34;&gt;线程的优先级&lt;/h4&gt;
+&lt;p&gt;线程是有优先级的。java虚拟机总是优先执行优先级高的线程。若所有的优先级相同，则系统依照循环队列分配相同的cpu资源，即&lt;strong&gt;循环调度&lt;/strong&gt;。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Thread类中的setPriority()可设定线优先级&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;线程池&#34;&gt;线程池&lt;/h3&gt;
+&lt;p&gt;对于大型任务数,如果必须为每个任务创建一个线程，那么启动新线程每个任务都可能限制吞吐量并导致性能不佳。
+而使用线程池是理想的管理并发执行的任务数的方法。
+Java 提供Exexutor接口来执行线程池中任务，用ExecutorService接口来管理和控制任务。执行器服务是执行器的子接口。
+通过静态方法获得Executor对象，newFixedThreadPool(int)用于创建固定数目的线程池，newCachedThreadPool()则是自动创建线程。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;demo:&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; java.util.concurrent.*&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ExecutorDemo&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;static&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;String&lt;span style=&#34;color:#f92672&#34;&gt;[]&lt;/span&gt; args&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;// Create a fixed thread pool with maximum three threads
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;ExecutorService executor &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Executors&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;newFixedThreadPool&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;3&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;// Submit runnable tasks to the executor
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;executor&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;execute&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; PrintChar&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;a&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; 100&lt;span style=&#34;color:#f92672&#34;&gt;));&lt;/span&gt;
+executor&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;execute&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; PrintChar&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;b&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; 100&lt;span style=&#34;color:#f92672&#34;&gt;));&lt;/span&gt;
+executor&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;execute&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; PrintNum&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;100&lt;span style=&#34;color:#f92672&#34;&gt;));&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;// Shut down the executor
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;executor&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;shutdown&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;();&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;线程池提供了一种&lt;strong&gt;更好的管理线程的方法&lt;/strong&gt;。 线程池主要用来解决线程生命周期开销问题和资源不足问题。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;线程池减少了在创建和销毁线程上所花的时间以及系统资源的开销&lt;/strong&gt;。通过对多个任务重用线程，线程创建的开销就被分摊到了多个任务上了，而且由于在请求到达时线程已经存在，所以消除了线程创建所带来的延迟。这样，就可以立即为请求服务，使应用程序响应更快。另外，通过适当地调整线程池中的线程数目可以防止出现资源不足的情况。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;线程池能够对线程进行方便的管理&lt;/strong&gt;。比如使用ScheduledThreadPool来设置延迟N秒后执行任务，并且每隔M秒循环执行一次。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;能控制线程池中的并发数&lt;/strong&gt;。避免了因为大量的线程争夺CPU资源造成阻塞。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;线程同步thread-synchronization&#34;&gt;线程同步（Thread Synchronization）&lt;/h3&gt;
+&lt;p&gt;如果同一个资源被多个线程同时访问，很可能会被破坏。如果两个任务以一种会引起冲突的方式访问一个公共资源，则称两者为竞争状态。若其没有竞争状态，则称其为线程安全的。&lt;/p&gt;
+&lt;p&gt;为避免竞争状态，应防止多个线程同事进入程序的某一特定部分，程序中这样的部分成为临界区。&lt;/p&gt;
+&lt;p&gt;解决竞争状态的方法便是使线程同步。&lt;/p&gt;
+&lt;h4 id=&#34;实现线程同步的方法&#34;&gt;实现线程同步的方法&lt;/h4&gt;
+&lt;p&gt;一个同步方法在执行前需要加锁。锁是一种实现资源排他的机制。对于实例方法，要给调用的对象加锁，对于静态对象，要给类加锁。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;synchronized关键字&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;此关键字可用与方法，也可用于表达式。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;synchronized&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt; expr &lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+  &lt;span style=&#34;color:#75715e&#34;&gt;//do something
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; sychronized &lt;span style=&#34;color:#a6e22e&#34;&gt;func&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;()&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;利用锁同步
+可显式的使用锁和状态来同步线程。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;一个锁是Lock接口的实例，其提供了加锁和释放锁的方法。
+ReentrantLock是lock的具体体现，用于创建相互排斥的锁。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;demo:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public void deposit(int amount) {
+  lock.lock(); // Acquire the lock
+  try {
+  int newBalance = balance + amount;
+  // This delay is deliberately added to magnify the
+  // data-corruption problem and make it easy to see.
+  Thread.sleep(5);
+  balance = newBalance;
+  }
+  catch (InterruptedException ex) {
+  }
+  finally {
+  lock.unlock(); // Release the lock
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4 id=&#34;避免死锁&#34;&gt;避免死锁&lt;/h4&gt;
+&lt;p&gt;多个线程需要从几个共享对象上获取锁时，可能会导致死锁。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;利用资源排序避免死锁&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;线程间的协作&#34;&gt;线程间的协作&lt;/h3&gt;
+&lt;p&gt;可使用条件(Condition)实现线程的通信，指定其在某种条件下做什么。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;**条件(Condition)**是通过Lock对象的newCondition()方法创建的对象。通过其await(),signal(),signall()实现线程的相互通信。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;await()：让当前线程进入等待，直到条件发生（发出条件信号）&lt;/li&gt;
+&lt;li&gt;signal()/signalAll()：唤醒一个和所有线程&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;条件必须依赖与锁才可使用。无锁儿直接使用其方法会抛出IllegalMonitorStateExecption异常。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;阻塞队列&#34;&gt;阻塞队列&lt;/h3&gt;
+&lt;p&gt;java中为多线程提供了阻塞对列，同步可在对列中实现，所以不用在使用锁和条件。
+它提供了两个附加操作：当队列中为空时，从队列中获取元素的操作将被阻塞；当队列满时，向队列中添加元素的操作将被阻塞。&lt;/p&gt;
+&lt;p&gt; 阻塞队列常用于生产者和消费者的场景，生产者线程可以把生产结果存到阻塞队列中，而消费者线程把中间结果取出并在将来修改它们。&lt;/p&gt;
+&lt;p&gt;队列会自动平衡负载，如果生产者线程集运行的比消费者线程集慢，则消费者线程集在等待结果时就会阻塞；如果生产者线程集运行的快，那么它将等待消费者线程集赶上来。&lt;/p&gt;
+&lt;p&gt;作为BlockingQueue的使用者，我们再也不需要关心什么时候需要阻塞线程，什么时候需要唤醒线程，因为这一切BlockingQueue都给你一手包办了。&lt;/p&gt;
+&lt;h4 id=&#34;blockingqueue的核心方法&#34;&gt;BlockingQueue的核心方法&lt;/h4&gt;
+&lt;p&gt;1、放入数据&lt;/p&gt;
+&lt;p&gt;  （1）put(E e):put方法用来向队尾存入元素，如果队列满，则等待。　　　 &lt;/p&gt;
+&lt;p&gt;  （2）offer(E o, long timeout, TimeUnit unit)：offer方法用来向队尾存入元素，如果队列满，则等待一定的时间，当时间期限达到时，如果还没有插入成功，则返回false；否则返回true；&lt;/p&gt;
+&lt;p&gt;2、获取数据&lt;/p&gt;
+&lt;p&gt; （1）take()：take方法用来从队首取元素，如果队列为空，则等待；&lt;/p&gt;
+&lt;p&gt; （2）drainTo():一次性从BlockingQueue获取所有可用的数据对象（还可以指定获取数据的个数），通过该方法，可以提升获取数据效率；不需要多次分批加锁或释放锁。&lt;/p&gt;
+&lt;p&gt; （3）poll(time):取走BlockingQueue里排在首位的对象,若不能立即取出,则可以等time参数规定的时间,取不到时返回null;&lt;/p&gt;
+&lt;p&gt; （4）poll(long timeout, TimeUnit unit)：poll方法用来从队首取元素，如果队列空，则等待一定的时间，当时间期限达到时，如果取到，则返回null；否则返回取得的元素；&lt;/p&gt;
+&lt;h4 id=&#34;一些状态&#34;&gt;一些状态&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;抛出异常&lt;/strong&gt;：当队列满时，再向队列中插入元素，则会抛出IllegalStateException异常。当队列空时，再向队列中获取元素，则会抛出NoSuchElementException异常。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;返回特殊值&lt;/strong&gt;：当队列满时，向队列中添加元素，则返回false，否则返回true。当队列为空时，向队列中获取元素，则返回null，否则返回元素。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;一直阻塞&lt;/strong&gt;：当阻塞队列满时，如果生产者向队列中插入元素，则队列会一直阻塞当前线程，直到队列可用或响应中断退出。当阻塞队列为空时，如果消费者线程向阻塞队列中获取数据，则队列会一直阻塞当前线程，直到队列空闲或响应中断退出。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;超时退出&lt;/strong&gt;：当队列满时，如果生产线程向队列中添加元素，则队列会阻塞生产线程一段时间，超过指定的时间则退出返回false。当队列为空时，消费线程从队列中移除元素，则队列会阻塞一段时间，如果超过指定时间退出返回null。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;并行编程&#34;&gt;并行编程&lt;/h3&gt;
+&lt;p&gt;java可用Fork/Join框架实现并行编程
+在此框架中，一个分解（Fork)可视为运行在一个线程上的独立任务。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;将一个问题分解为多个不重叠的子问题（可独立解决），再合并子问题的解答以获得整体的解答。
+框架使用ForkJoinTask类定义一个任务，在一个ForkJoinPool实例中执行任务。
+ForkJoinTask是用于任务的基类，它是一个类似线程的实体，但比普通的线程要轻量级的多，因为巨量的任务可以被ForkJoinPool中的少数线程所执行。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;demo:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.ForkJoinPool;
+public class ParallelMergeSort {
+public static void main(String[] args) {
+final int SIZE = 7000000;
+int[] list1 = new int[SIZE];
+int[] list2 = new int[SIZE];
+for (int i = 0; i &amp;lt; list1.length; i++)
+list1[i] = list2[i] = (int)(Math.random() * 10000000);
+long startTime = System.currentTimeMillis();
+parallelMergeSort(list1); // Invoke parallel merge sort
+long endTime = System.currentTimeMillis();
+System.out.println(&amp;quot;\nParallel time with &amp;quot;
++ Runtime.getRuntime().availableProcessors() +
+&amp;quot; processors is &amp;quot; + (endTime - startTime) + &amp;quot; milliseconds&amp;quot;);
+startTime = System.currentTimeMillis();
+MergeSort.mergeSort(list2); // MergeSort is in Listing 23.5
+endTime = System.currentTimeMillis();
+System.out.println(&amp;quot;\nSequential time is &amp;quot; +
+(endTime - startTime) + &amp;quot; milliseconds&amp;quot;);
+}
+public static void parallelMergeSort(int[] list) {
+RecursiveAction mainTask = new SortTask(list);
+ForkJoinPool pool = new ForkJoinPool();
+pool.invoke(mainTask);
+}
+private static class SortTask extends RecursiveAction {
+private final int THRESHOLD = 500;
+private int[] list;
+SortTask(int[] list) {
+this.list = list;
+}
+@Override
+protected void compute() {
+if (list.length &amp;lt; THRESHOLD)
+java.util.Arrays.sort(list);
+else {
+// Obtain the first half
+int[] firstHalf = new int[list.length / 2];
+System.arraycopy(list, 0, firstHalf, 0, list.length / 2);
+perform the task
+sort a small list
+split into two parts
+// Obtain the second half
+int secondHalfLength = list.length - list.length / 2;
+int[] secondHalf = new int[secondHalfLength];
+System.arraycopy(list, list.length / 2,
+secondHalf, 0, secondHalfLength);
+// Recursively sort the two halves
+invokeAll(new SortTask(firstHalf),
+new SortTask(secondHalf));
+// Merge firstHalf with secondHalf into list
+MergeSort.merge(firstHalf, secondHalf, list);
+}
+}
+}
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>Java中的lambda表达式</title>
+      <link>http://localhost:1313/post/java%E4%B8%AD%E7%9A%84lambda/</link>
+      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/java%E4%B8%AD%E7%9A%84lambda/</guid>
+      
+        <description>&lt;h2 id=&#34;lambda表达式&#34;&gt;lambda表达式&lt;/h2&gt;
+&lt;p&gt;Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中）。使用 Lambda 表达式可以使代码变的更加简洁紧凑。&lt;/p&gt;
+&lt;h2 id=&#34;语法&#34;&gt;语法&lt;/h2&gt;
+&lt;p&gt;lambda 表达式的语法格式如下：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;parameters&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; expression &lt;span style=&#34;color:#a6e22e&#34;&gt;或&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;parameters&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;{&lt;/span&gt; statements&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;以下是lambda表达式的重要特征:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;**可选类型声明：**不需要声明参数类型，编译器可以统一识别参数值。&lt;/li&gt;
+&lt;li&gt;**可选的参数圆括号：**一个参数无需定义圆括号，但多个参数需要定义圆括号。&lt;/li&gt;
+&lt;li&gt;**可选的大括号：**如果主体包含了一个语句，就不需要使用大括号。&lt;/li&gt;
+&lt;li&gt;**可选的返回关键字：**如果主体只有一个表达式返回值则编译器会自动返回值，大括号需要指定明表达式返回了一个数值。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;lambda-表达式的结构&#34;&gt;Lambda 表达式的结构&lt;/h2&gt;
+&lt;p&gt;让我们了解一下 Lambda 表达式的结构。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;一个 Lambda 表达式可以有零个或多个参数&lt;/li&gt;
+&lt;li&gt;参数的类型既可以明确声明，也可以根据上下文来推断。例如：&lt;code&gt;(int a)&lt;/code&gt;与&lt;code&gt;(a)&lt;/code&gt;效果相同&lt;/li&gt;
+&lt;li&gt;所有参数需包含在圆括号内，参数之间用逗号相隔。例如：&lt;code&gt;(a, b)&lt;/code&gt; 或 &lt;code&gt;(int a, int b)&lt;/code&gt; 或 &lt;code&gt;(String a, int b, float c)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;空圆括号代表参数集为空。例如：&lt;code&gt;() -&amp;gt; 42&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;当只有一个参数，且其类型可推导时，圆括号（）可省略。例如：&lt;code&gt;a -&amp;gt; return a*a&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Lambda 表达式的主体可包含零条或多条语句&lt;/li&gt;
+&lt;li&gt;如果 Lambda 表达式的主体只有一条语句，花括号{}可省略。匿名函数的返回类型与该主体表达式一致&lt;/li&gt;
+&lt;li&gt;如果 Lambda 表达式的主体包含一条以上语句，则表达式必须包含在花括号{}中（形成代码块）。匿名函数的返回类型与代码块的返回类型一致，若没有返回则为空&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;lambda实例&#34;&gt;lambda实例&lt;/h3&gt;
+&lt;p&gt;Lambda 表达式的简单例子:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// 1. 不需要参数,返回值为 5  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;()&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; 5  
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;// 2. 接收一个参数(数字类型),返回其2倍的值  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;x &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; 2 &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; x  
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;// 3. 接受2个参数(数字),并返回他们的差值  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;x&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; y&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; x &lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;–&lt;/span&gt; y  
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;// 4. 接收2个int型整数,返回他们的和  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; x&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; y&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; x &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; y  
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;// 5. 接受一个 string 对象,并在控制台打印,不返回任何值(看起来像是返回void)  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;String s&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; System&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;out&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;s&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;lambda表达式的实现原理&#34;&gt;lambda表达式的实现原理&lt;/h2&gt;
+&lt;p&gt;在 Java 中，Lambda 表达式是对象，他们必须依附于一类特别的对象类型——&lt;a href=&#34;https://www.runoob.com/java/java8-functional-interfaces.html&#34;&gt;函数式接口(functional interface)&lt;/a&gt;。函数式接口是只包含一个抽象方法声明的接口。当你试图传入lambda表达式的时候，实际上它是将你传入的表达式隐式的转换并赋值给一个函数式接口，再通过其调用函数。&lt;/p&gt;
+&lt;p&gt;如：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;@FunctionalInterface&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;interface&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Inner&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; num&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;static&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;wapper&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; num&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; Inner func&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+        func&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;num&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+    &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;wapper&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;10&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; e &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; 0&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; e&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; i&lt;span style=&#34;color:#f92672&#34;&gt;++)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+                System&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;out&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;HelloWorld\t&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+            &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+        &lt;span style=&#34;color:#f92672&#34;&gt;});&lt;/span&gt;
+
+和下面的写法等价
+    
+ Inner innerFunc &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; e&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; 0&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; e&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; i&lt;span style=&#34;color:#f92672&#34;&gt;++)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+                System&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;out&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;HelloWorld\t&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+            &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+        &lt;span style=&#34;color:#f92672&#34;&gt;};&lt;/span&gt;
+        wapper&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;10&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; innerFunc&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>军训</title>
+      <link>http://localhost:1313/post/%E5%86%9B%E8%AE%AD/</link>
+      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/%E5%86%9B%E8%AE%AD/</guid>
+      
+        <description>&lt;h1 id=&#34;军训&#34;&gt;军训&lt;/h1&gt;
+&lt;p&gt;上回说到四位嘤雄于刺激战场鏖战，大杀四方，最后以白狐公子惜败草丛告终。&lt;/p&gt;
+&lt;p&gt;吃鸡一事，暂告一段落。&lt;/p&gt;
+&lt;p&gt;很快就到了在宿舍楼面基的日子，除了某肥宅暴瘦之谜外，各路嘤雄倒也言行如一。班会上某红小豆清点人数，我也有了仔细端详各路好汉的机会。只见那白狐公子，身长八尺，咋一瞧眉宇间透露出一股英气，细一听又有几分小家碧玉的温柔，这倒也不负那初见时的美名。&lt;/p&gt;
+&lt;p&gt;点兵之后，便是军训。多亏了军训时的小完能的安排，十八罗汉才能在一个屋子里每天晚上谈天说地。&lt;/p&gt;
+&lt;p&gt;所谓军训，大概就是让你在一个满是灰尘的通铺上睡上两周，每天劳你筋骨饿你体肤，培养每天咸菜馒头过日子的宜居少年。军训就和澡堂一样，能挨过一天就能挨过一辈子。除了忘记带剃须刀之外，倒也没啥不方便的。至于没带手机的兄弟们，节哀。军训不带手机，绝对是学校的阴谋。&lt;/p&gt;
+&lt;p&gt;军训的内容到也稀松平常的很，立定、正步、跑动、方阵，全国通行，除了躺在床上时的惬意，也没什么值得回味的，不提也罢。&lt;/p&gt;
+&lt;p&gt;在一个日常早起集合的上午，我发现白狐公子在晚上给我发了个消息，而我晚上睡着了，所以没有发现，我如实的回复，匆匆下楼。&lt;/p&gt;
+&lt;p&gt;只知道从那天便打开了话匣子，从那七星北斗聊到龙族江南，东聊西扯。仍只记得当时愉悦，至于具体聊了什么，早就忘了。不过还是有那么几件趣事，值得一谈。&lt;/p&gt;
+&lt;p&gt;一是我那时是一个佛系少年，所以从不找妹子聊天；军训可累了，所以晚上十点半就要休息。虽然当时看来并不是大事，但实际上，我给了白狐公子送去了一个日后进行“意义不大的讨论”时可以重复使用的重要筹码。后来世人皆道白狐公子文韬武略，天人下凡，不战而屈人之兵，此乃伏笔。所以奉劝诸君，如果有妹子找你聊天一定不到天亮不能睡，至于你能撑有几天，那，不关我事（笑）。&lt;/p&gt;
+&lt;p&gt;二是起初我并不知道白狐公子捕鱼是用大网还是直钩，所以我十分的佛系，闲聊而已，绝对不多想。睡在隔壁的龟龟某天也知道有妹子找我聊天，于是我们讨论之后，觉得不排除捕渔的可能，于是之后聊天愈加绅士（x）。&lt;/p&gt;
+&lt;p&gt;第二天，龟龟表示他也向白狐公子表示问候。内容我早已忘却，只记得那天的故事以“大兄弟”开头，以“ky”结尾。&lt;/p&gt;
+&lt;p&gt;江湖盛传龟龟和白狐都是天下一等一侠客，龟龟更以“青山我独行,不必相送”的名号位列坊间侠客榜第一位，潇洒至极，无人不心向往之。三言两语，了却尘凡，这般洒脱，的确不负盛名。白狐则以“宁太公”之名屈居第二，大概因为钓鱼用的是直钩并且不放诱饵，最终棋差一招，在钓鱼大赛上输给了龟龟，屈居第二。&lt;/p&gt;
+&lt;p&gt;高手过招，点到为止，总之，二人军训的故事到此结束。&lt;/p&gt;
+&lt;p&gt;至于我，我只是一只佛系小鱼罢了。&lt;/p&gt;
+&lt;p&gt;三是在某天闲聊的时候聊起学校有啥活动，白狐公子说起咱们学校的中秋猜灯谜的活动，（膨胀的）我当时以为白狐公子的意思是邀请我一起去，于是我直接问她要不要一起。&lt;/p&gt;
+&lt;p&gt;“？？什么鬼”白狐公子如是说到。&lt;/p&gt;
+&lt;p&gt;“啊我以为你是要我约你一起去。” 我也如是的说。&lt;/p&gt;
+&lt;p&gt;此时我尬癌发作，后来的对话有些记不得了，只记得最后还是相约中秋一起去猜灯谜。至于后来中秋那晚的斗智斗勇，此乃后话，下回再提。&lt;/p&gt;
+&lt;p&gt;军训很快就要结束了。最后一天大家到操场上集合，男生一路上在调侃被领导点名批评的猴哥，女生们不知道在干什么。&lt;/p&gt;
+&lt;p&gt;全院要合照了，大家向红小豆这里集合。我看见远远走来的这高高的女生，心想，这就是白狐公子，天下一等一的侠客。&lt;/p&gt;
+&lt;p&gt;于是又别过头去，继续和罗汉们插科打诨。&lt;/p&gt;
+&lt;p&gt;预知后事如何且听下回分解。&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>初见</title>
+      <link>http://localhost:1313/post/%E5%85%A5%E5%AD%A6/</link>
+      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/%E5%85%A5%E5%AD%A6/</guid>
+      
+        <description>&lt;h1 id=&#34;初见&#34;&gt;初见&lt;/h1&gt;
+&lt;p&gt;听大家说，每年高考之后的那个暑假总是交新朋友的好时候，于是在某个深夜，两只单身贵族开始在无线电海洋里寻找组织。&lt;/p&gt;
+&lt;p&gt;群里本就是贵族们的土地。这里群嘤荟萃，贵族们忙于插科打诨，不屑于拉帮结派。&lt;/p&gt;
+&lt;p&gt;直到有一天黄泉之主将每个院每个班的传送门放在了群相册里，每一个贵族，最终都找到了自己的归属（ps.幸福脸）。&lt;/p&gt;
+&lt;p&gt;各路嘤雄汇聚一堂，有女装大佬身着jk，一举拿下盟主宝座，更有塞外狂徒使出九嘤真经，肥宅大哭坐坏两张凳子。&lt;/p&gt;
+&lt;p&gt;沙雕群友如此，我秋风寒切不可落了下风，于是大声喝道：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://img.xiumi.us/xmi/ua/1told/i/bb31c587f2bd0567b6cb2afafeadb851-sz_7516.jpg?x-oss-process=style/xmwebp&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;这一叫便来了三位嘤雄想要与我在刺激战场一较高下。&lt;/p&gt;
+&lt;p&gt;其中一白衣少年迎风而立,头上插着一枝碧玉钗,明眸皓齿,清秀雅致,黑曜石般的眼眸在阳光下灼灼生辉.乍一看带了些女子的媚态，近来瞧却是一翩翩贵公子。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://img.xiumi.us/xmi/ua/1told/i/036eb93b6ddba656423e4ba9b7c816ee-sz_53833.jpg?x-oss-process=style/xmwebp&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;​                   神眷之白狐&lt;/p&gt;
+&lt;p&gt;这位白狐公子听说是刺激战场的以为战地记者，随身携带小本本，向往和平。在我们搜寻物资的时候，以为死去的队友说，你看1号都没有枪，你们帮一下。我转头看向白狐公子的方向，见其果然只有个喷子没有强，不仅感叹，可能是个菜鸡？唉，我见由怜何况老子（狗头），本着与人为善的原则，我递了一把枪过去（我这里有物资）。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://img.xiumi.us/xmi/ua/1told/i/bb362f84fc103ab5fcdd3b9812e4a325-sz_7836.jpg?x-oss-process=style/xmwebp&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;​                  听说这是当时的枪&lt;/p&gt;
+&lt;p&gt;白给就白给了咯，比赛还是要继续滴，于是我回头望向这片大好河山，四顾无人，便放下心来。&lt;/p&gt;
+&lt;p&gt;这时早已浪死的塞外狂徒冷不丁对源哥说了一句“我们还这有妹子呢”。我惊恐的回头望向那位一直不说话的白狐公子。&lt;/p&gt;
+&lt;p&gt;“砰”&lt;/p&gt;
+&lt;p&gt;然而等待我的，只有这一声枪响。&lt;/p&gt;
+&lt;p&gt;​            预知后事如何，且听下回分解&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>对Linux中Fork的理解</title>
+      <link>http://localhost:1313/post/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/</link>
+      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/</guid>
+      
+        <description>&lt;h1 id=&#34;对linux中fork的理解&#34;&gt;对Linux中Fork的理解&lt;/h1&gt;
+&lt;h2 id=&#34;前言&#34;&gt;&lt;strong&gt;前言&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#include&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;&amp;lt;stdio.h&amp;gt;&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#include&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;&amp;lt;sys/types.h&amp;gt;&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#include&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;&amp;lt;unistd.h&amp;gt;&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;(){
+  pid_t pid;
+  pid&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fork();
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt;(pid&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;){
+    &lt;span style=&#34;color:#75715e&#34;&gt;//create process failed
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Failed&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+    exit(&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;);
+  }&lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt;(pid&lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;){
+    &lt;span style=&#34;color:#75715e&#34;&gt;//child process;
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    printf (&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Child pid %d&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;,getpid());
+    execlp(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/bin/ls&amp;#34;&lt;/span&gt;,&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;ls&amp;#34;&lt;/span&gt;,NULL);
+  }&lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;{
+  &lt;span style=&#34;color:#75715e&#34;&gt;//parent process;
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Parent pid %d&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;,getpid());
+  wait(NULL);
+  printf (&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Child complete&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;查阅了些资料，看了几回才稍微看懂一点fork()的用法，于是写下这篇博客记录一下。&lt;/p&gt;
+&lt;h3 id=&#34;fork函数介绍实际上是vfork的api不过也可以借鉴一下&#34;&gt;&lt;strong&gt;fork()函数介绍(实际上是vfork()的api，不过也可以借鉴一下)&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;简介：建立一个新的进程&lt;/p&gt;
+&lt;p&gt;表头文件：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#include&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;&amp;lt;uistd.h&amp;gt;&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;定义函数：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;pid_t &lt;span style=&#34;color:#a6e22e&#34;&gt;vfork&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt;);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;函数说明：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;vfork()会产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。Linux 使用copy-on-write(COW)技术，只有当其中一进程试图修改欲复制的空间时才会做真正的复制动作，由于这些继承的信息是复制而来，并非指相同的内存空间，因此子进程对这些变量的修改和父进程并不会同步。此外，子进程不会继承父进程的文件锁定和未处理的信号。注意，Linux不保证子进程会比父进程先执行或晚执行，因此编写程序时要留意
+死锁或竞争条件的发生。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;返回值：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;如果vfork()成功则在父进程会返回新建立的子进程代码(PID)，而在新建立的子进程中则返回0&lt;/strong&gt;。如果vfork 失败则直接返回-1，失败原因存于errno中。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;错误代码：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;EAGAIN 内存不足。ENOMEM 内存不足，无法配置核心所需的数据结构空间。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;函数分析&#34;&gt;&lt;strong&gt;函数分析&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;首先我们看看开头代码的运行结果：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2019/09/30/6kj5yDTvsin42gd.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Linux中进程是通过链表进行组织的，所以本文中使用 ParentProcess-&amp;gt;ChildrenProcess的格式展示。&lt;/p&gt;
+&lt;p&gt;下面开始上面分析结果：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;首先，fork()函数会调用两次，第一次在父进程中返回，返回子进程的pid(一般大于零），第二次是在子进程中调用，返回0;当fork()失败时，返回一个负数。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;父进程开使执行，调用fork()，返回一个子进程pid(&amp;gt;0)，执行打印&lt;em&gt;Parent pid 25974&lt;/em&gt;,然后等待子进程。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;子进程在父进程调用fork()后开始执行，在子进程中fork()返回０（并不是实际意义上的调用之后返回，而是在子进程中直接返回了０,在后面在解释），执行父进程fork()后面的语句，即&lt;em&gt;execlp(&amp;quot;/bin/ls&amp;rdquo;,&amp;ldquo;ls&amp;rdquo;,NULL)&lt;/em&gt;，即调用ls，打印当前目录的文件，子进程结束。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;父进程接受信号，结束主进程。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;##　深入理解&lt;/p&gt;
+&lt;p&gt;现在我们来看看这一段代码：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;/*
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; * @Description: In User Settings Edit
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; * @Author: NoneBack
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; * @Date: 2019-09-30 01:00:29
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; * @LastEditTime: 2019-09-30 22:52:24
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; * @LastEditors: NoneBack
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; */&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;#include&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;&amp;lt;stdio.h&amp;gt;&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#include&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;&amp;lt;unistd.h&amp;gt;&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt;) {
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;i son/pa ppid pid  fpid&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;);
+  &lt;span style=&#34;color:#75715e&#34;&gt;// ppid指当前进程的父进程pid
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// pid指当前进程的pid,
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// fpid指fork返回给当前进程的值
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (i &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;; i &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;; i&lt;span style=&#34;color:#f92672&#34;&gt;++&lt;/span&gt;) {
+    pid_t fpid &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; fork();
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (fpid &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)
+      printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%d child  %4d %4d %4d&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, i, getppid(), getpid(), fpid);
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;
+      printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%d parent %4d %4d %4d&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, i, getppid(), getpid(), fpid);
+    wait(NULL); &lt;span style=&#34;color:#75715e&#34;&gt;//等待子进程
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  }
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+}
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;​	下面是它的执行结果：&lt;/p&gt;
+&lt;p&gt;​	&lt;img src=&#34;https://i.loli.net/2019/09/30/1ikRMdFGDxwXA3t.jpg&#34; alt=&#34;选区_010.jpg&#34;&gt;&lt;/p&gt;
+&lt;p&gt;下面我们来看看为什么会有这样的结果：&lt;/p&gt;
+&lt;p&gt;１．首先父进程中，i=0时，打印&lt;code&gt;0 parent 26826 26917 26918&lt;/code&gt;，随后父进程等待子进程执行。&lt;/p&gt;
+&lt;p&gt;子进程接着拷贝父进程（连同ＰＣ），接着父进程中i=0时fork()之后的代码运行，打印&lt;code&gt;0 child  26917 26918    0&lt;/code&gt;，此时子进程在i=0时的fork()返回０。&lt;/p&gt;
+&lt;p&gt;子进程i=1时候的fork()接着生成一个孙子进程，并返回其pid,子进程打印&lt;code&gt;1 parent 26917 26918 26919&lt;/code&gt;，生成的孙子进程中从i=1的fork()出接着执行，此处的fork()返回０，打印&lt;code&gt;1 child  26918 26919    0&lt;/code&gt;。第一个子进程结束。&lt;/p&gt;
+&lt;p&gt;２.父进程中i=1时，执行fork()，生成子进程，打　印&lt;code&gt;1 parent 26826 26917 26920&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;子进程接着执行1=1时，fork()之后的代码,打印&lt;code&gt;1 child  26917 26920    0&lt;/code&gt;。进程结束。&lt;/p&gt;
+&lt;p&gt;至于为什么父进程是１,这是另一方面的知识，暂且不管。&lt;/p&gt;
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+&lt;p&gt;fork()会返回两次，第一次在父进程中返回fork()出的子进程的pid,第二此在子进程中返回０，接着从fork()处之后的代码开始执行。&lt;/p&gt;
+&lt;p&gt;参考资料：[https://www.kancloud.cn/wizardforcel/linux-c-api-ref/98511]&lt;/p&gt;
+&lt;p&gt;​					[https://cloud.tencent.com/developer/article/1338482]&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>进程的同步与互斥</title>
+      <link>http://localhost:1313/post/%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%8C%E6%AD%A5%E4%B8%8E%E4%BA%92%E6%96%A5/</link>
+      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%8C%E6%AD%A5%E4%B8%8E%E4%BA%92%E6%96%A5/</guid>
+      
+        <description>&lt;h1 id=&#34;进程的同步与互斥&#34;&gt;进程的同步与互斥&lt;/h1&gt;
+&lt;p&gt;[TOC]&lt;/p&gt;
+&lt;h2 id=&#34;进程的同步&#34;&gt;进程的同步&lt;/h2&gt;
+&lt;h3 id=&#34;引入&#34;&gt;引入&lt;/h3&gt;
+&lt;p&gt;在多进程的系统中，进程是并发执行的，进程具有“异步”的天性，异步性指的是各并发执行的进程以各自独立的、&lt;strong&gt;不可预知&lt;/strong&gt;的速度向前推进。&lt;/p&gt;
+&lt;p&gt;我们知道多进程存在对共享资源的访问，如果对异步性不加控制，那么多进程的不可预知的执行次序会导致对共享数据的脏读、误读、幻读等莫名错误，这样的话，我们的进程拿不到准确的数据，多进程的并发优势反而得不偿失。&lt;/p&gt;
+&lt;p&gt;为了能避免异步性带来的副作用，我们就引入了“&lt;strong&gt;进程同步&lt;/strong&gt;”，这是个辅助手段，&lt;strong&gt;主要解决异步性带来的“不可预知性”&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;进程同步机制&lt;/strong&gt;就是针对解决异步进程间的执行次序的“不可预知性”，&lt;strong&gt;保证多个进程之间按照某种设计好的、程序能控制的执行次序&lt;/strong&gt;，以达到对共享资源访问的能控性、有效性、准确性&lt;/p&gt;
+&lt;h3 id=&#34;进程同步的控制机制&#34;&gt;进程同步的控制机制&lt;/h3&gt;
+&lt;h4 id=&#34;基于-p--v-操作的信号量机制&#34;&gt;&lt;strong&gt;基于 P 、 V 操作的信号量机制&lt;/strong&gt;&lt;/h4&gt;
+&lt;p&gt;最早出现的用来解决进程同步与互斥问题的机制 , 包括一个称为信号量的变量及对它进行的两个原语操作 。&lt;/p&gt;
+&lt;p&gt;==key==&lt;/p&gt;
+&lt;p&gt;一个信号量的建立必须经过说明 , 即应该准确说明 s 的意义和初值 , 信号量的值仅能由 PV 原语来改变 。P 操作是申请资源 , 它使信号量值减 1 , 若结果非负 , 该进程继续 , 否则该进程被封锁 ;V 操作是释放资源 , 它使信号量值增 1 ，若结果大于零 , 该进程继续 , 否则从该信号量的等待队列中移出一个进程 , 解除它的等待状态 。&lt;/p&gt;
+&lt;h4 id=&#34;管程机制&#34;&gt;&lt;strong&gt;管程机制&lt;/strong&gt;&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;概念引入：&lt;/p&gt;
+&lt;p&gt;为实现进程间的同步在每个并发进程中都 要设置大量的同步操作原语 , 这不仅给编程带来麻烦 , 且会因 P 操作使用不当而导致数据的不定性或死锁;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;同时操作系统的结构不够清晰 。因此后来又提出了一种集中式同步进程 ———**管程 **。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;基本思想：将共享变量和对它们的操作集中在一个模块中 , 操作系统或并发程序就由这样的模块构成 。这样模块之间联系清晰 , 便于维护和修改 , 易于保证正确性。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;从语言的角度看，管程主要有以下特性：
+（1）模块。管程是一个基本程序单位，可以单独编译;&lt;br&gt;
+（2）抽象。管程是中不仅有数据，而且有对数据的操作;&lt;br&gt;
+（3）封装。管程外可以调用管程内部定义的一些函数，但函数的具体实现外部不可见;对于管程中定义的共享变量的所有操作都局限在管程中，外部只能通过调用管程的某些函数来间接访问这些变量。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;为了保证共享变量的数据一致性，管程应互斥使用。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;管程通常是用于管理资源的，因此管程中有进程等待队列和相应的等待和唤醒操作。&lt;/p&gt;
+&lt;p&gt;在管程入口有一个等待队列，称为入口等待队列。当一个已进入管程的进程等待时，就释放管程的互斥使用权；当已进入管程的一个进程唤醒另一个进程时，两者必须有一个退出或停止使用管程。在管程内部，由于执行唤醒操作，可能存在多个等待进程（等待使用管程），称为紧急等待队列，它的优先级高于入口等待队列。
+因此，一个进程进入管程之前要先申请，一般由管程提供一个enter过程；离开时释放使用权，如果紧急等待队列不空，则唤醒第一个等待者，一般也由管程提供外部过程leave。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;管程内部有自己的等待机制。管程可以说明一种特殊的条件型变量：var c:condition；实际上是一个指针，指向一个等待该条件的PCB队列。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;对条件型变量可执行wait和signal操作：
+wait(c):若紧急等待队列不空，唤醒第一个等待者，否则释放管程使用权。执行本操作的进程进入C队列尾部；
+signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待者，自己进入紧急等待队列尾部。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;总结&lt;/strong&gt;：管程(monitor)是一种基本的，高级的同步构造，是为了解决信号量因不正确的使用而导致的一些时序错误而提出的一种高级语言构造。
+管程也是进程同步的一种方式，相比于其他进程同步方式，管程将共享变量和对它们的操作集中在一个模块中，操作系统或并发程序就由这样的模块构成。这样模块之间联系清晰，便于维护和修改，易于保证正确性。
+管程只是保证了同一时刻只有一个进程在管程内活动,即管程内定义的操作在同一时刻只被一个进程调用(由编译器实现).但是这样并不能保证进程以设计的顺序执行,因此需要设置condition变量,让进入管程而无法继续执行的进程阻塞自己。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;会合机制&#34;&gt;会合机制&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;会合机制的提出&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;在不具有公共内存的分布式操作系统中，要使用P，V操作或管程 机制存在着十分大的问题&amp;ndash;信号灯量和管程共享变量存放在何处？&lt;/p&gt;
+&lt;p&gt;如果分步式系统中有两个主机H1和H2，它们之间并没有公共 内存，H1中有进程P1，H2中有进程P2，如果有一个信号量(或管程共享变量)S，那S放在何处呢？&lt;/p&gt;
+&lt;p&gt;如果放在H1中，显然P2无法访问到S；同理，如果放在H2中,S对P1又是不可访问的。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;显然，P，V操作和管程都是以进程所操作的对象为核心的，而这些对象在无公共内存的分布式操作系统中的存储是一个不可克服的困难。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;因此，自然希望在分布式操作系统中的同步机制应该避开这些被动的成分，而以主动成分&amp;ndash;进程直接进行相互作用。因而，产生了 会合这一种同步机制。&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;会合的一般形式&lt;/strong&gt;
+一个进程可以有许多入口，一个入口对应一段程序，一个进程可 以调用另一个进程的入口。当一个进程调用另一个进程的入口， 而且被调用的进程已准备好接受这个调用时，会合就发生了。&lt;/p&gt;
+&lt;p&gt;当调用者发出调用请求时，被调用的进程未准备接受这个调用时， 则调用者等待；反之，当被调用者准备接受调用，而当前尚无调 用者时，则被调用者等待。即&lt;strong&gt;先到达会合处者等待后到达者&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;当多个进程调用同一个进程的同一个入口时，被调用者按先来先服务 （FCFS）的次序接受调用。入口处可以携带调用参数，还可以有返回参数，以实现信息的交换。被调用者可以选择会合的入口。&lt;/p&gt;
+&lt;p&gt;&lt;!-- raw HTML omitted --&gt;&lt;/p&gt;
+&lt;p&gt;&lt;!-- raw HTML omitted --&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;petri-网&#34;&gt;Petri 网&lt;/h4&gt;
+&lt;blockquote&gt;
+&lt;p&gt;利用Petri网进行程序设计的内容较为抽象和晦涩，在此仅大概介绍一下，有兴趣可以自行查找相关资料。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Petri 网是一种适于描述和分析异步并发系统的有力工具 。Petri 网是德国的C.A.Petri 于 1962 年在他的博士论文中首先提出的 , 用以构造系统模型及动态特性分析。在计算机科学的许多领域 , 如并行计算 、 分布式数据库设计等 , Petri网系统已起到了越来越重要的作用。&lt;/p&gt;
+&lt;p&gt;( 1) Petri 网是以图形表示的模型 , 直观性强&lt;/p&gt;
+&lt;p&gt;( 2) Petri 网中的托肯（Petri网中的一个成分）流动表现了系统的动态演变过程 。&lt;/p&gt;
+&lt;p&gt;( 3) Petri 网能准确地刻画系统的一些重要特性 , 如 : 并发 、冲突 、同步 、异 步 、死锁 、饥饿 、溢出等 。&lt;/p&gt;
+&lt;p&gt;( 4) 有一套严格的数学理论和分析方法 , 支持对系统模型的各种性质的分析和性能评价 。&lt;/p&gt;
+&lt;p&gt;Petri网是一种适合于描述异步并发现象的系统模型，&lt;strong&gt;它既有严格的数学定义，又有直观的图形表示，借由它可以很好的表示程序的运行过程以及状态（并发 、冲突 、同步 、异 步 、死锁 、饥饿 、溢出等 )&lt;/strong&gt;。通过对网图的分析、同步合成和共享合成，将串行进程并行化 , 中间过程运用从粗到细的逐步精炼思想 , 最终获得一个高效、 正确的并行程序。&lt;/p&gt;
+&lt;p&gt;demo:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2019/11/16/Hbn7Ns3p1mIoRQS.png&#34; alt=&#34;image.png&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;进程的互斥&#34;&gt;进程的互斥&lt;/h2&gt;
+&lt;h3 id=&#34;引入-1&#34;&gt;引入&lt;/h3&gt;
+&lt;p&gt;“进程互斥“与“进程同步“本质上都是在围绕同一个话题在讨论，即如果保证多进程对**共享资源（如，内存数据、打印机、摄像头）**访问的可控性、有效性和正确性；&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;所以，&lt;strong&gt;共享资源&lt;/strong&gt;才是研究的核心对象&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;我们在这需要讨论的是，在某个&lt;strong&gt;时间段&lt;/strong&gt;内，因为存在多个进程的“异步”运行、存在对共享资源的“乱序”持有及改动，所以，如果这个“时间段”不让进程的发生切换，即&lt;strong&gt;限制这个时间段内，只允许一个进程开展任务&lt;/strong&gt;，任务完成之前，该进程不释放当前持有的共享资源，其他的进程在这段时间内也不能抢占这个资源；&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;这种在“时间段”角度下，解决并发访问共享资源问题的机制，就叫做“进程互斥”&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;进程互斥的四大原则&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;1.&lt;strong&gt;空闲让进&lt;/strong&gt;。 当临界资源处于空闲状态，允许一个请求进入临界区的进程立即进入临界区，从 而有效的利用资源。&lt;/p&gt;
+&lt;p&gt;2.&lt;strong&gt;忙则等待&lt;/strong&gt;。 已经有进程进入临界区时，意味着相应的临界资源正在被访问，所以其他准备进 入临界区的进程必须等待，来保证多进程互斥。&lt;/p&gt;
+&lt;p&gt;3.&lt;strong&gt;有限等待&lt;/strong&gt;。 对要求访问临界资源的进程，应该保证该进程能在有效的时间内进入临界区，防 止死等状态。&lt;/p&gt;
+&lt;p&gt;4.&lt;strong&gt;让权等待&lt;/strong&gt;。 当进程不能进入临界区，应该立即释放处理机，防止进程忙等待。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;进程互斥的实现机制&#34;&gt;进程互斥的实现机制&lt;/h3&gt;
+&lt;p&gt;下面介绍历史上对进程互斥的实现方法：&lt;/p&gt;
+&lt;h4 id=&#34;软件实现&#34;&gt;软件实现&lt;/h4&gt;
+&lt;h5 id=&#34;单标志法&#34;&gt;&lt;strong&gt;单标志法&lt;/strong&gt;&lt;/h5&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic2.zhimg.com/v2-666ba65ca1ce4d8c806080b5761eb945_r.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;问题&lt;/strong&gt;：&lt;strong&gt;违背“空闲让进”的原则&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;单标志法在一些情况下确实能达到互斥访问的效果，但是这个算法也存在很大的缺陷，比如上面的turn初始为0，如果P0进程一直还未曾执行过临界区代码，那么临界资源就不会被P0占用，并处于空闲状态，但是这种情况下，P1进程也只能看着临界资源空闲也没法占有，因为P1在第5部被while循环“卡住”了。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h5 id=&#34;双标志先检查法&#34;&gt;&lt;strong&gt;双标志先检查法&lt;/strong&gt;&lt;/h5&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic4.zhimg.com/v2-04898290158b27354c469cb3239fa5af_r.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;问题：双标志先检查法的算法设计中忽视并发进程存在异步性。 违反“忙则等待”原则&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;具体来说，如果上图中的P0进程和P1进程在交替运行后，分别执行完了第1步和第5步，并且还未曾执行第2步和第6步，这种情况在不可预知的异步性下，是完全有可能发生的，但是如果真发生这种执行状况，那么P0和P1就都可以进入临界区了，原本想到达的互斥效果，就失败了；&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;这个算法错误的根本原因在于：&lt;strong&gt;进入区的“检查”（while轮训）和“上锁”（设置flag）&lt;strong&gt;两个处理不是一气呵成的&lt;/strong&gt;；“检查”后，“上锁”前的这个时间间隙&lt;/strong&gt;有可能会发生进程切换&lt;/strong&gt;，导致其他进程“有机可乘”；当然，如果“检查”和“上锁”是一个&lt;strong&gt;不可分割的原子操作&lt;/strong&gt;，那么这个算法的问题就可以解决 了**；**&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h5 id=&#34;双标志后检查法&#34;&gt;&lt;strong&gt;双标志后检查法&lt;/strong&gt;&lt;/h5&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic4.zhimg.com/80/v2-57ea9f1fcdf4344193396e2469f9626f_hd.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;问题：与双标志先检查法一样，忽略了并发进程的异步性。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;因此，双标志后检查法虽然解决了“忙则等待”的问题，但是又违背了“空闲让进”和“有限等待”原则，会因各进程都长期无法访问临界资源而产生“饥饿”现象；&lt;/strong&gt;&lt;/p&gt;
+&lt;h5 id=&#34;peterson算法&#34;&gt;&lt;strong&gt;Peterson算法&lt;/strong&gt;&lt;/h5&gt;
+&lt;p&gt;从Peterson算法的while条件的设计，可以看出，它综合了单标志算法和双标志检查算法的优点，做到了兼顾“公平性”和“互斥性”；&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic2.zhimg.com/80/v2-15e35419601d3ccc467c96254de2df21_hd.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;问题：依然没有遵循让权等待的原则。&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;事实上运用进程同步一些的机制（信号量，管程等）也能实现临界资源的互斥，在此不多说。&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;硬件实现&#34;&gt;硬件实现&lt;/h4&gt;
+&lt;h5 id=&#34;中断屏蔽方法&#34;&gt;&lt;strong&gt;中断屏蔽方法&lt;/strong&gt;&lt;/h5&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic4.zhimg.com/v2-3dfee50c51e0af4fe7c10048c5a82943_r.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;缺点：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;不适用于多核CPU&lt;/strong&gt;，因为关中断指令只对执行该指令的CPU有效，如果是多核CPU，那么这个指令不会影响其他核的中断处理机制；因此，这种方式只能保证执行关中断指令的这个核不进行进程切换，但是其他核的进程还是有可能丝毫不受阻拦的访问该临界资源，所以总体上看，还是没法保证进程对临界资源的互斥访问；&lt;/li&gt;
+&lt;li&gt;开关中断指令是特权指令，&lt;strong&gt;只能在内核态下执行，因此用户态进程无法使用&lt;/strong&gt;这个功能，否则必须切换至内核态下；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;h5 id=&#34;testandset指令&#34;&gt;&lt;strong&gt;TestAndSet指令&lt;/strong&gt;&lt;/h5&gt;
+&lt;blockquote&gt;
+&lt;p&gt;TSL指令是用&lt;strong&gt;硬件实现&lt;/strong&gt;的，执行的过程不允许被中断，只能&lt;strong&gt;一气呵成&lt;/strong&gt;
+所谓“硬件实现”，可以理解为TSL看似是一堆指令的集合，但是这一堆指令可以在硬件上只需要一个时钟周期就可完成，所以这一堆指令是不会被中断，不会被破坏的；&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;TSL指令逻辑的C语言描述，注意&lt;strong&gt;这里只是描述，真实的执行过程就是一个瞬间的硬件操作&lt;/strong&gt;而已；&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//lock 表示当前临界区是否被加锁
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TestAndSet&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;lock){
+	&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; old&lt;span style=&#34;color:#f92672&#34;&gt;=*&lt;/span&gt;lock;
+	&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;lock&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;true;
+	&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; old;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
+&lt;p&gt;这段描述的核心就是&lt;strong&gt;共享变量lock&lt;/strong&gt;，对于多个进程竞争临界资源时，这个共享的lock变量，是全局的、独一无二的；&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;下面来分析一下这段描述：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// 将TestAndSet 配合 while一起使用
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt;(TestAndSet(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;lock)) ;
+&lt;span style=&#34;color:#75715e&#34;&gt;//临界区代码
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;lock&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;false;
+&lt;span style=&#34;color:#75715e&#34;&gt;//剩余区代码
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
+&lt;p&gt;while会陷入死循环，直到lock出现过一次false，就跳出循环接着往下执行，并且跳出循环后，lock最终还是被设成true；&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;因为TestAndSet()函数是&lt;strong&gt;硬件实现的&lt;/strong&gt;，属于&lt;strong&gt;原子操作&lt;/strong&gt;，所以当&lt;strong&gt;进程共享的变量lock被其他进程修改成false之后&lt;/strong&gt;，TestAndSet能保证当前进程对lock**“瞬间”**上锁。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;这个“瞬间”过程可以描述为：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;获得lock的false空闲锁状态；&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;将lock设为true，即上锁；&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;基于false作为返回值来跳出while死循环；&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;h5 id=&#34;swap指令&#34;&gt;&lt;strong&gt;Swap指令&lt;/strong&gt;&lt;/h5&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Swap指令和上面的TSL指令一样，也是通过&lt;strong&gt;硬件实现&lt;/strong&gt;的，执行过程不允许被中断，只能一气呵成&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//swap指令的作用是交换两个变量的值。
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Swap&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;a , &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;b){
+	&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; temp&lt;span style=&#34;color:#f92672&#34;&gt;=*&lt;/span&gt;a;
+	&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;a&lt;span style=&#34;color:#f92672&#34;&gt;=*&lt;/span&gt;b;
+	&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;b&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;temp;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//lock表示当前临界区是否被加锁。
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; old&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;true;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt;(old&lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt;true){
+	Swap(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;lock,&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;old);
+}
+&lt;span style=&#34;color:#75715e&#34;&gt;//临界区代码
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;lock&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;false;
+&lt;span style=&#34;color:#75715e&#34;&gt;//剩余区代码
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;这个**“瞬间”**过程的慢动作回放如下：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;lock出现false，即空闲锁状态；&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;old被换成false，lock被换成true，即上锁；&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;while条件不满足，跳出死循环&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;关于TSL和Swap：&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic3.zhimg.com/80/v2-9861c75cc6a86f5291e947f6879c50de_hd.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>元素布局与定位</title>
+      <link>http://localhost:1313/post/css%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</link>
+      <pubDate>Thu, 01 Nov 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/css%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</guid>
+      
+        <description>&lt;h2 id=&#34;元素布局与定位&#34;&gt;元素布局与定位&lt;/h2&gt;
+&lt;h3 id=&#34;position-位置属性&#34;&gt;position 位置属性&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;其中有relative，absolute，static，fixed&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;1.relative：相对布局，相对于原来的文档流中的位置（默认位置），有left，right，top，bottom。&lt;/p&gt;
+&lt;p&gt;2.static：即默认文档流的位置&lt;/p&gt;
+&lt;p&gt;3.absolute：绝对位置，脱离出常规文档流，其原有的元素位置被回收，被其他元素顶替。其本身则相对于顶级元素body元素定位布局&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;关于定位的重要概念：&lt;strong&gt;定位上下文&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;4.fixed:固定定位，完全移除文档流，与absolute绝对定位类似。但它是相对于视口（浏览器窗口或者屏幕），因此&lt;strong&gt;它不会随着窗口的滚动而移动&lt;/strong&gt;。&lt;/p&gt;
+&lt;h4 id=&#34;定位上下文&#34;&gt;定位上下文&lt;/h4&gt;
+&lt;blockquote&gt;
+&lt;p&gt;相对定位的参考元素，只有其存在才可进行相关的定位&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;display-显示属性&#34;&gt;display 显示属性&lt;/h3&gt;
+&lt;p&gt;属性值有block、inline，和none。它可以更改元素的显示模式，如将块级元素以行内元素显示。&lt;br&gt;
+其中对于设定为none属性值的元素，它们都不会在页面中显示出来，原本所占有的空间也会被回收&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;ps:回顾&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;块级元素，比如段落、标题、列表等，在浏览器中上下堆叠显示。&lt;/li&gt;
+&lt;li&gt;行内元素，比如a、span、img，在浏览器中左右并排显示，只有前一行没有空间的时候才会显示到下一行。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;背景&#34;&gt;背景&lt;/h3&gt;
+&lt;p&gt;背景属性：
+1.颜色：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;background-color    
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;2.图片及与其相关的属性：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;background-image：url图片路径/图片文件名）添加背景图片
+background-repeat：选择图片的重复方式，有 no—repeat，repeat-x，-y等
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;3.背景的位置：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;background-position：用于控制背景的位置布局，控制的方法有关键字、百分比、与像素（ps：注意其基准点的不同）
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;4.背景的尺寸：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;background-size：用来控制背景图片的尺寸。
+控制方法：
+1.百分比：按比例缩放  
+2.像素：固定缩放  
+3.cover：拉大图片，使其完全填满背景区，保持宽高比
+4.contain：缩放图片，使其恰好适合背景区，保持宽高比
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;5.背景粘附：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;background-attachment：控制滚动元素内背景图片是否随滚动元素而滚动。
+如：background-attachment：fixed；
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;6.简写背景属性：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;即将‘-’后面的内容省略，直接将属性只写在括号内。
+如：&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;body{background:url(.../...) fixed no-repeat}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;ps&lt;/strong&gt;:CSS允许添加多背景图片，其中先添加的图片位于上层。&lt;/p&gt;
+&lt;h2 id=&#34;字体&#34;&gt;字体&lt;/h2&gt;
+&lt;p&gt;字体样式的属性：&lt;/p&gt;
+&lt;p&gt;1.font-family:字体族，字体类型，可继承。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;设置字体栈:以防字体无效，多罗列出一些字体以备用，如：&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;body{font-family:&amp;quot;trebuchet ms&amp;quot;(当字体名字有空格时，用”“括起来),tahoma,sans-sreif;}
+//按先后顺序优先
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;2.font-size:字体大小，有相对单位与绝对单位，相对单位可继承。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;绝对单位：像素与一些如同x-small等基准大小&lt;/li&gt;
+&lt;li&gt;相对单位：百分比、em、rem。&lt;/li&gt;
+&lt;li&gt;如果给某个元素设定了相对字体大小，则该元素的字体大小要相对于&lt;strong&gt;最近的设定过字体大小的祖先元素&lt;/strong&gt;来确定。&lt;/li&gt;
+&lt;li&gt;rem相对单位：相对与HTML根元素的大小。集两种单位的优点于一身。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;3.font-style:字体样式，设定是正体还是 斜体&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;属性值：italic（斜体）、oblique（斜体）、normal（正体）。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;4.font-wight:字体粗细&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;属性值：100&amp;hellip;&amp;hellip;等以及bold和normal等&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;5.font-variant:字体变化&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;属性值：normal，small-caps
+6.font(简写属性):&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;示例：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;p{font:bold italic small-caps .9em helvetica,arial,san-serif;} 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;文本属性&#34;&gt;文本属性&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;p{
+    text-indent:3em;  
+    letter-spacing：2em；  
+    word-spacing：2em；  
+    text-decoration：underline；  
+    text-align:center;  
+    text-height：1.5（即为字体的1.5倍）；  
+    span：vertical-align：60%；  
+
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;1.text-indent:文本缩进,正值向右缩进。属性可被子元素继承，且继承的是依据父元素计算的具体数值。&lt;/p&gt;
+&lt;p&gt;2.letter-spacing:在默认基础上改变字符间距,无论如何一定要使用相对单位，以便缩放。&lt;/p&gt;
+&lt;p&gt;3.word-spacing：单词间距，类似。&lt;/p&gt;
+&lt;p&gt;4.text-decoration:文本装饰，主要用于链接添加下划线。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;属性值：underline、overline、line-through、blink、none&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;5.text-align:文本对齐&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;属性值：left，right，center、justify（两端对齐）。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;6.line-height：行高，与外边距不同，不叠加，其余类似。属性值为任意的值，不用添加单位。可用于除去大标题的空白。&lt;br&gt;
+7.text-transformation：用于转换字母的大小写。&lt;br&gt;
+8.span：垂直对齐，属性值为任意数值或者一些关键字。用于书写上标或者下标。&lt;/p&gt;
+&lt;h2 id=&#34;web字体大揭秘&#34;&gt;web字体大揭秘&lt;/h2&gt;
+&lt;p&gt;可调用远程服务器中的字体给浏览器使用。&lt;/p&gt;
+&lt;p&gt;​&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://localhost:1313/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84sql%E6%95%B0%E6%8D%AE%E5%BA%93/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://localhost:1313/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84sql%E6%95%B0%E6%8D%AE%E5%BA%93/</guid>
+      
+        <description>&lt;h1 id=&#34;实现简单的sql数据库&#34;&gt;实现简单的SQL数据库&lt;/h1&gt;
+&lt;p&gt;一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanlent plan入坑贴，下面的学长提示了这个从零实现数据库博客入门比较合适，于是写下这个博客。&lt;/p&gt;
+&lt;h2 id=&#34;前端&#34;&gt;前端&lt;/h2&gt;
+&lt;p&gt;与编译器类似，一个数据库软件也分为前端和后端。前端部分主要是SQL语句的解析。&lt;/p&gt;
+&lt;h3 id=&#34;思路&#34;&gt;思路:&lt;/h3&gt;
+&lt;h4 id=&#34;获取tokens&#34;&gt;获取tokens。&lt;/h4&gt;
+&lt;p&gt;模拟cursor扫描语句，将sql语句解析为一个一个token，token中包括了单词的种类，位置。&lt;/p&gt;
+&lt;p&gt;获取单个token时，每次扫描结束，如果成功，更新光标，并返回一个新token地址以及更新后的光标位置，ok=true。&lt;/p&gt;
+&lt;p&gt;如果失败，则返回nil,传入的初始化的光标位置不变，ok=false。&lt;/p&gt;
+&lt;p&gt;最终处理所有语句，得到token地址数组&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// 主要流程
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;lex&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;source&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) ([]&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;token&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;error&lt;/span&gt;) {
+	&lt;span style=&#34;color:#a6e22e&#34;&gt;tokens&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:=&lt;/span&gt; []&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;token&lt;/span&gt;{}
+	&lt;span style=&#34;color:#a6e22e&#34;&gt;cur&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;cursor&lt;/span&gt;{}
+
+	&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;cur&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;pointer&lt;/span&gt; &amp;lt; uint(len(&lt;span style=&#34;color:#a6e22e&#34;&gt;source&lt;/span&gt;)) {
+		&lt;span style=&#34;color:#a6e22e&#34;&gt;lexers&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:=&lt;/span&gt; []&lt;span style=&#34;color:#a6e22e&#34;&gt;lexer&lt;/span&gt;{&lt;span style=&#34;color:#a6e22e&#34;&gt;lexKeyword&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;lexSymbol&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;lexString&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;lexNumeric&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;lexIdentifier&lt;/span&gt;}
+		&lt;span style=&#34;color:#a6e22e&#34;&gt;isMatched&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:=&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;false&lt;/span&gt;
+		&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;_&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;l&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:=&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;range&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;lexers&lt;/span&gt; {
+			&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;token&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;newCursor&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;ok&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;l&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;source&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;cur&lt;/span&gt;); &lt;span style=&#34;color:#a6e22e&#34;&gt;ok&lt;/span&gt; {
+				&lt;span style=&#34;color:#a6e22e&#34;&gt;cur&lt;/span&gt; = &lt;span style=&#34;color:#a6e22e&#34;&gt;newCursor&lt;/span&gt;
+
+				&lt;span style=&#34;color:#75715e&#34;&gt;// Omit nil tokens for valid, but empty syntax like newlines
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;				&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;token&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;!=&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;nil&lt;/span&gt; {
+					&lt;span style=&#34;color:#a6e22e&#34;&gt;tokens&lt;/span&gt; = append(&lt;span style=&#34;color:#a6e22e&#34;&gt;tokens&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;token&lt;/span&gt;)
+				}
+				&lt;span style=&#34;color:#a6e22e&#34;&gt;isMatched&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;true&lt;/span&gt;
+				&lt;span style=&#34;color:#66d9ef&#34;&gt;break&lt;/span&gt;
+			}
+		}
+
+		&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;isMatched&lt;/span&gt; {
+			&lt;span style=&#34;color:#75715e&#34;&gt;// match the next one
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;			&lt;span style=&#34;color:#66d9ef&#34;&gt;continue&lt;/span&gt;
+		}
+
+		&lt;span style=&#34;color:#a6e22e&#34;&gt;hint&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;
+		&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; len(&lt;span style=&#34;color:#a6e22e&#34;&gt;tokens&lt;/span&gt;) &amp;gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt; {
+			&lt;span style=&#34;color:#a6e22e&#34;&gt;hint&lt;/span&gt; = &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34; after &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;tokens&lt;/span&gt;[len(&lt;span style=&#34;color:#a6e22e&#34;&gt;tokens&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;].&lt;span style=&#34;color:#a6e22e&#34;&gt;value&lt;/span&gt;
+		}
+		&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;nil&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;fmt&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Errorf&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to lex token%s, at %d:%d&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;hint&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;cur&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;loc&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;row&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;cur&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;loc&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;col&lt;/span&gt;)
+	}
+	&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;tokens&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;nil&lt;/span&gt;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;获得ast&#34;&gt;获得Ast&lt;/h4&gt;
+&lt;p&gt;第二步，从tokens中，解析出一个抽象语法树。&lt;/p&gt;
+</description>
+      
+    </item>
+    
+  </channel>
+</rss>
