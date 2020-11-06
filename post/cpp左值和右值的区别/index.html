@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-cn" itemscope itemtype="http://schema.org/WebPage">
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -69,7 +69,7 @@
 <meta itemprop="description" content="C&#43;&#43;中左值和右值的区别 最近在复习C&#43;&#43;的语法，有一些忘记了的东西，想在这里记录一下 什么是左值和右值 抽象解释 In C&#43;&#43; an lvalue is something that points to a specific memory location. On the other">
 <meta itemprop="datePublished" content="2019-11-01T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="1294">
+<meta itemprop="wordCount" content="1355">
 
 
 
@@ -87,6 +87,9 @@
 <![endif]-->
 
 
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
 
 
 </head>
@@ -142,8 +145,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -301,8 +304,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -360,7 +363,7 @@
     
     
 <div class="post-toc" id="post-toc">
-  <h2 class="post-toc-title">文章目录</h2>
+  <h2 class="post-toc-title">Table of Contents</h2>
   <div class="post-toc-content">
     <nav id="TableOfContents">
   <ul>
@@ -401,36 +404,76 @@
 <li><strong>右值</strong>实际上是没有变量名的临时变量，变量的内存地址没有实际的变量名去保存，所以说它是临时的，生命周期短的</li>
 <li><strong>左值</strong>可以转换成<strong>右值</strong>，反之，则不行</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">int</span> a<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;
-std<span style="color:#f92672">::</span>string str<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Hello&#34;</span>;
-<span style="color:#75715e">//此处的a和str是左值，它们有实际的变量名，并保存其内存的地址，而 10 和 &#34;Hello&#34;则是右值，他们只是临时变量。
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#f92672">&amp;</span>b<span style="color:#f92672">=&amp;</span>a;
-<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>a_p<span style="color:#f92672">=&amp;</span>a;
-<span style="color:#75715e">//左值往往可以进行取地址操作，而右值则不行
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>a_ptr<span style="color:#f92672">=&amp;</span><span style="color:#ae81ff">10</span>;<span style="color:#75715e">//error
-</span><span style="color:#75715e"></span>
-<span style="color:#75715e">//左值转右值
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> x <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;
-<span style="color:#66d9ef">int</span> y <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;
-<span style="color:#66d9ef">int</span> z <span style="color:#f92672">=</span> x<span style="color:#f92672">+</span>y;
-<span style="color:#75715e">//这里 x,y本来是左值的，但放在右边相加之后的结果是一个临时的变量，成为了一个右值
-</span></code></pre></div><h3 id="左值右值作为函数的返回值">左值右值作为函数的返回值</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">//左值作为函数返回值
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> tem<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>;
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">int</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str</span><span class="o">=</span><span class="s">&#34;Hello&#34;</span><span class="p">;</span>
+<span class="c1">//此处的a和str是左值，它们有实际的变量名，并保存其内存的地址，而 10 和 &#34;Hello&#34;则是右值，他们只是临时变量。
+</span><span class="c1"></span><span class="kt">int</span> <span class="o">&amp;</span><span class="n">b</span><span class="o">=&amp;</span><span class="n">a</span><span class="p">;</span>
+<span class="kt">int</span> <span class="o">*</span><span class="n">a_p</span><span class="o">=&amp;</span><span class="n">a</span><span class="p">;</span>
+<span class="c1">//左值往往可以进行取地址操作，而右值则不行
+</span><span class="c1"></span><span class="kt">int</span> <span class="o">*</span><span class="n">a_ptr</span><span class="o">=&amp;</span><span class="mi">10</span><span class="p">;</span><span class="c1">//error
+</span><span class="c1"></span>
+<span class="c1">//左值转右值
+</span><span class="c1"></span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">z</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span><span class="n">y</span><span class="p">;</span>
+<span class="c1">//这里 x,y本来是左值的，但放在右边相加之后的结果是一个临时的变量，成为了一个右值
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id="左值右值作为函数的返回值">左值右值作为函数的返回值</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//左值作为函数返回值
+</span><span class="c1"></span><span class="kt">int</span> <span class="n">tem</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
 
-<span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;</span> getlZero(){
-    <span style="color:#66d9ef">return</span> tem;
-}
-getlZero() <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span> <span style="color:#75715e">//works
-</span><span style="color:#75715e"></span>
-<span style="color:#75715e">//右值最为返回值
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> getrZero(){
-    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
-}
+<span class="kt">int</span><span class="o">&amp;</span> <span class="n">getlZero</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="n">tem</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="n">getlZero</span><span class="p">()</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1">//works
+</span><span class="c1"></span>
+<span class="c1">//右值最为返回值
+</span><span class="c1"></span><span class="kt">int</span> <span class="n">getrZero</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
 
-getrZero() <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span><span style="color:#75715e">//fails
-</span><span style="color:#75715e"></span>
-</code></pre></div><h2 id="左值引用和右值引用">左值引用和右值引用</h2>
+<span class="n">getrZero</span><span class="p">()</span> <span class="o">=</span> <span class="mi">10</span><span class="c1">//fails
+</span><span class="c1"></span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="左值引用和右值引用">左值引用和右值引用</h2>
 <h3 id="定义">定义</h3>
 <p><strong>左值引用</strong>就是对一个左值进行引用的类型。<strong>右值引用</strong>就是对一个右值进行引用的类型</p>
 <blockquote>
@@ -441,41 +484,86 @@ getrZero() <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</
 <ul>
 <li>通常左值引用通常也不能绑定到右值，但右值可以借用const+左值引用变量来引用</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">//左右值引用的语法
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> a<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;
-<span style="color:#66d9ef">int</span> <span style="color:#f92672">&amp;</span>b<span style="color:#f92672">=</span>a;	<span style="color:#75715e">//b是a的引用，左值引用
-</span><span style="color:#75715e"></span>b<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>;	<span style="color:#75715e">//此时a=b=20
-</span><span style="color:#75715e"></span>
-<span style="color:#66d9ef">int</span> <span style="color:#f92672">&amp;&amp;</span>c<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;		<span style="color:#75715e">//c是右值‘10’的引用
-</span><span style="color:#75715e"></span>c<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span> 	<span style="color:#75715e">//此时c变成了‘20’的引用
-</span><span style="color:#75715e"></span>    
-b<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span><span style="color:#960050;background-color:#1e0010">；</span><span style="color:#75715e">//error。 10是一个右值，所以报错
-</span><span style="color:#75715e"></span>c<span style="color:#f92672">=</span>a;	<span style="color:#75715e">//error。a是一个左值
-</span><span style="color:#75715e"></span>
-<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;</span> a<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;	<span style="color:#75715e">//works
-</span><span style="color:#75715e">//	在后台，编译器会创建一个隐藏变量（即左值），以在其中存储原始文字常量，然后将该隐藏变量绑定到引用中
-</span></code></pre></div><h3 id="引用作为函数的参数">引用作为函数的参数</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getSelfL</span>(<span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;</span> a){
-    <span style="color:#66d9ef">return</span> a;
-}
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//左右值引用的语法
+</span><span class="c1"></span><span class="kt">int</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>
+<span class="kt">int</span> <span class="o">&amp;</span><span class="n">b</span><span class="o">=</span><span class="n">a</span><span class="p">;</span>	<span class="c1">//b是a的引用，左值引用
+</span><span class="c1"></span><span class="n">b</span><span class="o">=</span><span class="mi">20</span><span class="p">;</span>	<span class="c1">//此时a=b=20
+</span><span class="c1"></span>
+<span class="kt">int</span> <span class="o">&amp;&amp;</span><span class="n">c</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>		<span class="c1">//c是右值‘10’的引用
+</span><span class="c1"></span><span class="n">c</span><span class="o">=</span><span class="mi">20</span> 	<span class="c1">//此时c变成了‘20’的引用
+</span><span class="c1"></span>    
+<span class="n">b</span><span class="o">=</span><span class="mi">10</span><span class="err">；</span><span class="c1">//error。 10是一个右值，所以报错
+</span><span class="c1"></span><span class="n">c</span><span class="o">=</span><span class="n">a</span><span class="p">;</span>	<span class="c1">//error。a是一个左值
+</span><span class="c1"></span>
+<span class="k">const</span> <span class="kt">int</span><span class="o">&amp;</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>	<span class="c1">//works
+</span><span class="c1">//	在后台，编译器会创建一个隐藏变量（即左值），以在其中存储原始文字常量，然后将该隐藏变量绑定到引用中
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id="引用作为函数的参数">引用作为函数的参数</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">int</span> <span class="nf">getSelfL</span><span class="p">(</span><span class="kt">int</span><span class="o">&amp;</span> <span class="n">a</span><span class="p">){</span>
+    <span class="k">return</span> <span class="n">a</span><span class="p">;</span>
+<span class="p">}</span>
 
-<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getSelfR</span>(<span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;&amp;</span> b){
-  <span style="color:#66d9ef">return</span> b;  
-}
+<span class="kt">int</span> <span class="nf">getSelfR</span><span class="p">(</span><span class="kt">int</span><span class="o">&amp;&amp;</span> <span class="n">b</span><span class="p">){</span>
+  <span class="k">return</span> <span class="n">b</span><span class="p">;</span>  
+<span class="p">}</span>
 
-<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getSelfLR</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;</span> a){
-    <span style="color:#66d9ef">return</span> a;
-}
+<span class="kt">int</span> <span class="nf">getSelfLR</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span><span class="o">&amp;</span> <span class="n">a</span><span class="p">){</span>
+    <span class="k">return</span> <span class="n">a</span><span class="p">;</span>
+<span class="p">}</span>
 
-<span style="color:#66d9ef">int</span> a<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;
-getSelfL(a);	<span style="color:#75715e">//works
-</span><span style="color:#75715e"></span>getSelfL(<span style="color:#ae81ff">10</span>);	<span style="color:#75715e">//fails
-</span><span style="color:#75715e"></span>
-getSelfR(<span style="color:#ae81ff">10</span>);	<span style="color:#75715e">//works
-</span><span style="color:#75715e"></span>getSelfR(a);	<span style="color:#75715e">//fails
-</span><span style="color:#75715e"></span>
-getSelfRL(<span style="color:#ae81ff">10</span>);	<span style="color:#75715e">//works
-</span></code></pre></div><h2 id="将亡值">将亡值</h2>
+<span class="kt">int</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>
+<span class="n">getSelfL</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>	<span class="c1">//works
+</span><span class="c1"></span><span class="n">getSelfL</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>	<span class="c1">//fails
+</span><span class="c1"></span>
+<span class="n">getSelfR</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>	<span class="c1">//works
+</span><span class="c1"></span><span class="n">getSelfR</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>	<span class="c1">//fails
+</span><span class="c1"></span>
+<span class="n">getSelfRL</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>	<span class="c1">//works
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id="将亡值">将亡值</h2>
 <blockquote>
 <p>在C++11之前的右值和C++11中的纯右值是等价的。C++11中的将亡值是随着右值引用的引入而新引入的。</p>
 <p>换言之，“将亡值”概念的产生，是由右值引用的产生而引起的，将亡值与右值引用息息相关。所谓的将亡值表达式，就是下列表达式：
@@ -492,11 +580,11 @@ getSelfRL(<span style="color:#ae81ff">10</span>);	<span style="color:#75715e">//
     
 <div class="post-copyright">
   <p class="copyright-item">
-    <span class="item-title">文章作者</span>
+    <span class="item-title">Author</span>
     <span class="item-content">noneback</span>
   </p>
   <p class="copyright-item">
-    <span class="item-title">上次更新</span>
+    <span class="item-title">LastMod</span>
     <span class="item-content">
       2019-11-01
       
@@ -504,7 +592,7 @@ getSelfRL(<span style="color:#ae81ff">10</span>);	<span style="color:#75715e">//
   </p>
   
   <p class="copyright-item">
-    <span class="item-title">许可协议</span>
+    <span class="item-title">License</span>
     <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
   </p>
 </div>
@@ -533,12 +621,12 @@ getSelfRL(<span style="color:#ae81ff">10</span>);	<span style="color:#75715e">//
 
             </i>
             <span class="prev-text nav-default">基于朴素贝叶斯的中文垃圾电子邮件分类</span>
-            <span class="prev-text nav-mobile">上一篇</span>
+            <span class="prev-text nav-mobile">Prev</span>
           </a>
         
           <a class="next" href="/post/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/">
             <span class="next-text nav-default">Java 多线程编程</span>
-            <span class="prev-text nav-mobile">下一篇</span>
+            <span class="prev-text nav-mobile">Next</span>
             
             <i class="iconfont">
               <svg class="icon" viewBox="0 0 1024 1024" version="1.1"

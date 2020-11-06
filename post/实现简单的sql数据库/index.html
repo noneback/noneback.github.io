@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-cn" itemscope itemtype="http://schema.org/WebPage">
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -67,7 +67,7 @@
 <meta itemprop="name" content="">
 <meta itemprop="description" content="实现简单的SQL数据库 一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingc">
 
-<meta itemprop="wordCount" content="493">
+<meta itemprop="wordCount" content="527">
 
 
 
@@ -85,6 +85,9 @@
 <![endif]-->
 
 
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
 
 
 </head>
@@ -140,8 +143,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -299,8 +302,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -355,7 +358,7 @@
     
     
 <div class="post-toc" id="post-toc">
-  <h2 class="post-toc-title">文章目录</h2>
+  <h2 class="post-toc-title">Table of Contents</h2>
   <div class="post-toc-content">
     <nav id="TableOfContents">
   <ul>
@@ -381,41 +384,81 @@
 <p>获取单个token时，每次扫描结束，如果成功，更新光标，并返回一个新token地址以及更新后的光标位置，ok=true。</p>
 <p>如果失败，则返回nil,传入的初始化的光标位置不变，ok=false。</p>
 <p>最终处理所有语句，得到token地址数组</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#75715e">// 主要流程
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">lex</span>(<span style="color:#a6e22e">source</span> <span style="color:#66d9ef">string</span>) ([]<span style="color:#f92672">*</span><span style="color:#a6e22e">token</span>, <span style="color:#66d9ef">error</span>) {
-	<span style="color:#a6e22e">tokens</span> <span style="color:#f92672">:=</span> []<span style="color:#f92672">*</span><span style="color:#a6e22e">token</span>{}
-	<span style="color:#a6e22e">cur</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">cursor</span>{}
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 主要流程
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">lex</span><span class="p">(</span><span class="nx">source</span> <span class="kt">string</span><span class="p">)</span> <span class="p">([]</span><span class="o">*</span><span class="nx">token</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">tokens</span> <span class="o">:=</span> <span class="p">[]</span><span class="o">*</span><span class="nx">token</span><span class="p">{}</span>
+	<span class="nx">cur</span> <span class="o">:=</span> <span class="nx">cursor</span><span class="p">{}</span>
 
-	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">cur</span>.<span style="color:#a6e22e">pointer</span> &lt; uint(len(<span style="color:#a6e22e">source</span>)) {
-		<span style="color:#a6e22e">lexers</span> <span style="color:#f92672">:=</span> []<span style="color:#a6e22e">lexer</span>{<span style="color:#a6e22e">lexKeyword</span>, <span style="color:#a6e22e">lexSymbol</span>, <span style="color:#a6e22e">lexString</span>, <span style="color:#a6e22e">lexNumeric</span>, <span style="color:#a6e22e">lexIdentifier</span>}
-		<span style="color:#a6e22e">isMatched</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">false</span>
-		<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">l</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">lexers</span> {
-			<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">token</span>, <span style="color:#a6e22e">newCursor</span>, <span style="color:#a6e22e">ok</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">l</span>(<span style="color:#a6e22e">source</span>, <span style="color:#a6e22e">cur</span>); <span style="color:#a6e22e">ok</span> {
-				<span style="color:#a6e22e">cur</span> = <span style="color:#a6e22e">newCursor</span>
+	<span class="k">for</span> <span class="nx">cur</span><span class="p">.</span><span class="nx">pointer</span> <span class="p">&lt;</span> <span class="nb">uint</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">source</span><span class="p">))</span> <span class="p">{</span>
+		<span class="nx">lexers</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">lexer</span><span class="p">{</span><span class="nx">lexKeyword</span><span class="p">,</span> <span class="nx">lexSymbol</span><span class="p">,</span> <span class="nx">lexString</span><span class="p">,</span> <span class="nx">lexNumeric</span><span class="p">,</span> <span class="nx">lexIdentifier</span><span class="p">}</span>
+		<span class="nx">isMatched</span> <span class="o">:=</span> <span class="kc">false</span>
+		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">l</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">lexers</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">token</span><span class="p">,</span> <span class="nx">newCursor</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nf">l</span><span class="p">(</span><span class="nx">source</span><span class="p">,</span> <span class="nx">cur</span><span class="p">);</span> <span class="nx">ok</span> <span class="p">{</span>
+				<span class="nx">cur</span> <span class="p">=</span> <span class="nx">newCursor</span>
 
-				<span style="color:#75715e">// Omit nil tokens for valid, but empty syntax like newlines
-</span><span style="color:#75715e"></span>				<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">token</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-					<span style="color:#a6e22e">tokens</span> = append(<span style="color:#a6e22e">tokens</span>, <span style="color:#a6e22e">token</span>)
-				}
-				<span style="color:#a6e22e">isMatched</span> = <span style="color:#66d9ef">true</span>
-				<span style="color:#66d9ef">break</span>
-			}
-		}
+				<span class="c1">// Omit nil tokens for valid, but empty syntax like newlines
+</span><span class="c1"></span>				<span class="k">if</span> <span class="nx">token</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nx">tokens</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">tokens</span><span class="p">,</span> <span class="nx">token</span><span class="p">)</span>
+				<span class="p">}</span>
+				<span class="nx">isMatched</span> <span class="p">=</span> <span class="kc">true</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
 
-		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">isMatched</span> {
-			<span style="color:#75715e">// match the next one
-</span><span style="color:#75715e"></span>			<span style="color:#66d9ef">continue</span>
-		}
+		<span class="k">if</span> <span class="nx">isMatched</span> <span class="p">{</span>
+			<span class="c1">// match the next one
+</span><span class="c1"></span>			<span class="k">continue</span>
+		<span class="p">}</span>
 
-		<span style="color:#a6e22e">hint</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;&#34;</span>
-		<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">tokens</span>) &gt; <span style="color:#ae81ff">0</span> {
-			<span style="color:#a6e22e">hint</span> = <span style="color:#e6db74">&#34; after &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">tokens</span>[len(<span style="color:#a6e22e">tokens</span>)<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>].<span style="color:#a6e22e">value</span>
-		}
-		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>, <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Errorf</span>(<span style="color:#e6db74">&#34;Unable to lex token%s, at %d:%d&#34;</span>, <span style="color:#a6e22e">hint</span>, <span style="color:#a6e22e">cur</span>.<span style="color:#a6e22e">loc</span>.<span style="color:#a6e22e">row</span>, <span style="color:#a6e22e">cur</span>.<span style="color:#a6e22e">loc</span>.<span style="color:#a6e22e">col</span>)
-	}
-	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">tokens</span>, <span style="color:#66d9ef">nil</span>
-}
-</code></pre></div><h4 id="获得ast">获得Ast</h4>
+		<span class="nx">hint</span> <span class="o">:=</span> <span class="s">&#34;&#34;</span>
+		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">tokens</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nx">hint</span> <span class="p">=</span> <span class="s">&#34; after &#34;</span> <span class="o">+</span> <span class="nx">tokens</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">tokens</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">value</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;Unable to lex token%s, at %d:%d&#34;</span><span class="p">,</span> <span class="nx">hint</span><span class="p">,</span> <span class="nx">cur</span><span class="p">.</span><span class="nx">loc</span><span class="p">.</span><span class="nx">row</span><span class="p">,</span> <span class="nx">cur</span><span class="p">.</span><span class="nx">loc</span><span class="p">.</span><span class="nx">col</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">tokens</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="获得ast">获得Ast</h4>
 <p>第二步，从tokens中，解析出一个抽象语法树。</p>
 
     </div>
@@ -424,11 +467,11 @@
     
 <div class="post-copyright">
   <p class="copyright-item">
-    <span class="item-title">文章作者</span>
+    <span class="item-title">Author</span>
     <span class="item-content">noneback</span>
   </p>
   <p class="copyright-item">
-    <span class="item-title">上次更新</span>
+    <span class="item-title">LastMod</span>
     <span class="item-content">
       0001-01-01
       
@@ -436,7 +479,7 @@
   </p>
   
   <p class="copyright-item">
-    <span class="item-title">许可协议</span>
+    <span class="item-title">License</span>
     <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
   </p>
 </div>
@@ -462,7 +505,7 @@
 
             </i>
             <span class="prev-text nav-default">元素布局与定位</span>
-            <span class="prev-text nav-mobile">上一篇</span>
+            <span class="prev-text nav-mobile">Prev</span>
           </a>
         
       </nav>

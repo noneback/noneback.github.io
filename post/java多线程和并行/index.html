@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-cn" itemscope itemtype="http://schema.org/WebPage">
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -69,7 +69,7 @@
 <meta itemprop="description" content="昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。 Java 多线程编程 Java 给多线程编程提供了内置">
 <meta itemprop="datePublished" content="2019-11-01T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="4118">
+<meta itemprop="wordCount" content="4139">
 
 
 
@@ -87,6 +87,9 @@
 <![endif]-->
 
 
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
 
 
 </head>
@@ -142,8 +145,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -301,8 +304,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -360,7 +363,7 @@
     
     
 <div class="post-toc" id="post-toc">
-  <h2 class="post-toc-title">文章目录</h2>
+  <h2 class="post-toc-title">Table of Contents</h2>
   <div class="post-toc-content">
     <nav id="TableOfContents">
   <ul>
@@ -415,11 +418,21 @@
 <blockquote>
 <p>一个线程的创建必须基于某个任务，即：</p>
 </blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">	Thread thread<span style="color:#f92672">=</span><span style="color:#66d9ef">new</span> Thread<span style="color:#960050;background-color:#1e0010">（</span><span style="color:#66d9ef">new</span> TaskClass<span style="color:#960050;background-color:#1e0010">）</span>
- <span style="color:#75715e">/**
-</span><span style="color:#75715e"> *调用thread.start()时立即调用TaskClass中的run（）
-</span><span style="color:#75715e"> */</span>
-</code></pre></div><h4 id="thread中的其他方法">Thread中的其他方法</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">	<span class="n">Thread</span> <span class="n">thread</span><span class="o">=</span><span class="k">new</span> <span class="n">Thread</span><span class="err">（</span><span class="k">new</span> <span class="n">TaskClass</span><span class="err">）</span>
+ <span class="cm">/**
+</span><span class="cm"> *调用thread.start()时立即调用TaskClass中的run（）
+</span><span class="cm"> */</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="thread中的其他方法">Thread中的其他方法</h4>
 <ul>
 <li>yield()：为其他线程临时让出cpu时间</li>
 <li>sleep()：为线程设定休眠时间，以便其他线程的执行</li>
@@ -440,19 +453,37 @@ Java 提供Exexutor接口来执行线程池中任务，用ExecutorService接口�
 <blockquote>
 <p>demo:</p>
 </blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">import</span> java.util.concurrent.*<span style="color:#f92672">;</span>
-<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ExecutorDemo</span> <span style="color:#f92672">{</span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-<span style="color:#75715e">// Create a fixed thread pool with maximum three threads
-</span><span style="color:#75715e"></span>ExecutorService executor <span style="color:#f92672">=</span> Executors<span style="color:#f92672">.</span><span style="color:#a6e22e">newFixedThreadPool</span><span style="color:#f92672">(</span>3<span style="color:#f92672">);</span>
-<span style="color:#75715e">// Submit runnable tasks to the executor
-</span><span style="color:#75715e"></span>executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PrintChar<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;a&#39;</span><span style="color:#f92672">,</span> 100<span style="color:#f92672">));</span>
-executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PrintChar<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;b&#39;</span><span style="color:#f92672">,</span> 100<span style="color:#f92672">));</span>
-executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PrintNum<span style="color:#f92672">(</span>100<span style="color:#f92672">));</span>
-<span style="color:#75715e">// Shut down the executor
-</span><span style="color:#75715e"></span>executor<span style="color:#f92672">.</span><span style="color:#a6e22e">shutdown</span><span style="color:#f92672">();</span>
-<span style="color:#f92672">}</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><p>线程池提供了一种<strong>更好的管理线程的方法</strong>。 线程池主要用来解决线程生命周期开销问题和资源不足问题。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kn">import</span> <span class="nn">java.util.concurrent.*</span><span class="o">;</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExecutorDemo</span> <span class="o">{</span><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+<span class="c1">// Create a fixed thread pool with maximum three threads
+</span><span class="c1"></span><span class="n">ExecutorService</span> <span class="n">executor</span> <span class="o">=</span> <span class="n">Executors</span><span class="o">.</span><span class="na">newFixedThreadPool</span><span class="o">(</span><span class="n">3</span><span class="o">);</span>
+<span class="c1">// Submit runnable tasks to the executor
+</span><span class="c1"></span><span class="n">executor</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintChar</span><span class="o">(</span><span class="sc">&#39;a&#39;</span><span class="o">,</span> <span class="n">100</span><span class="o">));</span>
+<span class="n">executor</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintChar</span><span class="o">(</span><span class="sc">&#39;b&#39;</span><span class="o">,</span> <span class="n">100</span><span class="o">));</span>
+<span class="n">executor</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintNum</span><span class="o">(</span><span class="n">100</span><span class="o">));</span>
+<span class="c1">// Shut down the executor
+</span><span class="c1"></span><span class="n">executor</span><span class="o">.</span><span class="na">shutdown</span><span class="o">();</span>
+<span class="o">}</span>
+<span class="o">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>线程池提供了一种<strong>更好的管理线程的方法</strong>。 线程池主要用来解决线程生命周期开销问题和资源不足问题。</p>
 <blockquote>
 <ul>
 <li><strong>线程池减少了在创建和销毁线程上所花的时间以及系统资源的开销</strong>。通过对多个任务重用线程，线程创建的开销就被分摊到了多个任务上了，而且由于在请求到达时线程已经存在，所以消除了线程创建所带来的延迟。这样，就可以立即为请求服务，使应用程序响应更快。另外，通过适当地调整线程池中的线程数目可以防止出现资源不足的情况。</li>
@@ -472,12 +503,23 @@ executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute<
 <blockquote>
 <p>此关键字可用与方法，也可用于表达式。</p>
 </blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span> expr <span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-  <span style="color:#75715e">//do something
-</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">synchronized</span> <span class="o">(</span> <span class="n">expr</span> <span class="o">)</span> <span class="o">{</span>
+  <span class="c1">//do something
+</span><span class="c1"></span><span class="o">}</span>
 
-<span style="color:#66d9ef">public</span> sychronized <span style="color:#a6e22e">func</span> <span style="color:#f92672">()</span> <span style="color:#f92672">{}</span>
-</code></pre></div><ul>
+<span class="kd">public</span> <span class="n">sychronized</span> <span class="nf">func</span> <span class="o">()</span> <span class="o">{}</span>
+</code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>利用锁同步
 可显式的使用锁和状态来同步线程。</li>
 </ul>
@@ -615,11 +657,11 @@ MergeSort.merge(firstHalf, secondHalf, list);
     
 <div class="post-copyright">
   <p class="copyright-item">
-    <span class="item-title">文章作者</span>
+    <span class="item-title">Author</span>
     <span class="item-content">noneback</span>
   </p>
   <p class="copyright-item">
-    <span class="item-title">上次更新</span>
+    <span class="item-title">LastMod</span>
     <span class="item-content">
       2019-11-01
       
@@ -627,7 +669,7 @@ MergeSort.merge(firstHalf, secondHalf, list);
   </p>
   
   <p class="copyright-item">
-    <span class="item-title">许可协议</span>
+    <span class="item-title">License</span>
     <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
   </p>
 </div>
@@ -656,12 +698,12 @@ MergeSort.merge(firstHalf, secondHalf, list);
 
             </i>
             <span class="prev-text nav-default">C&#43;&#43;中左值和右值的区别</span>
-            <span class="prev-text nav-mobile">上一篇</span>
+            <span class="prev-text nav-mobile">Prev</span>
           </a>
         
           <a class="next" href="/post/java%E4%B8%AD%E7%9A%84lambda/">
             <span class="next-text nav-default">Java中的lambda表达式</span>
-            <span class="prev-text nav-mobile">下一篇</span>
+            <span class="prev-text nav-mobile">Next</span>
             
             <i class="iconfont">
               <svg class="icon" viewBox="0 0 1024 1024" version="1.1"

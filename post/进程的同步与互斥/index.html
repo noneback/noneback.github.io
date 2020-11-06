@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-cn" itemscope itemtype="http://schema.org/WebPage">
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -69,7 +69,7 @@
 <meta itemprop="description" content="进程的同步与互斥 [TOC] 进程的同步 引入 在多进程的系统中，进程是并发执行的，进程具有“异步”的天性，异步性指的是各并发执行的进程以各自独立的、不可预">
 <meta itemprop="datePublished" content="2019-11-01T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="4998">
+<meta itemprop="wordCount" content="5023">
 
 
 
@@ -87,6 +87,9 @@
 <![endif]-->
 
 
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
 
 
 </head>
@@ -142,8 +145,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -301,8 +304,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -360,7 +363,7 @@
     
     
 <div class="post-toc" id="post-toc">
-  <h2 class="post-toc-title">文章目录</h2>
+  <h2 class="post-toc-title">Table of Contents</h2>
   <div class="post-toc-content">
     <nav id="TableOfContents">
   <ul>
@@ -529,22 +532,45 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 所谓“硬件实现”，可以理解为TSL看似是一堆指令的集合，但是这一堆指令可以在硬件上只需要一个时钟周期就可完成，所以这一堆指令是不会被中断，不会被破坏的；</p>
 </blockquote>
 <p>TSL指令逻辑的C语言描述，注意<strong>这里只是描述，真实的执行过程就是一个瞬间的硬件操作</strong>而已；</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">//lock 表示当前临界区是否被加锁
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">bool</span> <span style="color:#a6e22e">TestAndSet</span>(<span style="color:#66d9ef">bool</span> <span style="color:#f92672">*</span>lock){
-	<span style="color:#66d9ef">bool</span> old<span style="color:#f92672">=*</span>lock;
-	<span style="color:#f92672">*</span>lock<span style="color:#f92672">=</span>true;
-	<span style="color:#66d9ef">return</span> old;
-}
-</code></pre></div><blockquote>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//lock 表示当前临界区是否被加锁
+</span><span class="c1"></span><span class="kt">bool</span> <span class="nf">TestAndSet</span><span class="p">(</span><span class="kt">bool</span> <span class="o">*</span><span class="n">lock</span><span class="p">){</span>
+	<span class="kt">bool</span> <span class="n">old</span><span class="o">=*</span><span class="n">lock</span><span class="p">;</span>
+	<span class="o">*</span><span class="n">lock</span><span class="o">=</span><span class="nb">true</span><span class="p">;</span>
+	<span class="k">return</span> <span class="n">old</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><blockquote>
 <p>这段描述的核心就是<strong>共享变量lock</strong>，对于多个进程竞争临界资源时，这个共享的lock变量，是全局的、独一无二的；</p>
 </blockquote>
 <p>下面来分析一下这段描述：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">// 将TestAndSet 配合 while一起使用
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">while</span>(TestAndSet(<span style="color:#f92672">&amp;</span>lock)) ;
-<span style="color:#75715e">//临界区代码
-</span><span style="color:#75715e"></span>lock<span style="color:#f92672">=</span>false;
-<span style="color:#75715e">//剩余区代码
-</span></code></pre></div><blockquote>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// 将TestAndSet 配合 while一起使用
+</span><span class="c1"></span><span class="k">while</span><span class="p">(</span><span class="n">TestAndSet</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lock</span><span class="p">))</span> <span class="p">;</span>
+<span class="c1">//临界区代码
+</span><span class="c1"></span><span class="n">lock</span><span class="o">=</span><span class="nb">false</span><span class="p">;</span>
+<span class="c1">//剩余区代码
+</span></code></pre></td></tr></table>
+</div>
+</div><blockquote>
 <p>while会陷入死循环，直到lock出现过一次false，就跳出循环接着往下执行，并且跳出循环后，lock最终还是被设成true；</p>
 </blockquote>
 <p>因为TestAndSet()函数是<strong>硬件实现的</strong>，属于<strong>原子操作</strong>，所以当<strong>进程共享的变量lock被其他进程修改成false之后</strong>，TestAndSet能保证当前进程对lock**“瞬间”**上锁。</p>
@@ -560,22 +586,48 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 <blockquote>
 <p>Swap指令和上面的TSL指令一样，也是通过<strong>硬件实现</strong>的，执行过程不允许被中断，只能一气呵成</p>
 </blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">//swap指令的作用是交换两个变量的值。
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Swap</span>(<span style="color:#66d9ef">bool</span> <span style="color:#f92672">*</span>a , <span style="color:#66d9ef">bool</span> <span style="color:#f92672">*</span>b){
-	<span style="color:#66d9ef">bool</span> temp<span style="color:#f92672">=*</span>a;
-	<span style="color:#f92672">*</span>a<span style="color:#f92672">=*</span>b;
-	<span style="color:#f92672">*</span>b<span style="color:#f92672">=</span>temp;
-}
-</code></pre></div><p>与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">//lock表示当前临界区是否被加锁。
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">bool</span> old<span style="color:#f92672">=</span>true;
-<span style="color:#66d9ef">while</span>(old<span style="color:#f92672">==</span>true){
-	Swap(<span style="color:#f92672">&amp;</span>lock,<span style="color:#f92672">&amp;</span>old);
-}
-<span style="color:#75715e">//临界区代码
-</span><span style="color:#75715e"></span>lock<span style="color:#f92672">=</span>false;
-<span style="color:#75715e">//剩余区代码
-</span></code></pre></div><p>while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//swap指令的作用是交换两个变量的值。
+</span><span class="c1"></span><span class="kt">void</span> <span class="nf">Swap</span><span class="p">(</span><span class="kt">bool</span> <span class="o">*</span><span class="n">a</span> <span class="p">,</span> <span class="kt">bool</span> <span class="o">*</span><span class="n">b</span><span class="p">){</span>
+	<span class="kt">bool</span> <span class="n">temp</span><span class="o">=*</span><span class="n">a</span><span class="p">;</span>
+	<span class="o">*</span><span class="n">a</span><span class="o">=*</span><span class="n">b</span><span class="p">;</span>
+	<span class="o">*</span><span class="n">b</span><span class="o">=</span><span class="n">temp</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//lock表示当前临界区是否被加锁。
+</span><span class="c1"></span><span class="kt">bool</span> <span class="n">old</span><span class="o">=</span><span class="nb">true</span><span class="p">;</span>
+<span class="k">while</span><span class="p">(</span><span class="n">old</span><span class="o">==</span><span class="nb">true</span><span class="p">){</span>
+	<span class="n">Swap</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lock</span><span class="p">,</span><span class="o">&amp;</span><span class="n">old</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="c1">//临界区代码
+</span><span class="c1"></span><span class="n">lock</span><span class="o">=</span><span class="nb">false</span><span class="p">;</span>
+<span class="c1">//剩余区代码
+</span></code></pre></td></tr></table>
+</div>
+</div><p>while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；</p>
 <blockquote>
 <p>这个**“瞬间”**过程的慢动作回放如下：</p>
 <ol>
@@ -593,11 +645,11 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
     
 <div class="post-copyright">
   <p class="copyright-item">
-    <span class="item-title">文章作者</span>
+    <span class="item-title">Author</span>
     <span class="item-content">noneback</span>
   </p>
   <p class="copyright-item">
-    <span class="item-title">上次更新</span>
+    <span class="item-title">LastMod</span>
     <span class="item-content">
       2019-11-01
       
@@ -605,7 +657,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
   </p>
   
   <p class="copyright-item">
-    <span class="item-title">许可协议</span>
+    <span class="item-title">License</span>
     <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
   </p>
 </div>
@@ -636,12 +688,12 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 
             </i>
             <span class="prev-text nav-default">对Linux中Fork的理解</span>
-            <span class="prev-text nav-mobile">上一篇</span>
+            <span class="prev-text nav-mobile">Prev</span>
           </a>
         
           <a class="next" href="/post/css%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">
             <span class="next-text nav-default">元素布局与定位</span>
-            <span class="prev-text nav-mobile">下一篇</span>
+            <span class="prev-text nav-mobile">Next</span>
             
             <i class="iconfont">
               <svg class="icon" viewBox="0 0 1024 1024" version="1.1"

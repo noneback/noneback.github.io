@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-cn" itemscope itemtype="http://schema.org/WebPage">
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -69,7 +69,7 @@
 <meta itemprop="description" content="lambda表达式 Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中">
 <meta itemprop="datePublished" content="2019-11-01T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="976">
+<meta itemprop="wordCount" content="1015">
 
 
 
@@ -87,6 +87,9 @@
 <![endif]-->
 
 
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
 
 
 </head>
@@ -142,8 +145,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -301,8 +304,8 @@
         
           
           
-            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
-              external-link
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
               
               <i class="iconfont">
                 <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -360,7 +363,7 @@
     
     
 <div class="post-toc" id="post-toc">
-  <h2 class="post-toc-title">文章目录</h2>
+  <h2 class="post-toc-title">Table of Contents</h2>
   <div class="post-toc-content">
     <nav id="TableOfContents">
   <ul>
@@ -383,8 +386,15 @@
 <p>Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中）。使用 Lambda 表达式可以使代码变的更加简洁紧凑。</p>
 <h2 id="语法">语法</h2>
 <p>lambda 表达式的语法格式如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">(</span>parameters<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> expression <span style="color:#a6e22e">或</span> <span style="color:#f92672">(</span>parameters<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;{</span> statements<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
-</code></pre></div><p>以下是lambda表达式的重要特征:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="o">(</span><span class="n">parameters</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">expression</span> <span class="nf">或</span> <span class="o">(</span><span class="n">parameters</span><span class="o">)</span> <span class="o">-&gt;{</span> <span class="n">statements</span><span class="o">;</span> <span class="o">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>以下是lambda表达式的重要特征:</p>
 <ul>
 <li>**可选类型声明：**不需要声明参数类型，编译器可以统一识别参数值。</li>
 <li>**可选的参数圆括号：**一个参数无需定义圆括号，但多个参数需要定义圆括号。</li>
@@ -405,59 +415,115 @@
 </ul>
 <h3 id="lambda实例">lambda实例</h3>
 <p>Lambda 表达式的简单例子:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 1. 不需要参数,返回值为 5  
-</span><span style="color:#75715e"></span><span style="color:#f92672">()</span> <span style="color:#f92672">-&gt;</span> 5  
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="c1">// 1. 不需要参数,返回值为 5  
+</span><span class="c1"></span><span class="o">()</span> <span class="o">-&gt;</span> <span class="n">5</span>  
   
-<span style="color:#75715e">// 2. 接收一个参数(数字类型),返回其2倍的值  
-</span><span style="color:#75715e"></span>x <span style="color:#f92672">-&gt;</span> 2 <span style="color:#f92672">*</span> x  
+<span class="c1">// 2. 接收一个参数(数字类型),返回其2倍的值  
+</span><span class="c1"></span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">2</span> <span class="o">*</span> <span class="n">x</span>  
   
-<span style="color:#75715e">// 3. 接受2个参数(数字),并返回他们的差值  
-</span><span style="color:#75715e"></span><span style="color:#f92672">(</span>x<span style="color:#f92672">,</span> y<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> x <span style="color:#960050;background-color:#1e0010">–</span> y  
+<span class="c1">// 3. 接受2个参数(数字),并返回他们的差值  
+</span><span class="c1"></span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="err">–</span> <span class="n">y</span>  
   
-<span style="color:#75715e">// 4. 接收2个int型整数,返回他们的和  
-</span><span style="color:#75715e"></span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> x<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> y<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> x <span style="color:#f92672">+</span> y  
+<span class="c1">// 4. 接收2个int型整数,返回他们的和  
+</span><span class="c1"></span><span class="o">(</span><span class="kt">int</span> <span class="n">x</span><span class="o">,</span> <span class="kt">int</span> <span class="n">y</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>  
   
-<span style="color:#75715e">// 5. 接受一个 string 对象,并在控制台打印,不返回任何值(看起来像是返回void)  
-</span><span style="color:#75715e"></span><span style="color:#f92672">(</span>String s<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">print</span><span style="color:#f92672">(</span>s<span style="color:#f92672">)</span>
-</code></pre></div><h2 id="lambda表达式的实现原理">lambda表达式的实现原理</h2>
+<span class="c1">// 5. 接受一个 string 对象,并在控制台打印,不返回任何值(看起来像是返回void)  
+</span><span class="c1"></span><span class="o">(</span><span class="n">String</span> <span class="n">s</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">s</span><span class="o">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="lambda表达式的实现原理">lambda表达式的实现原理</h2>
 <p>在 Java 中，Lambda 表达式是对象，他们必须依附于一类特别的对象类型——<a href="https://www.runoob.com/java/java8-functional-interfaces.html">函数式接口(functional interface)</a>。函数式接口是只包含一个抽象方法声明的接口。当你试图传入lambda表达式的时候，实际上它是将你传入的表达式隐式的转换并赋值给一个函数式接口，再通过其调用函数。</p>
 <p>如：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"> <span style="color:#a6e22e">@FunctionalInterface</span>
-<span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">Inner</span> <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">print</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> num<span style="color:#f92672">);</span>
-<span style="color:#f92672">}</span>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"> <span class="nd">@FunctionalInterface</span>
+<span class="kd">interface</span> <span class="nc">Inner</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">print</span><span class="o">(</span><span class="kt">int</span> <span class="n">num</span><span class="o">);</span>
+<span class="o">}</span>
 
-<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">wapper</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> num<span style="color:#f92672">,</span> Inner func<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        func<span style="color:#f92672">.</span><span style="color:#a6e22e">print</span><span style="color:#f92672">(</span>num<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">wapper<span style="color:#f92672">(</span>10<span style="color:#f92672">,</span> e <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> e<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
-                System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">print</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;HelloWorld\t&#34;</span><span style="color:#f92672">);</span>
-            <span style="color:#f92672">}</span>
-        <span style="color:#f92672">});</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">wapper</span><span class="o">(</span><span class="kt">int</span> <span class="n">num</span><span class="o">,</span> <span class="n">Inner</span> <span class="n">func</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">func</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">num</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">wapper</span><span class="o">(</span><span class="n">10</span><span class="o">,</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">e</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">&#34;HelloWorld\t&#34;</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">});</span>
 
-和下面的写法等价
+<span class="n">和下面的写法等价</span>
     
- Inner innerFunc <span style="color:#f92672">=</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> e<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> e<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
-                System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">print</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;HelloWorld\t&#34;</span><span style="color:#f92672">);</span>
-            <span style="color:#f92672">}</span>
-        <span style="color:#f92672">};</span>
-        wapper<span style="color:#f92672">(</span>10<span style="color:#f92672">,</span> innerFunc<span style="color:#f92672">);</span>
+ <span class="n">Inner</span> <span class="n">innerFunc</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span> <span class="n">e</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">e</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">&#34;HelloWorld\t&#34;</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+        <span class="n">wapper</span><span class="o">(</span><span class="n">10</span><span class="o">,</span> <span class="n">innerFunc</span><span class="o">);</span>
 
 
-</code></pre></div>
+</code></pre></td></tr></table>
+</div>
+</div>
     </div>
 
     
     
 <div class="post-copyright">
   <p class="copyright-item">
-    <span class="item-title">文章作者</span>
+    <span class="item-title">Author</span>
     <span class="item-content">noneback</span>
   </p>
   <p class="copyright-item">
-    <span class="item-title">上次更新</span>
+    <span class="item-title">LastMod</span>
     <span class="item-content">
       2019-11-01
       
@@ -465,7 +531,7 @@
   </p>
   
   <p class="copyright-item">
-    <span class="item-title">许可协议</span>
+    <span class="item-title">License</span>
     <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
   </p>
 </div>
@@ -494,12 +560,12 @@
 
             </i>
             <span class="prev-text nav-default">Java 多线程编程</span>
-            <span class="prev-text nav-mobile">上一篇</span>
+            <span class="prev-text nav-mobile">Prev</span>
           </a>
         
           <a class="next" href="/post/%E5%86%9B%E8%AE%AD/">
             <span class="next-text nav-default">军训</span>
-            <span class="prev-text nav-mobile">下一篇</span>
+            <span class="prev-text nav-mobile">Next</span>
             
             <i class="iconfont">
               <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
