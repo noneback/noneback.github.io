@@ -34,15 +34,15 @@
     
     <item>
       <title>实现简单的SQL数据库--前端</title>
-      <link>https://noneback.github.io/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84sql%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/</link>
+      <link>https://noneback.github.io/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/</link>
       <pubDate>Tue, 10 Nov 2020 00:00:00 +0000</pubDate>
       
-      <guid>https://noneback.github.io/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84sql%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/</guid>
+      <guid>https://noneback.github.io/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/</guid>
       
         <description>&lt;p&gt;一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanlent plan入坑贴，下面的学长提示了这个从零实现数据库博客入门比较合适，于是写下这个博客。&lt;/p&gt;
 &lt;h2 id=&#34;前端&#34;&gt;前端&lt;/h2&gt;
 &lt;p&gt;与编译器类似，一个数据库软件也分为前端和后端。前端部分主要是SQL语句的解析以及一个REPL。&lt;/p&gt;
-&lt;h4 id=&#34;获取tokens&#34;&gt;获取tokens&lt;/h4&gt;
+&lt;h3 id=&#34;获取tokens&#34;&gt;获取tokens&lt;/h3&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -137,7 +137,7 @@
 &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h4 id=&#34;获得ast&#34;&gt;获得Ast&lt;/h4&gt;
+&lt;/div&gt;&lt;h3 id=&#34;获得ast&#34;&gt;获得Ast&lt;/h3&gt;
 &lt;p&gt;第二步，从tokens中，解析出一个抽象语法树。&lt;/p&gt;
 &lt;p&gt;Ast有statement[]组成，目前的解析器只解析select，insert，create三种语句。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -167,16 +167,16 @@
 &lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;解析的思路是按照不同的sql语句，分析出相应的语法成分，最后形成最后的语法树&lt;/p&gt;
-&lt;h5 id=&#34;select语句&#34;&gt;SELECT语句&lt;/h5&gt;
+&lt;h4 id=&#34;select语句&#34;&gt;SELECT语句&lt;/h4&gt;
 &lt;p&gt;语法成分：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;SELECT  ${ expression[] }$  FROM $ tableName $&lt;/p&gt;
 &lt;p&gt;example：select id,age,name from students&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;​	1.解析出keyword SELECT&lt;/p&gt;
-&lt;p&gt;​	2.解析expression[]&lt;/p&gt;
-&lt;p&gt;​	3.解析出keyword FROM&lt;/p&gt;
-&lt;p&gt;​	4.解析identifier  $tableName$&lt;/p&gt;
+&lt;p&gt;1.解析出keyword SELECT&lt;/p&gt;
+&lt;p&gt;2.解析expression[]&lt;/p&gt;
+&lt;p&gt;3.解析出keyword FROM&lt;/p&gt;
+&lt;p&gt;4.解析identifier  $tableName$&lt;/p&gt;
 &lt;p&gt;其中重点在于对expressions的理解与解析&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -221,18 +221,18 @@
 &lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;expression 只包括了stringKind，numericKind，identifierKind的字符集合。parseexpression读入一个token，如果cursor超出了tokens的长度或者Kind不是这三种，则返回错误的结果，遇到分隔符delimiter则正常返回。&lt;/p&gt;
-&lt;h5 id=&#34;create语句&#34;&gt;CREATE语句&lt;/h5&gt;
+&lt;h4 id=&#34;create语句&#34;&gt;CREATE语句&lt;/h4&gt;
 &lt;p&gt;语法成分&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;CREATE TABLE  $tableName$ ( $columnDef$ )&lt;/p&gt;
 &lt;p&gt;example:CREATE TABLE students(id string, age int, name string)&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;​	1.解析出keyword CREATE&lt;/p&gt;
-&lt;p&gt;​	2.解析出keyword TABLE&lt;/p&gt;
-&lt;p&gt;​	3.解析identifier  $tableName$&lt;/p&gt;
-&lt;p&gt;​	4.解析 symbol &lt;em&gt;(&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;​	5.解析$columndef$&lt;/p&gt;
-&lt;p&gt;​	6.解析symbol &lt;em&gt;)&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;1.解析出keyword CREATE&lt;/p&gt;
+&lt;p&gt;2.解析出keyword TABLE&lt;/p&gt;
+&lt;p&gt;3.解析identifier  $tableName$&lt;/p&gt;
+&lt;p&gt;4.解析 symbol &lt;em&gt;(&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;5.解析$columndef$&lt;/p&gt;
+&lt;p&gt;6.解析symbol &lt;em&gt;)&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;解析CREATE的语句关键是对$columnDef$的解析&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -370,19 +370,19 @@
 &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h5 id=&#34;insert语句&#34;&gt;INSERT语句&lt;/h5&gt;
+&lt;/div&gt;&lt;h4 id=&#34;insert语句&#34;&gt;INSERT语句&lt;/h4&gt;
 &lt;p&gt;语法成分&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;INSERT INTO VALUES ( $expression[]$ )&lt;/p&gt;
 &lt;p&gt;example: INSERT INTO VALUES(1,20,Kate)&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;​	1.解析keyword INSERT&lt;/p&gt;
-&lt;p&gt;​	2.解析keyword INTO&lt;/p&gt;
-&lt;p&gt;​	3.解析keyword VALUES&lt;/p&gt;
-&lt;p&gt;​	4.解析symbol &lt;em&gt;(&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;​	5.解析 $expression[]$&lt;/p&gt;
-&lt;p&gt;​	6.解析symbol &lt;em&gt;)&lt;/em&gt;&lt;/p&gt;
-&lt;h4 id=&#34;主函数parse&#34;&gt;主函数parse&lt;/h4&gt;
+&lt;p&gt;1.解析keyword INSERT&lt;/p&gt;
+&lt;p&gt;2.解析keyword INTO&lt;/p&gt;
+&lt;p&gt;3.解析keyword VALUES&lt;/p&gt;
+&lt;p&gt;4.解析symbol &lt;em&gt;(&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;5.解析 $expression[]$&lt;/p&gt;
+&lt;p&gt;6.解析symbol &lt;em&gt;)&lt;/em&gt;&lt;/p&gt;
+&lt;h3 id=&#34;主函数parse&#34;&gt;主函数parse&lt;/h3&gt;
 &lt;p&gt;主函数分号作为分隔符解析三种sql语句&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -503,7 +503,8 @@
 &lt;/div&gt;&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
 &lt;p&gt;[Writing a SQL database from scratch in Go](Writing a SQL database from scratch in Go)&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;https://www.postgresql.org/docs/current/sql-syntax-lexical.html&#34;&gt;PostgreSQL documentation&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://github.com/eatonphil/gosql&#34;&gt;gosql&lt;/a&gt;&lt;/p&gt;</description>
+&lt;p&gt;&lt;a href=&#34;https://github.com/eatonphil/gosql&#34;&gt;gosql&lt;/a&gt;&lt;/p&gt;
+</description>
       
     </item>
     
