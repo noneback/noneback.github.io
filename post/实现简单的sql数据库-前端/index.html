@@ -3,10 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>NoneBack</title>
+  <title>实现简单的SQL数据库--前端 - NoneBack</title>
   
-<link rel="alternate" hreflang="zh-cn" href="https://noneback.github.io/zh-cn/" />
-
 
 <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
@@ -24,8 +22,53 @@
 
 <meta name="mobile-web-app-capable" content="yes">
 
-<meta name="author" content="noneback" />
-  <meta name="description" content="And then there were none" />
+<meta name="author" content="NoneBack" />
+  <meta name="description" content="一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanlent plan入坑贴，下面的学长提示了这个从零实现数据库博客入门比较合适，于是写下这个博客。
+前端 与编译器类似，一个数据库软件也分为前端和后端。前端部分主要是SQL语句的解析以及一个REPL。
+获取tokens 1 2 3 4 5  type token struct { value string kind tokenKind loc location }   模拟cursor扫描语句，将sql语句解析为一个一个token，token中包括了单词的种类，位置，值。
+获取单个token时，每次扫描结束，如果成功，更新光标，并返回一个新token地址以及更新后的光标位置，ok=true。
+如果失败，则返回nil,传入的初始化的光标位置不变，ok=false。
+最终处理所有语句，得到token地址数组
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34  // 主要流程 func lex(source string) ([]*token, error) { tokens := []*token{} cur := cursor{} for cur.pointer &amp;lt; uint(len(source)) { lexers := []lexer{lexKeyword, lexSymbol, lexString, lexNumeric, lexIdentifier} isMatched := false for _, l := range lexers { if token, newCursor, ok := l(source, cur); ok { cur = newCursor // Omit nil tokens for valid, but empty syntax like newlines 	if token != nil { tokens = append(tokens, token) } isMatched = true break } } if isMatched { // match the next one 	continue } hint := &amp;#34;&amp;#34; if len(tokens) &amp;gt; 0 { hint = &amp;#34; after &amp;#34; &#43; tokens[len(tokens)-1].value } return nil, fmt.Errorf(&amp;#34;Unable to lex token%s, at %d:%d&amp;#34;, hint, cur.loc.row, cur.loc.col) } return tokens, nil }   获得Ast 第二步，从tokens中，解析出一个抽象语法树。
+Ast有statement[]组成，目前的解析器只解析select，insert，create三种语句。
+1 2 3 4 5 6 7 8 9 10  type Ast struct { Statement []*Statement } type Statement struct { SelectStatement *SelectStatement CreateStatement *CreateStatement InsertStatement *InsertStatement Kind AstKind }   解析的思路是按照不同的sql语句，分析出相应的语法成分，最后形成最后的语法树
+SELECT语句 语法成分：
+ SELECT ${ expression[] }$ FROM $ tableName $
+example：select id,age,name from students
+ ​	1.解析出keyword SELECT
+​	2.解析expression[]
+​	3.解析出keyword FROM
+​	4.解析identifier $tableName$
+其中重点在于对expressions的理解与解析
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18  // parse the token at cursor and return an expression containing literal val and its kind func parseExpression(tokens []*token, initialCursor uint, _ token) (*expression, uint, bool) { cursor := initialCursor kinds := []tokenKind{identifierKind, numericKind, stringKind} for _, kind := range kinds { t, newCursor, ok := parseToken(tokens, cursor, kind) if ok { return &amp;amp;expression{ literal: t, kind: literalKind, }, newCursor, true } } return nil, initialCursor, false }   expression 只包括了stringKind，numericKind，identifierKind的字符集合。parseexpression读入一个token，如果cursor超出了tokens的长度或者Kind不是这三种，则返回错误的结果，遇到分隔符delimiter则正常返回。
+CREATE语句 语法成分
+ CREATE TABLE $tableName$ ( $columnDef$ )
+example:CREATE TABLE students(id string, age int, name string)
+ ​	1.解析出keyword CREATE
+​	2.解析出keyword TABLE
+​	3.解析identifier $tableName$
+​	4.解析 symbol (
+​	5.解析$columndef$
+​	6.解析symbol )
+解析CREATE的语句关键是对$columnDef$的解析
+1 2 3 4 5  //column type columnDefinition struct { name token datatype token }   解析columnDefinitions
+1.循环解析token，直到cur超出tokens范围或者解析出现错误
+  首先解析identifier $name$,keyword $datatype$ 解析分隔符 symbol ,   1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53  // parse col def // func parseColumnDefinitions(tokens []*token, initialCursor uint, delimiter token) (*[]*columnDefinition, uint, bool) { cursor := initialCursor cds := []*columnDefinition{} for { if cursor &amp;gt;= uint(len(tokens)) { return nil, initialCursor, false } // Look for a delimiter 	current := tokens[cursor] if delimiter.equals(current) { break } // Look for a comma 	// col devided by comma 	if len(cds) &amp;gt; 0 { if !expectToken(tokens, cursor, tokenFromSymbol(commaSymbol)) { helpMessage(tokens, cursor, &amp;#34;Expected comma&amp;#34;) return nil, initialCursor, false } cursor&#43;&#43; } // Look for a column name 	id, newCursor, ok := parseToken(tokens, cursor, identifierKind) if !ok { helpMessage(tokens, cursor, &amp;#34;Expected column name&amp;#34;) return nil, initialCursor, false } cursor = newCursor // Look for a column type 	//like col_name type 	ty, newCursor, ok := parseToken(tokens, cursor, keywordKind) if !ok { helpMessage(tokens, cursor, &amp;#34;Expected column type&amp;#34;) return nil, initialCursor, false } cursor = newCursor cds = append(cds, &amp;amp;columnDefinition{ name: *id, datatype: *ty, }) } return &amp;amp;cds, cursor, true }   INSERT语句 语法成分
+ INSERT INTO VALUES ( $expression[]$ )
+example: INSERT INTO VALUES(1,20,Kate)
+ ​	1.解析keyword INSERT
+​	2.解析keyword INTO
+​	3.解析keyword VALUES
+​	4.解析symbol (
+​	5.解析 $expression[]$
+​	6.解析symbol )
+主函数parse 主函数分号作为分隔符解析三种sql语句
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31  func Parse(source string) (*Ast, error) { tokens, err := lex(source) if err != nil { return nil, err } ast := Ast{} cursor := uint(0) for cursor &amp;lt; uint(len(source)) { //parse each statement divide by &amp;#39;;&amp;#39; and add to ast 	stmt, newCursor, ok := parseStatement(tokens, cursor, tokenFromSymbol(semicolonSymbol)) if !ok { helpMessage(tokens, cursor, &amp;#34;Expected statement&amp;#34;) return nil, errors.New(&amp;#34;Failed to parse,exit&amp;#34;) } cursor = newCursor ast.Statement = append(ast.Statement, stmt) atLeastOneSemicolon := false for expectToken(tokens, cursor, tokenFromSymbol(semicolonSymbol)) { cursor&#43;&#43; atLeastOneSemicolon = true } if !atLeastOneSemicolon { helpMessage(tokens, cursor, &amp;#34;Expected semi-colon delimiter between statements&amp;#34;) return nil, errors.New(&amp;#34;Missing semi-colon between statements&amp;#34;) } } return &amp;amp;ast, nil }   简易后端 本文重点在于解析sql语句以及前端的编写思路，这次仅仅使用一个map in memory 作为后端。
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20  // backend in memory type MemoryBackend struct { tables map[string]*table } // table type table struct { columns []string columnTypes []ColumnType rows [][]MemoryCell } //Result type Results struct { Columns []struct { Type ColumnType Name string } Rows [][]Cell }   参考 [Writing a SQL database from scratch in Go](Writing a SQL database from scratch in Go)
+PostgreSQL documentation
+gosql
+" />
+
   <meta name="keywords" content="Hugo, theme, jane, BUPT, Blog, noneback" />
 
 
@@ -36,8 +79,8 @@
 <meta name="generator" content="Hugo 0.68.3" />
 
 
-<link rel="canonical" href="https://noneback.github.io/" />
-<link href="/index.xml" rel="alternate" type="application/rss+xml" title="NoneBack" />
+<link rel="canonical" href="https://noneback.github.io/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84sql%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/" />
+
 
 
 
@@ -60,15 +103,1415 @@
 
 
 
-<meta property="og:title" content="NoneBack" />
-<meta property="og:description" content="And then there were none" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://noneback.github.io/" />
-<meta property="og:updated_time" content="2017-08-20T00:00:00+00:00" />
-<meta itemprop="name" content="NoneBack">
-<meta itemprop="description" content="And then there were none"><meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="NoneBack"/>
-<meta name="twitter:description" content="And then there were none"/>
+<meta property="og:title" content="实现简单的SQL数据库--前端" />
+<meta property="og:description" content="一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanlent plan入坑贴，下面的学长提示了这个从零实现数据库博客入门比较合适，于是写下这个博客。
+前端
+与编译器类似，一个数据库软件也分为前端和后端。前端部分主要是SQL语句的解析以及一个REPL。
+获取tokens
+
+
+1
+2
+3
+4
+5
+
+
+type token struct {
+	value string
+	kind  tokenKind
+	loc   location
+}
+
+
+模拟cursor扫描语句，将sql语句解析为一个一个token，token中包括了单词的种类，位置，值。
+获取单个token时，每次扫描结束，如果成功，更新光标，并返回一个新token地址以及更新后的光标位置，ok=true。
+如果失败，则返回nil,传入的初始化的光标位置不变，ok=false。
+最终处理所有语句，得到token地址数组
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+
+
+// 主要流程
+func lex(source string) ([]*token, error) {
+	tokens := []*token{}
+	cur := cursor{}
+
+	for cur.pointer &lt; uint(len(source)) {
+		lexers := []lexer{lexKeyword, lexSymbol, lexString, lexNumeric, lexIdentifier}
+		isMatched := false
+		for _, l := range lexers {
+			if token, newCursor, ok := l(source, cur); ok {
+				cur = newCursor
+
+				// Omit nil tokens for valid, but empty syntax like newlines
+				if token != nil {
+					tokens = append(tokens, token)
+				}
+				isMatched = true
+				break
+			}
+		}
+
+		if isMatched {
+			// match the next one
+			continue
+		}
+
+		hint := &#34;&#34;
+		if len(tokens) &gt; 0 {
+			hint = &#34; after &#34; &#43; tokens[len(tokens)-1].value
+		}
+		return nil, fmt.Errorf(&#34;Unable to lex token%s, at %d:%d&#34;, hint, cur.loc.row, cur.loc.col)
+	}
+	return tokens, nil
+}
+
+
+获得Ast
+第二步，从tokens中，解析出一个抽象语法树。
+Ast有statement[]组成，目前的解析器只解析select，insert，create三种语句。
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+
+
+type Ast struct {
+	Statement []*Statement
+}
+
+type Statement struct {
+	SelectStatement *SelectStatement
+	CreateStatement *CreateStatement
+	InsertStatement *InsertStatement
+	Kind            AstKind
+}
+
+
+解析的思路是按照不同的sql语句，分析出相应的语法成分，最后形成最后的语法树
+SELECT语句
+语法成分：
+
+SELECT  ${ expression[] }$  FROM $ tableName $
+example：select id,age,name from students
+
+​	1.解析出keyword SELECT
+​	2.解析expression[]
+​	3.解析出keyword FROM
+​	4.解析identifier  $tableName$
+其中重点在于对expressions的理解与解析
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+
+
+// parse the token at cursor and return an expression containing literal val and its kind
+func parseExpression(tokens []*token, initialCursor uint, _ token) (*expression, uint, bool) {
+	cursor := initialCursor
+
+	kinds := []tokenKind{identifierKind, numericKind, stringKind}
+    
+	for _, kind := range kinds {
+		t, newCursor, ok := parseToken(tokens, cursor, kind)
+		if ok {
+			return &amp;expression{
+				literal: t,
+				kind:    literalKind,
+			}, newCursor, true
+		}
+	}
+
+	return nil, initialCursor, false
+}
+
+
+expression 只包括了stringKind，numericKind，identifierKind的字符集合。parseexpression读入一个token，如果cursor超出了tokens的长度或者Kind不是这三种，则返回错误的结果，遇到分隔符delimiter则正常返回。
+CREATE语句
+语法成分
+
+CREATE TABLE  $tableName$ ( $columnDef$ )
+example:CREATE TABLE students(id string, age int, name string)
+
+​	1.解析出keyword CREATE
+​	2.解析出keyword TABLE
+​	3.解析identifier  $tableName$
+​	4.解析 symbol (
+​	5.解析$columndef$
+​	6.解析symbol )
+解析CREATE的语句关键是对$columnDef$的解析
+
+
+1
+2
+3
+4
+5
+
+
+//column
+type columnDefinition struct {
+	name     token
+	datatype token
+}
+
+
+解析columnDefinitions
+1.循环解析token，直到cur超出tokens范围或者解析出现错误
+
+
+首先解析identifier $name$,keyword $datatype$
+解析分隔符 symbol ,
+
+
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+
+
+// parse col def
+//
+func parseColumnDefinitions(tokens []*token, initialCursor uint, delimiter token) (*[]*columnDefinition, uint, bool) {
+	cursor := initialCursor
+
+	cds := []*columnDefinition{}
+	for {
+		if cursor &gt;= uint(len(tokens)) {
+			return nil, initialCursor, false
+		}
+
+		// Look for a delimiter
+		current := tokens[cursor]
+		if delimiter.equals(current) {
+			break
+		}
+
+		// Look for a comma
+		// col devided by comma
+		if len(cds) &gt; 0 {
+			if !expectToken(tokens, cursor, tokenFromSymbol(commaSymbol)) {
+				helpMessage(tokens, cursor, &#34;Expected comma&#34;)
+				return nil, initialCursor, false
+			}
+
+			cursor&#43;&#43;
+		}
+
+		// Look for a column name
+		id, newCursor, ok := parseToken(tokens, cursor, identifierKind)
+		if !ok {
+			helpMessage(tokens, cursor, &#34;Expected column name&#34;)
+			return nil, initialCursor, false
+		}
+		cursor = newCursor
+
+		// Look for a column type
+		//like col_name type
+		ty, newCursor, ok := parseToken(tokens, cursor, keywordKind)
+		if !ok {
+			helpMessage(tokens, cursor, &#34;Expected column type&#34;)
+			return nil, initialCursor, false
+		}
+		cursor = newCursor
+
+		cds = append(cds, &amp;columnDefinition{
+			name:     *id,
+			datatype: *ty,
+		})
+	}
+
+	return &amp;cds, cursor, true
+}
+
+
+INSERT语句
+语法成分
+
+INSERT INTO VALUES ( $expression[]$ )
+example: INSERT INTO VALUES(1,20,Kate)
+
+​	1.解析keyword INSERT
+​	2.解析keyword INTO
+​	3.解析keyword VALUES
+​	4.解析symbol (
+​	5.解析 $expression[]$
+​	6.解析symbol )
+主函数parse
+主函数分号作为分隔符解析三种sql语句
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+
+
+func Parse(source string) (*Ast, error) {
+	tokens, err := lex(source)
+	if err != nil {
+		return nil, err
+	}
+
+	ast := Ast{}
+	cursor := uint(0)
+	for cursor &lt; uint(len(source)) {
+		//parse each statement divide by &#39;;&#39; and add to ast
+		stmt, newCursor, ok := parseStatement(tokens, cursor, tokenFromSymbol(semicolonSymbol))
+		if !ok {
+			helpMessage(tokens, cursor, &#34;Expected statement&#34;)
+			return nil, errors.New(&#34;Failed to parse,exit&#34;)
+		}
+		cursor = newCursor
+		ast.Statement = append(ast.Statement, stmt)
+
+		atLeastOneSemicolon := false
+		for expectToken(tokens, cursor, tokenFromSymbol(semicolonSymbol)) {
+			cursor&#43;&#43;
+			atLeastOneSemicolon = true
+		}
+
+		if !atLeastOneSemicolon {
+			helpMessage(tokens, cursor, &#34;Expected semi-colon delimiter between statements&#34;)
+			return nil, errors.New(&#34;Missing semi-colon between statements&#34;)
+		}
+	}
+	return &amp;ast, nil
+}
+
+
+简易后端
+本文重点在于解析sql语句以及前端的编写思路，这次仅仅使用一个map in memory 作为后端。
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+
+
+// backend in memory
+type MemoryBackend struct {
+	tables map[string]*table
+}
+
+// table
+type table struct {
+	columns     []string
+	columnTypes []ColumnType
+	rows        [][]MemoryCell
+}
+
+//Result
+type Results struct {
+	Columns []struct {
+		Type ColumnType
+		Name string
+	}
+	Rows [][]Cell
+}
+
+
+参考
+[Writing a SQL database from scratch in Go](Writing a SQL database from scratch in Go)
+PostgreSQL documentation
+gosql" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84sql%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/" />
+<meta property="article:published_time" content="2020-11-10T15:08:21+08:00" />
+<meta property="article:modified_time" content="2020-11-10T15:08:21+08:00" />
+<meta itemprop="name" content="实现简单的SQL数据库--前端">
+<meta itemprop="description" content="一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanlent plan入坑贴，下面的学长提示了这个从零实现数据库博客入门比较合适，于是写下这个博客。
+前端
+与编译器类似，一个数据库软件也分为前端和后端。前端部分主要是SQL语句的解析以及一个REPL。
+获取tokens
+
+
+1
+2
+3
+4
+5
+
+
+type token struct {
+	value string
+	kind  tokenKind
+	loc   location
+}
+
+
+模拟cursor扫描语句，将sql语句解析为一个一个token，token中包括了单词的种类，位置，值。
+获取单个token时，每次扫描结束，如果成功，更新光标，并返回一个新token地址以及更新后的光标位置，ok=true。
+如果失败，则返回nil,传入的初始化的光标位置不变，ok=false。
+最终处理所有语句，得到token地址数组
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+
+
+// 主要流程
+func lex(source string) ([]*token, error) {
+	tokens := []*token{}
+	cur := cursor{}
+
+	for cur.pointer &lt; uint(len(source)) {
+		lexers := []lexer{lexKeyword, lexSymbol, lexString, lexNumeric, lexIdentifier}
+		isMatched := false
+		for _, l := range lexers {
+			if token, newCursor, ok := l(source, cur); ok {
+				cur = newCursor
+
+				// Omit nil tokens for valid, but empty syntax like newlines
+				if token != nil {
+					tokens = append(tokens, token)
+				}
+				isMatched = true
+				break
+			}
+		}
+
+		if isMatched {
+			// match the next one
+			continue
+		}
+
+		hint := &#34;&#34;
+		if len(tokens) &gt; 0 {
+			hint = &#34; after &#34; &#43; tokens[len(tokens)-1].value
+		}
+		return nil, fmt.Errorf(&#34;Unable to lex token%s, at %d:%d&#34;, hint, cur.loc.row, cur.loc.col)
+	}
+	return tokens, nil
+}
+
+
+获得Ast
+第二步，从tokens中，解析出一个抽象语法树。
+Ast有statement[]组成，目前的解析器只解析select，insert，create三种语句。
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+
+
+type Ast struct {
+	Statement []*Statement
+}
+
+type Statement struct {
+	SelectStatement *SelectStatement
+	CreateStatement *CreateStatement
+	InsertStatement *InsertStatement
+	Kind            AstKind
+}
+
+
+解析的思路是按照不同的sql语句，分析出相应的语法成分，最后形成最后的语法树
+SELECT语句
+语法成分：
+
+SELECT  ${ expression[] }$  FROM $ tableName $
+example：select id,age,name from students
+
+​	1.解析出keyword SELECT
+​	2.解析expression[]
+​	3.解析出keyword FROM
+​	4.解析identifier  $tableName$
+其中重点在于对expressions的理解与解析
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+
+
+// parse the token at cursor and return an expression containing literal val and its kind
+func parseExpression(tokens []*token, initialCursor uint, _ token) (*expression, uint, bool) {
+	cursor := initialCursor
+
+	kinds := []tokenKind{identifierKind, numericKind, stringKind}
+    
+	for _, kind := range kinds {
+		t, newCursor, ok := parseToken(tokens, cursor, kind)
+		if ok {
+			return &amp;expression{
+				literal: t,
+				kind:    literalKind,
+			}, newCursor, true
+		}
+	}
+
+	return nil, initialCursor, false
+}
+
+
+expression 只包括了stringKind，numericKind，identifierKind的字符集合。parseexpression读入一个token，如果cursor超出了tokens的长度或者Kind不是这三种，则返回错误的结果，遇到分隔符delimiter则正常返回。
+CREATE语句
+语法成分
+
+CREATE TABLE  $tableName$ ( $columnDef$ )
+example:CREATE TABLE students(id string, age int, name string)
+
+​	1.解析出keyword CREATE
+​	2.解析出keyword TABLE
+​	3.解析identifier  $tableName$
+​	4.解析 symbol (
+​	5.解析$columndef$
+​	6.解析symbol )
+解析CREATE的语句关键是对$columnDef$的解析
+
+
+1
+2
+3
+4
+5
+
+
+//column
+type columnDefinition struct {
+	name     token
+	datatype token
+}
+
+
+解析columnDefinitions
+1.循环解析token，直到cur超出tokens范围或者解析出现错误
+
+
+首先解析identifier $name$,keyword $datatype$
+解析分隔符 symbol ,
+
+
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+
+
+// parse col def
+//
+func parseColumnDefinitions(tokens []*token, initialCursor uint, delimiter token) (*[]*columnDefinition, uint, bool) {
+	cursor := initialCursor
+
+	cds := []*columnDefinition{}
+	for {
+		if cursor &gt;= uint(len(tokens)) {
+			return nil, initialCursor, false
+		}
+
+		// Look for a delimiter
+		current := tokens[cursor]
+		if delimiter.equals(current) {
+			break
+		}
+
+		// Look for a comma
+		// col devided by comma
+		if len(cds) &gt; 0 {
+			if !expectToken(tokens, cursor, tokenFromSymbol(commaSymbol)) {
+				helpMessage(tokens, cursor, &#34;Expected comma&#34;)
+				return nil, initialCursor, false
+			}
+
+			cursor&#43;&#43;
+		}
+
+		// Look for a column name
+		id, newCursor, ok := parseToken(tokens, cursor, identifierKind)
+		if !ok {
+			helpMessage(tokens, cursor, &#34;Expected column name&#34;)
+			return nil, initialCursor, false
+		}
+		cursor = newCursor
+
+		// Look for a column type
+		//like col_name type
+		ty, newCursor, ok := parseToken(tokens, cursor, keywordKind)
+		if !ok {
+			helpMessage(tokens, cursor, &#34;Expected column type&#34;)
+			return nil, initialCursor, false
+		}
+		cursor = newCursor
+
+		cds = append(cds, &amp;columnDefinition{
+			name:     *id,
+			datatype: *ty,
+		})
+	}
+
+	return &amp;cds, cursor, true
+}
+
+
+INSERT语句
+语法成分
+
+INSERT INTO VALUES ( $expression[]$ )
+example: INSERT INTO VALUES(1,20,Kate)
+
+​	1.解析keyword INSERT
+​	2.解析keyword INTO
+​	3.解析keyword VALUES
+​	4.解析symbol (
+​	5.解析 $expression[]$
+​	6.解析symbol )
+主函数parse
+主函数分号作为分隔符解析三种sql语句
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+
+
+func Parse(source string) (*Ast, error) {
+	tokens, err := lex(source)
+	if err != nil {
+		return nil, err
+	}
+
+	ast := Ast{}
+	cursor := uint(0)
+	for cursor &lt; uint(len(source)) {
+		//parse each statement divide by &#39;;&#39; and add to ast
+		stmt, newCursor, ok := parseStatement(tokens, cursor, tokenFromSymbol(semicolonSymbol))
+		if !ok {
+			helpMessage(tokens, cursor, &#34;Expected statement&#34;)
+			return nil, errors.New(&#34;Failed to parse,exit&#34;)
+		}
+		cursor = newCursor
+		ast.Statement = append(ast.Statement, stmt)
+
+		atLeastOneSemicolon := false
+		for expectToken(tokens, cursor, tokenFromSymbol(semicolonSymbol)) {
+			cursor&#43;&#43;
+			atLeastOneSemicolon = true
+		}
+
+		if !atLeastOneSemicolon {
+			helpMessage(tokens, cursor, &#34;Expected semi-colon delimiter between statements&#34;)
+			return nil, errors.New(&#34;Missing semi-colon between statements&#34;)
+		}
+	}
+	return &amp;ast, nil
+}
+
+
+简易后端
+本文重点在于解析sql语句以及前端的编写思路，这次仅仅使用一个map in memory 作为后端。
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+
+
+// backend in memory
+type MemoryBackend struct {
+	tables map[string]*table
+}
+
+// table
+type table struct {
+	columns     []string
+	columnTypes []ColumnType
+	rows        [][]MemoryCell
+}
+
+//Result
+type Results struct {
+	Columns []struct {
+		Type ColumnType
+		Name string
+	}
+	Rows [][]Cell
+}
+
+
+参考
+[Writing a SQL database from scratch in Go](Writing a SQL database from scratch in Go)
+PostgreSQL documentation
+gosql">
+<meta itemprop="datePublished" content="2020-11-10T15:08:21&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-10T15:08:21&#43;08:00" />
+<meta itemprop="wordCount" content="1810">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="实现简单的SQL数据库--前端"/>
+<meta name="twitter:description" content="一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanlent plan入坑贴，下面的学长提示了这个从零实现数据库博客入门比较合适，于是写下这个博客。
+前端
+与编译器类似，一个数据库软件也分为前端和后端。前端部分主要是SQL语句的解析以及一个REPL。
+获取tokens
+
+
+1
+2
+3
+4
+5
+
+
+type token struct {
+	value string
+	kind  tokenKind
+	loc   location
+}
+
+
+模拟cursor扫描语句，将sql语句解析为一个一个token，token中包括了单词的种类，位置，值。
+获取单个token时，每次扫描结束，如果成功，更新光标，并返回一个新token地址以及更新后的光标位置，ok=true。
+如果失败，则返回nil,传入的初始化的光标位置不变，ok=false。
+最终处理所有语句，得到token地址数组
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+
+
+// 主要流程
+func lex(source string) ([]*token, error) {
+	tokens := []*token{}
+	cur := cursor{}
+
+	for cur.pointer &lt; uint(len(source)) {
+		lexers := []lexer{lexKeyword, lexSymbol, lexString, lexNumeric, lexIdentifier}
+		isMatched := false
+		for _, l := range lexers {
+			if token, newCursor, ok := l(source, cur); ok {
+				cur = newCursor
+
+				// Omit nil tokens for valid, but empty syntax like newlines
+				if token != nil {
+					tokens = append(tokens, token)
+				}
+				isMatched = true
+				break
+			}
+		}
+
+		if isMatched {
+			// match the next one
+			continue
+		}
+
+		hint := &#34;&#34;
+		if len(tokens) &gt; 0 {
+			hint = &#34; after &#34; &#43; tokens[len(tokens)-1].value
+		}
+		return nil, fmt.Errorf(&#34;Unable to lex token%s, at %d:%d&#34;, hint, cur.loc.row, cur.loc.col)
+	}
+	return tokens, nil
+}
+
+
+获得Ast
+第二步，从tokens中，解析出一个抽象语法树。
+Ast有statement[]组成，目前的解析器只解析select，insert，create三种语句。
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+
+
+type Ast struct {
+	Statement []*Statement
+}
+
+type Statement struct {
+	SelectStatement *SelectStatement
+	CreateStatement *CreateStatement
+	InsertStatement *InsertStatement
+	Kind            AstKind
+}
+
+
+解析的思路是按照不同的sql语句，分析出相应的语法成分，最后形成最后的语法树
+SELECT语句
+语法成分：
+
+SELECT  ${ expression[] }$  FROM $ tableName $
+example：select id,age,name from students
+
+​	1.解析出keyword SELECT
+​	2.解析expression[]
+​	3.解析出keyword FROM
+​	4.解析identifier  $tableName$
+其中重点在于对expressions的理解与解析
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+
+
+// parse the token at cursor and return an expression containing literal val and its kind
+func parseExpression(tokens []*token, initialCursor uint, _ token) (*expression, uint, bool) {
+	cursor := initialCursor
+
+	kinds := []tokenKind{identifierKind, numericKind, stringKind}
+    
+	for _, kind := range kinds {
+		t, newCursor, ok := parseToken(tokens, cursor, kind)
+		if ok {
+			return &amp;expression{
+				literal: t,
+				kind:    literalKind,
+			}, newCursor, true
+		}
+	}
+
+	return nil, initialCursor, false
+}
+
+
+expression 只包括了stringKind，numericKind，identifierKind的字符集合。parseexpression读入一个token，如果cursor超出了tokens的长度或者Kind不是这三种，则返回错误的结果，遇到分隔符delimiter则正常返回。
+CREATE语句
+语法成分
+
+CREATE TABLE  $tableName$ ( $columnDef$ )
+example:CREATE TABLE students(id string, age int, name string)
+
+​	1.解析出keyword CREATE
+​	2.解析出keyword TABLE
+​	3.解析identifier  $tableName$
+​	4.解析 symbol (
+​	5.解析$columndef$
+​	6.解析symbol )
+解析CREATE的语句关键是对$columnDef$的解析
+
+
+1
+2
+3
+4
+5
+
+
+//column
+type columnDefinition struct {
+	name     token
+	datatype token
+}
+
+
+解析columnDefinitions
+1.循环解析token，直到cur超出tokens范围或者解析出现错误
+
+
+首先解析identifier $name$,keyword $datatype$
+解析分隔符 symbol ,
+
+
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+
+
+// parse col def
+//
+func parseColumnDefinitions(tokens []*token, initialCursor uint, delimiter token) (*[]*columnDefinition, uint, bool) {
+	cursor := initialCursor
+
+	cds := []*columnDefinition{}
+	for {
+		if cursor &gt;= uint(len(tokens)) {
+			return nil, initialCursor, false
+		}
+
+		// Look for a delimiter
+		current := tokens[cursor]
+		if delimiter.equals(current) {
+			break
+		}
+
+		// Look for a comma
+		// col devided by comma
+		if len(cds) &gt; 0 {
+			if !expectToken(tokens, cursor, tokenFromSymbol(commaSymbol)) {
+				helpMessage(tokens, cursor, &#34;Expected comma&#34;)
+				return nil, initialCursor, false
+			}
+
+			cursor&#43;&#43;
+		}
+
+		// Look for a column name
+		id, newCursor, ok := parseToken(tokens, cursor, identifierKind)
+		if !ok {
+			helpMessage(tokens, cursor, &#34;Expected column name&#34;)
+			return nil, initialCursor, false
+		}
+		cursor = newCursor
+
+		// Look for a column type
+		//like col_name type
+		ty, newCursor, ok := parseToken(tokens, cursor, keywordKind)
+		if !ok {
+			helpMessage(tokens, cursor, &#34;Expected column type&#34;)
+			return nil, initialCursor, false
+		}
+		cursor = newCursor
+
+		cds = append(cds, &amp;columnDefinition{
+			name:     *id,
+			datatype: *ty,
+		})
+	}
+
+	return &amp;cds, cursor, true
+}
+
+
+INSERT语句
+语法成分
+
+INSERT INTO VALUES ( $expression[]$ )
+example: INSERT INTO VALUES(1,20,Kate)
+
+​	1.解析keyword INSERT
+​	2.解析keyword INTO
+​	3.解析keyword VALUES
+​	4.解析symbol (
+​	5.解析 $expression[]$
+​	6.解析symbol )
+主函数parse
+主函数分号作为分隔符解析三种sql语句
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+
+
+func Parse(source string) (*Ast, error) {
+	tokens, err := lex(source)
+	if err != nil {
+		return nil, err
+	}
+
+	ast := Ast{}
+	cursor := uint(0)
+	for cursor &lt; uint(len(source)) {
+		//parse each statement divide by &#39;;&#39; and add to ast
+		stmt, newCursor, ok := parseStatement(tokens, cursor, tokenFromSymbol(semicolonSymbol))
+		if !ok {
+			helpMessage(tokens, cursor, &#34;Expected statement&#34;)
+			return nil, errors.New(&#34;Failed to parse,exit&#34;)
+		}
+		cursor = newCursor
+		ast.Statement = append(ast.Statement, stmt)
+
+		atLeastOneSemicolon := false
+		for expectToken(tokens, cursor, tokenFromSymbol(semicolonSymbol)) {
+			cursor&#43;&#43;
+			atLeastOneSemicolon = true
+		}
+
+		if !atLeastOneSemicolon {
+			helpMessage(tokens, cursor, &#34;Expected semi-colon delimiter between statements&#34;)
+			return nil, errors.New(&#34;Missing semi-colon between statements&#34;)
+		}
+	}
+	return &amp;ast, nil
+}
+
+
+简易后端
+本文重点在于解析sql语句以及前端的编写思路，这次仅仅使用一个map in memory 作为后端。
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+
+
+// backend in memory
+type MemoryBackend struct {
+	tables map[string]*table
+}
+
+// table
+type table struct {
+	columns     []string
+	columnTypes []ColumnType
+	rows        [][]MemoryCell
+}
+
+//Result
+type Results struct {
+	Columns []struct {
+		Type ColumnType
+		Name string
+	}
+	Rows [][]Cell
+}
+
+
+参考
+[Writing a SQL database from scratch in Go](Writing a SQL database from scratch in Go)
+PostgreSQL documentation
+gosql"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -238,7 +1681,7 @@
   <ul id="menu" class="menu">
     
     
-        <li class="menu-item active">
+        <li class="menu-item">
         
           
           
@@ -330,35 +1773,31 @@
     <main id="main" class="main bg-llight">
       <div class="content-wrapper">
         <div id="content" class="content container">
-          
-<section id="posts" class="posts">
-  
-  
+          <article class="post bg-white">
     
-  
-  
-  
-    <article class="post bg-white">
-  <header class="post-header">
-    <h1 class="post-title">
+    <header class="post-header">
+      <h1 class="post-title">实现简单的SQL数据库--前端</h1>
       
-      <a class="post-link" href="/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84sql%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/">实现简单的SQL数据库--前端</a>
-    </h1>
+      <div class="post-meta">
+        <time datetime="2020-11-10" class="post-time">
+          2020-11-10
+        </time>
+        
+        
+
+        
+        
+
+        
+        
+      </div>
+    </header>
+
     
-    <div class="post-meta">
-      <time datetime="2020-11-10" class="post-time">
-        2020-11-10
-      </time>
-      
-      
-      
-      
-    </div>
-  </header>
-  
-  <div class="post-content">
     
-    <div class="post-summary">
+
+    
+    <div class="post-content">
       <p>一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanlent plan入坑贴，下面的学长提示了这个从零实现数据库博客入门比较合适，于是写下这个博客。</p>
 <h2 id="前端">前端</h2>
 <p>与编译器类似，一个数据库软件也分为前端和后端。前端部分主要是SQL语句的解析以及一个REPL。</p>
@@ -825,132 +2264,43 @@
 <p><a href="https://www.postgresql.org/docs/current/sql-syntax-lexical.html">PostgreSQL documentation</a></p>
 <p><a href="https://github.com/eatonphil/gosql">gosql</a></p>
     </div>
-    <div class="read-more">
-      <a href="/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84sql%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/" class="read-more-link">Read more</a>
-    </div>
+
     
-  </div>
-</article>
-
-  
-    <article class="post bg-white">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/post/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/">基于朴素贝叶斯的中文垃圾电子邮件分类</a>
-    </h1>
     
-    <div class="post-meta">
-      <time datetime="2020-05-06" class="post-time">
-        2020-05-06
-      </time>
-      <div class="post-category">
-          <a href="https://noneback.github.io/categories/ml/"> ML </a>
-          
-        </div>
-      
-      
-      
-    </div>
-  </header>
-  
-  <div class="post-content">
+
+
     
-    <div class="post-summary">
-      基于朴素贝叶斯的中文垃圾电子邮件分类 训练数据和测试数据 本次主要使用了github上的开源数据 数据处理 首先使用正则表达式对训练集中的中文邮件的
-    </div>
-    <div class="read-more">
-      <a href="/post/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/" class="read-more-link">Read more</a>
-    </div>
     
-  </div>
-</article>
 
-  
-    <article class="post bg-white">
-  <header class="post-header">
-    <h1 class="post-title">
+    <footer class="post-footer">
       
-      <a class="post-link" href="/post/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/">C&#43;&#43;中左值和右值的区别</a>
-    </h1>
-    
-    <div class="post-meta">
-      <time datetime="2019-11-01" class="post-time">
-        2019-11-01
-      </time>
-      <div class="post-category">
-          <a href="https://noneback.github.io/categories/language/"> Language </a>
-          
-        </div>
+
       
-      
-      
-    </div>
-  </header>
-  
-  <div class="post-content">
-    
-    <div class="post-summary">
-      C++中左值和右值的区别 最近在复习C++的语法，有一些忘记了的东西，想在这里记录一下 什么是左值和右值 抽象解释 In C++ an lvalue is something that points to a specific memory location. On the other
-    </div>
-    <div class="read-more">
-      <a href="/post/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/" class="read-more-link">Read more</a>
-    </div>
-    
-  </div>
-</article>
+      <nav class="post-nav">
+        
+        
+          <a class="next" href="/post/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/">
+            <span class="next-text nav-default">基于朴素贝叶斯的中文垃圾电子邮件分类</span>
+            <span class="prev-text nav-mobile">Next</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
 
-  
-</section>
-
-
-
-
-
-
-  
-  
-  
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
 
   
   
 
   
   
-
-  
-  
-
-  
-  
-  <nav class="pagination">
-    <ul>
-      
-      <li  class="active" >
-        <a href="/">1</a>
-      </li>
-      
-      <li >
-        <a href="/page/2/">2</a>
-      </li>
-      
-      <li >
-        <a href="/page/3/">3</a>
-      </li>
-      
-      <li >
-        <a href="/page/4/">4</a>
-      </li>
-      
-    </ul>
-  </nav>
-
-  
-  
-
-
-
-
 
         </div>
       </div>
@@ -1054,6 +2404,13 @@
 
 
 
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
 
 
 
