@@ -69,7 +69,7 @@
 <meta itemprop="description" content="一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanle">
 <meta itemprop="datePublished" content="2020-11-10T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2020-11-10T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="1794">
+<meta itemprop="wordCount" content="1899">
 
 
 
@@ -376,6 +376,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
       </ul>
     </li>
     <li><a href="#简易后端">简易后端</a></li>
+    <li><a href="#repl">REPL</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -845,8 +846,69 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <span class="p">}</span>
 </code></pre></td></tr></table>
 </div>
-</div><h2 id="参考">参考</h2>
-<p>[Writing a SQL database from scratch in Go](Writing a SQL database from scratch in Go)</p>
+</div><h2 id="repl">REPL</h2>
+<p>下面是一个简单的REPL设计思路</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">mb</span> <span class="o">:=</span> <span class="nf">NewMemoryBackend</span><span class="p">()</span>
+
+	<span class="nx">reader</span> <span class="o">:=</span> <span class="nx">bufio</span><span class="p">.</span><span class="nf">NewReader</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Stdin</span><span class="p">)</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Welcome to &#34;</span><span class="p">)</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="s">&#34;# &#34;</span><span class="p">)</span>
+		<span class="nx">text</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">reader</span><span class="p">.</span><span class="nf">ReadString</span><span class="p">(</span><span class="sc">&#39;\n&#39;</span><span class="p">)</span>
+		<span class="nx">text</span> <span class="p">=</span> <span class="nx">strings</span><span class="p">.</span><span class="nf">Replace</span><span class="p">(</span><span class="nx">text</span><span class="p">,</span> <span class="s">&#34;\n&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+		<span class="nx">ast</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">Parse</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+		<span class="p">}</span>
+
+		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">stmt</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">ast</span><span class="p">.</span><span class="nx">Statements</span> <span class="p">{</span>
+			<span class="k">switch</span> <span class="nx">stmt</span><span class="p">.</span><span class="nx">Kind</span> <span class="p">{</span>
+			<span class="k">case</span> <span class="nx">CreateKind</span><span class="p">:</span>
+				
+			<span class="k">case</span> <span class="nx">InsertKind</span><span class="p">:</span>
+				
+			<span class="k">case</span> <span class="nx">SelectKind</span><span class="p">:</span>
+						
+			<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>其他剩余代码见<a href="https://github.com/noneback/gosql">github</a></p>
+<h2 id="参考">参考</h2>
+<p><a href="https://notes.eatonphil.com/database-basics.html">Writing a SQL database from scratch in Go</a></p>
 <p><a href="https://www.postgresql.org/docs/current/sql-syntax-lexical.html">PostgreSQL documentation</a></p>
 <p><a href="https://github.com/eatonphil/gosql">gosql</a></p>
 
