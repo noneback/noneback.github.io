@@ -363,6 +363,33 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     
     
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#dfa">DFA</a>
+      <ul>
+        <li><a href="#构造拓广文法gs">构造拓广文法G(s)</a></li>
+        <li><a href="#构造有效项目集和相应dfa">构造有效项目集和相应DFA</a></li>
+      </ul>
+    </li>
+    <li><a href="#slr">SLR</a>
+      <ul>
+        <li><a href="#构造first和follow集合">构造FIRST和FOLLOW集合</a></li>
+      </ul>
+    </li>
+    <li><a href="#构造slr分析表">构造SLR分析表</a></li>
+    <li><a href="#编写代码">编写代码</a>
+      <ul>
+        <li><a href="#算法">算法</a></li>
+        <li><a href="#实现">实现</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
 
     
     <div class="post-content">
@@ -418,9 +445,9 @@ F-&gt;(E)|num
 <tbody>
 <tr>
 <td align="left">First</td>
-<td>c,num</td>
-<td>c,num</td>
-<td>c,num</td>
+<td>(,num</td>
+<td>(,num</td>
+<td>(,num</td>
 </tr>
 <tr>
 <td align="left">Follow</td>
