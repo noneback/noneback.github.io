@@ -23,7 +23,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <meta name="author" content="NoneBack" />
-  <meta name="description" content="编译原理的第二次实验，使用LR方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&amp;gt;E&#43;T|E-T|T T-&amp;gt;T*F|T/F|F F-&amp;gt;(E)|num DFA 首先要根据文法构建一个DFA 构造拓广文法G(s) 1 2 3 4 5" />
+  <meta name="description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&amp;gt;E&#43;T|E-T|T T-&amp;gt;T*F|T/F|F F-&amp;gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 1 2 3 4 5 拓广文法G：" />
 <meta name="keywords" content="parsing, cpp" />
 
 
@@ -60,22 +60,22 @@
 
 
 <meta property="og:title" content="算术表达式语法分析" />
-<meta property="og:description" content="编译原理的第二次实验，使用LR方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个DFA 构造拓广文法G(s) 1 2 3 4 5" />
+<meta property="og:description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 1 2 3 4 5 拓广文法G：" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/" />
 <meta property="article:published_time" content="2020-11-22T20:53:19+08:00" />
 <meta property="article:modified_time" content="2020-11-22T20:53:19+08:00" />
 <meta itemprop="name" content="算术表达式语法分析">
-<meta itemprop="description" content="编译原理的第二次实验，使用LR方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个DFA 构造拓广文法G(s) 1 2 3 4 5">
+<meta itemprop="description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 1 2 3 4 5 拓广文法G：">
 <meta itemprop="datePublished" content="2020-11-22T20:53:19&#43;08:00" />
 <meta itemprop="dateModified" content="2020-11-22T20:53:19&#43;08:00" />
-<meta itemprop="wordCount" content="1040">
+<meta itemprop="wordCount" content="1012">
 
 
 
 <meta itemprop="keywords" content="parsing,cpp," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="算术表达式语法分析"/>
-<meta name="twitter:description" content="编译原理的第二次实验，使用LR方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个DFA 构造拓广文法G(s) 1 2 3 4 5"/>
+<meta name="twitter:description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 1 2 3 4 5 拓广文法G："/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -370,20 +370,21 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
   <ul>
     <li><a href="#dfa">DFA</a>
       <ul>
-        <li><a href="#构造拓广文法gs">构造拓广文法G(s)</a></li>
-        <li><a href="#构造有效项目集和相应dfa">构造有效项目集和相应DFA</a></li>
+        <li><a href="#构造拓广文法-gs">构造拓广文法 G(s)</a></li>
+        <li><a href="#构造有效项目集和相应-dfa">构造有效项目集和相应 DFA</a></li>
       </ul>
     </li>
     <li><a href="#slr">SLR</a>
       <ul>
-        <li><a href="#构造first和follow集合">构造FIRST和FOLLOW集合</a></li>
+        <li><a href="#构造-first-和-follow-集合">构造 FIRST 和 FOLLOW 集合</a></li>
       </ul>
     </li>
-    <li><a href="#构造slr分析表">构造SLR分析表</a></li>
+    <li><a href="#构造-slr-分析表">构造 SLR 分析表</a></li>
     <li><a href="#编写代码">编写代码</a>
       <ul>
         <li><a href="#算法">算法</a></li>
         <li><a href="#实现">实现</a></li>
+        <li><a href="#优化">优化</a></li>
       </ul>
     </li>
   </ul>
@@ -393,7 +394,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     
     <div class="post-content">
-      <p>编译原理的第二次实验，使用LR方法实现对算术表达式的语法分析</p>
+      <p>编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre class="chroma"><code><span class="lnt">1
@@ -409,8 +410,8 @@ F-&gt;(E)|num
 </code></pre></td></tr></table>
 </div>
 </div><h2 id="dfa">DFA</h2>
-<p>首先要根据文法构建一个DFA</p>
-<h3 id="构造拓广文法gs">构造拓广文法G(s)</h3>
+<p>首先要根据文法构建一个 DFA</p>
+<h3 id="构造拓广文法-gs">构造拓广文法 G(s)</h3>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre class="chroma"><code><span class="lnt">1
@@ -427,12 +428,12 @@ T-&gt;T*F|T/F|F
 F-&gt;(E)|num
 </code></pre></td></tr></table>
 </div>
-</div><h3 id="构造有效项目集和相应dfa">构造有效项目集和相应DFA</h3>
+</div><h3 id="构造有效项目集和相应-dfa">构造有效项目集和相应 DFA</h3>
 <p><img src="https://i.loli.net/2020/11/22/Hz5lLiGA9P2woWq.png" alt="DFA.png"></p>
 <h2 id="slr">SLR</h2>
-<p>从DFA中可以观察到使用LR(0)将会有Shift-Reduce冲突，所以最终使用SLR分析。</p>
-<p>构造SLR需要在LR(0)的基础上计算出First和Follow集合</p>
-<h3 id="构造first和follow集合">构造FIRST和FOLLOW集合</h3>
+<p>从 DFA 中可以观察到使用 LR(0)将会有 Shift-Reduce 冲突，所以最终使用 SLR 分析。</p>
+<p>构造 SLR 需要在 LR(0)的基础上计算出 First 和 Follow 集合</p>
+<h3 id="构造-first-和-follow-集合">构造 FIRST 和 FOLLOW 集合</h3>
 <table>
 <thead>
 <tr>
@@ -457,11 +458,11 @@ F-&gt;(E)|num
 </tr>
 </tbody>
 </table>
-<h2 id="构造slr分析表">构造SLR分析表</h2>
-<p>规约时，需要判断下一个的符号是否属于被规约状态的Follow集合中。在Follow集合中才允许被规约</p>
+<h2 id="构造-slr-分析表">构造 SLR 分析表</h2>
+<p>规约时，需要判断下一个的符号是否属于被规约状态的 Follow 集合中。在 Follow 集合中才允许被规约</p>
 <p><img src="https://i.loli.net/2020/11/22/VdNI8BqwePEaOjF.png" alt="image.png"></p>
 <h2 id="编写代码">编写代码</h2>
-<p>相对于之前构造DFA和分析表，代码的实现显得则更为简单。但要注意代码的质量。</p>
+<p>相对于之前构造 DFA 和分析表，代码的实现显得则更为简单。但要注意代码的质量。</p>
 <h3 id="算法">算法</h3>
 <p><img src="https://i.loli.net/2020/11/22/IHnOyeqZY9EJ4rt.png" alt="image.png"></p>
 <h3 id="实现">实现</h3>
@@ -481,7 +482,7 @@ F-&gt;(E)|num
 </div>
 </div></li>
 <li>
-<p>保存ActionMap和GotoMap,产生式</p>
+<p>保存 ActionMap 和 GotoMap,产生式</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre class="chroma"><code><span class="lnt"> 1
@@ -546,37 +547,37 @@ F-&gt;(E)|num
 <td class="lntd">
 <pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">typedef</span> <span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">Action</span><span class="o">&gt;</span> <span class="n">ActionMap</span><span class="p">;</span><span class="c1">//需要16个，与状态数对应
 </span><span class="c1"></span><span class="k">typedef</span> <span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">State</span><span class="o">&gt;</span> <span class="n">GotoMap</span><span class="p">;</span><span class="c1">//需要16个，与状态数对应
-</span><span class="c1"></span>  
-  
+</span><span class="c1"></span>
+
 <span class="k">const</span> <span class="n">pair</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">string</span><span class="o">&gt;</span> <span class="n">producers</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
     <span class="p">{</span><span class="s">&#34;T&#34;</span><span class="p">,</span> <span class="s">&#34;T*F&#34;</span><span class="p">},</span>
     <span class="c1">//...
-</span><span class="c1"></span>      
+</span><span class="c1"></span>
     <span class="c1">//将产生式填入
 </span><span class="c1"></span><span class="p">};</span>
-  
+
 <span class="kt">void</span> <span class="nf">initialMaps</span><span class="p">(</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ActionMap</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">am</span><span class="p">,</span> <span class="n">vector</span><span class="o">&lt;</span><span class="n">GotoMap</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">gm</span><span class="p">)</span> <span class="p">{</span>
 <span class="k">const</span> <span class="n">string</span> <span class="n">actions</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">11</span><span class="p">]{</span>
       <span class="p">{</span><span class="s">&#34;s4&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;s5&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">},</span>
       <span class="p">{</span><span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;s7&#34;</span><span class="p">,</span> <span class="s">&#34;s6&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;a11&#34;</span><span class="p">},</span>
       <span class="c1">//...
 </span><span class="c1"></span><span class="p">};</span>
-  
+
 <span class="k">const</span> <span class="kt">int</span> <span class="n">gotos</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
      <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">},</span>
-     <span class="c1">//...    
+     <span class="c1">//...
 </span><span class="c1"></span><span class="p">};</span>
-  
+
   <span class="c1">//  （	）	-	+	*	/	num	$
 </span><span class="c1"></span>  <span class="c1">// E    T    F
-</span><span class="c1"></span>  
+</span><span class="c1"></span>
   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">16</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">ActionMap</span> <span class="n">a</span><span class="p">;</span>
     <span class="n">GotoMap</span> <span class="n">g</span><span class="p">;</span>
     <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">a</span><span class="p">[</span><span class="n">T</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span> <span class="o">=</span> <span class="n">parse2Action</span><span class="p">(</span><span class="n">actions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]);</span>
     <span class="p">}</span>
-  
+
     <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">g</span><span class="p">[</span><span class="n">V</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">=</span> <span class="n">gotos</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">];</span>
     <span class="p">}</span>
@@ -584,8 +585,8 @@ F-&gt;(E)|num
     <span class="n">gm</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">g</span><span class="p">);</span>
   <span class="p">}</span>
 <span class="p">}</span>
-  
-  
+
+
 <span class="c1">//从表中解析出Action
 </span><span class="c1">// string s format:a char+digits,like s1,r2,a1
 </span><span class="c1"></span><span class="n">Action</span> <span class="nf">parse2Action</span><span class="p">(</span><span class="n">string</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
@@ -594,7 +595,7 @@ F-&gt;(E)|num
   <span class="p">}</span>
   <span class="kt">char</span> <span class="n">kind</span> <span class="o">=</span> <span class="n">tolower</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
   <span class="kt">int</span> <span class="n">id</span> <span class="o">=</span> <span class="n">stoi</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">length</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">));</span>
-  
+
   <span class="k">switch</span> <span class="p">(</span><span class="n">kind</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">case</span> <span class="sc">&#39;r&#39;</span><span class="o">:</span><span class="k">return</span> <span class="n">Action</span><span class="p">{</span><span class="n">Reduce</span><span class="p">,</span> <span class="n">id</span><span class="p">};</span>
     <span class="k">case</span> <span class="sc">&#39;s&#39;</span><span class="o">:</span><span class="k">return</span> <span class="n">Action</span><span class="p">{</span><span class="n">Shift</span><span class="p">,</span> <span class="n">id</span><span class="p">};</span>
@@ -650,7 +651,7 @@ F-&gt;(E)|num
 </div>
 </div></li>
 <li>
-<p>StatesStack,EnteredStack,CharacterQueue三个关键数据结构的维护与Parse函数的编写</p>
+<p>StatesStack,EnteredStack,CharacterQueue 三个关键数据结构的维护与 Parse 函数的编写</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre class="chroma"><code><span class="lnt"> 1
@@ -729,40 +730,40 @@ F-&gt;(E)|num
   <span class="n">stack</span><span class="o">&lt;</span><span class="n">State</span><span class="o">&gt;</span> <span class="n">states</span><span class="p">;</span>
   <span class="n">vector</span><span class="o">&lt;</span><span class="n">ActionMap</span><span class="o">&gt;</span> <span class="n">am</span><span class="p">;</span>
   <span class="n">vector</span><span class="o">&lt;</span><span class="n">GotoMap</span><span class="o">&gt;</span> <span class="n">gm</span><span class="p">;</span>
-  
+
   <span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">lex2Str</span><span class="p">(</span><span class="n">string</span> <span class="n">sourceStr</span><span class="p">)</span>
   <span class="c1">//  function overload for different container to pop numofEle
-</span><span class="c1"></span>  <span class="kt">void</span> <span class="n">pop</span><span class="p">(</span><span class="n">queue</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">q</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span> 
-  
-  <span class="kt">void</span> <span class="n">pop</span><span class="p">(</span><span class="n">stack</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span> 
-  
+</span><span class="c1"></span>  <span class="kt">void</span> <span class="n">pop</span><span class="p">(</span><span class="n">queue</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">q</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+
+  <span class="kt">void</span> <span class="n">pop</span><span class="p">(</span><span class="n">stack</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+
   <span class="kt">void</span> <span class="n">pop</span><span class="p">(</span><span class="n">stack</span><span class="o">&lt;</span><span class="n">State</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
-  
+
   <span class="c1">// initial parser
-</span><span class="c1"></span>  <span class="kt">bool</span> <span class="n">_init</span><span class="p">(</span><span class="n">string</span> <span class="n">sourceString</span><span class="p">)</span> 
-  
+</span><span class="c1"></span>  <span class="kt">bool</span> <span class="n">_init</span><span class="p">(</span><span class="n">string</span> <span class="n">sourceString</span><span class="p">)</span>
+
  <span class="k">public</span><span class="o">:</span>
   <span class="n">DigitExpressionParser</span><span class="p">()</span> <span class="p">{</span> <span class="n">initialMaps</span><span class="p">(</span><span class="n">am</span><span class="p">,</span> <span class="n">gm</span><span class="p">);</span> <span class="p">}</span>
-  
+
   <span class="c1">// parse
 </span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">parse</span><span class="p">(</span><span class="n">string</span> <span class="n">sourseStr</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_init</span><span class="p">(</span><span class="n">sourseStr</span><span class="p">))</span> <span class="p">{</span>
       <span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Error:source string empty or wrong token&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
       <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
     <span class="p">}</span>
-  
+
     <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">State</span> <span class="n">curState</span> <span class="o">=</span> <span class="n">states</span><span class="p">.</span><span class="n">top</span><span class="p">();</span>
       <span class="n">string</span> <span class="n">curCharacter</span> <span class="o">=</span> <span class="n">characters</span><span class="p">.</span><span class="n">front</span><span class="p">();</span>
-  
+
       <span class="k">auto</span> <span class="o">&amp;</span><span class="n">action</span> <span class="o">=</span> <span class="n">am</span><span class="p">[</span><span class="n">curState</span><span class="p">][</span><span class="n">curCharacter</span><span class="p">];</span>
-  
+
       <span class="k">switch</span> <span class="p">(</span><span class="n">action</span><span class="p">.</span><span class="n">kind</span><span class="p">)</span> <span class="p">{</span>
         <span class="k">case</span> <span class="nl">Shift</span><span class="p">:</span><span class="n">states</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">action</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
           <span class="n">entered</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">curCharacter</span><span class="p">);</span>
           <span class="n">characters</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
           <span class="k">break</span><span class="p">;</span>
-  
+
         <span class="k">case</span> <span class="nl">Reduce</span><span class="p">:</span> <span class="p">{</span>
           <span class="c1">// use producer[id] to reduce
 </span><span class="c1"></span>          <span class="n">printProducer</span><span class="p">(</span><span class="n">action</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
@@ -771,14 +772,14 @@ F-&gt;(E)|num
           <span class="n">pop</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">popNum</span><span class="p">);</span>
           <span class="n">pop</span><span class="p">(</span><span class="n">entered</span><span class="p">,</span> <span class="n">popNum</span><span class="p">);</span>
           <span class="n">entered</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">producer</span><span class="p">.</span><span class="n">first</span><span class="p">);</span>
-  
+
           <span class="n">states</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">gm</span><span class="p">[</span><span class="n">states</span><span class="p">.</span><span class="n">top</span><span class="p">()][</span><span class="n">producer</span><span class="p">.</span><span class="n">first</span><span class="p">]);</span>
         <span class="p">}</span>
           <span class="k">break</span><span class="p">;</span>
-  
+
         <span class="k">case</span> <span class="nl">Error</span><span class="p">:</span><span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Error while parsing&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
           <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
-  
+
         <span class="k">case</span> <span class="nl">Accpet</span><span class="p">:</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Accepted&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
           <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
       <span class="p">}</span>
@@ -788,6 +789,17 @@ F-&gt;(E)|num
 </code></pre></td></tr></table>
 </div>
 </div></li>
+</ul>
+<h3 id="优化">优化</h3>
+<p>实验上有一些是可以优化(卷)的</p>
+<ul>
+<li>First 和 Follow 集合，有效项目集，分析表能够使用代码自动生成</li>
+<li>num 的可以使用数字代替，解析为 token</li>
+</ul>
+<p>如果觉得不够卷还可以</p>
+<ul>
+<li>可视化(呸)</li>
+<li>写一个计算器</li>
 </ul>
 
     </div>
