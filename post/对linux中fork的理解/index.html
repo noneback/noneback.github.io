@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.79.0" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/" />
@@ -67,13 +67,14 @@
 <meta property="article:modified_time" content="2019-11-01T00:00:00+00:00" />
 <meta itemprop="name" content="对Linux中Fork的理解">
 <meta itemprop="description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8">
-<meta itemprop="datePublished" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="dateModified" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="1686">
+<meta itemprop="datePublished" content="2019-11-01T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2019-11-01T00:00:00+00:00" />
+<meta itemprop="wordCount" content="1685">
 
 
 
-<meta itemprop="keywords" content="Linux,OS," /><meta name="twitter:card" content="summary"/>
+<meta itemprop="keywords" content="Linux,OS," />
+<meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="对Linux中Fork的理解"/>
 <meta name="twitter:description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8"/>
 
@@ -482,7 +483,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>父进程开使执行，调用fork()，返回一个子进程pid(&gt;0)，执行打印<em>Parent pid 25974</em>,然后等待子进程。</p>
 </li>
 <li>
-<p>子进程在父进程调用fork()后开始执行，在子进程中fork()返回０（并不是实际意义上的调用之后返回，而是在子进程中直接返回了０,在后面在解释），执行父进程fork()后面的语句，即<em>execlp(&quot;/bin/ls&rdquo;,&ldquo;ls&rdquo;,NULL)</em>，即调用ls，打印当前目录的文件，子进程结束。</p>
+<p>子进程在父进程调用fork()后开始执行，在子进程中fork()返回０（并不是实际意义上的调用之后返回，而是在子进程中直接返回了０,在后面在解释），执行父进程fork()后面的语句，即<em>execlp(&quot;/bin/ls&quot;,&ldquo;ls&rdquo;,NULL)</em>，即调用ls，打印当前目录的文件，子进程结束。</p>
 </li>
 <li>
 <p>父进程接受信号，结束主进程。</p>
@@ -705,7 +706,9 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
   <span class="copyright-year">
     &copy;
-    2020
+    
+      2020 -
+    2021
     <span class="heart">
       
       <i class="iconfont">
