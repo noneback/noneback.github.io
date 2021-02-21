@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Thu, 18 Feb 2021 15:56:31 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 21 Feb 2021 16:48:55 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -34,6 +34,119 @@
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;a href=&#34;https://github.com/anuraghazra/github-readme-stats&#34;&gt;&lt;img src=&#34;https://github-readme-stats.vercel.app/api/top-langs/?username=noneback&amp;amp;hide=html&amp;amp;&amp;amp;layout=compact&#34; alt=&#34;Top Langs&#34;&gt;&lt;/a&gt;&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>HTTPS浅析</title>
+      <link>https://noneback.github.io/post/https%E6%B5%85%E6%9E%90/</link>
+      <pubDate>Sun, 21 Feb 2021 16:48:55 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/https%E6%B5%85%E6%9E%90/</guid>
+      
+        <description>&lt;h1 id=&#34;https浅析&#34;&gt;HTTPS浅析&lt;/h1&gt;
+&lt;p&gt;​	HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 &lt;a href=&#34;https://developer.mozilla.org/en-US/docs/Glossary/SSL&#34;&gt;SSL&lt;/a&gt; 或者 &lt;a href=&#34;https://developer.mozilla.org/en-US/docs/Glossary/TLS&#34;&gt;TLS&lt;/a&gt; 来加密客户端和服务器之间所有的通信&lt;/p&gt;
+&lt;h2 id=&#34;http的问题&#34;&gt;HTTP的问题&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;通信使用明文，内容可能会被窃听&lt;/li&gt;
+&lt;li&gt;无法验证通信方的身份，因此可能遭遇伪装(如Dos,Denial of Service attack)&lt;/li&gt;
+&lt;li&gt;无法证明报文的完整性，报文可能在通信中被篡改(如MITM,Man-in-the-Middle attack)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;为了解决以上等问题，我们需要&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;加密处理，防止被窃听&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;可以对&lt;strong&gt;内容&lt;/strong&gt;加密，或者对&lt;strong&gt;通信&lt;/strong&gt;加密以简历安全通信线路&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;需要验证通信方的身份，防止伪装攻击&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;如利用证书验证身份&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;要能确定报文的完整性，防止被篡改&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;常用的有MD5和SHA-1散列值校验的方法等&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;https&#34;&gt;HTTPS&lt;/h2&gt;
+&lt;p&gt;​	为了统一解决上诉的问题，需要在HTTP上再加上加密处理、认证、完整性保护等机制，我们称之为HTTP Secure or HTTP over SSL&lt;/p&gt;
+&lt;p&gt;​						$HTTP + 加密 + 认证 + 完整性保护 = HTTPS$&lt;/p&gt;
+&lt;h3 id=&#34;https-over-ssl&#34;&gt;HTTPS over SSL&lt;/h3&gt;
+&lt;p&gt;​	HTTPS并非是应用层的新协议，它只是HTTP通信接口部分使用SSL和TSL协议代替。它在HTTP与TCP协议中添加了一个SSL协议，使HTTP拥有HTTPS的加密、证书、完整性保护等功能。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://segmentfault.com/img/bVbEwJl&#34; alt=&#34;image.png&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;​	SSL独立于HTTP的协议，应用层SMTP和Telnet等协议均可与之搭配使用，并获得加密等功能。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;加密机制&#34;&gt;加密机制&lt;/h3&gt;
+&lt;p&gt;​	HTTPS采用共享密钥和公开密钥加密两者并用的混合加密机制，充分利用两者各自的优势&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;利用公开密钥加密机制加密共享密钥(Pre-master secret)，避免共享密钥被窃取&lt;/li&gt;
+&lt;li&gt;通信时，则利用共享密钥加密机制，保证性能&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;两者主要差别：&lt;/p&gt;
+&lt;p&gt;​	公开密钥：非对称加密，安全，但处理复杂，效率低&lt;/p&gt;
+&lt;p&gt;​	共享密钥：对称加密机制，相对不安全，传输密钥时可能被窃取，但效率更高&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;认证机制&#34;&gt;认证机制&lt;/h3&gt;
+&lt;p&gt;​	使用共享密钥加密时，需要证明公开密钥本身就是货真价实，未被替换，所以我们在传输公钥之前对通信方认证。&lt;/p&gt;
+&lt;p&gt;​	HTTPS通过使用&lt;strong&gt;证书&lt;/strong&gt;来对通信方进行验证。&lt;/p&gt;
+&lt;p&gt;​	使用由数字证书认证机构(CA，Certificate Authority)和其颁发的公开密钥证书，认证公开密钥。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;数字证书认证机构（CA，Certificate Authority）是客户端与服务器双方都可信赖的第三方机构。服务器的运营人员向 CA 提出公开密钥的申请，CA 在判明提出申请者的身份之后，会对已申请的公开密钥做数字签名，然后分配这个已签名的公开密钥，并将该公开密钥放入公开密钥证书后绑定在一起。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;服务器首先将公钥证书利用公开密钥加密的方式发送给客户端&lt;/li&gt;
+&lt;li&gt;客户端收到后，利用数字认证机构的公开密钥，对此证书的数字千米进行验证，如通过，则可证明：
+&lt;ul&gt;
+&lt;li&gt;数字证书认证机构后真实有效&lt;/li&gt;
+&lt;li&gt;服务端的公开密钥可信&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;通信双方利用这对公钥私钥进行加密和解密，得到共享的密钥&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;数字认证机构的公开密钥一般事先在浏览器内部植入&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;完整性保护机制&#34;&gt;完整性保护机制&lt;/h3&gt;
+&lt;p&gt;HTTPS主要使用摘要算法来保护报文的完整性&lt;/p&gt;
+&lt;h4 id=&#34;摘要算法&#34;&gt;摘要算法&lt;/h4&gt;
+&lt;p&gt;又称哈希算法、散列算法。它通过一个函数，把任意长度的数据转换为一个长度固定的数据串，常见的有MD5，SHA-2等&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;摘要算法&lt;strong&gt;不是加密算法&lt;/strong&gt;，不能用于加密（因为无法通过摘要反推明文），&lt;strong&gt;只能用于防篡改&lt;/strong&gt;，但是它的单向计算特性决定了可以在不存储明文口令的情况下验证用户口令。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;应用层发送数据时会附加Message Authentication Code报文摘要。MAC能查知报文是否遭到了篡改，从而保护报文的完整性。&lt;/p&gt;
+&lt;h2 id=&#34;https-通信流程&#34;&gt;HTTPS 通信流程&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/02/21/BWwJxbpPETst5ug.png&#34; alt=&#34;image-20210221163750864&#34;&gt;&lt;img src=&#34;https://i.loli.net/2021/02/21/XOVojxhzP7qw1SH.png&#34; alt=&#34;image-20210221163944755&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;其他&#34;&gt;其他&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;由于需要加密解密处理以及SSL握手等过程，需要更多的网络负载，以及CPU资源性能上HTTPS比HTTP慢很多&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;一般利用SSL加速器(专用服务器)来改善问题&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;浏览器客户端访问同一个https服务器，可以不必每次都进行完整的TLS Handshake。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;​	服务器会为每个浏览器（或客户端软件）维护一个session ID，在TSL握手阶段传给浏览器，浏览器生成好密钥(Pre-Master secret)传给服务器后，服务器会把该密钥存到相应的session ID下，之后浏览器每次请求都会携带session ID，服务器会根据session ID找到相应的密钥并进行解密加密操作。&lt;/p&gt;
+&lt;p&gt;​	如果没有此ID，则需要完整的进行TLS Handshake&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://developer.mozilla.org/zh-CN/docs/Glossary/https&#34;&gt;MDN&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/%E8%B6%85%E6%96%87%E6%9C%AC%E4%BC%A0%E8%BE%93%E5%AE%89%E5%85%A8%E5%8D%8F%E8%AE%AE#%E4%B8%8EHTTP%E7%9A%84%E5%B7%AE%E5%BC%82&#34;&gt;wikipeida&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.cnblogs.com/cxuanBlog/p/12490862.html&#34;&gt;cxuan’s blog&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;《图解HTTP/HTTPS》&lt;/li&gt;
+&lt;/ul&gt;
 </description>
       
     </item>
