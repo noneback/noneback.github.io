@@ -23,7 +23,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <meta name="author" content="NoneBack" />
-  <meta name="description" content="HTTPS浅析 ​ HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 SSL 或者 TLS 来加密客户端" />
+  <meta name="description" content="​ HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 SSL 或者 TLS 来加密客户端和服务器之间所" />
 <meta name="keywords" content="HTTPS, HTTP" />
 
 
@@ -62,23 +62,23 @@
 
 
 <meta property="og:title" content="HTTPS浅析" />
-<meta property="og:description" content="HTTPS浅析 ​ HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 SSL 或者 TLS 来加密客户端" />
+<meta property="og:description" content="​ HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 SSL 或者 TLS 来加密客户端和服务器之间所" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/https%E6%B5%85%E6%9E%90/" />
 <meta property="article:published_time" content="2021-02-21T16:48:55+08:00" />
 <meta property="article:modified_time" content="2021-02-21T16:48:55+08:00" />
 <meta itemprop="name" content="HTTPS浅析">
-<meta itemprop="description" content="HTTPS浅析 ​ HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 SSL 或者 TLS 来加密客户端">
+<meta itemprop="description" content="​ HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 SSL 或者 TLS 来加密客户端和服务器之间所">
 <meta itemprop="datePublished" content="2021-02-21T16:48:55+08:00" />
 <meta itemprop="dateModified" content="2021-02-21T16:48:55+08:00" />
-<meta itemprop="wordCount" content="1665">
+<meta itemprop="wordCount" content="1658">
 
 
 
 <meta itemprop="keywords" content="Network,HTTPS,HTTP," />
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="HTTPS浅析"/>
-<meta name="twitter:description" content="HTTPS浅析 ​ HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 SSL 或者 TLS 来加密客户端"/>
+<meta name="twitter:description" content="​ HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 SSL 或者 TLS 来加密客户端和服务器之间所"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -390,8 +390,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     
     <div class="post-content">
-      <h1 id="https浅析">HTTPS浅析</h1>
-<p>​	HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 <a href="https://developer.mozilla.org/en-US/docs/Glossary/SSL">SSL</a> 或者 <a href="https://developer.mozilla.org/en-US/docs/Glossary/TLS">TLS</a> 来加密客户端和服务器之间所有的通信</p>
+      <p>​	HTTPS(HTTP over SSL)是为了解决HTTP中可能存在的信息窃听和身份伪装等安全问题而诞生的HTTP加密版本，通常使用 <a href="https://developer.mozilla.org/en-US/docs/Glossary/SSL">SSL</a> 或者 <a href="https://developer.mozilla.org/en-US/docs/Glossary/TLS">TLS</a> 来加密客户端和服务器之间所有的通信</p>
 <h2 id="http的问题">HTTP的问题</h2>
 <ul>
 <li>通信使用明文，内容可能会被窃听</li>
@@ -424,7 +423,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>​						$HTTP + 加密 + 认证 + 完整性保护 = HTTPS$</p>
 <h3 id="https-over-ssl">HTTPS over SSL</h3>
 <p>​	HTTPS并非是应用层的新协议，它只是HTTP通信接口部分使用SSL和TSL协议代替。它在HTTP与TCP协议中添加了一个SSL协议，使HTTP拥有HTTPS的加密、证书、完整性保护等功能。</p>
-<p><img src="https://segmentfault.com/img/bVbEwJl" alt="image.png"></p>
+<p><img src="https://i.loli.net/2021/02/21/cdQk9AGJUCF4MLI.png" alt="image.png"></p>
 <blockquote>
 <p>​	SSL独立于HTTP的协议，应用层SMTP和Telnet等协议均可与之搭配使用，并获得加密等功能。</p>
 </blockquote>
