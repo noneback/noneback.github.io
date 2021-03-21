@@ -75,8 +75,8 @@
 &lt;p&gt;使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序。查询索引时，我们也需要满足最左前缀匹配，否则数据的排列是无序的，会导致全表的扫描。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;使用 col1,col2,col3构建索引，按照最左前缀匹配，在设计查询语句时我们需要按照col1 -&amp;gt; col2 -&amp;gt; col3的顺序去设计判断条件。&lt;/p&gt;
-&lt;p&gt;select * from table_name where col1 = 1 and col2 = 2 ; 走索引&lt;/p&gt;
-&lt;p&gt;select * from table_name where col2 = 1 and col3 = 2 ; 不走索引&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;select * from table_name where col1 = 1 and col2 = 2;&lt;/code&gt; 走索引&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;select * from table_name where col2 = 1 and col3 = 2;&lt;/code&gt; 不走索引&lt;/p&gt;
 &lt;p&gt;注：&lt;strong&gt;MySQL查询时，会一直向右匹配直到遇到范围查询(&amp;gt;、&amp;lt;、between、like)就停止匹配&lt;/strong&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h3 id=&#34;索引覆盖原则&#34;&gt;索引覆盖原则&lt;/h3&gt;

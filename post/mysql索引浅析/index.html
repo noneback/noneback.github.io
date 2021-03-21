@@ -71,7 +71,7 @@
 <meta itemprop="name" content="MySQL索引浅析">
 <meta itemprop="description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。 My"><meta itemprop="datePublished" content="2021-03-21T20:41:33&#43;08:00" />
 <meta itemprop="dateModified" content="2021-03-21T20:41:33&#43;08:00" />
-<meta itemprop="wordCount" content="893">
+<meta itemprop="wordCount" content="891">
 <meta itemprop="keywords" content="DB,MySQL," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="MySQL索引浅析"/>
 <meta name="twitter:description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。 My"/>
@@ -417,8 +417,8 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序。查询索引时，我们也需要满足最左前缀匹配，否则数据的排列是无序的，会导致全表的扫描。</p>
 <blockquote>
 <p>使用 col1,col2,col3构建索引，按照最左前缀匹配，在设计查询语句时我们需要按照col1 -&gt; col2 -&gt; col3的顺序去设计判断条件。</p>
-<p>select * from table_name where col1 = 1 and col2 = 2 ; 走索引</p>
-<p>select * from table_name where col2 = 1 and col3 = 2 ; 不走索引</p>
+<p><code>select * from table_name where col1 = 1 and col2 = 2;</code> 走索引</p>
+<p><code>select * from table_name where col2 = 1 and col3 = 2;</code> 不走索引</p>
 <p>注：<strong>MySQL查询时，会一直向右匹配直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配</strong></p>
 </blockquote>
 <h3 id="索引覆盖原则">索引覆盖原则</h3>
