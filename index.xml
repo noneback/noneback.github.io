@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Sun, 21 Feb 2021 16:48:55 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 21 Mar 2021 20:41:33 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -34,6 +34,57 @@
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;a href=&#34;https://github.com/anuraghazra/github-readme-stats&#34;&gt;&lt;img src=&#34;https://github-readme-stats.vercel.app/api/top-langs/?username=noneback&amp;amp;hide=html&amp;amp;&amp;amp;layout=compact&#34; alt=&#34;Top Langs&#34;&gt;&lt;/a&gt;&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>MySQL索引浅析</title>
+      <link>https://noneback.github.io/post/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/</link>
+      <pubDate>Sun, 21 Mar 2021 20:41:33 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/</guid>
+      
+        <description>&lt;p&gt;&lt;strong&gt;数据库索引&lt;/strong&gt;，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B+树，哈希表等。&lt;/p&gt;
+&lt;p&gt;MySQL中使用的是B+树构建索引。理由是B+树的一个节点可以存储更多的数据，并且B+树中，仅有叶子节点存储数据，非叶子节点仅存储索引，故而能将索引尽量多的保存在内存中，减少了树高，也降低了查询索引时进入磁盘IO的次数，极大提高查询的效率。&lt;/p&gt;
+&lt;h2 id=&#34;innodb中的索引&#34;&gt;Innodb中的索引&lt;/h2&gt;
+&lt;h3 id=&#34;聚簇索引与非聚簇索引&#34;&gt;聚簇索引与非聚簇索引&lt;/h3&gt;
+&lt;p&gt;索引按照叶子节点保存的数据可分为聚簇索引和非聚簇索引两种&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;聚簇索引&lt;/strong&gt;： 叶子节点直接保存了数据行，能够直接查询到用户数据&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;非聚簇索引&lt;/strong&gt;：叶子节点保存了主键的值，通过&lt;strong&gt;回表&lt;/strong&gt;，查询主键索引查询用户数据&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Innodb引擎是利用主键索引组织表中的数据，每个表中一定需要有主键，利用主键构造B+树，得到主键索引，其中&lt;strong&gt;主键索引就是聚簇索引&lt;/strong&gt;，其余的&lt;strong&gt;二级索引都是非聚簇索引&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id=&#34;联合索引&#34;&gt;联合索引&lt;/h3&gt;
+&lt;p&gt;联合索引是由多个字段组成的索引。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-sql&#34; data-lang=&#34;sql&#34;&gt;&lt;span class=&#34;k&#34;&gt;create&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;index&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;index_name&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;on&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;table_name&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;col_1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;col_2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;...)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;相比与单值索引，主要区别在于其遵守&lt;strong&gt;最左前缀匹配原则&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;最左前缀匹配原则：使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;使用索引优化查询性能&#34;&gt;使用索引优化查询性能&lt;/h2&gt;
+&lt;p&gt;由于索引有序，故而能极大的提高查询的效率。使用索引进行查询优化时要遵守一些原则&lt;/p&gt;
+&lt;h3 id=&#34;最左前缀匹配原则&#34;&gt;最左前缀匹配原则&lt;/h3&gt;
+&lt;p&gt;使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序。查询索引时，我们也需要满足最左前缀匹配，否则数据的排列是无序的，会导致全表的扫描。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;使用 col1,col2,col3构建索引，按照最左前缀匹配，在设计查询语句时我们需要按照col1 -&amp;gt; col2 -&amp;gt; col3的顺序去设计判断条件。&lt;/p&gt;
+&lt;p&gt;select * from table_name where col1 = 1 and col2 = 2 ; 走索引&lt;/p&gt;
+&lt;p&gt;select * from table_name where col2 = 1 and col3 = 2 ; 不走索引&lt;/p&gt;
+&lt;p&gt;注：&lt;strong&gt;MySQL查询时，会一直向右匹配直到遇到范围查询(&amp;gt;、&amp;lt;、between、like)就停止匹配&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;索引覆盖原则&#34;&gt;索引覆盖原则&lt;/h3&gt;
+&lt;p&gt;索引覆盖，指通过查询索引可以直接查询到需要的值，而不需要回表等操作。设计合理的索引，可以减少回表的次数。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;对联合索引(col1,col2,col3)&lt;/p&gt;
+&lt;p&gt;查询语句 &lt;code&gt;select col1,col2,col3 from test where col1=1 and col2=2&lt;/code&gt;可以直接查到col1-col3的值，无需回表，因为他们的值已经被保存在二级索引中了。&lt;/p&gt;
+&lt;/blockquote&gt;
 </description>
       
     </item>
