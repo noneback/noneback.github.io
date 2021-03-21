@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>MySQL索引浅析 - NoneBack</title>
+  <title>MySQL · NoneBack</title>
   
 
 <meta name="renderer" content="webkit" />
@@ -22,10 +22,9 @@
 
 <meta name="mobile-web-app-capable" content="yes">
 
-<meta name="author" content="NoneBack" />
-  <meta name="description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。 My" />
-<meta name="keywords" content="DB, MySQL" />
-
+<meta name="author" content="noneback" />
+  <meta name="description" content="And then there were none" />
+  <meta name="keywords" content="Hugo, theme, jane, BUPT, Blog, noneback" />
 
 
 
@@ -35,8 +34,8 @@
 <meta name="generator" content="Hugo 0.81.0" />
 
 
-<link rel="canonical" href="https://noneback.github.io/post/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/" />
-
+<link rel="canonical" href="https://noneback.github.io/categories/mysql/" />
+<link href="/categories/mysql/index.xml" rel="alternate" type="application/rss+xml" title="NoneBack" />
 
 
 
@@ -61,20 +60,15 @@
 <link rel="stylesheet" href="/css/custom.css">
 
 
-<meta property="og:title" content="MySQL索引浅析" />
-<meta property="og:description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。 My" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://noneback.github.io/post/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2021-03-21T20:41:33&#43;08:00" />
-<meta property="article:modified_time" content="2021-03-21T20:41:33&#43;08:00" />
+<meta property="og:title" content="MySQL" />
+<meta property="og:description" content="And then there were none" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://noneback.github.io/categories/mysql/" />
 
-<meta itemprop="name" content="MySQL索引浅析">
-<meta itemprop="description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。 My"><meta itemprop="datePublished" content="2021-03-21T20:41:33&#43;08:00" />
-<meta itemprop="dateModified" content="2021-03-21T20:41:33&#43;08:00" />
-<meta itemprop="wordCount" content="891">
-<meta itemprop="keywords" content="DB,MySQL," /><meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MySQL索引浅析"/>
-<meta name="twitter:description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。 My"/>
+<meta itemprop="name" content="MySQL">
+<meta itemprop="description" content="And then there were none"><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MySQL"/>
+<meta name="twitter:description" content="And then there were none"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -337,157 +331,55 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
     <main id="main" class="main bg-llight">
       <div class="content-wrapper">
         <div id="content" class="content container">
-          <article class="post bg-white">
-    
-    <header class="post-header">
-      <h1 class="post-title">MySQL索引浅析</h1>
-      
-      <div class="post-meta">
-        <time datetime="2021-03-21" class="post-time">
-          2021-03-21
-        </time>
-        <div class="post-category">
-            <a href="https://noneback.github.io/categories/db/"> DB </a>
-            <a href="https://noneback.github.io/categories/mysql/"> MySQL </a>
-            
-          </div>
-        
-
-        
-        
-
-        
-        
-      </div>
-    </header>
-
-    
-    
-<div class="post-toc" id="post-toc">
-  <h2 class="post-toc-title">Table of Contents</h2>
-  <div class="post-toc-content">
-    <nav id="TableOfContents">
-  <ul>
-    <li><a href="#innodb中的索引">Innodb中的索引</a>
-      <ul>
-        <li><a href="#聚簇索引与非聚簇索引">聚簇索引与非聚簇索引</a></li>
-        <li><a href="#联合索引">联合索引</a></li>
-      </ul>
-    </li>
-    <li><a href="#使用索引优化查询性能">使用索引优化查询性能</a>
-      <ul>
-        <li><a href="#最左前缀匹配原则">最左前缀匹配原则</a></li>
-        <li><a href="#索引覆盖原则">索引覆盖原则</a></li>
-      </ul>
-    </li>
-  </ul>
-</nav>
-  </div>
-</div>
-
-    
-    <div class="post-content">
-      <p><strong>数据库索引</strong>，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B+树，哈希表等。</p>
-<p>MySQL中使用的是B+树构建索引。理由是B+树的一个节点可以存储更多的数据，并且B+树中，仅有叶子节点存储数据，非叶子节点仅存储索引，故而能将索引尽量多的保存在内存中，减少了树高，也降低了查询索引时进入磁盘IO的次数，极大提高查询的效率。</p>
-<h2 id="innodb中的索引">Innodb中的索引</h2>
-<h3 id="聚簇索引与非聚簇索引">聚簇索引与非聚簇索引</h3>
-<p>索引按照叶子节点保存的数据可分为聚簇索引和非聚簇索引两种</p>
-<ul>
-<li><strong>聚簇索引</strong>： 叶子节点直接保存了数据行，能够直接查询到用户数据</li>
-<li><strong>非聚簇索引</strong>：叶子节点保存了主键的值，通过<strong>回表</strong>，查询主键索引查询用户数据</li>
-</ul>
-<p>Innodb引擎是利用主键索引组织表中的数据，每个表中一定需要有主键，利用主键构造B+树，得到主键索引，其中<strong>主键索引就是聚簇索引</strong>，其余的<strong>二级索引都是非聚簇索引</strong></p>
-<h3 id="联合索引">联合索引</h3>
-<p>联合索引是由多个字段组成的索引。</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre class="chroma"><code class="language-sql" data-lang="sql"><span class="k">create</span> <span class="k">index</span> <span class="n">index_name</span> <span class="k">on</span> <span class="k">table_name</span> <span class="p">(</span><span class="n">col_1</span><span class="p">,</span><span class="n">col_2</span><span class="p">...)</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>相比与单值索引，主要区别在于其遵守<strong>最左前缀匹配原则</strong></p>
-<blockquote>
-<p>最左前缀匹配原则：使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序</p>
-</blockquote>
-<h2 id="使用索引优化查询性能">使用索引优化查询性能</h2>
-<p>由于索引有序，故而能极大的提高查询的效率。使用索引进行查询优化时要遵守一些原则</p>
-<h3 id="最左前缀匹配原则">最左前缀匹配原则</h3>
-<p>使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序。查询索引时，我们也需要满足最左前缀匹配，否则数据的排列是无序的，会导致全表的扫描。</p>
-<blockquote>
-<p>使用 col1,col2,col3构建索引，按照最左前缀匹配，在设计查询语句时我们需要按照col1 -&gt; col2 -&gt; col3的顺序去设计判断条件。</p>
-<p><code>select * from table_name where col1 = 1 and col2 = 2;</code> 走索引</p>
-<p><code>select * from table_name where col2 = 1 and col3 = 2;</code> 不走索引</p>
-<p>注：<strong>MySQL查询时，会一直向右匹配直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配</strong></p>
-</blockquote>
-<h3 id="索引覆盖原则">索引覆盖原则</h3>
-<p>索引覆盖，指通过查询索引可以直接查询到需要的值，而不需要回表等操作。设计合理的索引，可以减少回表的次数。</p>
-<blockquote>
-<p>对联合索引(col1,col2,col3)</p>
-<p>查询语句 <code>select col1,col2,col3 from test where col1=1 and col2=2</code>可以直接查到col1-col3的值，无需回表，因为他们的值已经被保存在二级索引中了。</p>
-</blockquote>
-
-    </div>
-
-    
-    
-<div class="post-copyright">
-  <p class="copyright-item">
-    <span class="item-title">Author</span>
-    <span class="item-content">NoneBack</span>
-  </p>
-  <p class="copyright-item">
-    <span class="item-title">LastMod</span>
-    <span class="item-content">
-      2021-03-21
-      
-    </span>
-  </p>
-  
-  <p class="copyright-item">
-    <span class="item-title">License</span>
-    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
-  </p>
-</div>
-
-
-    
-    
-
-    <footer class="post-footer">
-      <div class="post-tags">
-          <a href="https://noneback.github.io/tags/db/">DB</a>
-          <a href="https://noneback.github.io/tags/mysql/">MySQL</a>
           
-        </div>
 
-      
-      <nav class="post-nav">
-        
-        
-          <a class="next" href="/post/https%E6%B5%85%E6%9E%90/">
-            <span class="next-text nav-default">HTTPS浅析</span>
-            <span class="prev-text nav-mobile">Next</span>
-            
-            <i class="iconfont">
-              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
-  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-  width="18" height="18">
-  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
-</svg>
+<section id="archive" class="archive">
+  
+    
+      <div class="archive-title category">
+        <h2 class="archive-name">Category: MySQL</h2>
+      </div>
+    
+  
 
-            </i>
-          </a>
-      </nav>
-    </footer>
-  </article>
+  
+    <div class="archive-post">
+      <time datetime="2021-03-21" class="archive-post-time">
+        2021-03-21
+      </time>
+      <span class="archive-post-title">
+        <a href="/post/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/" class="archive-post-link">
+          MySQL索引浅析
+        </a>
+      </span>
+    </div>
+  
+</section>
+
+
+
+
+
+
+  
+  
+  
 
   
   
 
   
   
+
+  
+  
+
+  
+  
+
+
+
+
 
         </div>
       </div>
@@ -593,13 +485,6 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
 
 
-  <script type="text/javascript">
-    window.MathJax = {
-      showProcessingMessages: false,
-      messageStyle: 'none'
-    };
-  </script>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
 
 
 
