@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Sun, 21 Mar 2021 20:41:33 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 02 May 2021 13:47:30 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -34,6 +34,57 @@
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;a href=&#34;https://github.com/anuraghazra/github-readme-stats&#34;&gt;&lt;img src=&#34;https://github-readme-stats.vercel.app/api/top-langs/?username=noneback&amp;amp;hide=html&amp;amp;&amp;amp;layout=compact&#34; alt=&#34;Top Langs&#34;&gt;&lt;/a&gt;&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>CPU伪共享</title>
+      <link>https://noneback.github.io/post/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/</link>
+      <pubDate>Sun, 02 May 2021 13:47:30 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/</guid>
+      
+        <description>&lt;p&gt;起因只是因为面试时被问到的一个问题：什么是CPU伪共享？&lt;/p&gt;
+&lt;h2 id=&#34;cpu缓存&#34;&gt;CPU缓存&lt;/h2&gt;
+&lt;p&gt;让我们先从CPU缓存讲起。&lt;/p&gt;
+&lt;p&gt;CPU Cache是计算机为了解决CPU和主存之间的速度差异，引入 的一种存储介质。在金字塔式存储体系中它位于自顶向下的第二层，仅次于CPU寄存器。其容量远小于内存，但速度却可以接近处理器的频率。&lt;/p&gt;
+&lt;p&gt;缓存的有效实际上是依托于程序的时空局部性原理。&lt;/p&gt;
+&lt;p&gt;使用场景上，当处理器发出内存访问请求时，会先查看缓存内是否有请求数据。如果存在（命中），则不经访问内存直接返回该数据；如果不存在（失效），则要先把内存中的相应数据载入缓存，再将其返回处理器。&lt;/p&gt;
+&lt;h2 id=&#34;cpu缓存架构&#34;&gt;CPU缓存架构&lt;/h2&gt;
+&lt;p&gt;CPU与主存之间通常有三级缓存，缓存靠近CPU缓存的速率就越快，同时容量也越小。CPU获取数据时，它先去 L1 查找所需的数据，再去 L2，然后是 L3，最后如果这些缓存中都没有，所需的数据就要去主内存拿。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://assets.processon.com/chart_image/608ba4a2f346fb7dd394484a.png&#34; alt=&#34;http://assets.processon.com/chart_image/608ba4a2f346fb7dd394484a.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;其中：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;L1 紧靠着在使用它的 CPU 内核。L1，L2只能被一个单独的 CPU 核使用。&lt;/li&gt;
+&lt;li&gt;L3 能够被单个插槽上的所有 CPU 核共享。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;cpu缓存块&#34;&gt;CPU缓存块&lt;/h2&gt;
+&lt;p&gt;缓存实际上是以&lt;strong&gt;缓存块&lt;/strong&gt;（或者称之为缓存行）为&lt;strong&gt;最小存取单位&lt;/strong&gt;进行存取的，通常是64个字节，它有效引用了主存中的一块地址（64字节）。&lt;/p&gt;
+&lt;p&gt;缓存的更新一次性至少更新一个缓存块。&lt;/p&gt;
+&lt;p&gt;这样加载缓存的好处是，如果我们需要的数据正好彼此相邻，那么就不需要再次更新缓存；&lt;/p&gt;
+&lt;p&gt;坏处在于可能会导致CPU的伪共享问题。&lt;/p&gt;
+&lt;h2 id=&#34;cpu伪共享&#34;&gt;CPU伪共享&lt;/h2&gt;
+&lt;p&gt;假设这么一个场景：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;首先，我们有个 long 类型的变量 a，它不是数组的一部分，而是一个单独的变量，并且还有另外一个 long 类型的变量 b 紧挨着它，那么当加载 a 的时候将免费加载 b。&lt;/li&gt;
+&lt;li&gt;这个时候，一个 CPU 核心的线程在对 a 进行修改，另一个 CPU 核心的线程却在对 b 进行读取。&lt;/li&gt;
+&lt;li&gt;当前者修改 a 时，会把 a 和 b 同时加载到前者核心的缓存行中，更新完 a 后其它所有包含 a 的缓存行都将失效，因为其它缓存中的 a 不是最新值了。&lt;/li&gt;
+&lt;li&gt;而当后者读取 b 时，发现这个缓存行已经失效了，需要从主内存中重新加载。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;我们的缓存都是以缓存行作为一个单位来处理的，所以失效 a 的缓存的同时，也会把 b 失效，反之亦然。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34; alt=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34;&gt;&lt;/p&gt;
+&lt;p&gt;这样就出现了问题：&lt;/p&gt;
+&lt;p&gt;b 和 a 完全不相干，每次却要因为 a 的更新需要从主内存重新读取，它被缓存未命中给拖慢了。&lt;/p&gt;
+&lt;p&gt;CPU的&lt;em&gt;伪共享&lt;/em&gt;：&lt;strong&gt;当多线程修改互相独立的变量时，如果这些变量共享同一个缓存行，就会无意中影响彼此的性能，这就是伪共享&lt;/strong&gt;。&lt;/p&gt;
+&lt;h2 id=&#34;避免cpu伪共享&#34;&gt;避免CPU伪共享&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;让数据内存分布不相邻&lt;/li&gt;
+&lt;li&gt;编译时让&lt;a href=&#34;https://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%AF%B9%E9%BD%90&#34;&gt;变量对齐&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/65394173&#34;&gt;杂谈:什么是CPU伪共享&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/CPU%E7%BC%93%E5%AD%98&#34;&gt;wikipedia&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>
