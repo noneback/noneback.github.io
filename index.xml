@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Sun, 02 May 2021 13:47:30 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 12 May 2021 22:37:30 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -39,6 +39,71 @@
     </item>
     
     <item>
+      <title>服务发现基本原理</title>
+      <link>https://noneback.github.io/post/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</link>
+      <pubDate>Wed, 12 May 2021 22:37:30 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</guid>
+      
+        <description>&lt;p&gt;服务发现是什么？基本的实现思路？&lt;/p&gt;
+&lt;h2 id=&#34;总览&#34;&gt;总览&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg&#34; alt=&#34;https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;服务发现的角色组成&#34;&gt;服务发现的角色组成&lt;/h2&gt;
+&lt;p&gt;服务发现由三种角色组成：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;服务提供者：服务的实际提供者，提供对应的微服务&lt;/li&gt;
+&lt;li&gt;服务消费者：使用服务提供者提供的微服务，一般是其他上游微服务&lt;/li&gt;
+&lt;li&gt;服务中介：用于联系服务的提供者与消费者的一个服务，一般为KV存储，以服务名作为Key，以服务提供者IP作为Value，在&lt;strong&gt;有服务提供者状态变化的时候需要及时的更新与通知&lt;/strong&gt;。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;基本的流程是：首先创建一个服务提供者(微服务)，服务提供者将自身的服务地址(一般为IP:PORT)和服务名称注册到服务中介；服务消费者在调用其他微服务时，去服务中介查找服务地址，进行调用。&lt;/p&gt;
+&lt;h2 id=&#34;服务中介&#34;&gt;服务中介&lt;/h2&gt;
+&lt;p&gt;服务中介是服务发现的核心，除了支持服务注册与查找等基本功能，它还需要解决几个核心的问题：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;服务提供者Crash后，无法主动通知中介，怎么处理？如何保证服务列表的有效性。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;客户端心跳：服务提供者每隔一定时间主动发送“心跳”的方式来向服务端表明自己的服务状态正常，或者维护一个长连接&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;只说明了链路的正常，不代表服务的正常&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;服务端主动探测：服务中介主动调用服务节点的某个接口进行健康检查&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;服务注册中心主动调用服务的某个接口无法做到通用性。在很多场景下服务注册中心到服务发布者的网络是不通的，服务端无法主动发起健康检查，那么往往需要在宿主机器上部署一个 agent 来代替服务端的接口探测&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;服务列表更改之后，如何及时通知服务消费者&lt;/p&gt;
+&lt;p&gt;有一下集中机制处理：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;消费者轮询中介 + 服务列表版本号&lt;/li&gt;
+&lt;li&gt;消费中介推送：TCP长连接推送 or Http Polling&lt;/li&gt;
+&lt;li&gt;推拉结合：消费者主动拉取，中介主动推送&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;服务发现分布式，避免单点问题&lt;/p&gt;
+&lt;p&gt;采用分布式KV存储，如etcd等&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;常见服务发现工具&#34;&gt;&lt;strong&gt;常见服务发现工具&lt;/strong&gt;&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;ECTD&lt;/li&gt;
+&lt;li&gt;ZooKeeper&lt;/li&gt;
+&lt;li&gt;Consul&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;参考&#34;&gt;&lt;strong&gt;参考&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/34332329&#34;&gt;知乎:服务发现基本原理&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.infoq.cn/article/lknumimtzy08qxqckqma&#34;&gt;InfoQ:聊一聊微服务架构中的服务发现系统&lt;/a&gt;&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
       <title>CPU伪共享</title>
       <link>https://noneback.github.io/post/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/</link>
       <pubDate>Sun, 02 May 2021 13:47:30 +0800</pubDate>
@@ -53,8 +118,8 @@
 &lt;p&gt;使用场景上，当处理器发出内存访问请求时，会先查看缓存内是否有请求数据。如果存在（命中），则不经访问内存直接返回该数据；如果不存在（失效），则要先把内存中的相应数据载入缓存，再将其返回处理器。&lt;/p&gt;
 &lt;h2 id=&#34;cpu缓存架构&#34;&gt;CPU缓存架构&lt;/h2&gt;
 &lt;p&gt;CPU与主存之间通常有三级缓存，缓存靠近CPU缓存的速率就越快，同时容量也越小。CPU获取数据时，它先去 L1 查找所需的数据，再去 L2，然后是 L3，最后如果这些缓存中都没有，所需的数据就要去主内存拿。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;http://assets.processon.com/chart_image/608ba4a2f346fb7dd394484a.png&#34; alt=&#34;http://assets.processon.com/chart_image/608ba4a2f346fb7dd394484a.png&#34;&gt;&lt;/p&gt;
-&lt;p&gt;其中：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png&#34; alt=&#34;608ba4a2f346fb7dd394484a.png&#34;&gt;
+其中：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;L1 紧靠着在使用它的 CPU 内核。L1，L2只能被一个单独的 CPU 核使用。&lt;/li&gt;
 &lt;li&gt;L3 能够被单个插槽上的所有 CPU 核共享。&lt;/li&gt;
