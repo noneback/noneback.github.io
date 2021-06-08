@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.82.0" />
+<meta name="generator" content="Hugo 0.83.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/" />
@@ -53,7 +53,7 @@
 
 
 
-<link rel="stylesheet" href="/sass/jane.min.f7440b5c0d223f47a09bf5853465434e6f91d80a591c2f8d2d5e8220e5db0580.css" integrity="sha256-90QLXA0iP0egm/WFNGVDTm&#43;R2ApZHC&#43;NLV6CIOXbBYA=" media="screen" crossorigin="anonymous">
+<link rel="stylesheet" href="/sass/jane.min.fa4b2b9f31b5c6d0b683db81157a9226e17b06e61911791ab547242a4a0556f2.css" integrity="sha256-&#43;ksrnzG1xtC2g9uBFXqSJuF7BuYZEXkatUckKkoFVvI=" media="screen" crossorigin="anonymous">
 
 
 
@@ -71,7 +71,7 @@
 <meta itemprop="name" content="MySQL索引浅析">
 <meta itemprop="description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。 My"><meta itemprop="datePublished" content="2021-03-21T20:41:33&#43;08:00" />
 <meta itemprop="dateModified" content="2021-03-21T20:41:33&#43;08:00" />
-<meta itemprop="wordCount" content="891">
+<meta itemprop="wordCount" content="886">
 <meta itemprop="keywords" content="DB,MySQL," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="MySQL索引浅析"/>
 <meta name="twitter:description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。 My"/>
@@ -404,8 +404,8 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <pre class="chroma"><code><span class="lnt">1
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-sql" data-lang="sql"><span class="k">create</span> <span class="k">index</span> <span class="n">index_name</span> <span class="k">on</span> <span class="k">table_name</span> <span class="p">(</span><span class="n">col_1</span><span class="p">,</span><span class="n">col_2</span><span class="p">...)</span>
-</code></pre></td></tr></table>
+<pre class="chroma"><code class="language-sql" data-lang="sql"><span class="k">create</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">index_name</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="p">(</span><span class="n">col_1</span><span class="p">,</span><span class="n">col_2</span><span class="p">...)</span><span class="w">
+</span></code></pre></td></tr></table>
 </div>
 </div><p>相比与单值索引，主要区别在于其遵守<strong>最左前缀匹配原则</strong></p>
 <blockquote>
