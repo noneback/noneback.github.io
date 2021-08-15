@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>对Linux中Fork的理解 - NoneBack</title>
+  <title>2020年终总结 - NoneBack</title>
   
 
 <meta name="renderer" content="webkit" />
@@ -22,10 +22,10 @@
 
 <meta name="mobile-web-app-capable" content="yes">
 
-<meta name="author" content="noneback" />
+<meta name="author" content="NoneBack" />
   <meta name="description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8" />
+<meta name="keywords" content="Linux, OS, SysCall" />
 
-  <meta name="keywords" content="Hugo, theme, jane, BUPT, Blog, noneback" />
 
 
 
@@ -61,19 +61,19 @@
 <link rel="stylesheet" href="/css/custom.css">
 
 
-<meta property="og:title" content="对Linux中Fork的理解" />
+<meta property="og:title" content="2020年终总结" />
 <meta property="og:description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2019-11-01T00:00:00&#43;00:00" />
-<meta property="article:modified_time" content="2019-11-01T00:00:00&#43;00:00" />
+<meta property="article:published_time" content="2021-02-18T15:56:31&#43;08:00" />
+<meta property="article:modified_time" content="2021-02-18T15:56:31&#43;08:00" />
 
-<meta itemprop="name" content="对Linux中Fork的理解">
-<meta itemprop="description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8"><meta itemprop="datePublished" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="dateModified" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="1685">
-<meta itemprop="keywords" content="Linux,OS," /><meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="对Linux中Fork的理解"/>
+<meta itemprop="name" content="2020年终总结">
+<meta itemprop="description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8"><meta itemprop="datePublished" content="2021-02-18T15:56:31&#43;08:00" />
+<meta itemprop="dateModified" content="2021-02-18T15:56:31&#43;08:00" />
+<meta itemprop="wordCount" content="2621">
+<meta itemprop="keywords" content="OS,Linux," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="2020年终总结"/>
 <meta name="twitter:description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8"/>
 
 <!--[if lte IE 9]>
@@ -340,11 +340,11 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
           <article class="post bg-white">
     
     <header class="post-header">
-      <h1 class="post-title">对Linux中Fork的理解</h1>
+      <h1 class="post-title">2020年终总结</h1>
       
       <div class="post-meta">
-        <time datetime="2019-11-01" class="post-time">
-          2019-11-01
+        <time datetime="2021-02-18" class="post-time">
+          2021-02-18
         </time>
         <div class="post-category">
             <a href="https://noneback.github.io/categories/os/"> OS </a>
@@ -367,13 +367,18 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
   <div class="post-toc-content">
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#前言"><strong>前言</strong></a>
+    <li><a href="#前言"><strong>前言</strong></a></li>
+    <li><a href="#fork函数介绍">fork()函数介绍</a></li>
+    <li><a href="#函数使用分析"><strong>函数使用分析</strong></a></li>
+    <li><a href="#理解fork的执行">理解fork的执行</a></li>
+    <li><a href="#fork里的cow机制">Fork里的COW机制</a>
       <ul>
-        <li><a href="#fork函数介绍实际上是vfork的api不过也可以借鉴一下"><strong>fork()函数介绍(实际上是vfork()的api，不过也可以借鉴一下)</strong></a></li>
+        <li><a href="#什么是copy-on-write">什么是Copy On Write</a></li>
+        <li><a href="#fork中cow技术实现原理">fork中COW技术实现原理</a></li>
       </ul>
     </li>
-    <li><a href="#函数分析"><strong>函数分析</strong></a></li>
     <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
   </div>
@@ -435,7 +440,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </code></pre></td></tr></table>
 </div>
 </div><p>查阅了些资料，看了几回才稍微看懂一点fork()的用法，于是写下这篇博客记录一下。</p>
-<h3 id="fork函数介绍实际上是vfork的api不过也可以借鉴一下"><strong>fork()函数介绍(实际上是vfork()的api，不过也可以借鉴一下)</strong></h3>
+<h2 id="fork函数介绍">fork()函数介绍</h2>
 <p>简介：建立一个新的进程</p>
 <p>表头文件：</p>
 <div class="highlight"><div class="chroma">
@@ -468,7 +473,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <blockquote>
 <p>EAGAIN 内存不足。ENOMEM 内存不足，无法配置核心所需的数据结构空间。</p>
 </blockquote>
-<h2 id="函数分析"><strong>函数分析</strong></h2>
+<h2 id="函数使用分析"><strong>函数使用分析</strong></h2>
 <p>首先我们看看开头代码的运行结果：</p>
 <p><img src="https://i.loli.net/2019/09/30/6kj5yDTvsin42gd.jpg" alt=""></p>
 <p>Linux中进程是通过链表进行组织的，所以本文中使用 ParentProcess-&gt;ChildrenProcess的格式展示。</p>
@@ -487,7 +492,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>父进程接受信号，结束主进程。</p>
 </li>
 </ol>
-<p>##　深入理解</p>
+<h2 id="理解fork的执行">理解fork的执行</h2>
 <p>现在我们来看看这一段代码：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -547,8 +552,8 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
 </code></pre></td></tr></table>
 </div>
-</div><p>​	下面是它的执行结果：</p>
-<p>​	<img src="https://i.loli.net/2019/09/30/1ikRMdFGDxwXA3t.jpg" alt="选区_010.jpg"></p>
+</div><p>下面是它的执行结果：</p>
+<p><img src="https://i.loli.net/2019/09/30/1ikRMdFGDxwXA3t.jpg" alt="选区_010.jpg"></p>
 <p>下面我们来看看为什么会有这样的结果：</p>
 <p>１．首先父进程中，i=0时，打印<code>0 parent 26826 26917 26918</code>，随后父进程等待子进程执行。</p>
 <p>子进程接着拷贝父进程（连同ＰＣ），接着父进程中i=0时fork()之后的代码运行，打印<code>0 child  26917 26918    0</code>，此时子进程在i=0时的fork()返回０。</p>
@@ -556,10 +561,36 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>２.父进程中i=1时，执行fork()，生成子进程，打　印<code>1 parent 26826 26917 26920</code>。</p>
 <p>子进程接着执行1=1时，fork()之后的代码,打印<code>1 child  26917 26920    0</code>。进程结束。</p>
 <p>至于为什么父进程是１,这是另一方面的知识，暂且不管。</p>
+<h2 id="fork里的cow机制">Fork里的COW机制</h2>
+<p>一开始便说了，fork执行之后,产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。这里的复制使用了COW（<strong>Copy on Write</strong>）机制。</p>
+<h3 id="什么是copy-on-write">什么是Copy On Write</h3>
+<p>COW本质上是一种<strong>Lazy Copy</strong>的思想。</p>
+<blockquote>
+<p>写入时复制（英语：Copy-on-write，简称COW）是一种计算机程序设计领域的优化策略。</p>
+<p>其核心思想是，如果有多个调用者（callers）同时请求相同资源（如内存或磁盘上的数据存储），他们会共同获取相同的指针指向相同的资源，直到某个调用者试图修改资源的内容时，系统才会真正复制一份专用副本（private copy）给该调用者，而其他调用者所见到的最初的资源仍然保持不变。这过程对其他的调用者都是透明的（transparently）。</p>
+<p>此作法主要的优点是如果调用者没有修改该资源，就不会有副本（private copy）被建立，因此多个调用者只是读取操作时可以共享同一份资源。</p>
+</blockquote>
+<p>在使用fork创建子进程时，只有当有进程需要修改的时候才会真正的执行数据的拷贝，之后再在进程自己的数据段修改数据。否则，如果进程只有读请求的话，实际上不需要不执行资源的复制，只需要在不同进程之间维护对资源的引用即可。</p>
+<h3 id="fork中cow技术实现原理">fork中COW技术实现原理</h3>
+<p>fork()之后，kernel把父进程中所有的内存页的权限都设为read-only，然后子进程的地址空间指向父进程。当父子进程都只读内存时，相安无事。</p>
+<p>当其中某个进程写内存时，CPU硬件检测到内存页是read-only的，于是触发页异常中断（page-fault），陷入kernel的一个中断例程。</p>
+<p>中断例程中，kernel就会<strong>把触发的异常的页复制一份</strong>，于是父子进程各自持有独立的一份，之后进程再修改对应的数据。</p>
 <h2 id="总结">总结</h2>
 <p>fork()会返回两次，第一次在父进程中返回fork()出的子进程的pid,第二此在子进程中返回０，接着从fork()处之后的代码开始执行。</p>
-<p>参考资料：[https://www.kancloud.cn/wizardforcel/linux-c-api-ref/98511]</p>
-<p>​					[https://cloud.tencent.com/developer/article/1338482]</p>
+<p>fork()会产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。</p>
+<p>复制资源的核心是<strong>COW思想</strong>。</p>
+<p>好处</p>
+<ul>
+<li>COW技术可<strong>减少</strong>分配和复制大量资源时带来的<strong>瞬间延时</strong>。</li>
+<li>COW技术可减少<strong>不必要的资源分配</strong>。比如fork进程时，并不是所有的页面都需要复制，父进程的<strong>代码段和只读数据段都不被允许修改，所以无需复制</strong>。</li>
+</ul>
+<p>缺点</p>
+<ul>
+<li>如果在fork()之后，父子进程都还需要继续进行写操作，<strong>那么会产生大量的分页错误(页异常中断page-fault)</strong>，这样就得不偿失。</li>
+</ul>
+<h2 id="参考">参考</h2>
+<p><a href="https://www.kancloud.cn/wizardforcel/linux-c-api-ref/98511">1</a></p>
+<p><a href="%5Bhttps://cloud.tencent.com/developer/article/1338482%5D">2</a></p>
 
     </div>
 
@@ -568,12 +599,12 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <div class="post-copyright">
   <p class="copyright-item">
     <span class="item-title">Author</span>
-    <span class="item-content">noneback</span>
+    <span class="item-content">NoneBack</span>
   </p>
   <p class="copyright-item">
     <span class="item-title">LastMod</span>
     <span class="item-content">
-      2019-11-01
+      2021-02-18
       
     </span>
   </p>
@@ -590,15 +621,15 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     <footer class="post-footer">
       <div class="post-tags">
-          <a href="https://noneback.github.io/tags/linux/">Linux</a>
           <a href="https://noneback.github.io/tags/os/">OS</a>
+          <a href="https://noneback.github.io/tags/linux/">Linux</a>
           
         </div>
 
       
       <nav class="post-nav">
         
-          <a class="prev" href="/post/java%E4%B8%AD%E7%9A%84lambda/">
+          <a class="prev" href="/post/2020%E5%B9%B4%E7%BB%88%E6%80%BB%E7%BB%93/">
             
             <i class="iconfont">
               <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -608,12 +639,12 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </svg>
 
             </i>
-            <span class="prev-text nav-default">Java中的lambda表达式</span>
+            <span class="prev-text nav-default">2020年终总结</span>
             <span class="prev-text nav-mobile">Prev</span>
           </a>
         
-          <a class="next" href="/post/%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%8C%E6%AD%A5%E4%B8%8E%E4%BA%92%E6%96%A5/">
-            <span class="next-text nav-default">进程的同步与互斥</span>
+          <a class="next" href="/post/mit6.824-mapreduce/">
+            <span class="next-text nav-default">MIT6.824-MapReduce</span>
             <span class="prev-text nav-mobile">Next</span>
             
             <i class="iconfont">
@@ -754,6 +785,13 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
 
 
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
 
 
 
