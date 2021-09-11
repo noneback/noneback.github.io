@@ -21,8 +21,7 @@ sequenceDiagrams:
   enable: true
   options: ""
 ---
-
-# 对Linux中Fork的理解
+这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。
 
 ## **前言**
 

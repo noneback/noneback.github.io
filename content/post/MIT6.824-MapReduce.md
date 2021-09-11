@@ -254,6 +254,35 @@ cd ./src/main
 
 sh  ./test-mr.sh
 ```
+## 优化
+
+这些优化是在我完成实验之后，回顾自己代码时想到的可以优化的一些设计。
+
+### 热点问题
+这里的热点问题是，可能会有一个热点数据频繁的出现在数据集中。Map阶段的中间结果值K-V形式的，这样会导致在shuffle步骤的时候，一个Key频繁的出现，进而导致有个别机器的磁盘IO和网络IO被大量的占用。
+
+> 这个问题的本质在于，MapReduce中的Shuffle在**设计**上是强依赖于数据的。
+>
+> 它的**设计目的**就是为了聚合中间结果数据以便Reduce阶段能够更好的进行处理。基于此，在数据极度分布不均的时候，自然会有热点问题。
+
+实际上，问题本质是，大量的Key在Hash处理后被分配到以一个磁盘文件中，作为后续Reduce的输入。
+
+同一个Key的Hash值理当是相同的，所以问题可以变形为：*如何让相同的Key的Hash分桶到不一样机器中？*
+
+目前我想到的可行方式就是在Shuffle的Hash计算中，为Key添加随机salt，使得Hash的值不相同，减少哈希分桶到同一个机器的概率，进而解决热点问题。
+
+### 容错问题
+
+对于容错问题其实论文中已经有了一些解决方案。这个问题的场景是：Worker节点的机器突然Crash，并在重启之后重新连接。Master观测到Worker的Crash并将其任务重新分配给其他节点执行，这是Worker节点重新连接，之前的执行还在继续，双方都执行，可能导致生成两份结果文件。
+
+这里的潜在问题是，这两份文件可能会导致结果出现错误。同时，重新连接的Worker继续执行原有的任务，浪费CPU，IO资源。
+
+基于此，我们需要标明生成结果文件的新旧，只有最新的文件才能够被作为结果统计，这样就解决了文件冲突；同时，为Worker节点添加一个Rpc接口，使得其重新连接的时候，Master可以调用以清除原有任务。
+
+### 长尾问题
+
+长尾问题，就是指某个Task执行时间长，导致MapReduce无法迅速完成。其实本质上就是热点问题和Worker的Crash处理问题，可以参考上述博客。
+
 
 ## 参考
 
@@ -262,8 +291,6 @@ sh  ./test-mr.sh
 [Lab Official Site](https://pdos.csail.mit.edu/6.824/labs/lab-mr.html)
 
 [MapReduce: Simplified Data Processing on Large Clusters](http://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf)
-
-[Source Code](https://github.com/noneback/Toys/tree/master/6.824-Lab1-MapReduce)
 
 [Google MapReduce 论文详解](https://zhuanlan.zhihu.com/p/34849261)
 
