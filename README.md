@@ -1,5 +1,5 @@
 # Personal Blog
-personal blog, powered by hugo
+personal blog, powered by hugo and utteranc
 ## Theme
 [hugo-theme-jane](https://github.com/xianmin/hugo-theme-jane)
 
