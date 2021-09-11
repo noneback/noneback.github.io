@@ -8,7 +8,7 @@ tags: ["MIT6.824","Distributed System","Paper Reading"]
 categories: ["MIT6.824","Distributed System","Paper Reading"]
 draft: false
 author: "NoneBack"
-comment: false
+comment: true
 toc: true
 autoCollapseToc: true
 reward: false

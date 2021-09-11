@@ -8,7 +8,7 @@ tags: ["CPU","Cache"]
 categories: ["CS"]
 draft: false
 author: "NoneBack"
-comment: false
+comment: true
 toc: true
 autoCollapseToc: true
 reward: false
