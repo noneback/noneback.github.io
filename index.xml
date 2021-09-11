@@ -714,7 +714,7 @@
 &lt;p&gt;&lt;strong&gt;IO复用&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;阻塞IO的问题是，业务交由线程处理，阻塞导致大量的资源被占用；阻塞与恢复会可能会导致大量的上下文切换,效率低下；&lt;/p&gt;
 &lt;p&gt;非阻塞IO的问题是，在不使用监视器的情况下，依靠死循环完成一次 IO 操作。但是这样做的效率实在是太低了，完全没有实际意义；&lt;/p&gt;
-&lt;p&gt;实际上，task的运行是不可避免的，有数据需要处理，就需要CPU去执行。所以可以优化的点在于，如何减少上下文切换的频率或者说减少运行处理业务的线程，以及减少CPU无意义的空转。&lt;/p&gt;
+&lt;p&gt;实际上，task的运行是不可避免的，有数据需要处理，就需要CPU去执行。所以可以优化的点在于，如何减少运行处理业务的线程以减少上下文调度开销和等待线程资源占用，以及减少CPU无意义的空转。&lt;/p&gt;
 &lt;p&gt;IO复用的基本思想就是，在一个线程中管理监听多个fd事件，减少上下文切换；采用事件通知机制，减少CPU的空转；&lt;/p&gt;
 &lt;p&gt;由此衍生出的select，poll，epoll，不过此乃他话，姑且不论。&lt;/p&gt;
 &lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
@@ -1416,7 +1416,7 @@ stress --vm-bytes 200m --vm-keep -m &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt;
       
       <guid>https://noneback.github.io/post/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/</guid>
       
-        <description>&lt;h1 id=&#34;对linux中fork的理解&#34;&gt;对Linux中Fork的理解&lt;/h1&gt;
+        <description>&lt;p&gt;这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。&lt;/p&gt;
 &lt;h2 id=&#34;前言&#34;&gt;&lt;strong&gt;前言&lt;/strong&gt;&lt;/h2&gt;
 &lt;p&gt;最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码:&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -1946,11 +1946,27 @@ go build -buildmode&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;plugin ../mrapps/
 sh  ./test-mr.sh
 &lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;/div&gt;&lt;h2 id=&#34;优化&#34;&gt;优化&lt;/h2&gt;
+&lt;p&gt;这些优化是在我完成实验之后，回顾自己代码时想到的可以优化的一些设计。&lt;/p&gt;
+&lt;h3 id=&#34;热点问题&#34;&gt;热点问题&lt;/h3&gt;
+&lt;p&gt;这里的热点问题是，可能会有一个热点数据频繁的出现在数据集中。Map阶段的中间结果值K-V形式的，这样会导致在shuffle步骤的时候，一个Key频繁的出现，进而导致有个别机器的磁盘IO和网络IO被大量的占用。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;这个问题的本质在于，MapReduce中的Shuffle在&lt;strong&gt;设计&lt;/strong&gt;上是强依赖于数据的。&lt;/p&gt;
+&lt;p&gt;它的&lt;strong&gt;设计目的&lt;/strong&gt;就是为了聚合中间结果数据以便Reduce阶段能够更好的进行处理。基于此，在数据极度分布不均的时候，自然会有热点问题。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;实际上，问题本质是，大量的Key在Hash处理后被分配到以一个磁盘文件中，作为后续Reduce的输入。&lt;/p&gt;
+&lt;p&gt;同一个Key的Hash值理当是相同的，所以问题可以变形为：&lt;em&gt;如何让相同的Key的Hash分桶到不一样机器中？&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;目前我想到的可行方式就是在Shuffle的Hash计算中，为Key添加随机salt，使得Hash的值不相同，减少哈希分桶到同一个机器的概率，进而解决热点问题。&lt;/p&gt;
+&lt;h3 id=&#34;容错问题&#34;&gt;容错问题&lt;/h3&gt;
+&lt;p&gt;对于容错问题其实论文中已经有了一些解决方案。这个问题的场景是：Worker节点的机器突然Crash，并在重启之后重新连接。Master观测到Worker的Crash并将其任务重新分配给其他节点执行，这是Worker节点重新连接，之前的执行还在继续，双方都执行，可能导致生成两份结果文件。&lt;/p&gt;
+&lt;p&gt;这里的潜在问题是，这两份文件可能会导致结果出现错误。同时，重新连接的Worker继续执行原有的任务，浪费CPU，IO资源。&lt;/p&gt;
+&lt;p&gt;基于此，我们需要标明生成结果文件的新旧，只有最新的文件才能够被作为结果统计，这样就解决了文件冲突；同时，为Worker节点添加一个Rpc接口，使得其重新连接的时候，Master可以调用以清除原有任务。&lt;/p&gt;
+&lt;h3 id=&#34;长尾问题&#34;&gt;长尾问题&lt;/h3&gt;
+&lt;p&gt;长尾问题，就是指某个Task执行时间长，导致MapReduce无法迅速完成。其实本质上就是热点问题和Worker的Crash处理问题，可以参考上述博客。&lt;/p&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Distributed System&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/labs/lab-mr.html&#34;&gt;Lab Official Site&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;http://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf&#34;&gt;MapReduce: Simplified Data Processing on Large Clusters&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://github.com/noneback/Toys/tree/master/6.824-Lab1-MapReduce&#34;&gt;Source Code&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/34849261&#34;&gt;Google MapReduce 论文详解&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;​&lt;/p&gt;
 </description>

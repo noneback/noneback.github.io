@@ -23,7 +23,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <meta name="author" content="NoneBack" />
-  <meta name="description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8" />
+  <meta name="description" content="这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。 前言 最近最学习操作系统，在《operating system conce" />
 <meta name="keywords" content="Linux, OS, SysCall" />
 
 
@@ -62,19 +62,19 @@
 
 
 <meta property="og:title" content="Linux中的Fork" />
-<meta property="og:description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8" />
+<meta property="og:description" content="这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。 前言 最近最学习操作系统，在《operating system conce" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/" /><meta property="article:section" content="post" />
 <meta property="article:published_time" content="2021-02-18T15:56:31&#43;08:00" />
 <meta property="article:modified_time" content="2021-02-18T15:56:31&#43;08:00" />
 
 <meta itemprop="name" content="Linux中的Fork">
-<meta itemprop="description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8"><meta itemprop="datePublished" content="2021-02-18T15:56:31&#43;08:00" />
+<meta itemprop="description" content="这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。 前言 最近最学习操作系统，在《operating system conce"><meta itemprop="datePublished" content="2021-02-18T15:56:31&#43;08:00" />
 <meta itemprop="dateModified" content="2021-02-18T15:56:31&#43;08:00" />
-<meta itemprop="wordCount" content="2628">
+<meta itemprop="wordCount" content="2655">
 <meta itemprop="keywords" content="OS,Linux," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Linux中的Fork"/>
-<meta name="twitter:description" content="对Linux中Fork的理解 前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码: 1 2 3 4 5 6 7 8"/>
+<meta name="twitter:description" content="这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。 前言 最近最学习操作系统，在《operating system conce"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -386,7 +386,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     
     <div class="post-content">
-      <h1 id="对linux中fork的理解">对Linux中Fork的理解</h1>
+      <p>这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。</p>
 <h2 id="前言"><strong>前言</strong></h2>
 <p>最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码:</p>
 <div class="highlight"><div class="chroma">
