@@ -221,24 +221,24 @@ Tablet逻辑上可以理解为Bigtable的落盘实体，实际上是交由Tablet
 > 基于原文描述，可能需要维护的映射：
 >
 >
-```cpp
- Mapping {
-   Table => list of Tablets // 
-   Tablet => Tablet handle
-     
-   struct Tablet handle {
-     list of Rows // Tablet contains
-     Tablet Server // where Tablet shores
-     ...
-   list of SSTable // where the tablet stores in GFS
-   }
-   
-   // Indexes
-   Row or Column Key => Tablet Location => SSTable 
- }
-```
+> ```cpp
+>  Mapping {
+>    Table => list of Tablets // 
+>    Tablet => Tablet handle
+>     
+>    struct Tablet handle {
+>      list of Rows // Tablet contains
+>      Tablet Server // where Tablet shores
+>      ...
+>    list of SSTable // where the tablet stores in GFS
+>    }
+>    
+>    // Indexes
+>    Row or Column Key => Tablet Location => SSTable 
+>  }
+> ```
 
-Bigtable通过Root Tablet + METADATA Table进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。
+Bigtable通过`Root Tablet + METADATA Table`进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。
 
 Root Tablet中保存了其他METADATA Tablet的位置信息。而METADATA Table的每一个Tablet包含了一系列的User Tablets的位置信息（可以理解为UserTable handle）,  每个Tablet的位置信息保存在METADATA的Row中。
 
