@@ -3,9 +3,9 @@ title: "MIT6.824-Bigtable"
 date: 2021-09-16T22:54:59+08:00
 lastmod: 2021-09-16T22:54:59+08:00
 mathjax: true
-keywords: []
-tags: []
-categories: []
+keywords: ["Bigtable","DFS","Distributed System","Paper Reading"]
+tags: ["Paper Reading","MIT6.824","DFS","Distributed System"]
+categories: ["MIT6.824","Distributed System","Paper Reading"]
 draft: false
 author: "NoneBack"
 comment: true
