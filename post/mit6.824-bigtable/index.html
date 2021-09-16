@@ -612,7 +612,6 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>Tablet逻辑上可以理解为Bigtable的落盘实体，实际上是交由Tablet Server去管理维护，那么这样就需要Bigtable去维护一定的映射关系。</p>
 <blockquote>
 <p>基于原文描述，可能需要维护的映射：</p>
-</blockquote>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre class="chroma"><code><span class="lnt"> 1
@@ -634,7 +633,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <pre class="chroma"><code class="language-cpp" data-lang="cpp"> <span class="n">Mapping</span> <span class="p">{</span>
    <span class="n">Table</span> <span class="o">=&gt;</span> <span class="n">list</span> <span class="n">of</span> <span class="n">Tablets</span> <span class="c1">// 
 </span><span class="c1"></span>   <span class="n">Tablet</span> <span class="o">=&gt;</span> <span class="n">Tablet</span> <span class="n">handle</span>
-     
+    
    <span class="k">struct</span> <span class="nc">Tablet</span> <span class="n">handle</span> <span class="p">{</span>
      <span class="n">list</span> <span class="n">of</span> <span class="n">Rows</span> <span class="c1">// Tablet contains
 </span><span class="c1"></span>     <span class="n">Tablet</span> <span class="n">Server</span> <span class="c1">// where Tablet shores
@@ -647,7 +646,8 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
  <span class="p">}</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>Bigtable通过Root Tablet + METADATA Table进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。</p>
+</div></blockquote>
+<p>Bigtable通过<code>Root Tablet + METADATA Table</code>进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。</p>
 <p>Root Tablet中保存了其他METADATA Tablet的位置信息。而METADATA Table的每一个Tablet包含了一系列的User Tablets的位置信息（可以理解为UserTable handle）,  每个Tablet的位置信息保存在METADATA的Row中。</p>
 <blockquote>
 <p>METADATA Table 中的Row :</p>

@@ -253,7 +253,6 @@
 &lt;p&gt;Tablet逻辑上可以理解为Bigtable的落盘实体，实际上是交由Tablet Server去管理维护，那么这样就需要Bigtable去维护一定的映射关系。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;基于原文描述，可能需要维护的映射：&lt;/p&gt;
-&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -275,7 +274,7 @@
 &lt;pre class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt; &lt;span class=&#34;n&#34;&gt;Mapping&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
    &lt;span class=&#34;n&#34;&gt;Table&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;list&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;of&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Tablets&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// 
 &lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;Tablet&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Tablet&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;handle&lt;/span&gt;
-     
+    
    &lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;nc&#34;&gt;Tablet&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;handle&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
      &lt;span class=&#34;n&#34;&gt;list&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;of&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Rows&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// Tablet contains
 &lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;     &lt;span class=&#34;n&#34;&gt;Tablet&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Server&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// where Tablet shores
@@ -288,7 +287,8 @@
  &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;Bigtable通过Root Tablet + METADATA Table进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。&lt;/p&gt;
+&lt;/div&gt;&lt;/blockquote&gt;
+&lt;p&gt;Bigtable通过&lt;code&gt;Root Tablet + METADATA Table&lt;/code&gt;进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。&lt;/p&gt;
 &lt;p&gt;Root Tablet中保存了其他METADATA Tablet的位置信息。而METADATA Table的每一个Tablet包含了一系列的User Tablets的位置信息（可以理解为UserTable handle）,  每个Tablet的位置信息保存在METADATA的Row中。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;METADATA Table 中的Row :&lt;/p&gt;
