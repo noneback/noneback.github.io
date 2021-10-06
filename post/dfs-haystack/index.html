@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>DFS-Haystack - NoneBack</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="NoneBack" />
+  <meta name="description" content="组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来" />
+<meta name="keywords" content="DFS, Distributed System, Paper Reading" />
+
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.83.1" />
+
+
+<link rel="canonical" href="https://noneback.github.io/post/dfs-haystack/" />
+
+
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.fa4b2b9f31b5c6d0b683db81157a9226e17b06e61911791ab547242a4a0556f2.css" integrity="sha256-&#43;ksrnzG1xtC2g9uBFXqSJuF7BuYZEXkatUckKkoFVvI=" media="screen" crossorigin="anonymous">
+
+
+
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+<meta property="og:title" content="DFS-Haystack" />
+<meta property="og:description" content="组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/post/dfs-haystack/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-10-06T22:44:01&#43;08:00" />
+<meta property="article:modified_time" content="2021-10-06T22:44:01&#43;08:00" />
+
+<meta itemprop="name" content="DFS-Haystack">
+<meta itemprop="description" content="组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来"><meta itemprop="datePublished" content="2021-10-06T22:44:01&#43;08:00" />
+<meta itemprop="dateModified" content="2021-10-06T22:44:01&#43;08:00" />
+<meta itemprop="wordCount" content="3596">
+<meta itemprop="keywords" content="DFS,Paper Reading,Distributed System," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="DFS-Haystack"/>
+<meta name="twitter:description" content="组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">今日目标:摸鱼</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      今日目标:摸鱼
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+
+    
+    
+
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+    
+    <header class="post-header">
+      <h1 class="post-title">DFS-Haystack</h1>
+      
+      <div class="post-meta">
+        <time datetime="2021-10-06" class="post-time">
+          2021-10-06
+        </time>
+        <div class="post-category">
+            <a href="https://noneback.github.io/categories/distributed-system/"> Distributed System </a>
+            <a href="https://noneback.github.io/categories/dfs/"> DFS </a>
+            <a href="https://noneback.github.io/categories/paper-reading/"> Paper Reading </a>
+            
+          </div>
+        
+
+        
+        
+
+        
+        
+      </div>
+    </header>
+
+    
+    
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#介绍">介绍</a></li>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#设计">设计</a>
+      <ul>
+        <li><a href="#传统的设计">传统的设计</a></li>
+        <li><a href="#基于haystack的方案">基于HayStack的方案</a></li>
+      </ul>
+    </li>
+    <li><a href="#实现">实现</a>
+      <ul>
+        <li><a href="#文件映射与数据落盘">文件映射与数据落盘</a></li>
+        <li><a href="#组件">组件</a></li>
+        <li><a href="#工作负载">工作负载</a></li>
+        <li><a href="#容错设计">容错设计</a></li>
+      </ul>
+    </li>
+    <li><a href="#优化">优化</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+
+    
+    <div class="post-content">
+      <p>组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来源应该就是Haystack。
+于是大致阅读了一下这篇论文，写下学习笔记。
+笔记依旧不深究具体细节，仅仅记录对问题的思考以及设计的思路。</p>
+<h2 id="介绍">介绍</h2>
+<p>HayStack是Facebook为了小文件设计的一种存储系统。之前的DFS，对于文件的寻址路径一般是都会使用Cache来缓存元数据，以便减少磁盘交互提高寻址效率。一个文件就需要一个维护一类元数据，文件数决定了元数据量。在高并发场景下，我们要减少磁盘IO，一般会选择将寻址需要的元数据缓存在内存中。</p>
+<p>在大量小文件场景下，会有大量的元数据。考虑到在内存元数据维护带来的开销，这种方案变得不可用。于是便有了为小文件特别优化的HayStack。它核心思想是将多个小文件聚合成一个大文件，以减少元数据。</p>
+<h2 id="背景">背景</h2>
+<p>论文中的小文件其实是特指图片数据。</p>
+<p>Facebook是以社交起家的公司。在社交场景中，图片的上传和读取是常见需求。当业务发展到一定的程度，就需要有专门的服务支撑图片的大量高并发读写请求。</p>
+<p>在社交场景下，这类数据的特点是<code>written once, read often, never modified, and rarely deleted.</code>基于此，Facebook开发了HayStack来支持图片分享服务。</p>
+<h2 id="设计">设计</h2>
+<h3 id="传统的设计">传统的设计</h3>
+<p>论文中给出了两种历史设计：基于CDN和基于NAS的方案</p>
+<h4 id="基于cdn的方案">基于CDN的方案</h4>
+<p>这个方案的核心其实就是利用CDN对热点图片数据进行缓存，减少网络传输。</p>
+<p>常用的设计，对于热点图片的优化很显著。但问题也很明显，一是CDN价格昂贵容量有限；二是图片分享场景，也会有很多<code>less popular</code>的图片数据，这就会导致长尾效应，拖慢速度。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1guuaefh22gj610g0s4gnh02.jpg" alt="image-20210926200920113"></p>
+<blockquote>
+<p>CDN其实一般服务于静态数据的，并且一般都是在活动之前进行预热，并不适合作为一种图片缓存服务使用。很多的<code>less popular</code>的数据其实并未进入CDN，故而导致长尾效应。</p>
+</blockquote>
+<h4 id="基于nas的方案">基于NAS的方案</h4>
+<p>这是facebook最初的设计方案，本质和基于CDN的方案区别不大，属于它的一种实现。</p>
+<p>引入NAS横向拓展存储，引入文件系统语义，同时也会有磁盘IO存在。和本地文件类似，对于未读取过的数据，至少需要三次磁盘IO：</p>
+<ul>
+<li>Read directory metadata into memory</li>
+<li>Load the inode into memory</li>
+<li>Read the content of the file</li>
+</ul>
+<p>PhotoStore作为一层缓存使用，缓存一些元数据如file handle等，以加速寻址过程。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1guuafar1rpj60u80scmyx02.jpg" alt="image-20210926201012724"></p>
+<p>基于NAS的设计并没有解决<strong>元数据过多导致不适合全量缓存</strong>这个关键问题，一但文件数量到达临界值，不可避免的需要进行磁盘IO。</p>
+<blockquote>
+<p>更本质的问题其实是<strong>文件与寻址元数据一一对应的关系</strong>，使得元数据量随着文件数的变化而变化。</p>
+</blockquote>
+<p>所以，优化的关键是，改变<strong>文件与寻址元数据一一对应的关系</strong>，降低寻址过程中磁盘IO出现的频率。</p>
+<h3 id="基于haystack的方案">基于HayStack的方案</h3>
+<p>此方案最核心的思路是<strong>将多个小文件聚合成大文件</strong>，并只维护一份元数据。本质上是改变了元数据与文件数的映射关系，使将所有元数据保存在内存的方案成为可能。</p>
+<blockquote>
+<p>只维护聚合后的大文件的元数据，小文件在大文件中的位置需要另外维护映射</p>
+</blockquote>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guv5ytgsmtj60k20jqjsk02.jpg" alt="image-20210927142131959"></p>
+<h2 id="实现">实现</h2>
+<p>Haystack主要有三个组件，Haystack Directory、Haystack Cache、Haystack Store</p>
+<h3 id="文件映射与数据落盘">文件映射与数据落盘</h3>
+<p>文件数据最终保存在logic volume上，一个logic volume对应多机器上的多个physical volume。</p>
+<p>用户首先访问Directory来获取访问路径，之后再通过Directory生成的URL访问其他组件，获取需要的数据。</p>
+<h3 id="组件">组件</h3>
+<h4 id="haystack-directory">Haystack Directory</h4>
+<p>属于Haystack的接入层，主要负责<strong>文件寻址</strong>以及<strong>访问控制</strong>。</p>
+<p>读写请求首先访问Directory。对于读请求，Directory会生成一个访问URL，URL包含了访问的路径：<code>http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}</code>。对于写请求，它会指定一个可以写入的volume提供用户写入。</p>
+<p>详细点来说，最主要有四个功能：</p>
+<ol>
+<li>
+<p>负载均衡，平衡读写请求，</p>
+</li>
+<li>
+<p>决定请求的访问路径，比如是否通过CDN访问，生产访问URL</p>
+</li>
+<li>
+<p>元数据与映射管理， 如<code>logic attr and logic volume =&gt; list of phycial volume mapping</code></p>
+</li>
+<li>
+<p>logic volume读写管理，logic volume可能是Readonly或者WriteEnabled</p>
+<blockquote>
+<p>这部分设计和数据特点有关，write once and read more。可以提高并发度。</p>
+</blockquote>
+</li>
+</ol>
+<p>基于此，Directory就必须记录一些必须的元数据，file to volume，logical to phycial mapping、logical volume attr（size，owner、etc）。</p>
+<p>依赖分布式KV落盘元数据和缓存服务加速访问，以此保证容错可用以及低延迟。</p>
+<blockquote>
+<p><strong>Proxy，Metadata Mapping，Access Control</strong></p>
+</blockquote>
+<h4 id="haystack-cache">Haystack Cache</h4>
+<p>Cache作为缓存用于优化寻址以及图像获取。核心的设计是<strong>Cache Rule</strong>，判断什么样的数据需要被缓存以及<strong>Cache Miss</strong>的处理。</p>
+<p>Haystack中，被缓存的图片数据需要满足这两个特点：</p>
+<ol>
+<li>The request comes directly from a user and not the CDN</li>
+<li>The photo is fetched from a write-enabled Store machine</li>
+</ol>
+<p>当出现Cache Miss时，它会从Store上获取图片数据并同步推送至浏览器以及CDN中。</p>
+<blockquote>
+<p>这样的策略是基于图片请求的场景与特点决定的。</p>
+<p>首先，在CDN中Miss的请求，很大概率上也会在Cache中miss，所以重CDN重定向的请求的数据不会被Cache。其次，图片往往在刚刚写入后不久时间内会被频繁的访问，所以这样的数据理应被Cache。</p>
+<p>CDN可以被视为一个External Cache。</p>
+</blockquote>
+<h4 id="haystack-store">Haystack Store</h4>
+<p>Store属于Haystack的存储层，负责数据存储相关操作。</p>
+<p>首先是它的寻址抽象：<code>filename + offset =&gt;  logical volume id + offset =&gt; data</code>。</p>
+<p>多个Physical Volume组成Logical Volume，并作为实际落盘单位进行维护。在Store中，小文件被抽象成<strong>Needle</strong>，交由Physical Volume进行管理和维护。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg" alt="image-20211006164409801"></p>
+<blockquote>
+<p>Needle实际上是对小文件的一种<strong>封装</strong>，以及对Volume的<strong>分块</strong>管理。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5ooyhloxj61150u043702.jpg" alt="image-20211006164428466"></p>
+</blockquote>
+<p>Store的数据访问一般是以Needle维度进行的。为了加速文件寻址，一般会在内存中维护一个用于寻址元信息的Map：<code>key/alternate key =&gt; needle's flag/offset/other attribute</code></p>
+<p>这些Map最后会被持久化到磁盘中的<strong>Index File</strong>中，做为In-Memory Mapping的一种Checkpoint存在，用于Crash后寻址元数据的快速恢复。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg" alt="image-20211006172431986"></p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg" alt="image-20211006172515258"></p>
+<blockquote>
+<p>每个Volume会维护一个自己的In-Memory Mapping和Index File</p>
+</blockquote>
+<p>在我们更新In-Memory Mapping的时候（比如修改文件、新增文件），会异步更新Index File。但在文件删除时，我们只异步标记文件删除，而不会修改Index File。</p>
+<blockquote>
+<p>Index只是作为加速查找的手段，无Index的Needles依旧是可以被寻址的，故而上述策略是有效的。但是由于异步更新和不删除对应文件的Index的设计，引入了Orphan Index和Deleted Index的问题。</p>
+<p>Orphan Index是指无索引记录的Needle，一般Store会检查出这些Needle并为其添加Index。</p>
+<p>Deleted Index一般就直接在查询是检测出文件是Deleted的，并且是Mark Deleted的状态，此时会告知上层为查询到文件，同时及时更新In-Memory Mapping。这样的设计加速了文件NotFound的情况下的查询时间。</p>
+</blockquote>
+<h3 id="工作负载">工作负载</h3>
+<h4 id="读">读</h4>
+<p><code>(Logical Volume ID, key, alternate key, cookies) =&gt; photo</code></p>
+<p>当接收到从Cache收到读请求时，Store会去查询In-Memory Mapping查询对应的Needle。如果查询到，则根据volume + offset获取文件数据，并校验文件的cookie和完整性；否则返回错误。</p>
+<blockquote>
+<p>Cookie是在Directory生成URL的时候随机生成的字符串，在寻址的时候带上并校验可以有效防止恶意攻击。</p>
+</blockquote>
+<h4 id="写">写</h4>
+<p><code>(Logical Volume ID, key, alternate key, cookies， data) =&gt; result</code></p>
+<p>Haystack不支持文件的覆盖写入，只支持追加写。当收到写请求时，Store会异步Append文件数据到Needle中并更新In-Memory Mapping。如果这是一个老文件，那么Directory会更新它保存的元数据，以便后续的访问不会访问老版本的文件。</p>
+<blockquote>
+<p>除了Directory的元信息之外，怎么去判断数据版本的新旧？</p>
+<p>答案是根据volume以及offset。老的volume会被冻结为ReadOnly，新的volume的写入是追加的，所以offset大的必然更新。</p>
+</blockquote>
+<h4 id="删除">删除</h4>
+<p>采取<strong>Mark Delete + Compact GC</strong>的方式处理删除请求。</p>
+<h3 id="容错设计">容错设计</h3>
+<p>对于Store使用<strong>监控 + 热备</strong>的方式，Directory和Cache可以使用Raft等一致性算法保证数据副本一致与容错。</p>
+<h2 id="优化">优化</h2>
+<p>优化手段主要有三点：Compaction、Batch Load、In Memory。</p>
+<h2 id="总结">总结</h2>
+<ul>
+<li>优化的抽象：异步、批处理、缓存</li>
+<li>要发现主要问题，比如大量小文件最主要的问题是元数据带来的管理负担。</li>
+</ul>
+<h2 id="参考">参考</h2>
+<p><a href="https://www.usenix.org/legacy/event/osdi10/tech/full_papers/Beaver.pdf">Finding a needle in Haystack: Facebook’s photo storage</a></p>
+
+    </div>
+
+    
+    
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">NoneBack</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+      2021-10-06
+      
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+
+    <footer class="post-footer">
+      <div class="post-tags">
+          <a href="https://noneback.github.io/tags/dfs/">DFS</a>
+          <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
+          <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
+          
+        </div>
+
+      
+      <nav class="post-nav">
+        
+        
+          <a class="next" href="/post/mit6.824-bigtable/">
+            <span class="next-text nav-default">MIT6.824-Bigtable</span>
+            <span class="prev-text nav-mobile">Next</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+
+  
+  
+
+  
+  
+
+  
+
+  
+  
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "noneback/noneback.github.io"
+            issue-term="title"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+  
+
+  
+
+  
+
+  
+
+    
+
+  
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="icon-links">
+  
+  
+    <a href="chenlan2333@gmail.com" rel="me noopener" class="iconfont"
+      title="email"  target="_blank"
+      >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+  
+    <a href="https://github.com/noneback" rel="me noopener" class="iconfont"
+      title="github"  target="_blank"
+      >
+      <svg class="icon" style="" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M512 12.672c-282.88 0-512 229.248-512 512 0 226.261333 146.688 418.133333 350.08 485.76 25.6 4.821333 34.986667-11.008 34.986667-24.618667 0-12.16-0.426667-44.373333-0.64-87.04-142.421333 30.890667-172.458667-68.693333-172.458667-68.693333C188.672 770.986667 155.008 755.2 155.008 755.2c-46.378667-31.744 3.584-31.104 3.584-31.104 51.413333 3.584 78.421333 52.736 78.421333 52.736 45.653333 78.293333 119.850667 55.68 149.12 42.581333 4.608-33.109333 17.792-55.68 32.426667-68.48-113.706667-12.8-233.216-56.832-233.216-253.013333 0-55.893333 19.84-101.546667 52.693333-137.386667-5.76-12.928-23.04-64.981333 4.48-135.509333 0 0 42.88-13.738667 140.8 52.48 40.96-11.392 84.48-17.024 128-17.28 43.52 0.256 87.04 5.888 128 17.28 97.28-66.218667 140.16-52.48 140.16-52.48 27.52 70.528 10.24 122.581333 5.12 135.509333 32.64 35.84 52.48 81.493333 52.48 137.386667 0 196.693333-119.68 240-233.6 252.586667 17.92 15.36 34.56 46.762667 34.56 94.72 0 68.522667-0.64 123.562667-0.64 140.202666 0 13.44 8.96 29.44 35.2 24.32C877.44 942.592 1024 750.592 1024 524.672c0-282.752-229.248-512-512-512"></path>
+</svg>
+
+    </a>
+
+
+<a href="https://noneback.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+   
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2020 -
+    2021
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        @noneback
+        
+      </span></span>
+
+  
+  
+
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

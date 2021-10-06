@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Thu, 16 Sep 2021 22:54:59 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 06 Oct 2021 22:44:01 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -34,6 +34,152 @@
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;a href=&#34;https://github.com/anuraghazra/github-readme-stats&#34;&gt;&lt;img src=&#34;https://github-readme-stats.vercel.app/api/top-langs/?username=noneback&amp;amp;hide=html&amp;amp;&amp;amp;layout=compact&#34; alt=&#34;Top Langs&#34;&gt;&lt;/a&gt;&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>DFS-Haystack</title>
+      <link>https://noneback.github.io/post/dfs-haystack/</link>
+      <pubDate>Wed, 06 Oct 2021 22:44:01 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/dfs-haystack/</guid>
+      
+        <description>&lt;p&gt;组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来源应该就是Haystack。
+于是大致阅读了一下这篇论文，写下学习笔记。
+笔记依旧不深究具体细节，仅仅记录对问题的思考以及设计的思路。&lt;/p&gt;
+&lt;h2 id=&#34;介绍&#34;&gt;介绍&lt;/h2&gt;
+&lt;p&gt;HayStack是Facebook为了小文件设计的一种存储系统。之前的DFS，对于文件的寻址路径一般是都会使用Cache来缓存元数据，以便减少磁盘交互提高寻址效率。一个文件就需要一个维护一类元数据，文件数决定了元数据量。在高并发场景下，我们要减少磁盘IO，一般会选择将寻址需要的元数据缓存在内存中。&lt;/p&gt;
+&lt;p&gt;在大量小文件场景下，会有大量的元数据。考虑到在内存元数据维护带来的开销，这种方案变得不可用。于是便有了为小文件特别优化的HayStack。它核心思想是将多个小文件聚合成一个大文件，以减少元数据。&lt;/p&gt;
+&lt;h2 id=&#34;背景&#34;&gt;背景&lt;/h2&gt;
+&lt;p&gt;论文中的小文件其实是特指图片数据。&lt;/p&gt;
+&lt;p&gt;Facebook是以社交起家的公司。在社交场景中，图片的上传和读取是常见需求。当业务发展到一定的程度，就需要有专门的服务支撑图片的大量高并发读写请求。&lt;/p&gt;
+&lt;p&gt;在社交场景下，这类数据的特点是&lt;code&gt;written once, read often, never modified, and rarely deleted.&lt;/code&gt;基于此，Facebook开发了HayStack来支持图片分享服务。&lt;/p&gt;
+&lt;h2 id=&#34;设计&#34;&gt;设计&lt;/h2&gt;
+&lt;h3 id=&#34;传统的设计&#34;&gt;传统的设计&lt;/h3&gt;
+&lt;p&gt;论文中给出了两种历史设计：基于CDN和基于NAS的方案&lt;/p&gt;
+&lt;h4 id=&#34;基于cdn的方案&#34;&gt;基于CDN的方案&lt;/h4&gt;
+&lt;p&gt;这个方案的核心其实就是利用CDN对热点图片数据进行缓存，减少网络传输。&lt;/p&gt;
+&lt;p&gt;常用的设计，对于热点图片的优化很显著。但问题也很明显，一是CDN价格昂贵容量有限；二是图片分享场景，也会有很多&lt;code&gt;less popular&lt;/code&gt;的图片数据，这就会导致长尾效应，拖慢速度。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guuaefh22gj610g0s4gnh02.jpg&#34; alt=&#34;image-20210926200920113&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;CDN其实一般服务于静态数据的，并且一般都是在活动之前进行预热，并不适合作为一种图片缓存服务使用。很多的&lt;code&gt;less popular&lt;/code&gt;的数据其实并未进入CDN，故而导致长尾效应。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;基于nas的方案&#34;&gt;基于NAS的方案&lt;/h4&gt;
+&lt;p&gt;这是facebook最初的设计方案，本质和基于CDN的方案区别不大，属于它的一种实现。&lt;/p&gt;
+&lt;p&gt;引入NAS横向拓展存储，引入文件系统语义，同时也会有磁盘IO存在。和本地文件类似，对于未读取过的数据，至少需要三次磁盘IO：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Read directory metadata into memory&lt;/li&gt;
+&lt;li&gt;Load the inode into memory&lt;/li&gt;
+&lt;li&gt;Read the content of the file&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;PhotoStore作为一层缓存使用，缓存一些元数据如file handle等，以加速寻址过程。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guuafar1rpj60u80scmyx02.jpg&#34; alt=&#34;image-20210926201012724&#34;&gt;&lt;/p&gt;
+&lt;p&gt;基于NAS的设计并没有解决&lt;strong&gt;元数据过多导致不适合全量缓存&lt;/strong&gt;这个关键问题，一但文件数量到达临界值，不可避免的需要进行磁盘IO。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;更本质的问题其实是&lt;strong&gt;文件与寻址元数据一一对应的关系&lt;/strong&gt;，使得元数据量随着文件数的变化而变化。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;所以，优化的关键是，改变&lt;strong&gt;文件与寻址元数据一一对应的关系&lt;/strong&gt;，降低寻址过程中磁盘IO出现的频率。&lt;/p&gt;
+&lt;h3 id=&#34;基于haystack的方案&#34;&gt;基于HayStack的方案&lt;/h3&gt;
+&lt;p&gt;此方案最核心的思路是&lt;strong&gt;将多个小文件聚合成大文件&lt;/strong&gt;，并只维护一份元数据。本质上是改变了元数据与文件数的映射关系，使将所有元数据保存在内存的方案成为可能。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;只维护聚合后的大文件的元数据，小文件在大文件中的位置需要另外维护映射&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNgy1guv5ytgsmtj60k20jqjsk02.jpg&#34; alt=&#34;image-20210927142131959&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;实现&#34;&gt;实现&lt;/h2&gt;
+&lt;p&gt;Haystack主要有三个组件，Haystack Directory、Haystack Cache、Haystack Store&lt;/p&gt;
+&lt;h3 id=&#34;文件映射与数据落盘&#34;&gt;文件映射与数据落盘&lt;/h3&gt;
+&lt;p&gt;文件数据最终保存在logic volume上，一个logic volume对应多机器上的多个physical volume。&lt;/p&gt;
+&lt;p&gt;用户首先访问Directory来获取访问路径，之后再通过Directory生成的URL访问其他组件，获取需要的数据。&lt;/p&gt;
+&lt;h3 id=&#34;组件&#34;&gt;组件&lt;/h3&gt;
+&lt;h4 id=&#34;haystack-directory&#34;&gt;Haystack Directory&lt;/h4&gt;
+&lt;p&gt;属于Haystack的接入层，主要负责&lt;strong&gt;文件寻址&lt;/strong&gt;以及&lt;strong&gt;访问控制&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;读写请求首先访问Directory。对于读请求，Directory会生成一个访问URL，URL包含了访问的路径：&lt;code&gt;http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}&lt;/code&gt;。对于写请求，它会指定一个可以写入的volume提供用户写入。&lt;/p&gt;
+&lt;p&gt;详细点来说，最主要有四个功能：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;负载均衡，平衡读写请求，&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;决定请求的访问路径，比如是否通过CDN访问，生产访问URL&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;元数据与映射管理， 如&lt;code&gt;logic attr and logic volume =&amp;gt; list of phycial volume mapping&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;logic volume读写管理，logic volume可能是Readonly或者WriteEnabled&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;这部分设计和数据特点有关，write once and read more。可以提高并发度。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;基于此，Directory就必须记录一些必须的元数据，file to volume，logical to phycial mapping、logical volume attr（size，owner、etc）。&lt;/p&gt;
+&lt;p&gt;依赖分布式KV落盘元数据和缓存服务加速访问，以此保证容错可用以及低延迟。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Proxy，Metadata Mapping，Access Control&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;haystack-cache&#34;&gt;Haystack Cache&lt;/h4&gt;
+&lt;p&gt;Cache作为缓存用于优化寻址以及图像获取。核心的设计是&lt;strong&gt;Cache Rule&lt;/strong&gt;，判断什么样的数据需要被缓存以及&lt;strong&gt;Cache Miss&lt;/strong&gt;的处理。&lt;/p&gt;
+&lt;p&gt;Haystack中，被缓存的图片数据需要满足这两个特点：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;The request comes directly from a user and not the CDN&lt;/li&gt;
+&lt;li&gt;The photo is fetched from a write-enabled Store machine&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;当出现Cache Miss时，它会从Store上获取图片数据并同步推送至浏览器以及CDN中。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;这样的策略是基于图片请求的场景与特点决定的。&lt;/p&gt;
+&lt;p&gt;首先，在CDN中Miss的请求，很大概率上也会在Cache中miss，所以重CDN重定向的请求的数据不会被Cache。其次，图片往往在刚刚写入后不久时间内会被频繁的访问，所以这样的数据理应被Cache。&lt;/p&gt;
+&lt;p&gt;CDN可以被视为一个External Cache。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;haystack-store&#34;&gt;Haystack Store&lt;/h4&gt;
+&lt;p&gt;Store属于Haystack的存储层，负责数据存储相关操作。&lt;/p&gt;
+&lt;p&gt;首先是它的寻址抽象：&lt;code&gt;filename + offset =&amp;gt;  logical volume id + offset =&amp;gt; data&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;多个Physical Volume组成Logical Volume，并作为实际落盘单位进行维护。在Store中，小文件被抽象成&lt;strong&gt;Needle&lt;/strong&gt;，交由Physical Volume进行管理和维护。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg&#34; alt=&#34;image-20211006164409801&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Needle实际上是对小文件的一种&lt;strong&gt;封装&lt;/strong&gt;，以及对Volume的&lt;strong&gt;分块&lt;/strong&gt;管理。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5ooyhloxj61150u043702.jpg&#34; alt=&#34;image-20211006164428466&#34;&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Store的数据访问一般是以Needle维度进行的。为了加速文件寻址，一般会在内存中维护一个用于寻址元信息的Map：&lt;code&gt;key/alternate key =&amp;gt; needle&#39;s flag/offset/other attribute&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;这些Map最后会被持久化到磁盘中的&lt;strong&gt;Index File&lt;/strong&gt;中，做为In-Memory Mapping的一种Checkpoint存在，用于Crash后寻址元数据的快速恢复。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg&#34; alt=&#34;image-20211006172431986&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg&#34; alt=&#34;image-20211006172515258&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;每个Volume会维护一个自己的In-Memory Mapping和Index File&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;在我们更新In-Memory Mapping的时候（比如修改文件、新增文件），会异步更新Index File。但在文件删除时，我们只异步标记文件删除，而不会修改Index File。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Index只是作为加速查找的手段，无Index的Needles依旧是可以被寻址的，故而上述策略是有效的。但是由于异步更新和不删除对应文件的Index的设计，引入了Orphan Index和Deleted Index的问题。&lt;/p&gt;
+&lt;p&gt;Orphan Index是指无索引记录的Needle，一般Store会检查出这些Needle并为其添加Index。&lt;/p&gt;
+&lt;p&gt;Deleted Index一般就直接在查询是检测出文件是Deleted的，并且是Mark Deleted的状态，此时会告知上层为查询到文件，同时及时更新In-Memory Mapping。这样的设计加速了文件NotFound的情况下的查询时间。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;工作负载&#34;&gt;工作负载&lt;/h3&gt;
+&lt;h4 id=&#34;读&#34;&gt;读&lt;/h4&gt;
+&lt;p&gt;&lt;code&gt;(Logical Volume ID, key, alternate key, cookies) =&amp;gt; photo&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;当接收到从Cache收到读请求时，Store会去查询In-Memory Mapping查询对应的Needle。如果查询到，则根据volume + offset获取文件数据，并校验文件的cookie和完整性；否则返回错误。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Cookie是在Directory生成URL的时候随机生成的字符串，在寻址的时候带上并校验可以有效防止恶意攻击。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;写&#34;&gt;写&lt;/h4&gt;
+&lt;p&gt;&lt;code&gt;(Logical Volume ID, key, alternate key, cookies， data) =&amp;gt; result&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Haystack不支持文件的覆盖写入，只支持追加写。当收到写请求时，Store会异步Append文件数据到Needle中并更新In-Memory Mapping。如果这是一个老文件，那么Directory会更新它保存的元数据，以便后续的访问不会访问老版本的文件。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;除了Directory的元信息之外，怎么去判断数据版本的新旧？&lt;/p&gt;
+&lt;p&gt;答案是根据volume以及offset。老的volume会被冻结为ReadOnly，新的volume的写入是追加的，所以offset大的必然更新。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;删除&#34;&gt;删除&lt;/h4&gt;
+&lt;p&gt;采取&lt;strong&gt;Mark Delete + Compact GC&lt;/strong&gt;的方式处理删除请求。&lt;/p&gt;
+&lt;h3 id=&#34;容错设计&#34;&gt;容错设计&lt;/h3&gt;
+&lt;p&gt;对于Store使用&lt;strong&gt;监控 + 热备&lt;/strong&gt;的方式，Directory和Cache可以使用Raft等一致性算法保证数据副本一致与容错。&lt;/p&gt;
+&lt;h2 id=&#34;优化&#34;&gt;优化&lt;/h2&gt;
+&lt;p&gt;优化手段主要有三点：Compaction、Batch Load、In Memory。&lt;/p&gt;
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;优化的抽象：异步、批处理、缓存&lt;/li&gt;
+&lt;li&gt;要发现主要问题，比如大量小文件最主要的问题是元数据带来的管理负担。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.usenix.org/legacy/event/osdi10/tech/full_papers/Beaver.pdf&#34;&gt;Finding a needle in Haystack: Facebook’s photo storage&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>
@@ -4238,282 +4384,6 @@ $\frac {\prod\limits_{j=1}^nP(s|w_j)}{\prod\limits_{j=1}^nP(s|w_j)+\prod\limits_
 &lt;p&gt;在C++11中，我们用左值去初始化一个对象或为一个已有对象赋值时，会调用拷贝构造函数或拷贝赋值运算符来拷贝资源（所谓资源，就是指new出来的东西）。&lt;/p&gt;
 &lt;p&gt;而当我们用一个右值（包括纯右值和将亡值）来初始化或赋值时，会调用移动构造函数或移动赋值运算符来移动资源，从而避免拷贝，提高效率。&lt;/p&gt;
 &lt;p&gt;当该右值完成初始化或赋值的任务时，它的资源已经移动给了被初始化者或被赋值者，同时该右值也将会马上被销毁（析构）。也就是说，当一个右值准备完成初始化或赋值任务时，它已经“将亡”了。而上面1和2两种表达式的结果都是不具名的右值引用，它们属于右值&lt;/p&gt;
-</description>
-      
-    </item>
-    
-    <item>
-      <title>Java 多线程编程</title>
-      <link>https://noneback.github.io/post/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/</link>
-      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
-      
-      <guid>https://noneback.github.io/post/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/</guid>
-      
-        <description>&lt;p&gt;昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。&lt;/p&gt;
-&lt;h2 id=&#34;java-多线程编程&#34;&gt;Java 多线程编程&lt;/h2&gt;
-&lt;p&gt;Java 给多线程编程提供了内置的支持。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;一条线程指的是进程中一个单一顺序的控制流，一个进程中可以并发多个线程，每条线程并行执行不同的任务。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;多线程&lt;/strong&gt;是多任务的一种特别的形式，但多线程使用了更小的资源开销。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;进程&lt;/strong&gt;：一个进程包括由操作系统分配的内存空间，包含一个或多个线程。一个线程不能独立的存在，它必须是进程的一部分。一个进程一直运行，直到所有的非守护线程都结束运行后才能结束。&lt;/li&gt;
-&lt;li&gt;多线程能满足程序员编写高效率的程序来达到充分利用 CPU 的目的。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;线程的状态&#34;&gt;线程的状态&lt;/h3&gt;
-&lt;p&gt;线程是一个动态执行的过程，它也有一个从产生到死亡的过程（状态）。
-&lt;img src=&#34;https://www.runoob.com/wp-content/uploads/2014/01/java-thread.jpg&#34; alt=&#34;线程的状态&#34;&gt;&lt;/p&gt;
-&lt;p&gt;1.&lt;strong&gt;新建状态&lt;/strong&gt;:
-使用 new 关键字和 Thread 类或其子类建立一个线程对象后，该线程对象就处于新建状态。它保持这个状态直到程序 start() 这个线程。&lt;/p&gt;
-&lt;p&gt;2.&lt;strong&gt;就绪状态&lt;/strong&gt;:
-当线程对象调用了start()方法之后，该线程就进入就绪状态。就绪状态的线程处于就绪队列中，要等待JVM里线程调度器的调度。&lt;/p&gt;
-&lt;p&gt;3.&lt;strong&gt;运行状态&lt;/strong&gt;:
-如果就绪状态的线程获取 CPU 资源，就可以执行 run()，此时线程便处于运行状态。处于运行状态的线程最为复杂，它可以变为阻塞状态、就绪状态和死亡状态。&lt;/p&gt;
-&lt;p&gt;4.&lt;strong&gt;阻塞状态&lt;/strong&gt;:
-如果一个线程执行了sleep（睡眠）、suspend（挂起）等方法，失去所占用资源之后，该线程就从运行状态进入阻塞状态。在睡眠时间已到或获得设备资源后可以重新进入就绪状态。可以分为三种：&lt;/p&gt;
-&lt;p&gt;5.&lt;strong&gt;等待阻塞&lt;/strong&gt;：运行状态中的线程执行 wait() 方法，使线程进入到等待阻塞状态。&lt;/p&gt;
-&lt;p&gt;6.&lt;strong&gt;同步阻塞&lt;/strong&gt;：线程在获取 synchronized 同步锁失败(因为同步锁被其他线程占用)。&lt;/p&gt;
-&lt;p&gt;7.&lt;strong&gt;其他阻塞&lt;/strong&gt;：通过调用线程的 sleep() 或 join() 发出了 I/O 请求时，线程就会进入到阻塞状态。当sleep() 状态超时，join() 等待线程终止或超时，或者 I/O 处理完毕，线程重新转入就绪状态。&lt;/p&gt;
-&lt;p&gt;8.&lt;strong&gt;死亡状态&lt;/strong&gt;:
-一个运行状态的线程完成任务或者其他终止条件发生时，该线程就切换到终止状态。&lt;/p&gt;
-&lt;h3 id=&#34;创建任务类与线程&#34;&gt;创建任务类与线程&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;任务就是一种对象&lt;/strong&gt;，其必须实现Runable接口（Runable接口中只有run()函数），并且需要重写run()，以便线程创建时调用。&lt;/li&gt;
-&lt;li&gt;线程的创建是通过&lt;strong&gt;Thread类&lt;/strong&gt;来构造的，Thread类中还包含了控制线程的方法。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;一个线程的创建必须基于某个任务，即：&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;	&lt;span class=&#34;n&#34;&gt;Thread&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;thread&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;new&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Thread&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;（&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;new&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;TaskClass&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;）&lt;/span&gt;
- &lt;span class=&#34;cm&#34;&gt;/**
-&lt;/span&gt;&lt;span class=&#34;cm&#34;&gt; *调用thread.start()时立即调用TaskClass中的run（）
-&lt;/span&gt;&lt;span class=&#34;cm&#34;&gt; */&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h4 id=&#34;thread中的其他方法&#34;&gt;Thread中的其他方法&lt;/h4&gt;
-&lt;ul&gt;
-&lt;li&gt;yield()：为其他线程临时让出cpu时间&lt;/li&gt;
-&lt;li&gt;sleep()：为线程设定休眠时间，以便其他线程的执行&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;sleep()可能抛出一个InterruptException异常，这是一个必检异常，java强制捕获，故而sleep函数必须在try代码块中。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h4 id=&#34;线程的优先级&#34;&gt;线程的优先级&lt;/h4&gt;
-&lt;p&gt;线程是有优先级的。java虚拟机总是优先执行优先级高的线程。若所有的优先级相同，则系统依照循环队列分配相同的cpu资源，即&lt;strong&gt;循环调度&lt;/strong&gt;。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;Thread类中的setPriority()可设定线优先级&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h3 id=&#34;线程池&#34;&gt;线程池&lt;/h3&gt;
-&lt;p&gt;对于大型任务数,如果必须为每个任务创建一个线程，那么启动新线程每个任务都可能限制吞吐量并导致性能不佳。
-而使用线程池是理想的管理并发执行的任务数的方法。
-Java 提供Exexutor接口来执行线程池中任务，用ExecutorService接口来管理和控制任务。执行器服务是执行器的子接口。
-通过静态方法获得Executor对象，newFixedThreadPool(int)用于创建固定数目的线程池，newCachedThreadPool()则是自动创建线程。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;demo:&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;java.util.concurrent.*&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;;&lt;/span&gt;
-&lt;span class=&#34;kd&#34;&gt;public&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;class&lt;/span&gt; &lt;span class=&#34;nc&#34;&gt;ExecutorDemo&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;kd&#34;&gt;public&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;static&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;main&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;String&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;[]&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;args&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
-&lt;span class=&#34;c1&#34;&gt;// Create a fixed thread pool with maximum three threads
-&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ExecutorService&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;executor&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Executors&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;newFixedThreadPool&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;3&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;);&lt;/span&gt;
-&lt;span class=&#34;c1&#34;&gt;// Submit runnable tasks to the executor
-&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;executor&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;execute&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;new&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;PrintChar&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;sc&#34;&gt;&amp;#39;a&amp;#39;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;100&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;));&lt;/span&gt;
-&lt;span class=&#34;n&#34;&gt;executor&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;execute&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;new&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;PrintChar&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;sc&#34;&gt;&amp;#39;b&amp;#39;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;100&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;));&lt;/span&gt;
-&lt;span class=&#34;n&#34;&gt;executor&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;execute&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;new&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;PrintNum&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;100&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;));&lt;/span&gt;
-&lt;span class=&#34;c1&#34;&gt;// Shut down the executor
-&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;executor&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;shutdown&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;();&lt;/span&gt;
-&lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
-&lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;线程池提供了一种&lt;strong&gt;更好的管理线程的方法&lt;/strong&gt;。 线程池主要用来解决线程生命周期开销问题和资源不足问题。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;线程池减少了在创建和销毁线程上所花的时间以及系统资源的开销&lt;/strong&gt;。通过对多个任务重用线程，线程创建的开销就被分摊到了多个任务上了，而且由于在请求到达时线程已经存在，所以消除了线程创建所带来的延迟。这样，就可以立即为请求服务，使应用程序响应更快。另外，通过适当地调整线程池中的线程数目可以防止出现资源不足的情况。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;线程池能够对线程进行方便的管理&lt;/strong&gt;。比如使用ScheduledThreadPool来设置延迟N秒后执行任务，并且每隔M秒循环执行一次。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;能控制线程池中的并发数&lt;/strong&gt;。避免了因为大量的线程争夺CPU资源造成阻塞。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/blockquote&gt;
-&lt;h3 id=&#34;线程同步thread-synchronization&#34;&gt;线程同步（Thread Synchronization）&lt;/h3&gt;
-&lt;p&gt;如果同一个资源被多个线程同时访问，很可能会被破坏。如果两个任务以一种会引起冲突的方式访问一个公共资源，则称两者为竞争状态。若其没有竞争状态，则称其为线程安全的。&lt;/p&gt;
-&lt;p&gt;为避免竞争状态，应防止多个线程同事进入程序的某一特定部分，程序中这样的部分成为临界区。&lt;/p&gt;
-&lt;p&gt;解决竞争状态的方法便是使线程同步。&lt;/p&gt;
-&lt;h4 id=&#34;实现线程同步的方法&#34;&gt;实现线程同步的方法&lt;/h4&gt;
-&lt;p&gt;一个同步方法在执行前需要加锁。锁是一种实现资源排他的机制。对于实例方法，要给调用的对象加锁，对于静态对象，要给类加锁。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;synchronized关键字&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;此关键字可用与方法，也可用于表达式。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span class=&#34;kd&#34;&gt;synchronized&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;expr&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
-  &lt;span class=&#34;c1&#34;&gt;//do something
-&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
-
-&lt;span class=&#34;kd&#34;&gt;public&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;sychronized&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;func&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;()&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;利用锁同步
-可显式的使用锁和状态来同步线程。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;一个锁是Lock接口的实例，其提供了加锁和释放锁的方法。
-ReentrantLock是lock的具体体现，用于创建相互排斥的锁。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;demo:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;public void deposit(int amount) {
-  lock.lock(); // Acquire the lock
-  try {
-  int newBalance = balance + amount;
-  // This delay is deliberately added to magnify the
-  // data-corruption problem and make it easy to see.
-  Thread.sleep(5);
-  balance = newBalance;
-  }
-  catch (InterruptedException ex) {
-  }
-  finally {
-  lock.unlock(); // Release the lock
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h4 id=&#34;避免死锁&#34;&gt;避免死锁&lt;/h4&gt;
-&lt;p&gt;多个线程需要从几个共享对象上获取锁时，可能会导致死锁。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;利用资源排序避免死锁&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;线程间的协作&#34;&gt;线程间的协作&lt;/h3&gt;
-&lt;p&gt;可使用条件(Condition)实现线程的通信，指定其在某种条件下做什么。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;**条件(Condition)**是通过Lock对象的newCondition()方法创建的对象。通过其await(),signal(),signall()实现线程的相互通信。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;ul&gt;
-&lt;li&gt;await()：让当前线程进入等待，直到条件发生（发出条件信号）&lt;/li&gt;
-&lt;li&gt;signal()/signalAll()：唤醒一个和所有线程&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;条件必须依赖与锁才可使用。无锁儿直接使用其方法会抛出IllegalMonitorStateExecption异常。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h3 id=&#34;阻塞队列&#34;&gt;阻塞队列&lt;/h3&gt;
-&lt;p&gt;java中为多线程提供了阻塞对列，同步可在对列中实现，所以不用在使用锁和条件。
-它提供了两个附加操作：当队列中为空时，从队列中获取元素的操作将被阻塞；当队列满时，向队列中添加元素的操作将被阻塞。&lt;/p&gt;
-&lt;p&gt; 阻塞队列常用于生产者和消费者的场景，生产者线程可以把生产结果存到阻塞队列中，而消费者线程把中间结果取出并在将来修改它们。&lt;/p&gt;
-&lt;p&gt;队列会自动平衡负载，如果生产者线程集运行的比消费者线程集慢，则消费者线程集在等待结果时就会阻塞；如果生产者线程集运行的快，那么它将等待消费者线程集赶上来。&lt;/p&gt;
-&lt;p&gt;作为BlockingQueue的使用者，我们再也不需要关心什么时候需要阻塞线程，什么时候需要唤醒线程，因为这一切BlockingQueue都给你一手包办了。&lt;/p&gt;
-&lt;h4 id=&#34;blockingqueue的核心方法&#34;&gt;BlockingQueue的核心方法&lt;/h4&gt;
-&lt;p&gt;1、放入数据&lt;/p&gt;
-&lt;p&gt;  （1）put(E e):put方法用来向队尾存入元素，如果队列满，则等待。　　　 &lt;/p&gt;
-&lt;p&gt;  （2）offer(E o, long timeout, TimeUnit unit)：offer方法用来向队尾存入元素，如果队列满，则等待一定的时间，当时间期限达到时，如果还没有插入成功，则返回false；否则返回true；&lt;/p&gt;
-&lt;p&gt;2、获取数据&lt;/p&gt;
-&lt;p&gt; （1）take()：take方法用来从队首取元素，如果队列为空，则等待；&lt;/p&gt;
-&lt;p&gt; （2）drainTo():一次性从BlockingQueue获取所有可用的数据对象（还可以指定获取数据的个数），通过该方法，可以提升获取数据效率；不需要多次分批加锁或释放锁。&lt;/p&gt;
-&lt;p&gt; （3）poll(time):取走BlockingQueue里排在首位的对象,若不能立即取出,则可以等time参数规定的时间,取不到时返回null;&lt;/p&gt;
-&lt;p&gt; （4）poll(long timeout, TimeUnit unit)：poll方法用来从队首取元素，如果队列空，则等待一定的时间，当时间期限达到时，如果取到，则返回null；否则返回取得的元素；&lt;/p&gt;
-&lt;h4 id=&#34;一些状态&#34;&gt;一些状态&lt;/h4&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;抛出异常&lt;/strong&gt;：当队列满时，再向队列中插入元素，则会抛出IllegalStateException异常。当队列空时，再向队列中获取元素，则会抛出NoSuchElementException异常。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;返回特殊值&lt;/strong&gt;：当队列满时，向队列中添加元素，则返回false，否则返回true。当队列为空时，向队列中获取元素，则返回null，否则返回元素。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;一直阻塞&lt;/strong&gt;：当阻塞队列满时，如果生产者向队列中插入元素，则队列会一直阻塞当前线程，直到队列可用或响应中断退出。当阻塞队列为空时，如果消费者线程向阻塞队列中获取数据，则队列会一直阻塞当前线程，直到队列空闲或响应中断退出。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;超时退出&lt;/strong&gt;：当队列满时，如果生产线程向队列中添加元素，则队列会阻塞生产线程一段时间，超过指定的时间则退出返回false。当队列为空时，消费线程从队列中移除元素，则队列会阻塞一段时间，如果超过指定时间退出返回null。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;并行编程&#34;&gt;并行编程&lt;/h3&gt;
-&lt;p&gt;java可用Fork/Join框架实现并行编程
-在此框架中，一个分解（Fork)可视为运行在一个线程上的独立任务。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;将一个问题分解为多个不重叠的子问题（可独立解决），再合并子问题的解答以获得整体的解答。
-框架使用ForkJoinTask类定义一个任务，在一个ForkJoinPool实例中执行任务。
-ForkJoinTask是用于任务的基类，它是一个类似线程的实体，但比普通的线程要轻量级的多，因为巨量的任务可以被ForkJoinPool中的少数线程所执行。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;demo:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;import java.util.concurrent.RecursiveAction;
-import java.util.concurrent.ForkJoinPool;
-public class ParallelMergeSort {
-public static void main(String[] args) {
-final int SIZE = 7000000;
-int[] list1 = new int[SIZE];
-int[] list2 = new int[SIZE];
-for (int i = 0; i &amp;lt; list1.length; i++)
-list1[i] = list2[i] = (int)(Math.random() * 10000000);
-long startTime = System.currentTimeMillis();
-parallelMergeSort(list1); // Invoke parallel merge sort
-long endTime = System.currentTimeMillis();
-System.out.println(&amp;quot;\nParallel time with &amp;quot;
-+ Runtime.getRuntime().availableProcessors() +
-&amp;quot; processors is &amp;quot; + (endTime - startTime) + &amp;quot; milliseconds&amp;quot;);
-startTime = System.currentTimeMillis();
-MergeSort.mergeSort(list2); // MergeSort is in Listing 23.5
-endTime = System.currentTimeMillis();
-System.out.println(&amp;quot;\nSequential time is &amp;quot; +
-(endTime - startTime) + &amp;quot; milliseconds&amp;quot;);
-}
-public static void parallelMergeSort(int[] list) {
-RecursiveAction mainTask = new SortTask(list);
-ForkJoinPool pool = new ForkJoinPool();
-pool.invoke(mainTask);
-}
-private static class SortTask extends RecursiveAction {
-private final int THRESHOLD = 500;
-private int[] list;
-SortTask(int[] list) {
-this.list = list;
-}
-@Override
-protected void compute() {
-if (list.length &amp;lt; THRESHOLD)
-java.util.Arrays.sort(list);
-else {
-// Obtain the first half
-int[] firstHalf = new int[list.length / 2];
-System.arraycopy(list, 0, firstHalf, 0, list.length / 2);
-perform the task
-sort a small list
-split into two parts
-// Obtain the second half
-int secondHalfLength = list.length - list.length / 2;
-int[] secondHalf = new int[secondHalfLength];
-System.arraycopy(list, list.length / 2,
-secondHalf, 0, secondHalfLength);
-// Recursively sort the two halves
-invokeAll(new SortTask(firstHalf),
-new SortTask(secondHalf));
-// Merge firstHalf with secondHalf into list
-MergeSort.merge(firstHalf, secondHalf, list);
-}
-}
-}
-}
-&lt;/code&gt;&lt;/pre&gt;
 </description>
       
     </item>
