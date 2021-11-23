@@ -71,7 +71,7 @@
 <meta itemprop="description" content="之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工">
 <meta itemprop="datePublished" content="2021-11-21T15:28:42&#43;08:00" />
 <meta itemprop="dateModified" content="2021-11-21T15:28:42&#43;08:00" />
-<meta itemprop="wordCount" content="1075">
+<meta itemprop="wordCount" content="1375">
 
 
 
@@ -401,6 +401,13 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <blockquote>
 <p><img src="https://i.loli.net/2021/11/21/JZE5mrOcodHR4gf.png" alt="image-20200804113631837"></p>
 <p>比如底层索引6节点，第一层索引在中点处[ (0 + 6) / 2]添加索引，第一层索引将底层分成两个分区，第二层索引再在两个分区的中点添加索引，以此类推。</p>
+</blockquote>
+<p><strong>索引节点+数据节点</strong>就是跳表的核心，但这又有了另一个问题：<strong>怎么样便利的维护索引节点？</strong></p>
+<p>显然，将每层的分区的中点作为索引节点是不合适的，因为节点的增减是一种常见需求，每次数据节点的增减都会导致索引节点的变化，带来不少额外的开销。我们需要一种与数据节点数量无关的、确定索引节点位置的方法。</p>
+<p>基本的思路就是使用<strong>随机化</strong>。在每次增加节点时确定是否需要此节点上建立索引节点。</p>
+<blockquote>
+<p>比如对于一个最高$X$层的跳表，设底层$N$个数据节点。每次添加节点时，以$1/(2^n)$判断是否要在前$n$层添加索引节点(只有本层有索引节点才能往上层添加索引节点)。</p>
+<p>对于第$K$层，将有$N / 2^k$个节点，与取分区中点作为索引节点等价。</p>
 </blockquote>
 <h3 id="数据结构">数据结构</h3>
 <div class="highlight"><div class="chroma">
