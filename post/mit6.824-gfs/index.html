@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>MIT6.824-GFS - NoneBack</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="NoneBack" />
+  <meta name="description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了" />
+<meta name="keywords" content="Distributed System, GFS, DFS" />
+
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.83.1" />
+
+
+<link rel="canonical" href="https://noneback.github.io/post/mit6.824-gfs/" />
+
+
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.fa4b2b9f31b5c6d0b683db81157a9226e17b06e61911791ab547242a4a0556f2.css" integrity="sha256-&#43;ksrnzG1xtC2g9uBFXqSJuF7BuYZEXkatUckKkoFVvI=" media="screen" crossorigin="anonymous">
+
+
+
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+<meta property="og:title" content="MIT6.824-GFS" />
+<meta property="og:description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/post/mit6.824-gfs/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-09-09T00:44:24&#43;08:00" />
+<meta property="article:modified_time" content="2021-09-09T00:44:24&#43;08:00" />
+
+<meta itemprop="name" content="MIT6.824-GFS">
+<meta itemprop="description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了"><meta itemprop="datePublished" content="2021-09-09T00:44:24&#43;08:00" />
+<meta itemprop="dateModified" content="2021-09-09T00:44:24&#43;08:00" />
+<meta itemprop="wordCount" content="5215">
+<meta itemprop="keywords" content="GFS,MIT6.824,Paper Reading," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MIT6.824-GFS"/>
+<meta name="twitter:description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">今日目标:摸鱼</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      今日目标:摸鱼
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+
+    
+    
+
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+    
+    <header class="post-header">
+      <h1 class="post-title">MIT6.824-GFS</h1>
+      
+      <div class="post-meta">
+        <time datetime="2021-09-09" class="post-time">
+          2021-09-09
+        </time>
+        <div class="post-category">
+            <a href="https://noneback.github.io/categories/mit6.824/"> MIT6.824 </a>
+            <a href="https://noneback.github.io/categories/distributed-system/"> Distributed System </a>
+            <a href="https://noneback.github.io/categories/paper-reading/"> Paper Reading </a>
+            
+          </div>
+        
+
+        
+        
+
+        
+        
+      </div>
+    </header>
+
+    
+    
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#介绍">介绍</a></li>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#设计预期">设计预期</a>
+      <ul>
+        <li><a href="#存储能力">存储能力</a></li>
+        <li><a href="#工作负载">工作负载</a></li>
+        <li><a href="#带宽与延迟">带宽与延迟</a></li>
+        <li><a href="#容错设计">容错设计</a></li>
+        <li><a href="#操作与接口">操作与接口</a></li>
+      </ul>
+    </li>
+    <li><a href="#架构设计">架构设计</a></li>
+    <li><a href="#组件设计">组件设计</a>
+      <ul>
+        <li><a href="#client">Client</a></li>
+        <li><a href="#master">Master</a></li>
+        <li><a href="#chunk-server">Chunk Server</a></li>
+      </ul>
+    </li>
+    <li><a href="#系统内部设计与交互">系统内部设计与交互</a>
+      <ul>
+        <li><a href="#chunk">Chunk</a></li>
+        <li><a href="#lease">Lease</a></li>
+        <li><a href="#version">Version</a></li>
+        <li><a href="#控制流和数据流">控制流和数据流</a></li>
+        <li><a href="#数据安全性">数据安全性</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+
+    
+    <div class="post-content">
+      <p>之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。</p>
+<p>这是鸽了许久的Distributed System学习笔记的第二章。笔记并没有记录详细的具体操作，仅仅记录了对问题的思考与设计思路。</p>
+<h2 id="介绍">介绍</h2>
+<p>GFS是Google使用的分布式文件系统。它使用大量机器为数据密集型应用构建了一个可靠的分布式文件服务。</p>
+<p>最早出现在在2003年发表的一篇论文。</p>
+<h2 id="背景">背景</h2>
+<ol>
+<li>首先,组件失效被认为是<strong>常态事件</strong>，而不是意外事件。</li>
+</ol>
+<blockquote>
+<p>使用大量的廉价机器搭建可靠的服务。每台机器一定概率失效，整体失效概率满足二项分布。</p>
+<p>基于此，我们需要为系统组件设计容错保障机制，使得组件能够被监测，能够发现故障，并及时自动fail over，保证系统的可用性（HA)。</p>
+</blockquote>
+<ol start="2">
+<li>文件非常<strong>巨大</strong>。数 GB 的文件非常普遍。</li>
+</ol>
+<blockquote>
+<p>相对于传统标准而言。对于一个分布式存储系统，我们应该尽量使用大文件为粒度对文件进行维护。</p>
+<p>过多的小文件，意味需要更多的inode等数据结构记录元数据，有效的磁盘存储空间会减少。</p>
+<p>其次，分布式文件寻址一般需要网络通信，寻址结果需要缓存，更多的文件意味着更多的缓存项，这也会造成空间浪费。</p>
+</blockquote>
+<ol start="3">
+<li>绝大部分文件的修改是采用在文件尾部追加数据,而不是覆盖原有数据的方式，对文件的随机写入操作在实际中几乎不存在。一旦写完之后,对文件的操作就只有读,而且通常是按<strong>顺序读</strong></li>
+</ol>
+<blockquote>
+<p>这是GFS对使用场景的考量和trade_off。</p>
+<p>Google内部大部分操作都是 append，因此 GFS 系统优化的中心也放在 record append 操作上，对于<strong>随机写则不保证数据的一致性</strong>。</p>
+<p>同时顺序IO写也会比随机IO的读写性能好很多。</p>
+</blockquote>
+<ol start="4">
+<li>第四，应用程序和文件系统API的协同设计提高了整个系统的灵活性</li>
+</ol>
+<blockquote>
+<p>协同设计，提供类似POXIS文件系统API接口。提供客户端Lib帮助业务方屏蔽底层细节。</p>
+</blockquote>
+<h2 id="设计预期">设计预期</h2>
+<h3 id="存储能力">存储能力</h3>
+<p>预期会有几百万文件,文件的大小通常在100MB或者以上。数个GB大小的文件也是普遍存在,并且要能够被有效的管理。</p>
+<p>系统也必须支持小文件,但是不需要针对小文件做专门的优化。</p>
+<h3 id="工作负载">工作负载</h3>
+<h4 id="读工作负载">读工作负载</h4>
+<p>主要由<strong>大规模流式读取</strong>和<strong>小规模随机读取</strong>组成。</p>
+<ul>
+<li>大规模流式读取：大规模的磁盘顺序IO读取数据</li>
+<li>小规模随机读取：小规模磁盘随机IO（任意偏移量）读取数据</li>
+</ul>
+<blockquote>
+<p>对于小规模的随机读有一定的优化，比如对读请求排序，再批量处理，而非来回随机读取。</p>
+</blockquote>
+<h4 id="写工作负载">写工作负载</h4>
+<p>主要是大规模的顺序写操作。将数据append到文件的末尾。</p>
+<p>系统必须高效的、行为定义明确的实现多客户<strong>端并行追加数据到同一个文件</strong>里的语意。这要求系统提供并发写支持。操作的原子性以及同步开销是主要性能衡量指标。</p>
+<h3 id="带宽与延迟">带宽与延迟</h3>
+<p>高<strong>持续</strong>带宽（High sustained bandwidth）比低延迟更重要</p>
+<blockquote>
+<p>这是由GFS的使用背景决定的。大多数GFS的业务方更关心高效率的处理数据，而非延迟。</p>
+</blockquote>
+<h3 id="容错设计">容错设计</h3>
+<p>系统必须持续监控自身的状态,它必须将组件失效作为一种常态,能够迅速地侦测、冗余并恢复失效的组件。</p>
+<blockquote>
+<p>参考背景一</p>
+</blockquote>
+<h3 id="操作与接口">操作与接口</h3>
+<p>对外提供了传统的文件系统接口，但是出于效率和使用性的角度，并没有实现标准的文件系统 POSIX API。</p>
+<p>目录树、文件增删改查、快照、Atomic Record Append。</p>
+<blockquote>
+<p>快照指创建文件和目录树的副本</p>
+<p>Atomic Record Append指保证原子性的记录追加操作</p>
+</blockquote>
+<h2 id="架构设计">架构设计</h2>
+<blockquote>
+<p>核心问题是：接入，寻址，管理，容错，一致。这些问题决定我们怎样去设计一个DFS的整体架构</p>
+</blockquote>
+<p>GFS采用Master-Slave架构。</p>
+<p>一个GFS集群包含一个单独的Master Node，多台Chunk Server，以及若干Client。</p>
+<blockquote>
+<p>此处Master和Chunk Server实际上都是逻辑上的概念，实际上对应的只是用户态的一个进程，而非指具体物理机器。</p>
+<p>单Master设计简化了GFS的设计，但有一定的单点故障的风险，属于设计上的trade_off</p>
+</blockquote>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gu6y6qm5t0j61i40nojuk02.jpg" alt=" image-20210906153847451"></p>
+<p>GFS通过lib的形式提供给业务方使用、接入GFS。</p>
+<p>文件数据最终以chunk为单位保存在chunk server的磁盘中，并且chunk以replica的形式提供可靠服务。</p>
+<p>master管理着GFS上所有的元数据（目录树，mapping，chunk metadata，etc）以及相关系统行为（监控，GC，snapshot，etc）。</p>
+<p>用户通过Client，以filename + offset访问Master获取chunk元信息，再根据原信息访问对应chunk server获取具体的数据，执行操作。</p>
+<!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gu9234vb9nj61ej0u0gq702.jpg" alt=""></p>
+<h2 id="组件设计">组件设计</h2>
+<h3 id="client">Client</h3>
+<p>Client在GFS中实际上只是使用了GFS SDK/LIB的一个应用进程。GFS提供SDK/LIB让业务方接入GFS，并尽可能的屏蔽底层细节，让业务方对GFS无感知。</p>
+<p>因此，Client作为接入层需要提供以下功能：</p>
+<ul>
+<li><strong>缓存</strong>：缓存从Master处获取的元信息，减少网络通信的次数。</li>
+</ul>
+<blockquote>
+<p>缓存也可能会导致元信息不一致的问题，需要设计合理的机制。论文中并未详细说明。</p>
+</blockquote>
+<ul>
+<li><strong>封装</strong>：屏蔽底层操作，如文件操作失败重试，命令spilt，数据checksum以及校验等</li>
+<li><strong>操作优化</strong>：batch，load balance等</li>
+<li><strong>映射</strong>：将参数filename + offset 映射为chunk index + offset</li>
+</ul>
+<h3 id="master">Master</h3>
+<p>Master管理着GFS所有的元数据，在GFS中属于计算层，负责文件以及文件系统的调度与管理。</p>
+<p>其中元信息其实是保存在Master的内存中的，并未持久化，通过chunk server的上报来维护更新。</p>
+<blockquote>
+<p>此处也是Trade_off, 简化Master和ChunkServer交互设计，但可能有数据丢失的风险，但为Master扩大内存以便为GFS提供其拓展性，代价比较小，设计者认为这也是可以接受的。</p>
+<p>同时，设计者认为chunk的位置实际上是由chunk server决定，故而不对元信息进行持久化。</p>
+</blockquote>
+<p>基于此，Master需要提供以下功能：</p>
+<ul>
+<li><strong>监控机制</strong>：Master节点管理这Chunk Server，并且元信息只保存在内存中，并且ChunkServer和其保存的文件均可能失效，因此需要监控Chunk Server的状态，并收集其保存的文件信息，并持续监控。</li>
+</ul>
+<blockquote>
+<p>一般利用心跳机制，可以双向也可以只从ChunkServer到Master。</p>
+</blockquote>
+<ul>
+<li><strong>目录树管理</strong>：文件以分层目录的形式管理，因此需要管理名称空间，也需要考虑到并发安全等问题</li>
+</ul>
+<blockquote>
+<p>一般可以将目录树前缀压缩，减少磁盘空间使用。</p>
+<p>加锁，设计合理的加锁策略，提高并发度。比如，写文件时，对文件目录加读锁，只对文件加写锁</p>
+</blockquote>
+<ul>
+<li><strong>映射管理</strong>：Master接收Client传入的参数，返回其需要的元信息。需要维护两种映射关系：
+<ul>
+<li>Table1：filename =&gt; list of chunk ID (nv)</li>
+<li>Table2：chunk ID =&gt; chunk handler</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>chunk handler是一个数据结构，包含</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">ChunkHandler</span> <span class="p">{</span>
+  <span class="n">list</span> <span class="n">of</span> <span class="nf">ChunkLocation</span><span class="p">(</span><span class="n">v</span><span class="p">);</span><span class="c1">// 标识replica所在的机器
+</span><span class="c1"></span>  <span class="n">version</span><span class="p">(</span><span class="n">nv</span><span class="p">);</span>         <span class="c1">// 数据的逻辑时钟，标记数据版本
+</span><span class="c1"></span>  <span class="n">primary</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>       <span class="c1">// 用于标记primary chunk，用于分配操作顺序
+</span><span class="c1"></span>  <span class="n">lease</span> <span class="nf">expire</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>     <span class="c1">// 租约过期时间，防止ChunkServer长期持有primary
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></td></tr></table>
+</div>
+</div></blockquote>
+<p>此处的映射实际上就是Master需要维护的数据结构（元信息），其中有一部分是需要持久化保证重启不丢失，以nv（non-volatile)标记。</p>
+<blockquote>
+<p>Table1适合使用HashMap作为索引结构去查询，Table2则更适合使用B+Tree等数据结构做索引，因为其应该会设计范围查询。</p>
+</blockquote>
+<ul>
+<li><strong>容错</strong>：Master可能会失效，需要容错机制。</li>
+</ul>
+<blockquote>
+<p>Master使用Raft多副本容错，影子热备，定时CheckPoint备份元信息，以便快速回复内存数据、operation log记录对元信息的修改做持久化记录，WAL保证操作不丢失。</p>
+</blockquote>
+<ul>
+<li><strong>系统调度</strong>：集群上chunk replica数量会不满足容错要求，这个时候就要新建副本。</li>
+</ul>
+<blockquote>
+<p>如Chunk Server失效，配置变更</p>
+</blockquote>
+<p>数据被删除或者发现孤儿Chunk（不包含数据的Chunk）时，Master需要负责GC。</p>
+<blockquote>
+<p>一般删除的流程为：标记删除+ 延迟清理，降低前台处理时延，但会有一段时间窗口，占用磁盘的有效空间，也是trade_off</p>
+</blockquote>
+<p>快照创建时，也需要Master的参与。</p>
+<blockquote>
+<p>会先释放chunk的lease，再以COW的方式生成快照</p>
+</blockquote>
+<p>Chunk数据的分布可能不满足，Master需要调度，使得数据分布满足可靠容错的要求。</p>
+<p>分配Lease，选择Primary Chunk，管理Version等</p>
+<h3 id="chunk-server">Chunk Server</h3>
+<p>ChunkServer属于存储层，负责具体的数据以Linux文件的格式储存。</p>
+<p>Client从Master获取元信息之后，再找到对应的ChunkServer，通过Chunk Index + Offset对文件进行寻址，再对文件进行操作。同时它需要及时上报ChunkServer的运行信息，以及它维护的Chunk的信息，以便Master维护系统的元数据。</p>
+<h2 id="系统内部设计与交互">系统内部设计与交互</h2>
+<p>讲一件上面没有涉及的关键设计思路，并不涉及具体细节</p>
+<h3 id="chunk">Chunk</h3>
+<p>chunk属于GFS管理数据逻辑最小单元，设计Chunk的关键是Chunk Size。</p>
+<blockquote>
+<p>Chunk Size过小，在相同有效数据下，会产生大量元信息，加重Master的管理（元数据，cache，调度等）负担；其次，加重了Client和Master之间的网络通信的次数；没有很好的利用局部性原理。</p>
+<p>ChunkSize过大，导致对数据的管理粒度过大，空间碎片化，降低磁盘优先使用；其次，被频繁访问的数据可能集中在同一个Chunk上，造成热点问题，并发读写时同步开销大。</p>
+</blockquote>
+<p>基于上述原因，GFS中的ChunkSize最终被定为64MB，用一个64位全局唯一ID标识。</p>
+<blockquote>
+<p>目前的DFS对小文件的优化实际上也就是将小文件聚合管理，减少其Master处元信息，转而将其元信息以payload的形式写入更小数据单元的header中，以便后续读写。</p>
+<p>还有一个问题是，为什么大文件要分块管理？分块主要是为了提高大文件处理并发度。</p>
+</blockquote>
+<h3 id="lease">Lease</h3>
+<p>Lease机制主要是为了保证多副本间数据变更的一致性。</p>
+<p>当有并发顺序写请求时，Master会分配Chunk Lease给Chunk涉及的一个ChunkServer上，作为Primary节点。被选中的Primary节点会对并发写请求进行排序，安排处理数据的顺序，保证并发数据安全。并将顺序返回给Master节点。</p>
+<p>只有再有Master节点将处理数据通知其余的Secondaries，它们只能按照此顺序处理数据。</p>
+<blockquote>
+<p>这样的设计减少了Master的管理开销，也保证了线程数据安全，将排序交由ChunkServer处理。但ChunkServer可能随时会失效，需要防止Lease被失效的机器长期占有，故而定一个Lease Time，限制单次Lease使用的时间。</p>
+<p>Primary节点可以通过申请延长Lease时间，满足数据处理的需求。</p>
+</blockquote>
+<h3 id="version">Version</h3>
+<p>Version主要是用来标记数据的版本，在分配Lease，选择出primary后递增并告知primary，收到ack后再持久化记录后生效。只有最新版的数据才能证有效，失效的数据需要及时处理。</p>
+<blockquote>
+<p>ChunkServer可能短暂的失效重连，在这之间对数据的操作就可以通过Version来判断数据的新旧。</p>
+</blockquote>
+<h3 id="控制流和数据流">控制流和数据流</h3>
+<p>GFS中控制流和数据流是解耦的。数据流和控制流分开推送到所有设计的ChunkServer中，最后再按照Primary决定的处理顺序执行控制指令。</p>
+<blockquote>
+<p>解耦的好处是数据流可以基于网络拓扑规划，提高机器带宽利用率，避免网路欧瓶颈和高延时。</p>
+</blockquote>
+<p>数据流实际上是以Pipeline的形式推送到所有相关的ChunkServer中的。推送到机器上后，保存在LRU缓存中，再由此机器推送到其他机器，充分利用每一台机器的资源。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gu94bb7jxjj60v90u0tak02.jpg" alt="image-20210908124156337"></p>
+<h3 id="数据安全性">数据安全性</h3>
+<h4 id="数据完整性">数据完整性</h4>
+<p>GFS把Chunk分割为64KB大小的Block，每个Block对应一个32位的Chucksum，用于校验数据的完整性。</p>
+<p>Chuncsum和数据和用户数据分开存储，保存在内存中，并最终通过WAL持久化。</p>
+<blockquote>
+<p>机器磁盘损坏，重复的数据append等都会导致数据完整性有问题</p>
+</blockquote>
+<h4 id="冗余存储">冗余存储</h4>
+<p>Chunk多副本异架异地存储，单副本丢失不会影响系统可用性。</p>
+<h4 id="一致性">一致性</h4>
+<p><img src="https://spongecaptain.cool/images/img_paper/image-20200719211636393.png" alt="image-20210908130412123"></p>
+<p>我暂时没法很好的理解GFS的一致性模型，于是选择将原文奉上：</p>
+<blockquote>
+<p>“ <strong>The state of a file region after a data mutation depends on the type of mutation</strong>, whether it succeeds or fails, and whether there are concurrent mutations.</p>
+<p>A file region is consistent if all clients will always see the same data, regardless of which replicas they read from. A region is defined after a file data mutation if it is consistent and clients will see what the mutation writes in its entirety.</p>
+<p>When a mutation succeeds without interference from concurrent writers, the affected region is defined (and by implication consistent): all clients will always see what the mutation has written.</p>
+<p>Concurrent successful mutations leave the region undefined but consistent: all clients see the same data, but it may not reflect what any one mutation has written. Typically, it consists of mingled fragments from multiple mutations.</p>
+<p>A failed mutation makes the region inconsistent (hence also undefined): different clients may see different data at different times ”</p>
+</blockquote>
+<p>总之，<strong>GFS无法保证数据强一致</strong>，它的一致性模型非常宽松。</p>
+<p>Lease机制虽然能够使得并发顺序写入得到合理的操作顺序，但实际的数据Atomic Record Append采用的事At least Once消息模型，确保写入成功，但可能重复写入。随机写也无法保证数据一致。</p>
+<h2 id="总结">总结</h2>
+<p>一切的系统设计都是需求和业务驱动的，设计中必然涉及对场景、业务、需求、实现等多方面的trade_off。</p>
+<p>分布式系统的可扩展性的重要性要远远高于单机性能。</p>
+<p>以上。</p>
+<h2 id="参考">参考</h2>
+<p><a href="https://spongecaptain.cool/post/paper/googlefilesystem/">Google File System-GFS 论文阅读</a></p>
+<p><a href="https://tanxinyu.work/gfs-thesis/">GFS论文阅读</a></p>
+<p><a href="https://nxwz51a5wp.feishu.cn/docs/doccnNYeo3oXj6cWohseo6yB4id">GFS论文导读</a></p>
+<p><a href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf">GFS Paper</a></p>
+<p><a href="https://pdos.csail.mit.edu/6.824/schedule.html">MIT6.824</a></p>
+
+    </div>
+
+    
+    
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">NoneBack</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+      2021-09-09
+      
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+
+    <footer class="post-footer">
+      <div class="post-tags">
+          <a href="https://noneback.github.io/tags/gfs/">GFS</a>
+          <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
+          <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
+          
+        </div>
+
+      
+      <nav class="post-nav">
+        
+          <a class="prev" href="/post/mit6.824-bigtable/">
+            
+            <i class="iconfont">
+              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
+</svg>
+
+            </i>
+            <span class="prev-text nav-default">MIT6.824-Bigtable</span>
+            <span class="prev-text nav-mobile">Prev</span>
+          </a>
+        
+          <a class="next" href="/post/epoll-and-io%E5%A4%8D%E7%94%A8/">
+            <span class="next-text nav-default">Epoll and IO复用</span>
+            <span class="prev-text nav-mobile">Next</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+
+  
+  
+
+  
+  
+
+  
+
+  
+  
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "noneback/noneback.github.io"
+            issue-term="title"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+  
+
+  
+
+  
+
+  
+
+    
+
+  
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="icon-links">
+  
+  
+    <a href="chenlan2333@gmail.com" rel="me noopener" class="iconfont"
+      title="email"  target="_blank"
+      >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+  
+    <a href="https://github.com/noneback" rel="me noopener" class="iconfont"
+      title="github"  target="_blank"
+      >
+      <svg class="icon" style="" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M512 12.672c-282.88 0-512 229.248-512 512 0 226.261333 146.688 418.133333 350.08 485.76 25.6 4.821333 34.986667-11.008 34.986667-24.618667 0-12.16-0.426667-44.373333-0.64-87.04-142.421333 30.890667-172.458667-68.693333-172.458667-68.693333C188.672 770.986667 155.008 755.2 155.008 755.2c-46.378667-31.744 3.584-31.104 3.584-31.104 51.413333 3.584 78.421333 52.736 78.421333 52.736 45.653333 78.293333 119.850667 55.68 149.12 42.581333 4.608-33.109333 17.792-55.68 32.426667-68.48-113.706667-12.8-233.216-56.832-233.216-253.013333 0-55.893333 19.84-101.546667 52.693333-137.386667-5.76-12.928-23.04-64.981333 4.48-135.509333 0 0 42.88-13.738667 140.8 52.48 40.96-11.392 84.48-17.024 128-17.28 43.52 0.256 87.04 5.888 128 17.28 97.28-66.218667 140.16-52.48 140.16-52.48 27.52 70.528 10.24 122.581333 5.12 135.509333 32.64 35.84 52.48 81.493333 52.48 137.386667 0 196.693333-119.68 240-233.6 252.586667 17.92 15.36 34.56 46.762667 34.56 94.72 0 68.522667-0.64 123.562667-0.64 140.202666 0 13.44 8.96 29.44 35.2 24.32C877.44 942.592 1024 750.592 1024 524.672c0-282.752-229.248-512-512-512"></path>
+</svg>
+
+    </a>
+
+
+<a href="https://noneback.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+   
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2020 -
+    2021
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        @noneback
+        
+      </span></span>
+
+  
+  
+
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>算术表达式语法分析 - NoneBack</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="NoneBack" />
+  <meta name="description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&amp;gt;E&#43;T|E-T|T T-&amp;gt;T*F|T/F|F F-&amp;gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 1 2 3 4 5 拓广文法G：" />
+<meta name="keywords" content="parsing, cpp" />
+
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.83.1" />
+
+
+<link rel="canonical" href="https://noneback.github.io/post/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/" />
+
+
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.fa4b2b9f31b5c6d0b683db81157a9226e17b06e61911791ab547242a4a0556f2.css" integrity="sha256-&#43;ksrnzG1xtC2g9uBFXqSJuF7BuYZEXkatUckKkoFVvI=" media="screen" crossorigin="anonymous">
+
+
+
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+<meta property="og:title" content="算术表达式语法分析" />
+<meta property="og:description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 1 2 3 4 5 拓广文法G：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/post/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-22T20:53:19&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-22T20:53:19&#43;08:00" />
+
+<meta itemprop="name" content="算术表达式语法分析">
+<meta itemprop="description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 1 2 3 4 5 拓广文法G："><meta itemprop="datePublished" content="2020-11-22T20:53:19&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-22T20:53:19&#43;08:00" />
+<meta itemprop="wordCount" content="1012">
+<meta itemprop="keywords" content="parsing,cpp," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="算术表达式语法分析"/>
+<meta name="twitter:description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 1 2 3 4 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 1 2 3 4 5 拓广文法G："/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">今日目标:摸鱼</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      今日目标:摸鱼
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+
+    
+    
+
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+    
+    <header class="post-header">
+      <h1 class="post-title">算术表达式语法分析</h1>
+      
+      <div class="post-meta">
+        <time datetime="2020-11-22" class="post-time">
+          2020-11-22
+        </time>
+        <div class="post-category">
+            <a href="https://noneback.github.io/categories/bupt-class/"> BUPT-class </a>
+            
+          </div>
+        
+
+        
+        
+
+        
+        
+      </div>
+    </header>
+
+    
+    
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#dfa">DFA</a>
+      <ul>
+        <li><a href="#构造拓广文法-gs">构造拓广文法 G(s)</a></li>
+        <li><a href="#构造有效项目集和相应-dfa">构造有效项目集和相应 DFA</a></li>
+      </ul>
+    </li>
+    <li><a href="#slr">SLR</a>
+      <ul>
+        <li><a href="#构造-first-和-follow-集合">构造 FIRST 和 FOLLOW 集合</a></li>
+      </ul>
+    </li>
+    <li><a href="#构造-slr-分析表">构造 SLR 分析表</a></li>
+    <li><a href="#编写代码">编写代码</a>
+      <ul>
+        <li><a href="#算法">算法</a></li>
+        <li><a href="#实现">实现</a></li>
+        <li><a href="#优化">优化</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+
+    
+    <div class="post-content">
+      <p>编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">文法：
+E-&gt;E+T|E-T|T
+T-&gt;T*F|T/F|F
+F-&gt;(E)|num
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="dfa">DFA</h2>
+<p>首先要根据文法构建一个 DFA</p>
+<h3 id="构造拓广文法-gs">构造拓广文法 G(s)</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">拓广文法G：
+S-&gt;E
+E-&gt;E+T|E-T|T
+T-&gt;T*F|T/F|F
+F-&gt;(E)|num
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="构造有效项目集和相应-dfa">构造有效项目集和相应 DFA</h3>
+<p><img src="https://i.loli.net/2020/11/22/Hz5lLiGA9P2woWq.png" alt="DFA.png"></p>
+<h2 id="slr">SLR</h2>
+<p>从 DFA 中可以观察到使用 LR(0)将会有 Shift-Reduce 冲突，所以最终使用 SLR 分析。</p>
+<p>构造 SLR 需要在 LR(0)的基础上计算出 First 和 Follow 集合</p>
+<h3 id="构造-first-和-follow-集合">构造 FIRST 和 FOLLOW 集合</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th>E</th>
+<th>T</th>
+<th>F</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">First</td>
+<td>(,num</td>
+<td>(,num</td>
+<td>(,num</td>
+</tr>
+<tr>
+<td style="text-align:left">Follow</td>
+<td>+,-,#,)</td>
+<td>+,-,#,*,/,)</td>
+<td>+,-,#,*,/,)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="构造-slr-分析表">构造 SLR 分析表</h2>
+<p>规约时，需要判断下一个的符号是否属于被规约状态的 Follow 集合中。在 Follow 集合中才允许被规约</p>
+<p><img src="https://i.loli.net/2020/11/22/VdNI8BqwePEaOjF.png" alt="image.png"></p>
+<h2 id="编写代码">编写代码</h2>
+<p>相对于之前构造 DFA 和分析表，代码的实现显得则更为简单。但要注意代码的质量。</p>
+<h3 id="算法">算法</h3>
+<p><img src="https://i.loli.net/2020/11/22/IHnOyeqZY9EJ4rt.png" alt="image.png"></p>
+<h3 id="实现">实现</h3>
+<p>实现的关键在于：</p>
+<ul>
+<li>
+<p>Action,ActionKind</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">Action</span> <span class="p">{</span>  <span class="n">ActionKind</span> <span class="n">kind</span><span class="p">;</span>  <span class="kt">int</span> <span class="n">id</span><span class="p">;};</span><span class="c1">// id is for reduce and shift
+</span><span class="c1"></span><span class="k">enum</span> <span class="nc">ActionKind</span> <span class="p">{</span> <span class="n">Error</span><span class="p">,</span> <span class="n">Shift</span><span class="p">,</span> <span class="n">Reduce</span><span class="p">,</span> <span class="n">Accpet</span> <span class="p">};</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>保存 ActionMap 和 GotoMap,产生式</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">typedef</span> <span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">Action</span><span class="o">&gt;</span> <span class="n">ActionMap</span><span class="p">;</span><span class="c1">//需要16个，与状态数对应
+</span><span class="c1"></span><span class="k">typedef</span> <span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">State</span><span class="o">&gt;</span> <span class="n">GotoMap</span><span class="p">;</span><span class="c1">//需要16个，与状态数对应
+</span><span class="c1"></span>
+
+<span class="k">const</span> <span class="n">pair</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">string</span><span class="o">&gt;</span> <span class="n">producers</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">{</span><span class="s">&#34;T&#34;</span><span class="p">,</span> <span class="s">&#34;T*F&#34;</span><span class="p">},</span>
+    <span class="c1">//...
+</span><span class="c1"></span>
+    <span class="c1">//将产生式填入
+</span><span class="c1"></span><span class="p">};</span>
+
+<span class="kt">void</span> <span class="nf">initialMaps</span><span class="p">(</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ActionMap</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">am</span><span class="p">,</span> <span class="n">vector</span><span class="o">&lt;</span><span class="n">GotoMap</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">gm</span><span class="p">)</span> <span class="p">{</span>
+<span class="k">const</span> <span class="n">string</span> <span class="n">actions</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">11</span><span class="p">]{</span>
+      <span class="p">{</span><span class="s">&#34;s4&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;s5&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">},</span>
+      <span class="p">{</span><span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;s7&#34;</span><span class="p">,</span> <span class="s">&#34;s6&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;a11&#34;</span><span class="p">},</span>
+      <span class="c1">//...
+</span><span class="c1"></span><span class="p">};</span>
+
+<span class="k">const</span> <span class="kt">int</span> <span class="n">gotos</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+     <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">},</span>
+     <span class="c1">//...
+</span><span class="c1"></span><span class="p">};</span>
+
+  <span class="c1">//  （	）	-	+	*	/	num	$
+</span><span class="c1"></span>  <span class="c1">// E    T    F
+</span><span class="c1"></span>
+  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">16</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">ActionMap</span> <span class="n">a</span><span class="p">;</span>
+    <span class="n">GotoMap</span> <span class="n">g</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">a</span><span class="p">[</span><span class="n">T</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span> <span class="o">=</span> <span class="n">parse2Action</span><span class="p">(</span><span class="n">actions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]);</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">g</span><span class="p">[</span><span class="n">V</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">=</span> <span class="n">gotos</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">];</span>
+    <span class="p">}</span>
+    <span class="n">am</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>
+    <span class="n">gm</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">g</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+
+<span class="c1">//从表中解析出Action
+</span><span class="c1">// string s format:a char+digits,like s1,r2,a1
+</span><span class="c1"></span><span class="n">Action</span> <span class="nf">parse2Action</span><span class="p">(</span><span class="n">string</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">length</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">s</span><span class="p">.</span><span class="n">length</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">Action</span><span class="p">{</span><span class="n">Error</span><span class="p">,</span> <span class="n">Error</span><span class="p">};</span>
+  <span class="p">}</span>
+  <span class="kt">char</span> <span class="n">kind</span> <span class="o">=</span> <span class="n">tolower</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+  <span class="kt">int</span> <span class="n">id</span> <span class="o">=</span> <span class="n">stoi</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">length</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">));</span>
+
+  <span class="k">switch</span> <span class="p">(</span><span class="n">kind</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="sc">&#39;r&#39;</span><span class="o">:</span><span class="k">return</span> <span class="n">Action</span><span class="p">{</span><span class="n">Reduce</span><span class="p">,</span> <span class="n">id</span><span class="p">};</span>
+    <span class="k">case</span> <span class="sc">&#39;s&#39;</span><span class="o">:</span><span class="k">return</span> <span class="n">Action</span><span class="p">{</span><span class="n">Shift</span><span class="p">,</span> <span class="n">id</span><span class="p">};</span>
+    <span class="k">case</span> <span class="sc">&#39;a&#39;</span><span class="o">:</span><span class="k">return</span> <span class="n">Action</span><span class="p">{</span><span class="n">Accpet</span><span class="p">,</span> <span class="n">Accpet</span><span class="p">};</span>
+    <span class="k">default</span><span class="o">:</span><span class="k">return</span> <span class="n">Action</span><span class="p">{</span><span class="n">Error</span><span class="p">,</span> <span class="n">Error</span><span class="p">};</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>Lexer</p>
+<p>由于是语法分析实验，所以词法分析写的比较简单</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// simple lex,suppose that there is no error in token while lexing
+</span><span class="c1">//
+</span><span class="c1">// return like{&#34;(&#34;,&#34;num&#34;,&#34;)&#34;}
+</span><span class="c1"></span><span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">lex2Str</span><span class="p">(</span><span class="n">string</span> <span class="n">sourceStr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">ans</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">sourceStr</span><span class="p">.</span><span class="n">length</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">string</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">string</span><span class="p">{</span><span class="n">sourceStr</span><span class="p">[</span><span class="n">i</span><span class="p">]};</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">T</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">cur</span><span class="p">)</span> <span class="o">!=</span> <span class="n">T</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+        <span class="n">ans</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">cur</span><span class="p">);</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="c1">// parse num
+</span><span class="c1"></span>        <span class="n">ans</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="s">&#34;num&#34;</span><span class="p">);</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">2</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">ans</span><span class="p">;</span>
+  <span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>StatesStack,EnteredStack,CharacterQueue 三个关键数据结构的维护与 Parse 函数的编写</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">class</span> <span class="nc">DigitExpressionParser</span> <span class="p">{</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">stack</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">entered</span><span class="p">;</span>
+  <span class="n">queue</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">characters</span><span class="p">;</span>
+  <span class="n">unordered_set</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">T</span><span class="p">{</span><span class="s">&#34;(&#34;</span><span class="p">,</span> <span class="s">&#34;)&#34;</span><span class="p">,</span> <span class="s">&#34;-&#34;</span><span class="p">,</span> <span class="s">&#34;+&#34;</span><span class="p">,</span> <span class="s">&#34;*&#34;</span><span class="p">,</span> <span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="s">&#34;num&#34;</span><span class="p">,</span> <span class="s">&#34;$&#34;</span><span class="p">};</span>
+  <span class="n">unordered_set</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">V</span><span class="p">{</span><span class="s">&#34;E&#34;</span><span class="p">,</span> <span class="s">&#34;T&#34;</span><span class="p">,</span> <span class="s">&#34;F&#34;</span><span class="p">};</span>
+  <span class="n">stack</span><span class="o">&lt;</span><span class="n">State</span><span class="o">&gt;</span> <span class="n">states</span><span class="p">;</span>
+  <span class="n">vector</span><span class="o">&lt;</span><span class="n">ActionMap</span><span class="o">&gt;</span> <span class="n">am</span><span class="p">;</span>
+  <span class="n">vector</span><span class="o">&lt;</span><span class="n">GotoMap</span><span class="o">&gt;</span> <span class="n">gm</span><span class="p">;</span>
+
+  <span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">lex2Str</span><span class="p">(</span><span class="n">string</span> <span class="n">sourceStr</span><span class="p">)</span>
+  <span class="c1">//  function overload for different container to pop numofEle
+</span><span class="c1"></span>  <span class="kt">void</span> <span class="n">pop</span><span class="p">(</span><span class="n">queue</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">q</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+
+  <span class="kt">void</span> <span class="n">pop</span><span class="p">(</span><span class="n">stack</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+
+  <span class="kt">void</span> <span class="n">pop</span><span class="p">(</span><span class="n">stack</span><span class="o">&lt;</span><span class="n">State</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+
+  <span class="c1">// initial parser
+</span><span class="c1"></span>  <span class="kt">bool</span> <span class="n">_init</span><span class="p">(</span><span class="n">string</span> <span class="n">sourceString</span><span class="p">)</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">DigitExpressionParser</span><span class="p">()</span> <span class="p">{</span> <span class="n">initialMaps</span><span class="p">(</span><span class="n">am</span><span class="p">,</span> <span class="n">gm</span><span class="p">);</span> <span class="p">}</span>
+
+  <span class="c1">// parse
+</span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">parse</span><span class="p">(</span><span class="n">string</span> <span class="n">sourseStr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_init</span><span class="p">(</span><span class="n">sourseStr</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Error:source string empty or wrong token&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">State</span> <span class="n">curState</span> <span class="o">=</span> <span class="n">states</span><span class="p">.</span><span class="n">top</span><span class="p">();</span>
+      <span class="n">string</span> <span class="n">curCharacter</span> <span class="o">=</span> <span class="n">characters</span><span class="p">.</span><span class="n">front</span><span class="p">();</span>
+
+      <span class="k">auto</span> <span class="o">&amp;</span><span class="n">action</span> <span class="o">=</span> <span class="n">am</span><span class="p">[</span><span class="n">curState</span><span class="p">][</span><span class="n">curCharacter</span><span class="p">];</span>
+
+      <span class="k">switch</span> <span class="p">(</span><span class="n">action</span><span class="p">.</span><span class="n">kind</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="nl">Shift</span><span class="p">:</span><span class="n">states</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">action</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+          <span class="n">entered</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">curCharacter</span><span class="p">);</span>
+          <span class="n">characters</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+          <span class="k">break</span><span class="p">;</span>
+
+        <span class="k">case</span> <span class="nl">Reduce</span><span class="p">:</span> <span class="p">{</span>
+          <span class="c1">// use producer[id] to reduce
+</span><span class="c1"></span>          <span class="n">printProducer</span><span class="p">(</span><span class="n">action</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+          <span class="k">auto</span> <span class="n">producer</span> <span class="o">=</span> <span class="n">producers</span><span class="p">[</span><span class="n">action</span><span class="p">.</span><span class="n">id</span><span class="p">];</span>
+          <span class="kt">int</span> <span class="n">popNum</span> <span class="o">=</span> <span class="n">producer</span><span class="p">.</span><span class="n">second</span> <span class="o">==</span> <span class="s">&#34;num&#34;</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="n">producer</span><span class="p">.</span><span class="n">second</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+          <span class="n">pop</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">popNum</span><span class="p">);</span>
+          <span class="n">pop</span><span class="p">(</span><span class="n">entered</span><span class="p">,</span> <span class="n">popNum</span><span class="p">);</span>
+          <span class="n">entered</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">producer</span><span class="p">.</span><span class="n">first</span><span class="p">);</span>
+
+          <span class="n">states</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">gm</span><span class="p">[</span><span class="n">states</span><span class="p">.</span><span class="n">top</span><span class="p">()][</span><span class="n">producer</span><span class="p">.</span><span class="n">first</span><span class="p">]);</span>
+        <span class="p">}</span>
+          <span class="k">break</span><span class="p">;</span>
+
+        <span class="k">case</span> <span class="nl">Error</span><span class="p">:</span><span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Error while parsing&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+
+        <span class="k">case</span> <span class="nl">Accpet</span><span class="p">:</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Accepted&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+          <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h3 id="优化">优化</h3>
+<p>实验上有一些是可以优化(卷)的</p>
+<ul>
+<li>First 和 Follow 集合，有效项目集，分析表能够使用代码自动生成</li>
+<li>num 的可以使用数字代替，解析为 token</li>
+</ul>
+<p>如果觉得不够卷还可以</p>
+<ul>
+<li>可视化(呸)</li>
+<li>写一个计算器</li>
+</ul>
+
+    </div>
+
+    
+    
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">NoneBack</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+      2020-11-22
+      
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+
+    <footer class="post-footer">
+      <div class="post-tags">
+          <a href="https://noneback.github.io/tags/parsing/">parsing</a>
+          <a href="https://noneback.github.io/tags/cpp/">cpp</a>
+          
+        </div>
+
+      
+      <nav class="post-nav">
+        
+          <a class="prev" href="/post/mit6.824-mapreduce/">
+            
+            <i class="iconfont">
+              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
+</svg>
+
+            </i>
+            <span class="prev-text nav-default">MIT6.824-MapReduce</span>
+            <span class="prev-text nav-mobile">Prev</span>
+          </a>
+        
+          <a class="next" href="/post/lc406-%E6%A0%B9%E6%8D%AE%E8%BA%AB%E9%AB%98%E9%87%8D%E5%BB%BA%E9%98%9F%E5%88%97/">
+            <span class="next-text nav-default">LC406 根据身高重建队列</span>
+            <span class="prev-text nav-mobile">Next</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+
+  
+  
+
+  
+  
+
+  
+
+  
+  
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "noneback/noneback.github.io"
+            issue-term="title"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+  
+
+  
+
+  
+
+  
+
+    
+
+  
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="icon-links">
+  
+  
+    <a href="chenlan2333@gmail.com" rel="me noopener" class="iconfont"
+      title="email"  target="_blank"
+      >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+  
+    <a href="https://github.com/noneback" rel="me noopener" class="iconfont"
+      title="github"  target="_blank"
+      >
+      <svg class="icon" style="" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M512 12.672c-282.88 0-512 229.248-512 512 0 226.261333 146.688 418.133333 350.08 485.76 25.6 4.821333 34.986667-11.008 34.986667-24.618667 0-12.16-0.426667-44.373333-0.64-87.04-142.421333 30.890667-172.458667-68.693333-172.458667-68.693333C188.672 770.986667 155.008 755.2 155.008 755.2c-46.378667-31.744 3.584-31.104 3.584-31.104 51.413333 3.584 78.421333 52.736 78.421333 52.736 45.653333 78.293333 119.850667 55.68 149.12 42.581333 4.608-33.109333 17.792-55.68 32.426667-68.48-113.706667-12.8-233.216-56.832-233.216-253.013333 0-55.893333 19.84-101.546667 52.693333-137.386667-5.76-12.928-23.04-64.981333 4.48-135.509333 0 0 42.88-13.738667 140.8 52.48 40.96-11.392 84.48-17.024 128-17.28 43.52 0.256 87.04 5.888 128 17.28 97.28-66.218667 140.16-52.48 140.16-52.48 27.52 70.528 10.24 122.581333 5.12 135.509333 32.64 35.84 52.48 81.493333 52.48 137.386667 0 196.693333-119.68 240-233.6 252.586667 17.92 15.36 34.56 46.762667 34.56 94.72 0 68.522667-0.64 123.562667-0.64 140.202666 0 13.44 8.96 29.44 35.2 24.32C877.44 942.592 1024 750.592 1024 524.672c0-282.752-229.248-512-512-512"></path>
+</svg>
+
+    </a>
+
+
+<a href="https://noneback.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+   
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2020 -
+    2021
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        @noneback
+        
+      </span></span>
+
+  
+  
+
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

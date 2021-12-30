@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Epoll and IO复用 - NoneBack</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="NoneBack" />
+  <meta name="description" content="先从epoll说起。 epoll是Linux内核的可拓展IO事件通知机制，设计的目的是取代select和poll，是为了处理大量文件描述符而改" />
+<meta name="keywords" content="OS, Linux, SysCall" />
+
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.83.1" />
+
+
+<link rel="canonical" href="https://noneback.github.io/post/epoll-and-io%E5%A4%8D%E7%94%A8/" />
+
+
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.fa4b2b9f31b5c6d0b683db81157a9226e17b06e61911791ab547242a4a0556f2.css" integrity="sha256-&#43;ksrnzG1xtC2g9uBFXqSJuF7BuYZEXkatUckKkoFVvI=" media="screen" crossorigin="anonymous">
+
+
+
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+<meta property="og:title" content="Epoll and IO复用" />
+<meta property="og:description" content="先从epoll说起。 epoll是Linux内核的可拓展IO事件通知机制，设计的目的是取代select和poll，是为了处理大量文件描述符而改" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/post/epoll-and-io%E5%A4%8D%E7%94%A8/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-08-15T21:47:45&#43;08:00" />
+<meta property="article:modified_time" content="2021-08-15T21:47:45&#43;08:00" />
+
+<meta itemprop="name" content="Epoll and IO复用">
+<meta itemprop="description" content="先从epoll说起。 epoll是Linux内核的可拓展IO事件通知机制，设计的目的是取代select和poll，是为了处理大量文件描述符而改"><meta itemprop="datePublished" content="2021-08-15T21:47:45&#43;08:00" />
+<meta itemprop="dateModified" content="2021-08-15T21:47:45&#43;08:00" />
+<meta itemprop="wordCount" content="3257">
+<meta itemprop="keywords" content="OS,Linux,Network,IO," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Epoll and IO复用"/>
+<meta name="twitter:description" content="先从epoll说起。 epoll是Linux内核的可拓展IO事件通知机制，设计的目的是取代select和poll，是为了处理大量文件描述符而改"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">今日目标:摸鱼</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      今日目标:摸鱼
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+
+    
+    
+
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+    
+    <header class="post-header">
+      <h1 class="post-title">Epoll and IO复用</h1>
+      
+      <div class="post-meta">
+        <time datetime="2021-08-15" class="post-time">
+          2021-08-15
+        </time>
+        <div class="post-category">
+            <a href="https://noneback.github.io/categories/os/"> OS </a>
+            
+          </div>
+        
+
+        
+        
+
+        
+        
+      </div>
+    </header>
+
+    
+    
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#使用">使用</a>
+      <ul>
+        <li><a href="#api">API</a></li>
+        <li><a href="#处理过程">处理过程</a></li>
+        <li><a href="#epoll_create">epoll_create</a></li>
+        <li><a href="#epoll_ctl">epoll_ctl</a></li>
+        <li><a href="#epoll_wait">epoll_wait</a></li>
+      </ul>
+    </li>
+    <li><a href="#epoll使用模型">Epoll使用模型</a></li>
+    <li><a href="#阻塞io非阻塞ioio复用">阻塞IO、非阻塞IO、IO复用</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+
+    
+    <div class="post-content">
+      <p>先从epoll说起。</p>
+<p>epoll是Linux内核的可拓展IO事件通知机制，设计的目的是取代select和poll，是为了处理大量文件描述符而改进的poll，支持打开文件描述符上限是系统最大文件打开数目，性能优异。</p>
+<h2 id="使用">使用</h2>
+<h3 id="api">API</h3>
+<p>epoll相关的系统调用有三个</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="cm">/** epoll_create
+</span><span class="cm"> *  创建一个epoll句柄，返回错误码
+</span><span class="cm"> *  使用之后需要被关闭，因为epfd也会消耗系统fd数量。
+</span><span class="cm"> *  size : 标识epfd监听fd的数量
+</span><span class="cm"> */</span> 
+<span class="kt">int</span> <span class="nf">epoll_create</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">);</span>
+
+<span class="cm">/** epoll_ctl
+</span><span class="cm"> *  添加epoll监控对象，epoll事件的注册函数，返回错误码
+</span><span class="cm"> *  epfd : epoll fd
+</span><span class="cm"> *  op : 操作类型
+</span><span class="cm"> *       EPOLL_CTL_ADD : 注册新的fd到epfd中
+</span><span class="cm"> *       EPOLL_CTL_MOD : 修改已经注册的fd的监听事件
+</span><span class="cm"> *   		 EPOLL_CTL_DEL : 从epfd中删除一个fd
+</span><span class="cm"> *  fd : 需要监听的fd
+</span><span class="cm"> *  event : 需要监听的事件
+</span><span class="cm"> *					EPOLLIN ：表示对应的文件描述符可以读（包括对端SOCKET正常关闭）；
+</span><span class="cm"> *					EPOLLOUT：表示对应的文件描述符可以写；
+</span><span class="cm"> *					EPOLLPRI：表示对应的文件描述符有紧急的数据可读（这里应该表示有带外数据到来）；
+</span><span class="cm"> *					EPOLLERR：表示对应的文件描述符发生错误；
+</span><span class="cm"> *  				EPOLLHUP：表示对应的文件描述符被挂断；
+</span><span class="cm"> *					EPOLLET： 将EPOLL设为边缘触发(Edge Triggered)模式，这是相对于水平触发(Level Triggered)来说的。
+</span><span class="cm"> * 					EPOLLONESHOT：只监听一次事件，当监听完这次事件之后，如果还需要继续监听这个socket的话，需要再次把这个socket加入到EPOLL队列里
+</span><span class="cm"> */</span>
+<span class="kt">int</span> <span class="nf">epoll_ctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">op</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="o">*</span><span class="n">event</span><span class="p">);</span>
+
+<span class="cm">/** epoll_wait
+</span><span class="cm"> * 收集已经触发了的事件，返回触发事件的数目，0代表超时
+</span><span class="cm"> * epfd : epoll fd
+</span><span class="cm"> * events : epoll将触发的事件赋值到events数组中
+</span><span class="cm"> * maxevent : 告知kernel events数组的大小，不得大于epoll_create 中的 size
+</span><span class="cm"> * timeout : 等待超时时间，0，立即返回，-1 一直阻塞，&gt; 0 等待对应时间
+</span><span class="cm"> */</span>
+<span class="kt">int</span> <span class="nf">epoll_wait</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epill_event</span><span class="o">*</span> <span class="n">events</span><span class="p">,</span><span class="kt">int</span> <span class="n">timeout</span><span class="p">);</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="处理过程">处理过程</h3>
+<h3 id="epoll_create">epoll_create</h3>
+<p>当一个进程调用epoll_create方法时，Linux内核会创建一个eventpoll结构体</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">eventpoll</span> <span class="p">{</span>
+    <span class="cm">/* Protect the this structure access */</span>
+    <span class="n">spinlock_t</span> <span class="n">lock</span><span class="p">;</span>
+
+    <span class="cm">/*
+</span><span class="cm">     * This mutex is used to ensure that files are not removed
+</span><span class="cm">     * while epoll is using them. This is held during the event
+</span><span class="cm">     * collection loop, the file cleanup path, the epoll file exit
+</span><span class="cm">     * code and the ctl operations.
+</span><span class="cm">     */</span>
+    <span class="k">struct</span> <span class="nc">mutex</span> <span class="n">mtx</span><span class="p">;</span>
+
+    <span class="cm">/* Wait queue used by sys_epoll_wait() */</span>
+    <span class="cm">/* 阻塞在epoll_wait()当前epoll实例的用户被链接到这个等待队列 */</span>
+    <span class="n">wait_queue_head_t</span> <span class="n">wq</span><span class="p">;</span>
+
+    <span class="cm">/* Wait queue used by file-&gt;poll() */</span>
+    <span class="cm">/* epoll文件也可以被epoll_wait() */</span>
+    <span class="n">wait_queue_head_t</span> <span class="n">poll_wait</span><span class="p">;</span>
+
+    <span class="cm">/* List of ready file descriptors */</span>
+    <span class="cm">/* 已经ready的epitem的链表 */</span>
+    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">rdllist</span><span class="p">;</span>
+
+    <span class="cm">/* RB tree root used to store monitored fd structs */</span>
+    <span class="k">struct</span> <span class="nc">rb_root</span> <span class="n">rbr</span><span class="p">;</span>
+
+    <span class="cm">/*
+</span><span class="cm">     * This is a single linked list that chains all the &#34;struct epitem&#34; that
+</span><span class="cm">     * happened while transfering ready events to userspace w/out
+</span><span class="cm">     * holding -&gt;lock.
+</span><span class="cm">     */</span>
+    <span class="cm">/* 见ep_poll_callback()以及ep_scan_ready_list()中的注释 */</span>
+    <span class="k">struct</span> <span class="nc">epitem</span> <span class="o">*</span><span class="n">ovflist</span><span class="p">;</span>
+
+    <span class="cm">/* The user that created the eventpoll descriptor */</span>
+    <span class="cm">/* 创建当前epoll实例的用户 */</span>
+    <span class="k">struct</span> <span class="nc">user_struct</span> <span class="o">*</span><span class="n">user</span><span class="p">;</span>
+		
+		<span class="k">struct</span> <span class="nc">file</span> <span class="o">*</span><span class="n">file</span><span class="p">;</span>
+
+		<span class="cm">/* used to optimize loop detection check */</span>
+		<span class="kt">int</span> <span class="n">visited</span><span class="p">;</span>
+
+		<span class="k">struct</span> <span class="nc">list_head</span> <span class="n">visited_list_link</span><span class="p">;</span><span class="c1">//双向链表中保存着将要通过epoll_wait返回给用户的、满足条件的事件
+</span><span class="c1"></span><span class="p">};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在epoll_create中，epoll向内核注册了一个红黑树，用于存储上述的被监控socket。当你调用epoll_create时，就会在这个rb tree里创建一个file结点，通过rb tree查询对应的socket fd。</p>
+<p>同时，它还会创建一个双向链表用于存储准备就绪的事件。</p>
+<h3 id="epoll_ctl">epoll_ctl</h3>
+<p>在epoll中，对于每一个事件都会建立一个epitem结构体：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="cm">/*
+</span><span class="cm"> * Each file descriptor added to the eventpoll interface will
+</span><span class="cm"> * have an entry of this type linked to the &#34;rbr&#34; RB tree.
+</span><span class="cm"> */</span>
+<span class="k">struct</span> <span class="nc">epitem</span> <span class="p">{</span>
+    <span class="cm">/* RB tree node used to link this structure to the eventpoll RB tree */</span>
+    <span class="cm">/* eventpoll内部的红黑树的挂载点 */</span>
+    <span class="k">struct</span> <span class="nc">rb_node</span> <span class="n">rbn</span><span class="p">;</span>
+
+    <span class="cm">/* List header used to link this structure to the eventpoll ready list */</span>
+    <span class="cm">/* 所有已经ready的epitem都会被挂载到eventpoll的rdllist中 */</span>
+    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">rdllink</span><span class="p">;</span>
+
+    <span class="cm">/*
+</span><span class="cm">     * Works together &#34;struct eventpoll&#34;-&gt;ovflist in keeping the
+</span><span class="cm">     * single linked chain of items.
+</span><span class="cm">     */</span>
+    <span class="cm">/* 配合eventpoll-&gt;ovflist使用 */</span>
+    <span class="k">struct</span> <span class="nc">epitem</span> <span class="o">*</span><span class="n">next</span><span class="p">;</span>
+
+    <span class="cm">/* The file descriptor information this item refers to */</span>
+    <span class="cm">/* 
+</span><span class="cm">     * 作为evetnpoll内部的红黑树节点的key
+</span><span class="cm">     */</span>
+    <span class="k">struct</span> <span class="nc">epoll_filefd</span> <span class="n">ffd</span><span class="p">;</span>
+
+    <span class="cm">/* Number of active wait queue attached to poll operations */</span>
+    <span class="cm">/* 监听队列挂载数 */</span>
+    <span class="cm">/* 难道一个epitem还能同时挂载到多个监听队列？ */</span>
+    <span class="kt">int</span> <span class="n">nwait</span><span class="p">;</span>
+
+    <span class="cm">/* List containing poll wait queues */</span>
+    <span class="cm">/* 链接当前epitem对应的eppoll_entry结构 */</span>
+    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">pwqlist</span><span class="p">;</span>
+
+    <span class="cm">/* The &#34;container&#34; of this item */</span>
+    <span class="cm">/* 关联当前epitem所属的epollevent */</span>
+    <span class="k">struct</span> <span class="nc">eventpoll</span> <span class="o">*</span><span class="n">ep</span><span class="p">;</span>
+
+    <span class="cm">/* List header used to link this item to the &#34;struct file&#34; items list */</span>
+    <span class="cm">/* 与所监听的struct file进行链接 */</span>
+    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">fllink</span><span class="p">;</span>
+
+    <span class="cm">/* The structure that describe the interested events and the source fd */</span>
+    <span class="cm">/* 通过epoll_ctl从用户空间传过来的数据，表示当前epitem关心的events */</span>
+    <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="n">event</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><img src="https://i.loli.net/2021/08/15/ZH6Pixq4X5BLc2z.png" alt="image.png"></p>
+<p>在调用epoll_ctl时，除了将socket fd注册到eventpoll的rb tree，它还会给内核中断处理程序注册一个回调函数。当这个fd的中断到了，就把它放入就绪链表中。当一个socket上有数据到了，内核在把网卡上的数据copy到内核中后就来把socket插入到准备就绪链表里了。</p>
+<h3 id="epoll_wait">epoll_wait</h3>
+<p>当epoll_wait调用时，仅仅观察这个list链表里有没有数据即eptime项即可。有数据就返回，没有数据就sleep，等到timeout时间到后即使链表没数据也返回。</p>
+<h2 id="epoll使用模型">Epoll使用模型</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">for</span><span class="p">(</span> <span class="p">;</span> <span class="p">;</span> <span class="p">)</span>  
+   <span class="p">{</span>  
+       <span class="n">nfds</span> <span class="o">=</span> <span class="n">epoll_wait</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">events</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">500</span><span class="p">);</span>  
+       <span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">nfds</span><span class="p">;</span><span class="o">++</span><span class="n">i</span><span class="p">)</span>  
+       <span class="p">{</span>  
+           <span class="k">if</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">.</span><span class="n">fd</span><span class="o">==</span><span class="n">listenfd</span><span class="p">)</span> <span class="c1">//有新的连接  
+</span><span class="c1"></span>           <span class="p">{</span>  
+               <span class="n">connfd</span> <span class="o">=</span> <span class="n">accept</span><span class="p">(</span><span class="n">listenfd</span><span class="p">,(</span><span class="n">sockaddr</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">clientaddr</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">clilen</span><span class="p">);</span> <span class="c1">//accept这个连接  
+</span><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">fd</span><span class="o">=</span><span class="n">connfd</span><span class="p">;</span>  
+               <span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="o">=</span><span class="n">EPOLLIN</span><span class="o">|</span><span class="n">EPOLLET</span><span class="p">;</span>  
+               <span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">EPOLL_CTL_ADD</span><span class="p">,</span><span class="n">connfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ev</span><span class="p">);</span> <span class="c1">//将新的fd添加到epoll的监听队列中  
+</span><span class="c1"></span>           <span class="p">}</span>  
+  
+           <span class="k">else</span> <span class="nf">if</span><span class="p">(</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">events</span><span class="o">&amp;</span><span class="n">EPOLLIN</span> <span class="p">)</span> <span class="c1">//接收到数据，读socket  
+</span><span class="c1"></span>           <span class="p">{</span>  
+               <span class="n">n</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">MAXLINE</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span>    <span class="c1">//读  
+</span><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">ptr</span> <span class="o">=</span> <span class="n">md</span><span class="p">;</span>     <span class="c1">//md为自定义类型，添加数据  
+</span><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="o">=</span><span class="n">EPOLLOUT</span><span class="o">|</span><span class="n">EPOLLET</span><span class="p">;</span>  
+               <span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">EPOLL_CTL_MOD</span><span class="p">,</span><span class="n">sockfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ev</span><span class="p">);</span><span class="c1">//修改标识符，等待下一个循环时发送数据，异步处理的精髓  
+</span><span class="c1"></span>           <span class="p">}</span>  
+           <span class="k">else</span> <span class="nf">if</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">events</span><span class="o">&amp;</span><span class="n">EPOLLOUT</span><span class="p">)</span> <span class="c1">//有数据待发送，写socket  
+</span><span class="c1"></span>           <span class="p">{</span>  
+               <span class="k">struct</span> <span class="nc">myepoll_data</span><span class="o">*</span> <span class="n">md</span> <span class="o">=</span> <span class="p">(</span><span class="n">myepoll_data</span><span class="o">*</span><span class="p">)</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">.</span><span class="n">ptr</span><span class="p">;</span>    <span class="c1">//取数据  
+</span><span class="c1"></span>               <span class="n">sockfd</span> <span class="o">=</span> <span class="n">md</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">;</span>  
+               <span class="n">send</span><span class="p">(</span> <span class="n">sockfd</span><span class="p">,</span> <span class="n">md</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">,</span> <span class="n">strlen</span><span class="p">((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">md</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">),</span> <span class="mi">0</span> <span class="p">);</span>        <span class="c1">//发送数据  
+</span><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">fd</span><span class="o">=</span><span class="n">sockfd</span><span class="p">;</span>  
+               <span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="o">=</span><span class="n">EPOLLIN</span><span class="o">|</span><span class="n">EPOLLET</span><span class="p">;</span>  
+               <span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">EPOLL_CTL_MOD</span><span class="p">,</span><span class="n">sockfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ev</span><span class="p">);</span> <span class="c1">//修改标识符，等待下一个循环时接收数据  
+</span><span class="c1"></span>           <span class="p">}</span>  
+           <span class="k">else</span>  
+           <span class="p">{</span>  
+               <span class="c1">//其他的处理  
+</span><span class="c1"></span>           <span class="p">}</span>  
+       <span class="p">}</span>  
+   <span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="阻塞io非阻塞ioio复用">阻塞IO、非阻塞IO、IO复用</h2>
+<p><strong>阻塞IO</strong>意味着线程在数据未到达时需要等待数据到达，阻塞的进程是不应当占用CPU的，此时需要让出CPU，调入新的task占用CPU。知道数据到达，再重新获取将这个task调入CPU执行。用户进程独立处理业务</p>
+<p><img src="https://i.loli.net/2021/08/15/wGvIL8PprxeQDin.png" alt="Screenshot_20210815_220328.png"></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp">	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Calling recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+	<span class="n">ret</span> <span class="o">=</span>  <span class="n">recv</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">recv_buf</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">recv_buf</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span> 
+	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Had called recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>基于此，当大量task出现读写请求时，大量的CPU上下文切换，task调度，效率可能会低下</p>
+<p><strong>非阻塞IO</strong></p>
+<p>当用户线程发起一个IO操作后，并不需要等待，而是马上就得到了一个结果。如果结果是一个error时，它就知道数据还没有准备好，于是它可以再次发送IO操作。一旦内核中的数据准备好了，并且又再次收到了用户线程的请求，那么它马上就将数据拷贝到了用户线程，然后返回。</p>
+<p>在非阻塞IO模型中，用户线程需要不断地询问内核数据是否就绪，也就说非阻塞IO不会交出CPU，而会一直占用CPU。</p>
+<p><img src="https://i.loli.net/2021/08/15/trBfHZLsSAjCi2E.png" alt="Screenshot_20210815_220424.png"></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Calling recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+	<span class="n">ret</span> <span class="o">=</span>  <span class="n">recv</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">recv_buf</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">recv_buf</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span> 
+	<span class="k">if</span> <span class="p">(</span><span class="n">EAGAIN</span> <span class="o">==</span> <span class="n">ret</span><span class="p">)</span> <span class="p">{</span><span class="k">continue</span><span class="p">;}</span>
+    <span class="k">else</span> <span class="nf">if</span><span class="p">(</span><span class="n">ret</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span> <span class="k">break</span><span class="p">;}</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Had called recv(), retry.</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>对于非阻塞IO就有一个非常严重的问题，在while循环中需要不断地去询问内核数据是否就绪，这样会导致CPU占用率非常高，因此一般情况下很少使用while循环这种方式来读取数据。</p>
+<p><strong>IO复用</strong></p>
+<p>阻塞IO的问题是，业务交由线程处理，阻塞导致大量的资源被占用；阻塞与恢复会可能会导致大量的上下文切换,效率低下；</p>
+<p>非阻塞IO的问题是，在不使用监视器的情况下，依靠死循环完成一次 IO 操作。但是这样做的效率实在是太低了，完全没有实际意义；</p>
+<p>实际上，task的运行是不可避免的，有数据需要处理，就需要CPU去执行。所以可以优化的点在于，如何减少运行处理业务的线程以减少上下文调度开销和等待线程资源占用，以及减少CPU无意义的空转。</p>
+<p>IO复用的基本思想就是，在一个线程中管理监听多个fd事件，减少上下文切换；采用事件通知机制，减少CPU的空转；</p>
+<p>由此衍生出的select，poll，epoll，不过此乃他话，姑且不论。</p>
+<h2 id="参考">参考</h2>
+<p><a href="https://www.cnblogs.com/lojunren/p/3856290.html">Linux下的I/O复用与epoll详解</a></p>
+<p><a href="https://www.infoq.cn/article/26lpjzsp9echwgnic7lq">深入理解 epoll</a></p>
+
+    </div>
+
+    
+    
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">NoneBack</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+      2021-08-15
+      
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+
+    <footer class="post-footer">
+      <div class="post-tags">
+          <a href="https://noneback.github.io/tags/os/">OS</a>
+          <a href="https://noneback.github.io/tags/linux/">Linux</a>
+          <a href="https://noneback.github.io/tags/network/">Network</a>
+          <a href="https://noneback.github.io/tags/io/">IO</a>
+          
+        </div>
+
+      
+      <nav class="post-nav">
+        
+          <a class="prev" href="/post/mit6.824-gfs/">
+            
+            <i class="iconfont">
+              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
+</svg>
+
+            </i>
+            <span class="prev-text nav-default">MIT6.824-GFS</span>
+            <span class="prev-text nav-mobile">Prev</span>
+          </a>
+        
+          <a class="next" href="/post/linux-cgroups%E7%AE%80%E4%BB%8B/">
+            <span class="next-text nav-default">Linux Cgroups简介</span>
+            <span class="prev-text nav-mobile">Next</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+
+  
+  
+
+  
+  
+
+  
+
+  
+  
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "noneback/noneback.github.io"
+            issue-term="title"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+  
+
+  
+
+  
+
+  
+
+    
+
+  
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="icon-links">
+  
+  
+    <a href="chenlan2333@gmail.com" rel="me noopener" class="iconfont"
+      title="email"  target="_blank"
+      >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+  
+    <a href="https://github.com/noneback" rel="me noopener" class="iconfont"
+      title="github"  target="_blank"
+      >
+      <svg class="icon" style="" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M512 12.672c-282.88 0-512 229.248-512 512 0 226.261333 146.688 418.133333 350.08 485.76 25.6 4.821333 34.986667-11.008 34.986667-24.618667 0-12.16-0.426667-44.373333-0.64-87.04-142.421333 30.890667-172.458667-68.693333-172.458667-68.693333C188.672 770.986667 155.008 755.2 155.008 755.2c-46.378667-31.744 3.584-31.104 3.584-31.104 51.413333 3.584 78.421333 52.736 78.421333 52.736 45.653333 78.293333 119.850667 55.68 149.12 42.581333 4.608-33.109333 17.792-55.68 32.426667-68.48-113.706667-12.8-233.216-56.832-233.216-253.013333 0-55.893333 19.84-101.546667 52.693333-137.386667-5.76-12.928-23.04-64.981333 4.48-135.509333 0 0 42.88-13.738667 140.8 52.48 40.96-11.392 84.48-17.024 128-17.28 43.52 0.256 87.04 5.888 128 17.28 97.28-66.218667 140.16-52.48 140.16-52.48 27.52 70.528 10.24 122.581333 5.12 135.509333 32.64 35.84 52.48 81.493333 52.48 137.386667 0 196.693333-119.68 240-233.6 252.586667 17.92 15.36 34.56 46.762667 34.56 94.72 0 68.522667-0.64 123.562667-0.64 140.202666 0 13.44 8.96 29.44 35.2 24.32C877.44 942.592 1024 750.592 1024 524.672c0-282.752-229.248-512-512-512"></path>
+</svg>
+
+    </a>
+
+
+<a href="https://noneback.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+   
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2020 -
+    2021
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        @noneback
+        
+      </span></span>
+
+  
+  
+
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
