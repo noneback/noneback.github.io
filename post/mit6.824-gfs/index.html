@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.83.1" />
+<meta name="generator" content="Hugo 0.91.2" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/mit6.824-gfs/" />
@@ -65,12 +65,12 @@
 <meta property="og:description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/mit6.824-gfs/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2021-09-09T00:44:24&#43;08:00" />
-<meta property="article:modified_time" content="2021-09-09T00:44:24&#43;08:00" />
+<meta property="article:published_time" content="2021-09-09T00:44:24+08:00" />
+<meta property="article:modified_time" content="2021-09-09T00:44:24+08:00" />
 
 <meta itemprop="name" content="MIT6.824-GFS">
-<meta itemprop="description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了"><meta itemprop="datePublished" content="2021-09-09T00:44:24&#43;08:00" />
-<meta itemprop="dateModified" content="2021-09-09T00:44:24&#43;08:00" />
+<meta itemprop="description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了"><meta itemprop="datePublished" content="2021-09-09T00:44:24+08:00" />
+<meta itemprop="dateModified" content="2021-09-09T00:44:24+08:00" />
 <meta itemprop="wordCount" content="5215">
 <meta itemprop="keywords" content="GFS,MIT6.824,Paper Reading," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="MIT6.824-GFS"/>
@@ -541,7 +541,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>chunk handler是一个数据结构，包含</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span><span class="lnt">4
@@ -550,7 +550,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">7
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">ChunkHandler</span> <span class="p">{</span>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">ChunkHandler</span> <span class="p">{</span>
   <span class="n">list</span> <span class="n">of</span> <span class="nf">ChunkLocation</span><span class="p">(</span><span class="n">v</span><span class="p">);</span><span class="c1">// 标识replica所在的机器
 </span><span class="c1"></span>  <span class="n">version</span><span class="p">(</span><span class="n">nv</span><span class="p">);</span>         <span class="c1">// 数据的逻辑时钟，标记数据版本
 </span><span class="c1"></span>  <span class="n">primary</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>       <span class="c1">// 用于标记primary chunk，用于分配操作顺序

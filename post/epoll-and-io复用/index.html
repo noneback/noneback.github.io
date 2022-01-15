@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.83.1" />
+<meta name="generator" content="Hugo 0.91.2" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/epoll-and-io%E5%A4%8D%E7%94%A8/" />
@@ -65,12 +65,12 @@
 <meta property="og:description" content="先从epoll说起。 epoll是Linux内核的可拓展IO事件通知机制，设计的目的是取代select和poll，是为了处理大量文件描述符而改" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/epoll-and-io%E5%A4%8D%E7%94%A8/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2021-08-15T21:47:45&#43;08:00" />
-<meta property="article:modified_time" content="2021-08-15T21:47:45&#43;08:00" />
+<meta property="article:published_time" content="2021-08-15T21:47:45+08:00" />
+<meta property="article:modified_time" content="2021-08-15T21:47:45+08:00" />
 
 <meta itemprop="name" content="Epoll and IO复用">
-<meta itemprop="description" content="先从epoll说起。 epoll是Linux内核的可拓展IO事件通知机制，设计的目的是取代select和poll，是为了处理大量文件描述符而改"><meta itemprop="datePublished" content="2021-08-15T21:47:45&#43;08:00" />
-<meta itemprop="dateModified" content="2021-08-15T21:47:45&#43;08:00" />
+<meta itemprop="description" content="先从epoll说起。 epoll是Linux内核的可拓展IO事件通知机制，设计的目的是取代select和poll，是为了处理大量文件描述符而改"><meta itemprop="datePublished" content="2021-08-15T21:47:45+08:00" />
+<meta itemprop="dateModified" content="2021-08-15T21:47:45+08:00" />
 <meta itemprop="wordCount" content="3257">
 <meta itemprop="keywords" content="OS,Linux,Network,IO," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Epoll and IO复用"/>
@@ -393,7 +393,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>epoll相关的系统调用有三个</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -429,7 +429,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">34
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="cm">/** epoll_create
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="cm">/** epoll_create
 </span><span class="cm"> *  创建一个epoll句柄，返回错误码
 </span><span class="cm"> *  使用之后需要被关闭，因为epfd也会消耗系统fd数量。
 </span><span class="cm"> *  size : 标识epfd监听fd的数量
@@ -470,7 +470,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>当一个进程调用epoll_create方法时，Linux内核会创建一个eventpoll结构体</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -518,7 +518,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">46
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">eventpoll</span> <span class="p">{</span>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">eventpoll</span> <span class="p">{</span>
     <span class="cm">/* Protect the this structure access */</span>
     <span class="n">spinlock_t</span> <span class="n">lock</span><span class="p">;</span>
 
@@ -572,7 +572,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>在epoll中，对于每一个事件都会建立一个epitem结构体：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -621,7 +621,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">47
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="cm">/*
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="cm">/*
 </span><span class="cm"> * Each file descriptor added to the eventpoll interface will
 </span><span class="cm"> * have an entry of this type linked to the &#34;rbr&#34; RB tree.
 </span><span class="cm"> */</span>
@@ -677,7 +677,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <h2 id="epoll使用模型">Epoll使用模型</h2>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -714,7 +714,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">35
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">for</span><span class="p">(</span> <span class="p">;</span> <span class="p">;</span> <span class="p">)</span>  
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">for</span><span class="p">(</span> <span class="p">;</span> <span class="p">;</span> <span class="p">)</span>  
    <span class="p">{</span>  
        <span class="n">nfds</span> <span class="o">=</span> <span class="n">epoll_wait</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">events</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">500</span><span class="p">);</span>  
        <span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">nfds</span><span class="p">;</span><span class="o">++</span><span class="n">i</span><span class="p">)</span>  
@@ -756,12 +756,12 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p><img src="https://i.loli.net/2021/08/15/wGvIL8PprxeQDin.png" alt="Screenshot_20210815_220328.png"></p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp">	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Calling recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Calling recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
 	<span class="n">ret</span> <span class="o">=</span>  <span class="n">recv</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">recv_buf</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">recv_buf</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span> 
 	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Had called recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
 </code></pre></td></tr></table>
@@ -773,7 +773,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p><img src="https://i.loli.net/2021/08/15/trBfHZLsSAjCi2E.png" alt="Screenshot_20210815_220424.png"></p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span><span class="lnt">4
@@ -783,7 +783,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">8
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="p">{</span>
 	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Calling recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
 	<span class="n">ret</span> <span class="o">=</span>  <span class="n">recv</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">recv_buf</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">recv_buf</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span> 

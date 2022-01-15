@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.83.1" />
+<meta name="generator" content="Hugo 0.91.2" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/" />
@@ -65,12 +65,12 @@
 <meta property="og:description" content="一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanle" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2020-11-10T00:00:00&#43;00:00" />
-<meta property="article:modified_time" content="2020-11-10T00:00:00&#43;00:00" />
+<meta property="article:published_time" content="2020-11-10T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-11-10T00:00:00+00:00" />
 
 <meta itemprop="name" content="实现简单的SQL数据库--前端">
-<meta itemprop="description" content="一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanle"><meta itemprop="datePublished" content="2020-11-10T00:00:00&#43;00:00" />
-<meta itemprop="dateModified" content="2020-11-10T00:00:00&#43;00:00" />
+<meta itemprop="description" content="一直想去完成pingcap的tanlent Plan里面的tinySql路径，但一直没有开始。最近论坛上发现了pingcap创始人的tanle"><meta itemprop="datePublished" content="2020-11-10T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2020-11-10T00:00:00+00:00" />
 <meta itemprop="wordCount" content="1899">
 <meta itemprop="keywords" content="SQL,parsing,DB,GO," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="实现简单的SQL数据库--前端"/>
@@ -390,14 +390,14 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <h3 id="获取tokens">获取tokens</h3>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span><span class="lnt">4
 </span><span class="lnt">5
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">token</span> <span class="kd">struct</span> <span class="p">{</span>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">token</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">value</span> <span class="kt">string</span>
 	<span class="nx">kind</span>  <span class="nx">tokenKind</span>
 	<span class="nx">loc</span>   <span class="nx">location</span>
@@ -410,7 +410,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>最终处理所有语句，得到token地址数组</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -446,7 +446,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">34
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 主要流程
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 主要流程
 </span><span class="c1"></span><span class="kd">func</span> <span class="nf">lex</span><span class="p">(</span><span class="nx">source</span> <span class="kt">string</span><span class="p">)</span> <span class="p">([]</span><span class="o">*</span><span class="nx">token</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">tokens</span> <span class="o">:=</span> <span class="p">[]</span><span class="o">*</span><span class="nx">token</span><span class="p">{}</span>
 	<span class="nx">cur</span> <span class="o">:=</span> <span class="nx">cursor</span><span class="p">{}</span>
@@ -487,7 +487,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>Ast有statement[]组成，目前的解析器只解析select，insert，create三种语句。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -499,7 +499,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">10
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Ast</span> <span class="kd">struct</span> <span class="p">{</span>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Ast</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">Statement</span> <span class="p">[]</span><span class="o">*</span><span class="nx">Statement</span>
 <span class="p">}</span>
 
@@ -525,7 +525,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>其中重点在于对expressions的理解与解析</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -545,7 +545,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">18
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// parse the token at cursor and return an expression containing literal val and its kind
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// parse the token at cursor and return an expression containing literal val and its kind
 </span><span class="c1"></span><span class="kd">func</span> <span class="nf">parseExpression</span><span class="p">(</span><span class="nx">tokens</span> <span class="p">[]</span><span class="o">*</span><span class="nx">token</span><span class="p">,</span> <span class="nx">initialCursor</span> <span class="kt">uint</span><span class="p">,</span> <span class="nx">_</span> <span class="nx">token</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">expression</span><span class="p">,</span> <span class="kt">uint</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">cursor</span> <span class="o">:=</span> <span class="nx">initialCursor</span>
 
@@ -581,14 +581,14 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>解析CREATE的语句关键是对$columnDef$的解析</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span><span class="lnt">4
 </span><span class="lnt">5
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">//column
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">//column
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">columnDefinition</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">name</span>     <span class="nx">token</span>
 	<span class="nx">datatype</span> <span class="nx">token</span>
@@ -605,7 +605,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </blockquote>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -660,7 +660,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">53
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// parse col def
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// parse col def
 </span><span class="c1">//
 </span><span class="c1"></span><span class="kd">func</span> <span class="nf">parseColumnDefinitions</span><span class="p">(</span><span class="nx">tokens</span> <span class="p">[]</span><span class="o">*</span><span class="nx">token</span><span class="p">,</span> <span class="nx">initialCursor</span> <span class="kt">uint</span><span class="p">,</span> <span class="nx">delimiter</span> <span class="nx">token</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="p">[]</span><span class="o">*</span><span class="nx">columnDefinition</span><span class="p">,</span> <span class="kt">uint</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">cursor</span> <span class="o">:=</span> <span class="nx">initialCursor</span>
@@ -731,7 +731,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>主函数分号作为分隔符解析三种sql语句</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -764,7 +764,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">31
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Parse</span><span class="p">(</span><span class="nx">source</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">Ast</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Parse</span><span class="p">(</span><span class="nx">source</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">Ast</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">tokens</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">lex</span><span class="p">(</span><span class="nx">source</span><span class="p">)</span>
 	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
 		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
@@ -801,7 +801,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>本文重点在于解析sql语句以及前端的编写思路，这次仅仅使用一个map in memory 作为后端。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -823,7 +823,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">20
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// backend in memory
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// backend in memory
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">MemoryBackend</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">tables</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">table</span>
 <span class="p">}</span>
@@ -849,7 +849,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>下面是一个简单的REPL设计思路</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -877,7 +877,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">26
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
 	<span class="nx">mb</span> <span class="o">:=</span> <span class="nf">NewMemoryBackend</span><span class="p">()</span>
 
 	<span class="nx">reader</span> <span class="o">:=</span> <span class="nx">bufio</span><span class="p">.</span><span class="nf">NewReader</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Stdin</span><span class="p">)</span>

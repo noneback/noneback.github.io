@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.83.1" />
+<meta name="generator" content="Hugo 0.91.2" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/java%E4%B8%AD%E7%9A%84lambda/" />
@@ -65,12 +65,12 @@
 <meta property="og:description" content="lambda表达式 Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/java%E4%B8%AD%E7%9A%84lambda/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2019-11-01T00:00:00&#43;00:00" />
-<meta property="article:modified_time" content="2019-11-01T00:00:00&#43;00:00" />
+<meta property="article:published_time" content="2019-11-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2019-11-01T00:00:00+00:00" />
 
 <meta itemprop="name" content="Java中的lambda表达式">
-<meta itemprop="description" content="lambda表达式 Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中"><meta itemprop="datePublished" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="dateModified" content="2019-11-01T00:00:00&#43;00:00" />
+<meta itemprop="description" content="lambda表达式 Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中"><meta itemprop="datePublished" content="2019-11-01T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2019-11-01T00:00:00+00:00" />
 <meta itemprop="wordCount" content="1015">
 <meta itemprop="keywords" content="JAVA," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Java中的lambda表达式"/>
@@ -388,10 +388,10 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>lambda 表达式的语法格式如下：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-java" data-lang="java"><span class="o">(</span><span class="n">parameters</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">expression</span> <span class="nf">或</span> <span class="o">(</span><span class="n">parameters</span><span class="o">)</span> <span class="o">-&gt;{</span> <span class="n">statements</span><span class="o">;</span> <span class="o">}</span>
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="o">(</span><span class="n">parameters</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">expression</span> <span class="nf">或</span> <span class="o">(</span><span class="n">parameters</span><span class="o">)</span> <span class="o">-&gt;{</span> <span class="n">statements</span><span class="o">;</span> <span class="o">}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>以下是lambda表达式的重要特征:</p>
@@ -417,7 +417,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>Lambda 表达式的简单例子:</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -433,7 +433,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">14
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-java" data-lang="java"><span class="c1">// 1. 不需要参数,返回值为 5  
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="c1">// 1. 不需要参数,返回值为 5  
 </span><span class="c1"></span><span class="o">()</span> <span class="o">-&gt;</span> <span class="n">5</span>  
   
 <span class="c1">// 2. 接收一个参数(数字类型),返回其2倍的值  
@@ -454,7 +454,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>如：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span><span class="lnt">4
@@ -464,7 +464,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">8
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-java" data-lang="java"> <span class="nd">@FunctionalInterface</span>
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"> <span class="nd">@FunctionalInterface</span>
 <span class="kd">interface</span> <span class="nc">Inner</span> <span class="o">{</span>
     <span class="kt">void</span> <span class="nf">print</span><span class="o">(</span><span class="kt">int</span> <span class="n">num</span><span class="o">);</span>
 <span class="o">}</span>
@@ -476,7 +476,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </div>
 </div><div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -494,7 +494,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">16
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">wapper</span><span class="o">(</span><span class="n">10</span><span class="o">,</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="o">{</span>
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="n">wapper</span><span class="o">(</span><span class="n">10</span><span class="o">,</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="o">{</span>
             <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">e</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
                 <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">&#34;HelloWorld\t&#34;</span><span class="o">);</span>
             <span class="o">}</span>

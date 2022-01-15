@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.83.1" />
+<meta name="generator" content="Hugo 0.91.2" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%8C%E6%AD%A5%E4%B8%8E%E4%BA%92%E6%96%A5/" />
@@ -65,12 +65,12 @@
 <meta property="og:description" content="进程的同步与互斥 [TOC] 进程的同步 引入 在多进程的系统中，进程是并发执行的，进程具有“异步”的天性，异步性指的是各并发执行的进程以各自独立的、不可预" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%8C%E6%AD%A5%E4%B8%8E%E4%BA%92%E6%96%A5/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2019-11-01T00:00:00&#43;00:00" />
-<meta property="article:modified_time" content="2019-11-01T00:00:00&#43;00:00" />
+<meta property="article:published_time" content="2019-11-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2019-11-01T00:00:00+00:00" />
 
 <meta itemprop="name" content="进程的同步与互斥">
-<meta itemprop="description" content="进程的同步与互斥 [TOC] 进程的同步 引入 在多进程的系统中，进程是并发执行的，进程具有“异步”的天性，异步性指的是各并发执行的进程以各自独立的、不可预"><meta itemprop="datePublished" content="2019-11-01T00:00:00&#43;00:00" />
-<meta itemprop="dateModified" content="2019-11-01T00:00:00&#43;00:00" />
+<meta itemprop="description" content="进程的同步与互斥 [TOC] 进程的同步 引入 在多进程的系统中，进程是并发执行的，进程具有“异步”的天性，异步性指的是各并发执行的进程以各自独立的、不可预"><meta itemprop="datePublished" content="2019-11-01T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2019-11-01T00:00:00+00:00" />
 <meta itemprop="wordCount" content="5023">
 <meta itemprop="keywords" content="Linux,OS,Multi-process," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="进程的同步与互斥"/>
@@ -456,8 +456,8 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 一个进程可以有许多入口，一个入口对应一段程序，一个进程可 以调用另一个进程的入口。当一个进程调用另一个进程的入口， 而且被调用的进程已准备好接受这个调用时，会合就发生了。</p>
 <p>当调用者发出调用请求时，被调用的进程未准备接受这个调用时， 则调用者等待；反之，当被调用者准备接受调用，而当前尚无调 用者时，则被调用者等待。即<strong>先到达会合处者等待后到达者</strong>。</p>
 <p>当多个进程调用同一个进程的同一个入口时，被调用者按先来先服务 （FCFS）的次序接受调用。入口处可以携带调用参数，还可以有返回参数，以实现信息的交换。被调用者可以选择会合的入口。</p>
-<p><!-- raw HTML omitted --></p>
-<p><!-- raw HTML omitted --></p>
+<!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
 </li>
 </ul>
 <h4 id="petri-网">Petri 网</h4>
@@ -534,7 +534,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 <p>TSL指令逻辑的C语言描述，注意<strong>这里只是描述，真实的执行过程就是一个瞬间的硬件操作</strong>而已；</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span><span class="lnt">4
@@ -542,7 +542,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </span><span class="lnt">6
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//lock 表示当前临界区是否被加锁
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//lock 表示当前临界区是否被加锁
 </span><span class="c1"></span><span class="kt">bool</span> <span class="nf">TestAndSet</span><span class="p">(</span><span class="kt">bool</span> <span class="o">*</span><span class="n">lock</span><span class="p">){</span>
 	<span class="kt">bool</span> <span class="n">old</span><span class="o">=*</span><span class="n">lock</span><span class="p">;</span>
 	<span class="o">*</span><span class="n">lock</span><span class="o">=</span><span class="nb">true</span><span class="p">;</span>
@@ -556,14 +556,14 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 <p>下面来分析一下这段描述：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span><span class="lnt">4
 </span><span class="lnt">5
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// 将TestAndSet 配合 while一起使用
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// 将TestAndSet 配合 while一起使用
 </span><span class="c1"></span><span class="k">while</span><span class="p">(</span><span class="n">TestAndSet</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lock</span><span class="p">))</span> <span class="p">;</span>
 <span class="c1">//临界区代码
 </span><span class="c1"></span><span class="n">lock</span><span class="o">=</span><span class="nb">false</span><span class="p">;</span>
@@ -588,7 +588,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </blockquote>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span><span class="lnt">4
@@ -596,7 +596,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </span><span class="lnt">6
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//swap指令的作用是交换两个变量的值。
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//swap指令的作用是交换两个变量的值。
 </span><span class="c1"></span><span class="kt">void</span> <span class="nf">Swap</span><span class="p">(</span><span class="kt">bool</span> <span class="o">*</span><span class="n">a</span> <span class="p">,</span> <span class="kt">bool</span> <span class="o">*</span><span class="n">b</span><span class="p">){</span>
 	<span class="kt">bool</span> <span class="n">temp</span><span class="o">=*</span><span class="n">a</span><span class="p">;</span>
 	<span class="o">*</span><span class="n">a</span><span class="o">=*</span><span class="n">b</span><span class="p">;</span>
@@ -607,7 +607,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </div><p>与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span><span class="lnt">4
@@ -617,7 +617,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </span><span class="lnt">8
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//lock表示当前临界区是否被加锁。
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//lock表示当前临界区是否被加锁。
 </span><span class="c1"></span><span class="kt">bool</span> <span class="n">old</span><span class="o">=</span><span class="nb">true</span><span class="p">;</span>
 <span class="k">while</span><span class="p">(</span><span class="n">old</span><span class="o">==</span><span class="nb">true</span><span class="p">){</span>
 	<span class="n">Swap</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lock</span><span class="p">,</span><span class="o">&amp;</span><span class="n">old</span><span class="p">);</span>

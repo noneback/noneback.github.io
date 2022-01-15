@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.83.1" />
+<meta name="generator" content="Hugo 0.91.2" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/mit6.824-bigtable/" />
@@ -65,12 +65,12 @@
 <meta property="og:description" content="之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/mit6.824-bigtable/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2021-09-16T22:54:59&#43;08:00" />
-<meta property="article:modified_time" content="2021-09-16T22:54:59&#43;08:00" />
+<meta property="article:published_time" content="2021-09-16T22:54:59+08:00" />
+<meta property="article:modified_time" content="2021-09-16T22:54:59+08:00" />
 
 <meta itemprop="name" content="MIT6.824-Bigtable">
-<meta itemprop="description" content="之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似"><meta itemprop="datePublished" content="2021-09-16T22:54:59&#43;08:00" />
-<meta itemprop="dateModified" content="2021-09-16T22:54:59&#43;08:00" />
+<meta itemprop="description" content="之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似"><meta itemprop="datePublished" content="2021-09-16T22:54:59+08:00" />
+<meta itemprop="dateModified" content="2021-09-16T22:54:59+08:00" />
 <meta itemprop="wordCount" content="6769">
 <meta itemprop="keywords" content="Paper Reading,MIT6.824,DFS,Distributed System," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="MIT6.824-Bigtable"/>
@@ -422,12 +422,12 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>实际上，Bigtable 是一个<strong>稀疏的、分布式的、持久化存储的多维度排序 Map</strong>。Map的<strong>索引</strong>是<strong>Row Key，Column Key以及TimeStamp</strong>。Map中的<strong>每一个Value就是一个无结构的Byte数组</strong>。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt">1
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span><span class="lnt">2
 </span><span class="lnt">3
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 映射抽象
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 映射抽象
 </span><span class="c1"></span><span class="p">(</span><span class="nx">row</span><span class="p">:</span><span class="kt">string</span><span class="p">,</span> <span class="nx">column</span><span class="p">:</span><span class="kt">string</span><span class="p">,</span><span class="nx">time</span><span class="p">:</span><span class="kt">int64</span><span class="p">)</span><span class="o">-</span><span class="p">&gt;</span><span class="kt">string</span>
 <span class="c1">// 一个Row Key实际上是 {Row , Column, Timestamp} 组成的多维结构。
 </span></code></pre></td></tr></table>
@@ -505,7 +505,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>原文中的API如下，主要是为了体现和RDB不同的地方。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -526,7 +526,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">19
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// Writing to Bigtable
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// Writing to Bigtable
 </span><span class="c1">// Open the table Table *T = OpenOrDie(&#34;/bigtable/web/webtable&#34;); // Write a new anchor and delete an old anchor 
 </span><span class="c1"></span><span class="n">RowMutation</span> <span class="nf">r1</span><span class="p">(</span><span class="n">T</span><span class="p">,</span>   <span class="s">&#34;com.cnn.www&#34;</span><span class="p">);</span> 
 <span class="n">r1</span><span class="p">.</span><span class="n">Set</span><span class="p">(</span><span class="s">&#34;anchor:www.c-span.org&#34;</span><span class="p">,</span> <span class="s">&#34;CNN&#34;</span><span class="p">);</span> <span class="n">r1</span><span class="p">.</span><span class="n">Delete</span><span class="p">(</span><span class="s">&#34;anchor:www.abc.com&#34;</span><span class="p">);</span> 
@@ -619,7 +619,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>基于原文描述，可能需要维护的映射：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -635,7 +635,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">14
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-cpp" data-lang="cpp"> <span class="n">Mapping</span> <span class="p">{</span>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"> <span class="n">Mapping</span> <span class="p">{</span>
    <span class="n">Table</span> <span class="o">=&gt;</span> <span class="n">list</span> <span class="n">of</span> <span class="n">Tablets</span> <span class="c1">// 
 </span><span class="c1"></span>   <span class="n">Tablet</span> <span class="o">=&gt;</span> <span class="n">Tablet</span> <span class="n">handle</span>
     

@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.83.1" />
+<meta name="generator" content="Hugo 0.91.2" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/how-to-implement-skiplist/" />
@@ -65,12 +65,12 @@
 <meta property="og:description" content="之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/how-to-implement-skiplist/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2021-11-21T15:28:42&#43;08:00" />
-<meta property="article:modified_time" content="2021-11-21T15:28:42&#43;08:00" />
+<meta property="article:published_time" content="2021-11-21T15:28:42+08:00" />
+<meta property="article:modified_time" content="2021-11-21T15:28:42+08:00" />
 
 <meta itemprop="name" content="How to Implement SkipList">
-<meta itemprop="description" content="之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工"><meta itemprop="datePublished" content="2021-11-21T15:28:42&#43;08:00" />
-<meta itemprop="dateModified" content="2021-11-21T15:28:42&#43;08:00" />
+<meta itemprop="description" content="之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工"><meta itemprop="datePublished" content="2021-11-21T15:28:42+08:00" />
+<meta itemprop="dateModified" content="2021-11-21T15:28:42+08:00" />
 <meta itemprop="wordCount" content="1375">
 <meta itemprop="keywords" content="DataStructure,SkipList," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="How to Implement SkipList"/>
@@ -409,7 +409,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <h3 id="数据结构">数据结构</h3>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -423,7 +423,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">12
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SkipListNode</span> <span class="kd">struct</span> <span class="p">{</span>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SkipListNode</span> <span class="kd">struct</span> <span class="p">{</span>
         <span class="nx">data</span> <span class="o">*</span><span class="nx">codec</span><span class="p">.</span><span class="nx">Entry</span>
         <span class="nx">nextPtrs</span> <span class="p">[]</span><span class="o">*</span><span class="nx">SkipListNode</span>
 <span class="p">}</span>
@@ -443,7 +443,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>最核心的步骤是由上至下，利用每层的稀疏索引二分查找定位到需要的节点，或者位置。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -460,7 +460,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">15
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// findPreNode find the node before node.key
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// findPreNode find the node before node.key
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">sl</span> <span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span> <span class="nf">findPreNode</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">SkipListNode</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
         <span class="c1">// from top to bottom
 </span><span class="c1"></span>        <span class="nx">h</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">header</span>
@@ -481,7 +481,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p>首先要定位到插入的位置，插入，再随机化创建索引。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
-<pre class="chroma"><code><span class="lnt"> 1
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
 </span><span class="lnt"> 3
 </span><span class="lnt"> 4
@@ -525,7 +525,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">42
 </span></code></pre></td>
 <td class="lntd">
-<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">sl</span> <span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span> <span class="nf">randomLevel</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">sl</span> <span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span> <span class="nf">randomLevel</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
         <span class="nx">ans</span> <span class="o">:=</span> <span class="mi">1</span>
         <span class="nx">rand</span><span class="p">.</span><span class="nf">Seed</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">())</span>
         <span class="k">for</span> <span class="nx">rand</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">ans</span> <span class="o">&lt;=</span> <span class="nx">defaultMaxLevel</span> <span class="p">{</span>
