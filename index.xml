@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Sat, 15 Jan 2022 23:13:16 +0800</lastBuildDate>
+    <lastBuildDate>Mon, 21 Feb 2022 01:26:46 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -34,6 +34,72 @@
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;a href=&#34;https://github.com/anuraghazra/github-readme-stats&#34;&gt;&lt;img src=&#34;https://github-readme-stats.vercel.app/api/top-langs/?username=noneback&amp;amp;hide=html&amp;amp;&amp;amp;layout=compact&#34; alt=&#34;Top Langs&#34;&gt;&lt;/a&gt;&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>MIT6.824 Raft</title>
+      <link>https://noneback.github.io/post/mit6.824-raft/</link>
+      <pubDate>Mon, 21 Feb 2022 01:26:46 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/mit6.824-raft/</guid>
+      
+        <description>&lt;p&gt;这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内容，于是简单记录一下。&lt;/p&gt;
+&lt;h2 id=&#34;算法简介&#34;&gt;算法简介&lt;/h2&gt;
+&lt;p&gt;共识算法的基础是复制状态机，即&lt;strong&gt;按照相同顺序执行相同的确定性指令最终必然达到一致状态&lt;/strong&gt;。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。&lt;/p&gt;
+&lt;p&gt;Raft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。&lt;/p&gt;
+&lt;p&gt;Raft是一种&lt;strong&gt;强领导人&lt;/strong&gt;的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理&lt;strong&gt;复制提交&lt;/strong&gt;日志。&lt;/p&gt;
+&lt;p&gt;复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。&lt;/p&gt;
+&lt;p&gt;安全性主要有五个部分，与实现相关的最核心的内容我认为有两个。一个是领导人只追加原则，不允许修改已提交的日志；另一个是选举安全性，避免脑裂问题，同时保证新Leader拥有比较新的日志。&lt;/p&gt;
+&lt;p&gt;剩下的其他内容请参考论文原文。&lt;/p&gt;
+&lt;h2 id=&#34;实现思路&#34;&gt;实现思路&lt;/h2&gt;
+&lt;p&gt;实现的思路大体上是参考了一篇大佬的博文（见参考），算法的细节很多也在原Paper的Figure2中，故而以下只讲一下实现各个功能时需要注意的地方。&lt;/p&gt;
+&lt;h3 id=&#34;领导人选举&#34;&gt;领导人选举&lt;/h3&gt;
+&lt;h4 id=&#34;发起选举选举结果处理&#34;&gt;发起选举+选举结果处理&lt;/h4&gt;
+&lt;p&gt;发起选举是会开启多个goroutine后台发送RPC请求到其他结点，所以处理RPC response的时候需要确定当前结点为Candidate，以及请求未过期，即&lt;code&gt;rf.state == Candidate &amp;amp;&amp;amp; req.Term == rf.currentTerm&lt;/code&gt;。选举成功需要立即发送心跳，通知其他结点选举结果。&lt;/p&gt;
+&lt;p&gt;如果发现失败的Response&lt;code&gt;resp.Term &amp;gt; rf.currentTerm&lt;/code&gt;,此时需要切换到Follower状态，更新任期，并&lt;strong&gt;重置投票信息&lt;/strong&gt;。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;实际上一旦更新了任期，就需要重置投票信息。如果不重置votedFor信息，会有一些测试通过不了&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;请求投票rpc&#34;&gt;请求投票RPC&lt;/h4&gt;
+&lt;p&gt;前置逻辑过滤过期&lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt;以及当前任期的重复投票请求。之后再按照算法描述的逻辑处理，注意如果成功投票，需要重置选举计时器。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;在 grant 投票时才重置选举超时时间，这样有助于网络不稳定条件下选主的 liveness 问题&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;状态切换&#34;&gt;状态切换&lt;/h4&gt;
+&lt;p&gt;注意在切换角色时处理不同的计时器状态(stop or reset)，切换到Leader时需要重置matchIndex以及nextIndex的值。&lt;/p&gt;
+&lt;h3 id=&#34;日志复制&#34;&gt;日志复制&lt;/h3&gt;
+&lt;p&gt;Raft算法的核心，需要注意的地方最多。&lt;/p&gt;
+&lt;p&gt;我的实现是使用多个replicator和applier线程异步复制和apply的方式。&lt;/p&gt;
+&lt;h4 id=&#34;日志复制rpc&#34;&gt;日志复制RPC&lt;/h4&gt;
+&lt;p&gt;前置逻辑过滤掉&lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt;过期的请求。之后处理日志不一致以及日志被压缩以及重复日志的情况，之后复制日志再处理&lt;code&gt;commitIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;h4 id=&#34;发起日志复制请求结果处理&#34;&gt;发起日志复制+请求结果处理&lt;/h4&gt;
+&lt;p&gt;发起日志复制需要判断是直接复制日志或者发送快照。&lt;/p&gt;
+&lt;p&gt;请求结果处理重点是如何处理&lt;code&gt;matchIndex&lt;/code&gt;和&lt;code&gt;nextIndex&lt;/code&gt;以及&lt;code&gt;commitIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;matchIndex&lt;/code&gt;用来记录其他节点成功复制的最新日志，&lt;code&gt;nextIndex&lt;/code&gt;是记录发送给其他节点的下一个日志。&lt;code&gt;commitIndex&lt;/code&gt;通过排序&lt;code&gt;matchIndex&lt;/code&gt;来更新。再决定是否需要触发applier更新&lt;code&gt;appliedIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;请求失败则可以回退nextIndex或者切换到Follower状态。&lt;/p&gt;
+&lt;h4 id=&#34;异步apply&#34;&gt;异步Apply&lt;/h4&gt;
+&lt;p&gt;实际上就是一个后台goroutine，通过条件变量控制，使用Channel通信。每次触发会把&lt;code&gt;log[lastApplied:commitIndex]&lt;/code&gt;发送给上层，并更新&lt;code&gt;appliedIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;h3 id=&#34;持久化&#34;&gt;持久化&lt;/h3&gt;
+&lt;p&gt;在需要持久化状态的属性更新时及时的刷盘。&lt;/p&gt;
+&lt;h3 id=&#34;安装快照&#34;&gt;安装快照&lt;/h3&gt;
+&lt;p&gt;主要就是Leader触发的Snapshot以及RPC。应用Snapshot的时候需要先判断其新旧以及更新&lt;code&gt;log[0]&lt;/code&gt;和&lt;code&gt;appliedIndex&lt;/code&gt;以及&lt;code&gt;commitIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;h2 id=&#34;坑&#34;&gt;坑&lt;/h2&gt;
+&lt;h3 id=&#34;defer&#34;&gt;Defer&lt;/h3&gt;
+&lt;p&gt;首先是Golang的&lt;strong&gt;defer&lt;/strong&gt;关键字。我比较喜欢在RPC开头使用defer关键字直接打印出结点的一些数据：&lt;code&gt;defer Dprintf(&amp;quot;%+v&amp;quot;, raft.currentTerm)&lt;/code&gt;，这样在调用结束时能打印出log，但实际上，在运行到defer这一行的代码时，打印的内容已经固定。正确的使用方式应该是&lt;code&gt;defer func(ID int) { Dprintf(&amp;quot;%+v&amp;quot;, id) }()&lt;/code&gt;&lt;/p&gt;
+&lt;h3 id=&#34;log-dummy-header&#34;&gt;Log Dummy Header&lt;/h3&gt;
+&lt;p&gt;Log处最好预留一个位置用于存放快照保存的Index和Term，不然Snapshot那部分的重构很痛苦。&lt;/p&gt;
+&lt;h3 id=&#34;lock&#34;&gt;Lock&lt;/h3&gt;
+&lt;p&gt;参看guidance的用锁建议。使用一个大锁，而不是用多个锁。算法的正确性比性能重要。在发送RPC以及使用Channel时不要加锁，不然可能会超时。&lt;/p&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/Raft&#34;&gt;Raft wikepedia&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://raft.github.io/&#34;&gt;Raft Official Website&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf&#34;&gt;Raft Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Official&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab2.md&#34;&gt;Potato’s Implimentation Doc&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>
@@ -3468,112 +3534,6 @@ F-&amp;gt;(E)|num
 &lt;li&gt;可视化(呸)&lt;/li&gt;
 &lt;li&gt;写一个计算器&lt;/li&gt;
 &lt;/ul&gt;
-</description>
-      
-    </item>
-    
-    <item>
-      <title>LC406 根据身高重建队列</title>
-      <link>https://noneback.github.io/post/lc406-%E6%A0%B9%E6%8D%AE%E8%BA%AB%E9%AB%98%E9%87%8D%E5%BB%BA%E9%98%9F%E5%88%97/</link>
-      <pubDate>Mon, 16 Nov 2020 00:52:04 +0800</pubDate>
-      
-      <guid>https://noneback.github.io/post/lc406-%E6%A0%B9%E6%8D%AE%E8%BA%AB%E9%AB%98%E9%87%8D%E5%BB%BA%E9%98%9F%E5%88%97/</guid>
-      
-        <description>&lt;p&gt;今天的每日一题是&lt;a href=&#34;https://leetcode-cn.com/problems/queue-reconstruction-by-height/&#34;&gt;LC406 根据身高重建队列&lt;/a&gt;,属于贪心算法的一题，以此记录解题思路。&lt;/p&gt;
-&lt;h2 id=&#34;描述&#34;&gt;描述&lt;/h2&gt;
-&lt;p&gt;题目描述如下：&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;假设有打乱顺序的一群人站成一个队列。 每个人由一个整数对(h, k)表示，其中h是这个人的身高，k是排在这个人前面且身高大于或等于h的人数。 编写一个算法来重建这个队列。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;7
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;示例
-
-输入:
-[[7,0], [4,4], [7,1], [5,0], [6,1], [5,2]]
-
-输出:
-[[5,0], [7,0], [5,2], [6,1], [4,4], [7,1]]
-&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;/blockquote&gt;
-&lt;h2 id=&#34;分析&#34;&gt;分析&lt;/h2&gt;
-&lt;p&gt;完成这题最主要的就是要明白每个元素顺序对k的影响。&lt;/p&gt;
-&lt;p&gt;1.首先将元素排序。$h$大的放在前面，如果$h$相同，则把$k$大的放前面。&lt;/p&gt;
-&lt;p&gt;2.将排序后的元素放入队列中。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;第 $0, \cdots, i-10,⋯,i−1 $个人已经在队列中被安排了位置，他们只要站在第 $i$ 个人的前面，就会对第 $i$ 个人产生影响，因为他们都比第 $i$ 个人高；&lt;/p&gt;
-&lt;p&gt;而第 $i+1, \cdots, n-1$ 个人还没有被放入队列中，并且他们无论站在哪里，对第 $i$ 个人都没有任何影响，因为他们都比第 $i$ 个人矮。&lt;/p&gt;
-&lt;p&gt;也就是说，当我们放入第 $i$ 个人时，只需要将其插入队列中，使得他的前面恰好有 $k_i$ 个人即可。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id=&#34;代码&#34;&gt;代码&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;21
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;22
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;23
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;24
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;25
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/*
-&lt;/span&gt;&lt;span class=&#34;cm&#34;&gt; * @lc app=leetcode.cn id=406 lang=cpp
-&lt;/span&gt;&lt;span class=&#34;cm&#34;&gt; *
-&lt;/span&gt;&lt;span class=&#34;cm&#34;&gt; * [406] 根据身高重建队列
-&lt;/span&gt;&lt;span class=&#34;cm&#34;&gt; */&lt;/span&gt;
-
-&lt;span class=&#34;c1&#34;&gt;// @lc code=start
-&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;include&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;bits&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;stdc&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;h&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;
-&lt;span class=&#34;nx&#34;&gt;using&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;namespace&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;std&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;span class=&#34;nx&#34;&gt;class&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;Solution&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
- &lt;span class=&#34;nx&#34;&gt;public&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;
-  &lt;span class=&#34;nx&#34;&gt;vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;reconstructQueue&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;gt;&amp;gt;&amp;amp;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;people&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-    &lt;span class=&#34;nf&#34;&gt;sort&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;people&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;begin&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(),&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;people&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;end&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(),&lt;/span&gt;
-         &lt;span class=&#34;p&#34;&gt;[](&lt;/span&gt;&lt;span class=&#34;kd&#34;&gt;const&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;u&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;const&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;v&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-           &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;u&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;v&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;||&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;u&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;v&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;u&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;v&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]);&lt;/span&gt;
-         &lt;span class=&#34;p&#34;&gt;});&lt;/span&gt;
-
-    &lt;span class=&#34;nx&#34;&gt;vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;ans&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-    &lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kd&#34;&gt;const&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;person&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;people&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-      &lt;span class=&#34;nx&#34;&gt;ans&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;insert&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;ans&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;begin&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;()&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;person&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;person&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-    &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;ans&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-  &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;span class=&#34;p&#34;&gt;};&lt;/span&gt;
-&lt;span class=&#34;c1&#34;&gt;// @lc code=end
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&#34;https://leetcode-cn.com/problems/queue-reconstruction-by-height/solution/gen-ju-shen-gao-zhong-jian-dui-lie-by-leetcode-sol/&#34;&gt;题解&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://leetcode-cn.com/problems/queue-reconstruction-by-height/&#34;&gt;LC406 根据身高重建队列&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>
