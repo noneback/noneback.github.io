@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/mit6.824-gfs/" />
@@ -71,7 +71,7 @@
 <meta itemprop="name" content="MIT6.824-GFS">
 <meta itemprop="description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了"><meta itemprop="datePublished" content="2021-09-09T00:44:24+08:00" />
 <meta itemprop="dateModified" content="2021-09-09T00:44:24+08:00" />
-<meta itemprop="wordCount" content="5215">
+<meta itemprop="wordCount" content="5214">
 <meta itemprop="keywords" content="GFS,MIT6.824,Paper Reading," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="MIT6.824-GFS"/>
 <meta name="twitter:description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了"/>
@@ -547,17 +547,15 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">4
 </span><span class="lnt">5
 </span><span class="lnt">6
-</span><span class="lnt">7
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">ChunkHandler</span> <span class="p">{</span>
-  <span class="n">list</span> <span class="n">of</span> <span class="nf">ChunkLocation</span><span class="p">(</span><span class="n">v</span><span class="p">);</span><span class="c1">// 标识replica所在的机器
-</span><span class="c1"></span>  <span class="n">version</span><span class="p">(</span><span class="n">nv</span><span class="p">);</span>         <span class="c1">// 数据的逻辑时钟，标记数据版本
-</span><span class="c1"></span>  <span class="n">primary</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>       <span class="c1">// 用于标记primary chunk，用于分配操作顺序
-</span><span class="c1"></span>  <span class="n">lease</span> <span class="nf">expire</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>     <span class="c1">// 租约过期时间，防止ChunkServer长期持有primary
-</span><span class="c1"></span><span class="p">}</span>
-
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">ChunkHandler</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">list</span> <span class="n">of</span> <span class="nf">ChunkLocation</span><span class="p">(</span><span class="n">v</span><span class="p">);</span><span class="c1">// 标识replica所在的机器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">version</span><span class="p">(</span><span class="n">nv</span><span class="p">);</span>         <span class="c1">// 数据的逻辑时钟，标记数据版本
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">primary</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>       <span class="c1">// 用于标记primary chunk，用于分配操作顺序
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">lease</span> <span class="nf">expire</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>     <span class="c1">// 租约过期时间，防止ChunkServer长期持有primary
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div></blockquote>
 <p>此处的映射实际上就是Master需要维护的数据结构（元信息），其中有一部分是需要持久化保证重启不丢失，以nv（non-volatile)标记。</p>

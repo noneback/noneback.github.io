@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/" />
@@ -426,11 +426,11 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">4
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java">	<span class="n">Thread</span> <span class="n">thread</span><span class="o">=</span><span class="k">new</span> <span class="n">Thread</span><span class="err">（</span><span class="k">new</span> <span class="n">TaskClass</span><span class="err">）</span>
- <span class="cm">/**
-</span><span class="cm"> *调用thread.start()时立即调用TaskClass中的run（）
-</span><span class="cm"> */</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl">	<span class="n">Thread</span> <span class="n">thread</span><span class="o">=</span><span class="k">new</span> <span class="n">Thread</span><span class="err">（</span><span class="k">new</span> <span class="n">TaskClass</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl"> <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *调用thread.start()时立即调用TaskClass中的run（）
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="thread中的其他方法">Thread中的其他方法</h4>
 <ul>
@@ -469,19 +469,19 @@ Java 提供Exexutor接口来执行线程池中任务，用ExecutorService接口�
 </span><span class="lnt">12
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="kn">import</span> <span class="nn">java.util.concurrent.*</span><span class="o">;</span>
-<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExecutorDemo</span> <span class="o">{</span><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
-<span class="c1">// Create a fixed thread pool with maximum three threads
-</span><span class="c1"></span><span class="n">ExecutorService</span> <span class="n">executor</span> <span class="o">=</span> <span class="n">Executors</span><span class="o">.</span><span class="na">newFixedThreadPool</span><span class="o">(</span><span class="n">3</span><span class="o">);</span>
-<span class="c1">// Submit runnable tasks to the executor
-</span><span class="c1"></span><span class="n">executor</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintChar</span><span class="o">(</span><span class="sc">&#39;a&#39;</span><span class="o">,</span> <span class="n">100</span><span class="o">));</span>
-<span class="n">executor</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintChar</span><span class="o">(</span><span class="sc">&#39;b&#39;</span><span class="o">,</span> <span class="n">100</span><span class="o">));</span>
-<span class="n">executor</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintNum</span><span class="o">(</span><span class="n">100</span><span class="o">));</span>
-<span class="c1">// Shut down the executor
-</span><span class="c1"></span><span class="n">executor</span><span class="o">.</span><span class="na">shutdown</span><span class="o">();</span>
-<span class="o">}</span>
-<span class="o">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.concurrent.*</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExecutorDemo</span> <span class="o">{</span><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// Create a fixed thread pool with maximum three threads
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">ExecutorService</span> <span class="n">executor</span> <span class="o">=</span> <span class="n">Executors</span><span class="o">.</span><span class="na">newFixedThreadPool</span><span class="o">(</span><span class="n">3</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// Submit runnable tasks to the executor
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">executor</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintChar</span><span class="o">(</span><span class="sc">&#39;a&#39;</span><span class="o">,</span> <span class="n">100</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl"><span class="n">executor</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintChar</span><span class="o">(</span><span class="sc">&#39;b&#39;</span><span class="o">,</span> <span class="n">100</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl"><span class="n">executor</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">PrintNum</span><span class="o">(</span><span class="n">100</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// Shut down the executor
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">executor</span><span class="o">.</span><span class="na">shutdown</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><p>线程池提供了一种<strong>更好的管理线程的方法</strong>。 线程池主要用来解决线程生命周期开销问题和资源不足问题。</p>
 <blockquote>
@@ -512,12 +512,12 @@ Java 提供Exexutor接口来执行线程池中任务，用ExecutorService接口�
 </span><span class="lnt">5
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="kd">synchronized</span> <span class="o">(</span> <span class="n">expr</span> <span class="o">)</span> <span class="o">{</span>
-  <span class="c1">//do something
-</span><span class="c1"></span><span class="o">}</span>
-
-<span class="kd">public</span> <span class="n">sychronized</span> <span class="nf">func</span> <span class="o">()</span> <span class="o">{}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">synchronized</span> <span class="o">(</span> <span class="n">expr</span> <span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">//do something
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">public</span> <span class="n">sychronized</span> <span class="nf">func</span> <span class="o">()</span> <span class="o">{}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><ul>
 <li>利用锁同步

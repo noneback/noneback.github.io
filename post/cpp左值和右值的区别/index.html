@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/" />
@@ -71,7 +71,7 @@
 <meta itemprop="name" content="C&#43;&#43;中左值和右值的区别">
 <meta itemprop="description" content="C&#43;&#43;中左值和右值的区别 最近在复习C&#43;&#43;的语法，有一些忘记了的东西，想在这里记录一下 什么是左值和右值 抽象解释 In C&#43;&#43; an lvalue is something that points to a specific memory location. On the other"><meta itemprop="datePublished" content="2019-11-01T00:00:00+00:00" />
 <meta itemprop="dateModified" content="2019-11-01T00:00:00+00:00" />
-<meta itemprop="wordCount" content="1386">
+<meta itemprop="wordCount" content="1385">
 <meta itemprop="keywords" content="C&#43;&#43;," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="C&#43;&#43;中左值和右值的区别"/>
 <meta name="twitter:description" content="C&#43;&#43;中左值和右值的区别 最近在复习C&#43;&#43;的语法，有一些忘记了的东西，想在这里记录一下 什么是左值和右值 抽象解释 In C&#43;&#43; an lvalue is something that points to a specific memory location. On the other"/>
@@ -421,20 +421,20 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">13
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">int</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str</span><span class="o">=</span><span class="s">&#34;Hello&#34;</span><span class="p">;</span>
-<span class="c1">//此处的a和str是左值，它们有实际的变量名，并保存其内存的地址，而 10 和 &#34;Hello&#34;则是右值，他们只是临时变量。
-</span><span class="c1"></span><span class="kt">int</span> <span class="o">&amp;</span><span class="n">b</span><span class="o">=&amp;</span><span class="n">a</span><span class="p">;</span>
-<span class="kt">int</span> <span class="o">*</span><span class="n">a_p</span><span class="o">=&amp;</span><span class="n">a</span><span class="p">;</span>
-<span class="c1">//左值往往可以进行取地址操作，而右值则不行
-</span><span class="c1"></span><span class="kt">int</span> <span class="o">*</span><span class="n">a_ptr</span><span class="o">=&amp;</span><span class="mi">10</span><span class="p">;</span><span class="c1">//error
-</span><span class="c1"></span>
-<span class="c1">//左值转右值
-</span><span class="c1"></span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
-<span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
-<span class="kt">int</span> <span class="n">z</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span><span class="n">y</span><span class="p">;</span>
-<span class="c1">//这里 x,y本来是左值的，但放在右边相加之后的结果是一个临时的变量，成为了一个右值
-</span></code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str</span><span class="o">=</span><span class="s">&#34;Hello&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//此处的a和str是左值，它们有实际的变量名，并保存其内存的地址，而 10 和 &#34;Hello&#34;则是右值，他们只是临时变量。
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="o">&amp;</span><span class="n">b</span><span class="o">=&amp;</span><span class="n">a</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="o">*</span><span class="n">a_p</span><span class="o">=&amp;</span><span class="n">a</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//左值往往可以进行取地址操作，而右值则不行
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="o">*</span><span class="n">a_ptr</span><span class="o">=&amp;</span><span class="mi">10</span><span class="p">;</span><span class="c1">//error
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="c1">//左值转右值
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">z</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span><span class="n">y</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//这里 x,y本来是左值的，但放在右边相加之后的结果是一个临时的变量，成为了一个右值
+</span></span></span></code></pre></td></tr></table>
 </div>
 </div><h3 id="左值右值作为函数的返回值">左值右值作为函数的返回值</h3>
 <div class="highlight"><div class="chroma">
@@ -453,25 +453,23 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">12
 </span><span class="lnt">13
 </span><span class="lnt">14
-</span><span class="lnt">15
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//左值作为函数返回值
-</span><span class="c1"></span><span class="kt">int</span> <span class="n">tem</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
-
-<span class="kt">int</span><span class="o">&amp;</span> <span class="n">getlZero</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="n">tem</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="n">getlZero</span><span class="p">()</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1">//works
-</span><span class="c1"></span>
-<span class="c1">//右值最为返回值
-</span><span class="c1"></span><span class="kt">int</span> <span class="n">getrZero</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="n">getrZero</span><span class="p">()</span> <span class="o">=</span> <span class="mi">10</span><span class="c1">//fails
-</span><span class="c1"></span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">//左值作为函数返回值
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="n">tem</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span><span class="o">&amp;</span> <span class="n">getlZero</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">tem</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="n">getlZero</span><span class="p">()</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1">//works
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="c1">//右值最为返回值
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="n">getrZero</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">getrZero</span><span class="p">()</span> <span class="o">=</span> <span class="mi">10</span><span class="c1">//fails
+</span></span></span></code></pre></td></tr></table>
 </div>
 </div><h2 id="左值引用和右值引用">左值引用和右值引用</h2>
 <h3 id="定义">定义</h3>
@@ -501,20 +499,20 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">13
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//左右值引用的语法
-</span><span class="c1"></span><span class="kt">int</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>
-<span class="kt">int</span> <span class="o">&amp;</span><span class="n">b</span><span class="o">=</span><span class="n">a</span><span class="p">;</span>	<span class="c1">//b是a的引用，左值引用
-</span><span class="c1"></span><span class="n">b</span><span class="o">=</span><span class="mi">20</span><span class="p">;</span>	<span class="c1">//此时a=b=20
-</span><span class="c1"></span>
-<span class="kt">int</span> <span class="o">&amp;&amp;</span><span class="n">c</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>		<span class="c1">//c是右值‘10’的引用
-</span><span class="c1"></span><span class="n">c</span><span class="o">=</span><span class="mi">20</span> 	<span class="c1">//此时c变成了‘20’的引用
-</span><span class="c1"></span>    
-<span class="n">b</span><span class="o">=</span><span class="mi">10</span><span class="err">；</span><span class="c1">//error。 10是一个右值，所以报错
-</span><span class="c1"></span><span class="n">c</span><span class="o">=</span><span class="n">a</span><span class="p">;</span>	<span class="c1">//error。a是一个左值
-</span><span class="c1"></span>
-<span class="k">const</span> <span class="kt">int</span><span class="o">&amp;</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>	<span class="c1">//works
-</span><span class="c1">//	在后台，编译器会创建一个隐藏变量（即左值），以在其中存储原始文字常量，然后将该隐藏变量绑定到引用中
-</span></code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">//左右值引用的语法
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="o">&amp;</span><span class="n">b</span><span class="o">=</span><span class="n">a</span><span class="p">;</span>	<span class="c1">//b是a的引用，左值引用
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">b</span><span class="o">=</span><span class="mi">20</span><span class="p">;</span>	<span class="c1">//此时a=b=20
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="o">&amp;&amp;</span><span class="n">c</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>		<span class="c1">//c是右值‘10’的引用
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">c</span><span class="o">=</span><span class="mi">20</span> 	<span class="c1">//此时c变成了‘20’的引用
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    
+</span></span><span class="line"><span class="cl"><span class="n">b</span><span class="o">=</span><span class="mi">10</span><span class="err">；</span><span class="c1">//error。 10是一个右值，所以报错
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">c</span><span class="o">=</span><span class="n">a</span><span class="p">;</span>	<span class="c1">//error。a是一个左值
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="k">const</span> <span class="kt">int</span><span class="o">&amp;</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>	<span class="c1">//works
+</span></span></span><span class="line"><span class="cl"><span class="c1">//	在后台，编译器会创建一个隐藏变量（即左值），以在其中存储原始文字常量，然后将该隐藏变量绑定到引用中
+</span></span></span></code></pre></td></tr></table>
 </div>
 </div><h3 id="引用作为函数的参数">引用作为函数的参数</h3>
 <div class="highlight"><div class="chroma">
@@ -541,27 +539,27 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">20
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="kt">int</span> <span class="nf">getSelfL</span><span class="p">(</span><span class="kt">int</span><span class="o">&amp;</span> <span class="n">a</span><span class="p">){</span>
-    <span class="k">return</span> <span class="n">a</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kt">int</span> <span class="nf">getSelfR</span><span class="p">(</span><span class="kt">int</span><span class="o">&amp;&amp;</span> <span class="n">b</span><span class="p">){</span>
-  <span class="k">return</span> <span class="n">b</span><span class="p">;</span>  
-<span class="p">}</span>
-
-<span class="kt">int</span> <span class="nf">getSelfLR</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span><span class="o">&amp;</span> <span class="n">a</span><span class="p">){</span>
-    <span class="k">return</span> <span class="n">a</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kt">int</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>
-<span class="n">getSelfL</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>	<span class="c1">//works
-</span><span class="c1"></span><span class="n">getSelfL</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>	<span class="c1">//fails
-</span><span class="c1"></span>
-<span class="n">getSelfR</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>	<span class="c1">//works
-</span><span class="c1"></span><span class="n">getSelfR</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>	<span class="c1">//fails
-</span><span class="c1"></span>
-<span class="n">getSelfRL</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>	<span class="c1">//works
-</span></code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">getSelfL</span><span class="p">(</span><span class="kt">int</span><span class="o">&amp;</span> <span class="n">a</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">a</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">getSelfR</span><span class="p">(</span><span class="kt">int</span><span class="o">&amp;&amp;</span> <span class="n">b</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">b</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">getSelfLR</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span><span class="o">&amp;</span> <span class="n">a</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">a</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">getSelfL</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>	<span class="c1">//works
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">getSelfL</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>	<span class="c1">//fails
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="n">getSelfR</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>	<span class="c1">//works
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">getSelfR</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>	<span class="c1">//fails
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="n">getSelfRL</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>	<span class="c1">//works
+</span></span></span></code></pre></td></tr></table>
 </div>
 </div><h2 id="将亡值">将亡值</h2>
 <blockquote>

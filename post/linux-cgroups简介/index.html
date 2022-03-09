@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/linux-cgroups%E7%AE%80%E4%BB%8B/" />
@@ -448,30 +448,30 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">23
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">mkdir cgroup <span class="c1"># 创建挂载点</span>
-sudo mount -t cgroup -o none,name<span class="o">=</span>cgroup-test cgroup-test ./cgroup-test <span class="c1"># 挂载hierarchy</span>
-sudo mkdir cgroup-1
-sudo mkdir cgroup-2
-tree
-
-.
-├── cgroup-1
-│   ├── cgroup.clone_children
-│   ├── cgroup.procs
-│   ├── notify_on_release
-│   └── tasks
-├── cgroup-2
-│   ├── cgroup.clone_children
-│   ├── cgroup.procs
-│   ├── notify_on_release
-│   └── tasks
-├── cgroup.clone_children
-├── cgroup.procs
-├── cgroup.sane_behavior
-├── notify_on_release
-├── release_agent
-└── tasks
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">mkdir cgroup <span class="c1"># 创建挂载点</span>
+</span></span><span class="line"><span class="cl">sudo mount -t cgroup -o none,name<span class="o">=</span>cgroup-test cgroup-test ./cgroup-test <span class="c1"># 挂载hierarchy</span>
+</span></span><span class="line"><span class="cl">sudo mkdir cgroup-1
+</span></span><span class="line"><span class="cl">sudo mkdir cgroup-2
+</span></span><span class="line"><span class="cl">tree
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">.
+</span></span><span class="line"><span class="cl">├── cgroup-1
+</span></span><span class="line"><span class="cl">│   ├── cgroup.clone_children
+</span></span><span class="line"><span class="cl">│   ├── cgroup.procs
+</span></span><span class="line"><span class="cl">│   ├── notify_on_release
+</span></span><span class="line"><span class="cl">│   └── tasks
+</span></span><span class="line"><span class="cl">├── cgroup-2
+</span></span><span class="line"><span class="cl">│   ├── cgroup.clone_children
+</span></span><span class="line"><span class="cl">│   ├── cgroup.procs
+</span></span><span class="line"><span class="cl">│   ├── notify_on_release
+</span></span><span class="line"><span class="cl">│   └── tasks
+</span></span><span class="line"><span class="cl">├── cgroup.clone_children
+</span></span><span class="line"><span class="cl">├── cgroup.procs
+</span></span><span class="line"><span class="cl">├── cgroup.sane_behavior
+</span></span><span class="line"><span class="cl">├── notify_on_release
+</span></span><span class="line"><span class="cl">├── release_agent
+</span></span><span class="line"><span class="cl">└── tasks
+</span></span></code></pre></td></tr></table>
 </div>
 </div><p><strong>不同文件的含义</strong></p>
 <p><img src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png" alt="image.png"></p>
@@ -500,25 +500,25 @@ tree
 </span><span class="lnt">18
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">sudo sh -c <span class="s2">&#34;echo </span><span class="nv">$$</span><span class="s2"> &gt;&gt; ./cgroup-1/tasks&#34;</span> <span class="c1"># 将终端进程移入cgroup-1中</span>
-cat /proc/<span class="nv">$$</span>/cgroup
-
-&gt;&gt; 
-13:name<span class="o">=</span>cgroup-test:/cgroup-1
-12:memory:/user.slice/user-1002.slice/session-12331.scope
-11:perf_event:/
-10:cpuset:/
-9:freezer:/
-8:blkio:/user.slice
-7:rdma:/
-6:hugetlb:/
-5:pids:/user.slice/user-1002.slice/session-12331.scope
-4:cpu,cpuacct:/user.slice
-3:net_cls,net_prio:/
-2:devices:/user.slice
-1:name<span class="o">=</span>systemd:/user.slice/user-1002.slice/session-12331.scope
-0::/user.slice/user-1002.slice/session-12331.scope
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo sh -c <span class="s2">&#34;echo </span><span class="nv">$$</span><span class="s2"> &gt;&gt; ./cgroup-1/tasks&#34;</span> <span class="c1"># 将终端进程移入cgroup-1中</span>
+</span></span><span class="line"><span class="cl">cat /proc/<span class="nv">$$</span>/cgroup
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&gt;&gt; 
+</span></span><span class="line"><span class="cl">13:name<span class="o">=</span>cgroup-test:/cgroup-1
+</span></span><span class="line"><span class="cl">12:memory:/user.slice/user-1002.slice/session-12331.scope
+</span></span><span class="line"><span class="cl">11:perf_event:/
+</span></span><span class="line"><span class="cl">10:cpuset:/
+</span></span><span class="line"><span class="cl">9:freezer:/
+</span></span><span class="line"><span class="cl">8:blkio:/user.slice
+</span></span><span class="line"><span class="cl">7:rdma:/
+</span></span><span class="line"><span class="cl">6:hugetlb:/
+</span></span><span class="line"><span class="cl">5:pids:/user.slice/user-1002.slice/session-12331.scope
+</span></span><span class="line"><span class="cl">4:cpu,cpuacct:/user.slice
+</span></span><span class="line"><span class="cl">3:net_cls,net_prio:/
+</span></span><span class="line"><span class="cl">2:devices:/user.slice
+</span></span><span class="line"><span class="cl">1:name<span class="o">=</span>systemd:/user.slice/user-1002.slice/session-12331.scope
+</span></span><span class="line"><span class="cl">0::/user.slice/user-1002.slice/session-12331.scope
+</span></span></code></pre></td></tr></table>
 </div>
 </div><ul>
 <li>
@@ -534,13 +534,13 @@ cat /proc/<span class="nv">$$</span>/cgroup
 </span><span class="lnt">6
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 首先,在不做限制的情况下,启动一个占用内存的stress进程</span>
-stress --vm-bytes 200m --vm-keep -m <span class="m">1</span>
-sudo mkdir test-limit-memory <span class="o">&amp;&amp;</span> <span class="nb">cd</span> test-limit-memory <span class="c1"># 创建一个cgroup</span>
-sudo sh -c <span class="s2">&#34;echo &#34;</span>100m<span class="s2">&#34; &gt; memory.limit&#34;</span> <span class="c1"># 设置最大cgroup占用为100m</span>
-sudo sh -c <span class="s2">&#34;echo </span><span class="nv">$$</span><span class="s2"> &gt; tasks&#34;</span> <span class="c1"># 将当前进程移入cgroup</span>
-stress --vm-bytes 200m --vm-keep -m <span class="m">1</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 首先,在不做限制的情况下,启动一个占用内存的stress进程</span>
+</span></span><span class="line"><span class="cl">stress --vm-bytes 200m --vm-keep -m <span class="m">1</span>
+</span></span><span class="line"><span class="cl">sudo mkdir test-limit-memory <span class="o">&amp;&amp;</span> <span class="nb">cd</span> test-limit-memory <span class="c1"># 创建一个cgroup</span>
+</span></span><span class="line"><span class="cl">sudo sh -c <span class="s2">&#34;echo &#34;</span>100m<span class="s2">&#34; &gt; memory.limit&#34;</span> <span class="c1"># 设置最大cgroup占用为100m</span>
+</span></span><span class="line"><span class="cl">sudo sh -c <span class="s2">&#34;echo </span><span class="nv">$$</span><span class="s2"> &gt; tasks&#34;</span> <span class="c1"># 将当前进程移入cgroup</span>
+</span></span><span class="line"><span class="cl">stress --vm-bytes 200m --vm-keep -m <span class="m">1</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="最后可以观测到进程占用的内存被限制了">最后可以观测到进程占用的内存被限制了</h4>
 </li>

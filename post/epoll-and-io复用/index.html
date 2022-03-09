@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/epoll-and-io%E5%A4%8D%E7%94%A8/" />
@@ -429,41 +429,41 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">34
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="cm">/** epoll_create
-</span><span class="cm"> *  创建一个epoll句柄，返回错误码
-</span><span class="cm"> *  使用之后需要被关闭，因为epfd也会消耗系统fd数量。
-</span><span class="cm"> *  size : 标识epfd监听fd的数量
-</span><span class="cm"> */</span> 
-<span class="kt">int</span> <span class="nf">epoll_create</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">);</span>
-
-<span class="cm">/** epoll_ctl
-</span><span class="cm"> *  添加epoll监控对象，epoll事件的注册函数，返回错误码
-</span><span class="cm"> *  epfd : epoll fd
-</span><span class="cm"> *  op : 操作类型
-</span><span class="cm"> *       EPOLL_CTL_ADD : 注册新的fd到epfd中
-</span><span class="cm"> *       EPOLL_CTL_MOD : 修改已经注册的fd的监听事件
-</span><span class="cm"> *   		 EPOLL_CTL_DEL : 从epfd中删除一个fd
-</span><span class="cm"> *  fd : 需要监听的fd
-</span><span class="cm"> *  event : 需要监听的事件
-</span><span class="cm"> *					EPOLLIN ：表示对应的文件描述符可以读（包括对端SOCKET正常关闭）；
-</span><span class="cm"> *					EPOLLOUT：表示对应的文件描述符可以写；
-</span><span class="cm"> *					EPOLLPRI：表示对应的文件描述符有紧急的数据可读（这里应该表示有带外数据到来）；
-</span><span class="cm"> *					EPOLLERR：表示对应的文件描述符发生错误；
-</span><span class="cm"> *  				EPOLLHUP：表示对应的文件描述符被挂断；
-</span><span class="cm"> *					EPOLLET： 将EPOLL设为边缘触发(Edge Triggered)模式，这是相对于水平触发(Level Triggered)来说的。
-</span><span class="cm"> * 					EPOLLONESHOT：只监听一次事件，当监听完这次事件之后，如果还需要继续监听这个socket的话，需要再次把这个socket加入到EPOLL队列里
-</span><span class="cm"> */</span>
-<span class="kt">int</span> <span class="nf">epoll_ctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">op</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="o">*</span><span class="n">event</span><span class="p">);</span>
-
-<span class="cm">/** epoll_wait
-</span><span class="cm"> * 收集已经触发了的事件，返回触发事件的数目，0代表超时
-</span><span class="cm"> * epfd : epoll fd
-</span><span class="cm"> * events : epoll将触发的事件赋值到events数组中
-</span><span class="cm"> * maxevent : 告知kernel events数组的大小，不得大于epoll_create 中的 size
-</span><span class="cm"> * timeout : 等待超时时间，0，立即返回，-1 一直阻塞，&gt; 0 等待对应时间
-</span><span class="cm"> */</span>
-<span class="kt">int</span> <span class="nf">epoll_wait</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epill_event</span><span class="o">*</span> <span class="n">events</span><span class="p">,</span><span class="kt">int</span> <span class="n">timeout</span><span class="p">);</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cm">/** epoll_create
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  创建一个epoll句柄，返回错误码
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  使用之后需要被关闭，因为epfd也会消耗系统fd数量。
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  size : 标识epfd监听fd的数量
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span> 
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_create</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/** epoll_ctl
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  添加epoll监控对象，epoll事件的注册函数，返回错误码
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  epfd : epoll fd
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  op : 操作类型
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_ADD : 注册新的fd到epfd中
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_MOD : 修改已经注册的fd的监听事件
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *   		 EPOLL_CTL_DEL : 从epfd中删除一个fd
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  fd : 需要监听的fd
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  event : 需要监听的事件
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *					EPOLLIN ：表示对应的文件描述符可以读（包括对端SOCKET正常关闭）；
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *					EPOLLOUT：表示对应的文件描述符可以写；
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *					EPOLLPRI：表示对应的文件描述符有紧急的数据可读（这里应该表示有带外数据到来）；
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *					EPOLLERR：表示对应的文件描述符发生错误；
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  				EPOLLHUP：表示对应的文件描述符被挂断；
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *					EPOLLET： 将EPOLL设为边缘触发(Edge Triggered)模式，这是相对于水平触发(Level Triggered)来说的。
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * 					EPOLLONESHOT：只监听一次事件，当监听完这次事件之后，如果还需要继续监听这个socket的话，需要再次把这个socket加入到EPOLL队列里
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_ctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">op</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="o">*</span><span class="n">event</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/** epoll_wait
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * 收集已经触发了的事件，返回触发事件的数目，0代表超时
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * epfd : epoll fd
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * events : epoll将触发的事件赋值到events数组中
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * maxevent : 告知kernel events数组的大小，不得大于epoll_create 中的 size
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * timeout : 等待超时时间，0，立即返回，-1 一直阻塞，&gt; 0 等待对应时间
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_wait</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epill_event</span><span class="o">*</span> <span class="n">events</span><span class="p">,</span><span class="kt">int</span> <span class="n">timeout</span><span class="p">);</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h3 id="处理过程">处理过程</h3>
 <h3 id="epoll_create">epoll_create</h3>
@@ -518,53 +518,53 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">46
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">struct</span> <span class="nc">eventpoll</span> <span class="p">{</span>
-    <span class="cm">/* Protect the this structure access */</span>
-    <span class="n">spinlock_t</span> <span class="n">lock</span><span class="p">;</span>
-
-    <span class="cm">/*
-</span><span class="cm">     * This mutex is used to ensure that files are not removed
-</span><span class="cm">     * while epoll is using them. This is held during the event
-</span><span class="cm">     * collection loop, the file cleanup path, the epoll file exit
-</span><span class="cm">     * code and the ctl operations.
-</span><span class="cm">     */</span>
-    <span class="k">struct</span> <span class="nc">mutex</span> <span class="n">mtx</span><span class="p">;</span>
-
-    <span class="cm">/* Wait queue used by sys_epoll_wait() */</span>
-    <span class="cm">/* 阻塞在epoll_wait()当前epoll实例的用户被链接到这个等待队列 */</span>
-    <span class="n">wait_queue_head_t</span> <span class="n">wq</span><span class="p">;</span>
-
-    <span class="cm">/* Wait queue used by file-&gt;poll() */</span>
-    <span class="cm">/* epoll文件也可以被epoll_wait() */</span>
-    <span class="n">wait_queue_head_t</span> <span class="n">poll_wait</span><span class="p">;</span>
-
-    <span class="cm">/* List of ready file descriptors */</span>
-    <span class="cm">/* 已经ready的epitem的链表 */</span>
-    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">rdllist</span><span class="p">;</span>
-
-    <span class="cm">/* RB tree root used to store monitored fd structs */</span>
-    <span class="k">struct</span> <span class="nc">rb_root</span> <span class="n">rbr</span><span class="p">;</span>
-
-    <span class="cm">/*
-</span><span class="cm">     * This is a single linked list that chains all the &#34;struct epitem&#34; that
-</span><span class="cm">     * happened while transfering ready events to userspace w/out
-</span><span class="cm">     * holding -&gt;lock.
-</span><span class="cm">     */</span>
-    <span class="cm">/* 见ep_poll_callback()以及ep_scan_ready_list()中的注释 */</span>
-    <span class="k">struct</span> <span class="nc">epitem</span> <span class="o">*</span><span class="n">ovflist</span><span class="p">;</span>
-
-    <span class="cm">/* The user that created the eventpoll descriptor */</span>
-    <span class="cm">/* 创建当前epoll实例的用户 */</span>
-    <span class="k">struct</span> <span class="nc">user_struct</span> <span class="o">*</span><span class="n">user</span><span class="p">;</span>
-		
-		<span class="k">struct</span> <span class="nc">file</span> <span class="o">*</span><span class="n">file</span><span class="p">;</span>
-
-		<span class="cm">/* used to optimize loop detection check */</span>
-		<span class="kt">int</span> <span class="n">visited</span><span class="p">;</span>
-
-		<span class="k">struct</span> <span class="nc">list_head</span> <span class="n">visited_list_link</span><span class="p">;</span><span class="c1">//双向链表中保存着将要通过epoll_wait返回给用户的、满足条件的事件
-</span><span class="c1"></span><span class="p">};</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">eventpoll</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* Protect the this structure access */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">spinlock_t</span> <span class="n">lock</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * This mutex is used to ensure that files are not removed
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * while epoll is using them. This is held during the event
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * collection loop, the file cleanup path, the epoll file exit
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * code and the ctl operations.
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">mutex</span> <span class="n">mtx</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* Wait queue used by sys_epoll_wait() */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 阻塞在epoll_wait()当前epoll实例的用户被链接到这个等待队列 */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">wait_queue_head_t</span> <span class="n">wq</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* Wait queue used by file-&gt;poll() */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* epoll文件也可以被epoll_wait() */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">wait_queue_head_t</span> <span class="n">poll_wait</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* List of ready file descriptors */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 已经ready的epitem的链表 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">rdllist</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* RB tree root used to store monitored fd structs */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">rb_root</span> <span class="n">rbr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * This is a single linked list that chains all the &#34;struct epitem&#34; that
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * happened while transfering ready events to userspace w/out
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * holding -&gt;lock.
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 见ep_poll_callback()以及ep_scan_ready_list()中的注释 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">epitem</span> <span class="o">*</span><span class="n">ovflist</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* The user that created the eventpoll descriptor */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 创建当前epoll实例的用户 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">user_struct</span> <span class="o">*</span><span class="n">user</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		
+</span></span><span class="line"><span class="cl">		<span class="k">struct</span> <span class="nc">file</span> <span class="o">*</span><span class="n">file</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="cm">/* used to optimize loop detection check */</span>
+</span></span><span class="line"><span class="cl">		<span class="kt">int</span> <span class="n">visited</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="k">struct</span> <span class="nc">list_head</span> <span class="n">visited_list_link</span><span class="p">;</span><span class="c1">//双向链表中保存着将要通过epoll_wait返回给用户的、满足条件的事件
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><p>在epoll_create中，epoll向内核注册了一个红黑树，用于存储上述的被监控socket。当你调用epoll_create时，就会在这个rb tree里创建一个file结点，通过rb tree查询对应的socket fd。</p>
 <p>同时，它还会创建一个双向链表用于存储准备就绪的事件。</p>
@@ -621,54 +621,54 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">47
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="cm">/*
-</span><span class="cm"> * Each file descriptor added to the eventpoll interface will
-</span><span class="cm"> * have an entry of this type linked to the &#34;rbr&#34; RB tree.
-</span><span class="cm"> */</span>
-<span class="k">struct</span> <span class="nc">epitem</span> <span class="p">{</span>
-    <span class="cm">/* RB tree node used to link this structure to the eventpoll RB tree */</span>
-    <span class="cm">/* eventpoll内部的红黑树的挂载点 */</span>
-    <span class="k">struct</span> <span class="nc">rb_node</span> <span class="n">rbn</span><span class="p">;</span>
-
-    <span class="cm">/* List header used to link this structure to the eventpoll ready list */</span>
-    <span class="cm">/* 所有已经ready的epitem都会被挂载到eventpoll的rdllist中 */</span>
-    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">rdllink</span><span class="p">;</span>
-
-    <span class="cm">/*
-</span><span class="cm">     * Works together &#34;struct eventpoll&#34;-&gt;ovflist in keeping the
-</span><span class="cm">     * single linked chain of items.
-</span><span class="cm">     */</span>
-    <span class="cm">/* 配合eventpoll-&gt;ovflist使用 */</span>
-    <span class="k">struct</span> <span class="nc">epitem</span> <span class="o">*</span><span class="n">next</span><span class="p">;</span>
-
-    <span class="cm">/* The file descriptor information this item refers to */</span>
-    <span class="cm">/* 
-</span><span class="cm">     * 作为evetnpoll内部的红黑树节点的key
-</span><span class="cm">     */</span>
-    <span class="k">struct</span> <span class="nc">epoll_filefd</span> <span class="n">ffd</span><span class="p">;</span>
-
-    <span class="cm">/* Number of active wait queue attached to poll operations */</span>
-    <span class="cm">/* 监听队列挂载数 */</span>
-    <span class="cm">/* 难道一个epitem还能同时挂载到多个监听队列？ */</span>
-    <span class="kt">int</span> <span class="n">nwait</span><span class="p">;</span>
-
-    <span class="cm">/* List containing poll wait queues */</span>
-    <span class="cm">/* 链接当前epitem对应的eppoll_entry结构 */</span>
-    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">pwqlist</span><span class="p">;</span>
-
-    <span class="cm">/* The &#34;container&#34; of this item */</span>
-    <span class="cm">/* 关联当前epitem所属的epollevent */</span>
-    <span class="k">struct</span> <span class="nc">eventpoll</span> <span class="o">*</span><span class="n">ep</span><span class="p">;</span>
-
-    <span class="cm">/* List header used to link this item to the &#34;struct file&#34; items list */</span>
-    <span class="cm">/* 与所监听的struct file进行链接 */</span>
-    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">fllink</span><span class="p">;</span>
-
-    <span class="cm">/* The structure that describe the interested events and the source fd */</span>
-    <span class="cm">/* 通过epoll_ctl从用户空间传过来的数据，表示当前epitem关心的events */</span>
-    <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="n">event</span><span class="p">;</span>
-<span class="p">};</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * Each file descriptor added to the eventpoll interface will
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * have an entry of this type linked to the &#34;rbr&#34; RB tree.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">epitem</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* RB tree node used to link this structure to the eventpoll RB tree */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* eventpoll内部的红黑树的挂载点 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">rb_node</span> <span class="n">rbn</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* List header used to link this structure to the eventpoll ready list */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 所有已经ready的epitem都会被挂载到eventpoll的rdllist中 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">rdllink</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * Works together &#34;struct eventpoll&#34;-&gt;ovflist in keeping the
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * single linked chain of items.
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 配合eventpoll-&gt;ovflist使用 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">epitem</span> <span class="o">*</span><span class="n">next</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* The file descriptor information this item refers to */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * 作为evetnpoll内部的红黑树节点的key
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">epoll_filefd</span> <span class="n">ffd</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* Number of active wait queue attached to poll operations */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 监听队列挂载数 */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 难道一个epitem还能同时挂载到多个监听队列？ */</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">nwait</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* List containing poll wait queues */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 链接当前epitem对应的eppoll_entry结构 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">pwqlist</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* The &#34;container&#34; of this item */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 关联当前epitem所属的epollevent */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">eventpoll</span> <span class="o">*</span><span class="n">ep</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* List header used to link this item to the &#34;struct file&#34; items list */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 与所监听的struct file进行链接 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">list_head</span> <span class="n">fllink</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* The structure that describe the interested events and the source fd */</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 通过epoll_ctl从用户空间传过来的数据，表示当前epitem关心的events */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="n">event</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><p><img src="https://i.loli.net/2021/08/15/ZH6Pixq4X5BLc2z.png" alt="image.png"></p>
 <p>在调用epoll_ctl时，除了将socket fd注册到eventpoll的rb tree，它还会给内核中断处理程序注册一个回调函数。当这个fd的中断到了，就把它放入就绪链表中。当一个socket上有数据到了，内核在把网卡上的数据copy到内核中后就来把socket插入到准备就绪链表里了。</p>
@@ -714,42 +714,42 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">35
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">for</span><span class="p">(</span> <span class="p">;</span> <span class="p">;</span> <span class="p">)</span>  
-   <span class="p">{</span>  
-       <span class="n">nfds</span> <span class="o">=</span> <span class="n">epoll_wait</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">events</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">500</span><span class="p">);</span>  
-       <span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">nfds</span><span class="p">;</span><span class="o">++</span><span class="n">i</span><span class="p">)</span>  
-       <span class="p">{</span>  
-           <span class="k">if</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">.</span><span class="n">fd</span><span class="o">==</span><span class="n">listenfd</span><span class="p">)</span> <span class="c1">//有新的连接  
-</span><span class="c1"></span>           <span class="p">{</span>  
-               <span class="n">connfd</span> <span class="o">=</span> <span class="n">accept</span><span class="p">(</span><span class="n">listenfd</span><span class="p">,(</span><span class="n">sockaddr</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">clientaddr</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">clilen</span><span class="p">);</span> <span class="c1">//accept这个连接  
-</span><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">fd</span><span class="o">=</span><span class="n">connfd</span><span class="p">;</span>  
-               <span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="o">=</span><span class="n">EPOLLIN</span><span class="o">|</span><span class="n">EPOLLET</span><span class="p">;</span>  
-               <span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">EPOLL_CTL_ADD</span><span class="p">,</span><span class="n">connfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ev</span><span class="p">);</span> <span class="c1">//将新的fd添加到epoll的监听队列中  
-</span><span class="c1"></span>           <span class="p">}</span>  
-  
-           <span class="k">else</span> <span class="nf">if</span><span class="p">(</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">events</span><span class="o">&amp;</span><span class="n">EPOLLIN</span> <span class="p">)</span> <span class="c1">//接收到数据，读socket  
-</span><span class="c1"></span>           <span class="p">{</span>  
-               <span class="n">n</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">MAXLINE</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span>    <span class="c1">//读  
-</span><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">ptr</span> <span class="o">=</span> <span class="n">md</span><span class="p">;</span>     <span class="c1">//md为自定义类型，添加数据  
-</span><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="o">=</span><span class="n">EPOLLOUT</span><span class="o">|</span><span class="n">EPOLLET</span><span class="p">;</span>  
-               <span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">EPOLL_CTL_MOD</span><span class="p">,</span><span class="n">sockfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ev</span><span class="p">);</span><span class="c1">//修改标识符，等待下一个循环时发送数据，异步处理的精髓  
-</span><span class="c1"></span>           <span class="p">}</span>  
-           <span class="k">else</span> <span class="nf">if</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">events</span><span class="o">&amp;</span><span class="n">EPOLLOUT</span><span class="p">)</span> <span class="c1">//有数据待发送，写socket  
-</span><span class="c1"></span>           <span class="p">{</span>  
-               <span class="k">struct</span> <span class="nc">myepoll_data</span><span class="o">*</span> <span class="n">md</span> <span class="o">=</span> <span class="p">(</span><span class="n">myepoll_data</span><span class="o">*</span><span class="p">)</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">.</span><span class="n">ptr</span><span class="p">;</span>    <span class="c1">//取数据  
-</span><span class="c1"></span>               <span class="n">sockfd</span> <span class="o">=</span> <span class="n">md</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">;</span>  
-               <span class="n">send</span><span class="p">(</span> <span class="n">sockfd</span><span class="p">,</span> <span class="n">md</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">,</span> <span class="n">strlen</span><span class="p">((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">md</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">),</span> <span class="mi">0</span> <span class="p">);</span>        <span class="c1">//发送数据  
-</span><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">fd</span><span class="o">=</span><span class="n">sockfd</span><span class="p">;</span>  
-               <span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="o">=</span><span class="n">EPOLLIN</span><span class="o">|</span><span class="n">EPOLLET</span><span class="p">;</span>  
-               <span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">EPOLL_CTL_MOD</span><span class="p">,</span><span class="n">sockfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ev</span><span class="p">);</span> <span class="c1">//修改标识符，等待下一个循环时接收数据  
-</span><span class="c1"></span>           <span class="p">}</span>  
-           <span class="k">else</span>  
-           <span class="p">{</span>  
-               <span class="c1">//其他的处理  
-</span><span class="c1"></span>           <span class="p">}</span>  
-       <span class="p">}</span>  
-   <span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">for</span><span class="p">(</span> <span class="p">;</span> <span class="p">;</span> <span class="p">)</span>  
+</span></span><span class="line"><span class="cl">   <span class="p">{</span>  
+</span></span><span class="line"><span class="cl">       <span class="n">nfds</span> <span class="o">=</span> <span class="n">epoll_wait</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">events</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">500</span><span class="p">);</span>  
+</span></span><span class="line"><span class="cl">       <span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">nfds</span><span class="p">;</span><span class="o">++</span><span class="n">i</span><span class="p">)</span>  
+</span></span><span class="line"><span class="cl">       <span class="p">{</span>  
+</span></span><span class="line"><span class="cl">           <span class="k">if</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">.</span><span class="n">fd</span><span class="o">==</span><span class="n">listenfd</span><span class="p">)</span> <span class="c1">//有新的连接  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>           <span class="p">{</span>  
+</span></span><span class="line"><span class="cl">               <span class="n">connfd</span> <span class="o">=</span> <span class="n">accept</span><span class="p">(</span><span class="n">listenfd</span><span class="p">,(</span><span class="n">sockaddr</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">clientaddr</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">clilen</span><span class="p">);</span> <span class="c1">//accept这个连接  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">fd</span><span class="o">=</span><span class="n">connfd</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">               <span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="o">=</span><span class="n">EPOLLIN</span><span class="o">|</span><span class="n">EPOLLET</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">               <span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">EPOLL_CTL_ADD</span><span class="p">,</span><span class="n">connfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ev</span><span class="p">);</span> <span class="c1">//将新的fd添加到epoll的监听队列中  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>           <span class="p">}</span>  
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">           <span class="k">else</span> <span class="nf">if</span><span class="p">(</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">events</span><span class="o">&amp;</span><span class="n">EPOLLIN</span> <span class="p">)</span> <span class="c1">//接收到数据，读socket  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>           <span class="p">{</span>  
+</span></span><span class="line"><span class="cl">               <span class="n">n</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">MAXLINE</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span>    <span class="c1">//读  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">ptr</span> <span class="o">=</span> <span class="n">md</span><span class="p">;</span>     <span class="c1">//md为自定义类型，添加数据  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="o">=</span><span class="n">EPOLLOUT</span><span class="o">|</span><span class="n">EPOLLET</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">               <span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">EPOLL_CTL_MOD</span><span class="p">,</span><span class="n">sockfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ev</span><span class="p">);</span><span class="c1">//修改标识符，等待下一个循环时发送数据，异步处理的精髓  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>           <span class="p">}</span>  
+</span></span><span class="line"><span class="cl">           <span class="k">else</span> <span class="nf">if</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">events</span><span class="o">&amp;</span><span class="n">EPOLLOUT</span><span class="p">)</span> <span class="c1">//有数据待发送，写socket  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>           <span class="p">{</span>  
+</span></span><span class="line"><span class="cl">               <span class="k">struct</span> <span class="nc">myepoll_data</span><span class="o">*</span> <span class="n">md</span> <span class="o">=</span> <span class="p">(</span><span class="n">myepoll_data</span><span class="o">*</span><span class="p">)</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">.</span><span class="n">ptr</span><span class="p">;</span>    <span class="c1">//取数据  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>               <span class="n">sockfd</span> <span class="o">=</span> <span class="n">md</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">               <span class="n">send</span><span class="p">(</span> <span class="n">sockfd</span><span class="p">,</span> <span class="n">md</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">,</span> <span class="n">strlen</span><span class="p">((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">md</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">),</span> <span class="mi">0</span> <span class="p">);</span>        <span class="c1">//发送数据  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>               <span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">fd</span><span class="o">=</span><span class="n">sockfd</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">               <span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="o">=</span><span class="n">EPOLLIN</span><span class="o">|</span><span class="n">EPOLLET</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">               <span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epfd</span><span class="p">,</span><span class="n">EPOLL_CTL_MOD</span><span class="p">,</span><span class="n">sockfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ev</span><span class="p">);</span> <span class="c1">//修改标识符，等待下一个循环时接收数据  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>           <span class="p">}</span>  
+</span></span><span class="line"><span class="cl">           <span class="k">else</span>  
+</span></span><span class="line"><span class="cl">           <span class="p">{</span>  
+</span></span><span class="line"><span class="cl">               <span class="c1">//其他的处理  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>           <span class="p">}</span>  
+</span></span><span class="line"><span class="cl">       <span class="p">}</span>  
+</span></span><span class="line"><span class="cl">   <span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h2 id="阻塞io非阻塞ioio复用">阻塞IO、非阻塞IO、IO复用</h2>
 <p><strong>阻塞IO</strong>意味着线程在数据未到达时需要等待数据到达，阻塞的进程是不应当占用CPU的，此时需要让出CPU，调入新的task占用CPU。知道数据到达，再重新获取将这个task调入CPU执行。用户进程独立处理业务</p>
@@ -761,10 +761,10 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">3
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Calling recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
-	<span class="n">ret</span> <span class="o">=</span>  <span class="n">recv</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">recv_buf</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">recv_buf</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span> 
-	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Had called recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Calling recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="n">ret</span> <span class="o">=</span>  <span class="n">recv</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">recv_buf</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">recv_buf</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span> 
+</span></span><span class="line"><span class="cl">	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Had called recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><p>基于此，当大量task出现读写请求时，大量的CPU上下文切换，task调度，效率可能会低下</p>
 <p><strong>非阻塞IO</strong></p>
@@ -783,15 +783,15 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">8
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="p">{</span>
-	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Calling recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
-	<span class="n">ret</span> <span class="o">=</span>  <span class="n">recv</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">recv_buf</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">recv_buf</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span> 
-	<span class="k">if</span> <span class="p">(</span><span class="n">EAGAIN</span> <span class="o">==</span> <span class="n">ret</span><span class="p">)</span> <span class="p">{</span><span class="k">continue</span><span class="p">;}</span>
-    <span class="k">else</span> <span class="nf">if</span><span class="p">(</span><span class="n">ret</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span> <span class="k">break</span><span class="p">;}</span>
-	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Had called recv(), retry.</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Calling recv(). </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="n">ret</span> <span class="o">=</span>  <span class="n">recv</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">recv_buf</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">recv_buf</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span> 
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="n">EAGAIN</span> <span class="o">==</span> <span class="n">ret</span><span class="p">)</span> <span class="p">{</span><span class="k">continue</span><span class="p">;}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="nf">if</span><span class="p">(</span><span class="n">ret</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span> <span class="k">break</span><span class="p">;}</span>
+</span></span><span class="line"><span class="cl">	<span class="n">printf</span><span class="p">(</span><span class="s">&#34;Had called recv(), retry.</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><p>对于非阻塞IO就有一个非常严重的问题，在while循环中需要不断地去询问内核数据是否就绪，这样会导致CPU占用率非常高，因此一般情况下很少使用while循环这种方式来读取数据。</p>
 <p><strong>IO复用</strong></p>

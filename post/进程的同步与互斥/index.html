@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%8C%E6%AD%A5%E4%B8%8E%E4%BA%92%E6%96%A5/" />
@@ -542,13 +542,13 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </span><span class="lnt">6
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//lock 表示当前临界区是否被加锁
-</span><span class="c1"></span><span class="kt">bool</span> <span class="nf">TestAndSet</span><span class="p">(</span><span class="kt">bool</span> <span class="o">*</span><span class="n">lock</span><span class="p">){</span>
-	<span class="kt">bool</span> <span class="n">old</span><span class="o">=*</span><span class="n">lock</span><span class="p">;</span>
-	<span class="o">*</span><span class="n">lock</span><span class="o">=</span><span class="nb">true</span><span class="p">;</span>
-	<span class="k">return</span> <span class="n">old</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">//lock 表示当前临界区是否被加锁
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">bool</span> <span class="nf">TestAndSet</span><span class="p">(</span><span class="kt">bool</span> <span class="o">*</span><span class="n">lock</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">bool</span> <span class="n">old</span><span class="o">=*</span><span class="n">lock</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="o">*</span><span class="n">lock</span><span class="o">=</span><span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="n">old</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><blockquote>
 <p>这段描述的核心就是<strong>共享变量lock</strong>，对于多个进程竞争临界资源时，这个共享的lock变量，是全局的、独一无二的；</p>
@@ -563,12 +563,12 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </span><span class="lnt">5
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// 将TestAndSet 配合 while一起使用
-</span><span class="c1"></span><span class="k">while</span><span class="p">(</span><span class="n">TestAndSet</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lock</span><span class="p">))</span> <span class="p">;</span>
-<span class="c1">//临界区代码
-</span><span class="c1"></span><span class="n">lock</span><span class="o">=</span><span class="nb">false</span><span class="p">;</span>
-<span class="c1">//剩余区代码
-</span></code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// 将TestAndSet 配合 while一起使用
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">while</span><span class="p">(</span><span class="n">TestAndSet</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lock</span><span class="p">))</span> <span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//临界区代码
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">lock</span><span class="o">=</span><span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//剩余区代码
+</span></span></span></code></pre></td></tr></table>
 </div>
 </div><blockquote>
 <p>while会陷入死循环，直到lock出现过一次false，就跳出循环接着往下执行，并且跳出循环后，lock最终还是被设成true；</p>
@@ -596,13 +596,13 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </span><span class="lnt">6
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//swap指令的作用是交换两个变量的值。
-</span><span class="c1"></span><span class="kt">void</span> <span class="nf">Swap</span><span class="p">(</span><span class="kt">bool</span> <span class="o">*</span><span class="n">a</span> <span class="p">,</span> <span class="kt">bool</span> <span class="o">*</span><span class="n">b</span><span class="p">){</span>
-	<span class="kt">bool</span> <span class="n">temp</span><span class="o">=*</span><span class="n">a</span><span class="p">;</span>
-	<span class="o">*</span><span class="n">a</span><span class="o">=*</span><span class="n">b</span><span class="p">;</span>
-	<span class="o">*</span><span class="n">b</span><span class="o">=</span><span class="n">temp</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">//swap指令的作用是交换两个变量的值。
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">Swap</span><span class="p">(</span><span class="kt">bool</span> <span class="o">*</span><span class="n">a</span> <span class="p">,</span> <span class="kt">bool</span> <span class="o">*</span><span class="n">b</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">bool</span> <span class="n">temp</span><span class="o">=*</span><span class="n">a</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="o">*</span><span class="n">a</span><span class="o">=*</span><span class="n">b</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="o">*</span><span class="n">b</span><span class="o">=</span><span class="n">temp</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><p>与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。</p>
 <div class="highlight"><div class="chroma">
@@ -617,15 +617,15 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </span><span class="lnt">8
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">//lock表示当前临界区是否被加锁。
-</span><span class="c1"></span><span class="kt">bool</span> <span class="n">old</span><span class="o">=</span><span class="nb">true</span><span class="p">;</span>
-<span class="k">while</span><span class="p">(</span><span class="n">old</span><span class="o">==</span><span class="nb">true</span><span class="p">){</span>
-	<span class="n">Swap</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lock</span><span class="p">,</span><span class="o">&amp;</span><span class="n">old</span><span class="p">);</span>
-<span class="p">}</span>
-<span class="c1">//临界区代码
-</span><span class="c1"></span><span class="n">lock</span><span class="o">=</span><span class="nb">false</span><span class="p">;</span>
-<span class="c1">//剩余区代码
-</span></code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">//lock表示当前临界区是否被加锁。
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">bool</span> <span class="n">old</span><span class="o">=</span><span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">while</span><span class="p">(</span><span class="n">old</span><span class="o">==</span><span class="nb">true</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">	<span class="n">Swap</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lock</span><span class="p">,</span><span class="o">&amp;</span><span class="n">old</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//临界区代码
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">lock</span><span class="o">=</span><span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//剩余区代码
+</span></span></span></code></pre></td></tr></table>
 </div>
 </div><p>while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；</p>
 <blockquote>

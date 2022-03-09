@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/how-to-implement-skiplist/" />
@@ -423,19 +423,19 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">12
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SkipListNode</span> <span class="kd">struct</span> <span class="p">{</span>
-        <span class="nx">data</span> <span class="o">*</span><span class="nx">codec</span><span class="p">.</span><span class="nx">Entry</span>
-        <span class="nx">nextPtrs</span> <span class="p">[]</span><span class="o">*</span><span class="nx">SkipListNode</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">SkipList</span> <span class="kd">struct</span> <span class="p">{</span>
-        <span class="nx">header</span><span class="p">,</span> <span class="nx">tail</span> <span class="o">*</span><span class="nx">SkipListNode</span>
-        <span class="nx">level</span>        <span class="kt">int</span>
-        <span class="nx">size</span>         <span class="kt">int</span>
-        <span class="nx">rwmtx</span>        <span class="o">*</span><span class="nx">sync</span><span class="p">.</span><span class="nx">RWMutex</span>
-        <span class="nx">maxSize</span>      <span class="kt">int</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">SkipListNode</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">data</span> <span class="o">*</span><span class="nx">codec</span><span class="p">.</span><span class="nx">Entry</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">nextPtrs</span> <span class="p">[]</span><span class="o">*</span><span class="nx">SkipListNode</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">SkipList</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">header</span><span class="p">,</span> <span class="nx">tail</span> <span class="o">*</span><span class="nx">SkipListNode</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">level</span>        <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">size</span>         <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">rwmtx</span>        <span class="o">*</span><span class="nx">sync</span><span class="p">.</span><span class="nx">RWMutex</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">maxSize</span>      <span class="kt">int</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h3 id="操作">操作</h3>
 <p>值得关注的只有查询和插入节点两个操作。</p>
@@ -460,22 +460,22 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">15
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// findPreNode find the node before node.key
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">sl</span> <span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span> <span class="nf">findPreNode</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">SkipListNode</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">// from top to bottom
-</span><span class="c1"></span>        <span class="nx">h</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">header</span>
-        <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">--</span> <span class="p">{</span>
-                <span class="k">for</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">data</span><span class="p">.</span><span class="nx">Key</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="p">{</span>
-                        <span class="k">if</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Equal</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">data</span><span class="p">.</span><span class="nx">Key</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
-                                <span class="k">return</span> <span class="nx">h</span><span class="p">,</span> <span class="kc">true</span>
-                        <span class="p">}</span>
-                        <span class="nx">h</span> <span class="p">=</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
-                <span class="p">}</span>
-        <span class="p">}</span>
-
-        <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">false</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// findPreNode find the node before node.key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">sl</span> <span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span> <span class="nf">findPreNode</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">SkipListNode</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// from top to bottom
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">h</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">header</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">--</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">data</span><span class="p">.</span><span class="nx">Key</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="k">if</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Equal</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">data</span><span class="p">.</span><span class="nx">Key</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                                <span class="k">return</span> <span class="nx">h</span><span class="p">,</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">                        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                        <span class="nx">h</span> <span class="p">=</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="插入">插入</h4>
 <p>首先要定位到插入的位置，插入，再随机化创建索引。</p>
@@ -525,49 +525,49 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">42
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">sl</span> <span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span> <span class="nf">randomLevel</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-        <span class="nx">ans</span> <span class="o">:=</span> <span class="mi">1</span>
-        <span class="nx">rand</span><span class="p">.</span><span class="nf">Seed</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">())</span>
-        <span class="k">for</span> <span class="nx">rand</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">ans</span> <span class="o">&lt;=</span> <span class="nx">defaultMaxLevel</span> <span class="p">{</span>
-                <span class="nx">ans</span><span class="o">++</span>
-        <span class="p">}</span>
-        <span class="k">return</span> <span class="nx">ans</span>
-<span class="p">}</span>
-
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">sl</span> <span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span> <span class="nf">Insert</span><span class="p">(</span><span class="nx">data</span> <span class="o">*</span><span class="nx">codec</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span> <span class="o">*</span><span class="nx">SkipListNode</span> <span class="p">{</span>
-        <span class="nx">sl</span><span class="p">.</span><span class="nx">rwmtx</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
-        <span class="k">defer</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">rwmtx</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
-
-        <span class="nx">h</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">header</span>
-        <span class="nx">updateNode</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="o">*</span><span class="nx">SkipListNode</span><span class="p">,</span> <span class="nx">defaultMaxLevel</span><span class="p">)</span> <span class="c1">// stores the node before newNode
-</span><span class="c1"></span>        <span class="c1">// search form the top level
-</span><span class="c1"></span>        <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">--</span> <span class="p">{</span>
-                <span class="c1">// loop: 1. current nextPtrs is not empty &amp;&amp; data is small than inserted one, curData &lt; insertedData
-</span><span class="c1"></span>                <span class="k">for</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">data</span><span class="p">.</span><span class="nf">Less</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-                        <span class="nx">h</span> <span class="p">=</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
-                <span class="p">}</span>
-                <span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">h</span>
-        <span class="p">}</span>
-        <span class="c1">// choose level to insert
-</span><span class="c1"></span>        <span class="nx">lvl</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">randomLevel</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nx">lvl</span> <span class="p">&gt;</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span> <span class="p">{</span>
-                <span class="c1">// Insert into higher level, we need to create header -&gt; tail
-</span><span class="c1"></span>                <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">lvl</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
-                        <span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">header</span>
-                <span class="p">}</span>
-                <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span> <span class="p">=</span> <span class="nx">lvl</span>
-        <span class="p">}</span>
-        <span class="c1">// insert after updatedNote
-</span><span class="c1"></span>        <span class="nx">n</span> <span class="o">:=</span> <span class="nf">NewSkipListNode</span><span class="p">(</span><span class="nx">lvl</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span>
-        <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">lvl</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
-                <span class="nx">n</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
-                <span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">n</span>
-        <span class="p">}</span>
-        <span class="nx">sl</span><span class="p">.</span><span class="nx">size</span><span class="o">++</span>
-        <span class="k">return</span> <span class="nx">n</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">sl</span> <span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span> <span class="nf">randomLevel</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">ans</span> <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">rand</span><span class="p">.</span><span class="nf">Seed</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">rand</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">ans</span> <span class="o">&lt;=</span> <span class="nx">defaultMaxLevel</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">ans</span><span class="o">++</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">ans</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">sl</span> <span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span> <span class="nf">Insert</span><span class="p">(</span><span class="nx">data</span> <span class="o">*</span><span class="nx">codec</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span> <span class="o">*</span><span class="nx">SkipListNode</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">sl</span><span class="p">.</span><span class="nx">rwmtx</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">defer</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">rwmtx</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nx">h</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">header</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">updateNode</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="o">*</span><span class="nx">SkipListNode</span><span class="p">,</span> <span class="nx">defaultMaxLevel</span><span class="p">)</span> <span class="c1">// stores the node before newNode
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// search form the top level
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">--</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// loop: 1. current nextPtrs is not empty &amp;&amp; data is small than inserted one, curData &lt; insertedData
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                <span class="k">for</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">data</span><span class="p">.</span><span class="nf">Less</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nx">h</span> <span class="p">=</span> <span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">h</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// choose level to insert
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">lvl</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">randomLevel</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nx">lvl</span> <span class="p">&gt;</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// Insert into higher level, we need to create header -&gt; tail
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">lvl</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">header</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">sl</span><span class="p">.</span><span class="nx">level</span> <span class="p">=</span> <span class="nx">lvl</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// insert after updatedNote
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">n</span> <span class="o">:=</span> <span class="nf">NewSkipListNode</span><span class="p">(</span><span class="nx">lvl</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">lvl</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">n</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">n</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">sl</span><span class="p">.</span><span class="nx">size</span><span class="o">++</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">n</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h2 id="参考">参考</h2>
 <p><a href="https://www.jianshu.com/p/09c3b0835ba6#%E4%BB%8Ezset%E5%88%B0zskiplist">跳跃列表（Skip List）与其在Redis中的实现详</a></p>

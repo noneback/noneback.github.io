@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/lc402-%E7%A7%BB%E9%99%A4k%E4%BD%8D%E6%95%B0%E5%AD%97/" />
@@ -402,12 +402,12 @@ num 不会包含任何前导零。</p>
 </span><span class="lnt">5
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="nx">示例</span> <span class="mi">1</span> <span class="p">:</span>
-
-<span class="nx">输入</span><span class="p">:</span> <span class="nx">num</span> <span class="p">=</span> <span class="s">&#34;1432219&#34;</span><span class="p">,</span> <span class="nx">k</span> <span class="p">=</span> <span class="mi">3</span>
-<span class="nx">输出</span><span class="p">:</span> <span class="s">&#34;1219&#34;</span>
-<span class="nx">解释</span><span class="p">:</span> <span class="nx">移除掉三个数字</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="nx">和</span> <span class="mi">2</span> <span class="nx">形成一个新的最小的数字</span> <span class="mi">1219</span><span class="err">。</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">示例</span> <span class="mi">1</span> <span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">输入</span><span class="p">:</span> <span class="nx">num</span> <span class="p">=</span> <span class="s">&#34;1432219&#34;</span><span class="p">,</span> <span class="nx">k</span> <span class="p">=</span> <span class="mi">3</span>
+</span></span><span class="line"><span class="cl"><span class="nx">输出</span><span class="p">:</span> <span class="s">&#34;1219&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">解释</span><span class="p">:</span> <span class="nx">移除掉三个数字</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="nx">和</span> <span class="mi">2</span> <span class="nx">形成一个新的最小的数字</span> <span class="mi">1219</span><span class="err">。</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div></li>
 </ul>
@@ -487,49 +487,49 @@ num 不会包含任何前导零。</p>
 </span><span class="lnt">42
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm"> * @lc app=leetcode.cn id=402 lang=cpp
-</span><span class="cm"> *
-</span><span class="cm"> * [402] 移掉K位数字
-</span><span class="cm"> */</span>
-
-<span class="c1">// @lc code=start
-</span><span class="c1">// 单调栈+贪心
-</span><span class="c1"></span><span class="err">#</span><span class="nx">include</span> <span class="p">&lt;</span><span class="nx">bits</span><span class="o">/</span><span class="nx">stdc</span><span class="o">++</span><span class="p">.</span><span class="nx">h</span><span class="p">&gt;</span>
-<span class="nx">using</span> <span class="nx">namespace</span> <span class="nx">std</span><span class="p">;</span>
-<span class="nx">class</span> <span class="nx">Solution</span> <span class="p">{</span>
- <span class="nx">public</span><span class="p">:</span>
-  <span class="kt">string</span> <span class="nf">removeKdigits</span><span class="p">(</span><span class="kt">string</span> <span class="nx">num</span><span class="p">,</span> <span class="kt">int</span> <span class="nx">k</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">vector</span><span class="p">&lt;</span><span class="nx">char</span><span class="p">&gt;</span> <span class="nx">ret</span><span class="p">;</span>
-
-    <span class="k">for</span> <span class="p">(</span><span class="nx">auto</span><span class="o">&amp;</span> <span class="nx">ch</span> <span class="p">:</span> <span class="nx">num</span><span class="p">)</span> <span class="p">{</span>
-      <span class="nf">while</span> <span class="p">(</span><span class="nx">ret</span><span class="p">.</span><span class="nf">size</span><span class="p">()</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">k</span> <span class="o">&amp;&amp;</span> <span class="nx">ret</span><span class="p">.</span><span class="nf">back</span><span class="p">()</span> <span class="p">&gt;</span> <span class="nx">ch</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">ret</span><span class="p">.</span><span class="nf">pop_back</span><span class="p">();</span>
-        <span class="nx">k</span><span class="o">--</span><span class="p">;</span>
-      <span class="p">}</span>
-      <span class="nx">ret</span><span class="p">.</span><span class="nf">push_back</span><span class="p">(</span><span class="nx">ch</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="c1">// 处理未处理的k,此时数据已是单调增，去除最后几位
-</span><span class="c1"></span>
-    <span class="nf">while</span><span class="p">(</span><span class="nx">k</span><span class="o">--</span><span class="p">){</span>
-        <span class="nx">ret</span><span class="p">.</span><span class="nf">pop_back</span><span class="p">();</span>
-    <span class="p">}</span>
-
-    <span class="kt">string</span> <span class="nx">ans</span> <span class="p">=</span> <span class="s">&#34;&#34;</span><span class="p">;</span>
-    <span class="kt">bool</span> <span class="nx">begWithZero</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
-    <span class="k">for</span> <span class="p">(</span><span class="nx">auto</span><span class="o">&amp;</span> <span class="nx">digit</span> <span class="p">:</span> <span class="nx">ret</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">if</span> <span class="p">(</span><span class="nx">digit</span> <span class="o">==</span> <span class="sc">&#39;0&#39;</span> <span class="o">&amp;&amp;</span> <span class="nx">begWithZero</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">continue</span><span class="p">;</span>
-      <span class="p">}</span>
-      <span class="nx">begWithZero</span> <span class="p">=</span> <span class="kc">false</span><span class="p">;</span>
-      <span class="nx">ans</span> <span class="o">+=</span> <span class="nx">digit</span><span class="p">;</span>
-    <span class="p">}</span>
-
-    <span class="k">return</span> <span class="nx">ans</span> <span class="o">==</span> <span class="s">&#34;&#34;</span> <span class="err">?</span> <span class="s">&#34;0&#34;</span> <span class="p">:</span> <span class="nx">ans</span><span class="p">;</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-<span class="c1">// @lc code=end
-</span></code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * @lc app=leetcode.cn id=402 lang=cpp
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * [402] 移掉K位数字
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// @lc code=start
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 单调栈+贪心
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span><span class="nx">include</span> <span class="p">&lt;</span><span class="nx">bits</span><span class="o">/</span><span class="nx">stdc</span><span class="o">++</span><span class="p">.</span><span class="nx">h</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">using</span> <span class="nx">namespace</span> <span class="nx">std</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">class</span> <span class="nx">Solution</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">public</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">string</span> <span class="nf">removeKdigits</span><span class="p">(</span><span class="kt">string</span> <span class="nx">num</span><span class="p">,</span> <span class="kt">int</span> <span class="nx">k</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">vector</span><span class="p">&lt;</span><span class="nx">char</span><span class="p">&gt;</span> <span class="nx">ret</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="nx">auto</span><span class="o">&amp;</span> <span class="nx">ch</span> <span class="p">:</span> <span class="nx">num</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nf">while</span> <span class="p">(</span><span class="nx">ret</span><span class="p">.</span><span class="nf">size</span><span class="p">()</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">k</span> <span class="o">&amp;&amp;</span> <span class="nx">ret</span><span class="p">.</span><span class="nf">back</span><span class="p">()</span> <span class="p">&gt;</span> <span class="nx">ch</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">ret</span><span class="p">.</span><span class="nf">pop_back</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">k</span><span class="o">--</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">ret</span><span class="p">.</span><span class="nf">push_back</span><span class="p">(</span><span class="nx">ch</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 处理未处理的k,此时数据已是单调增，去除最后几位
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="nf">while</span><span class="p">(</span><span class="nx">k</span><span class="o">--</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">ret</span><span class="p">.</span><span class="nf">pop_back</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">string</span> <span class="nx">ans</span> <span class="p">=</span> <span class="s">&#34;&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="nx">begWithZero</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="nx">auto</span><span class="o">&amp;</span> <span class="nx">digit</span> <span class="p">:</span> <span class="nx">ret</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="nx">digit</span> <span class="o">==</span> <span class="sc">&#39;0&#39;</span> <span class="o">&amp;&amp;</span> <span class="nx">begWithZero</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">continue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">begWithZero</span> <span class="p">=</span> <span class="kc">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">ans</span> <span class="o">+=</span> <span class="nx">digit</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">ans</span> <span class="o">==</span> <span class="s">&#34;&#34;</span> <span class="err">?</span> <span class="s">&#34;0&#34;</span> <span class="p">:</span> <span class="nx">ans</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// @lc code=end
+</span></span></span></code></pre></td></tr></table>
 </div>
 </div><h2 id="参考">参考</h2>
 <p><a href="https://leetcode-cn.com/problems/remove-k-digits">LC402</a></p>
@@ -588,7 +588,7 @@ num 不会包含任何前导零。</p>
             <span class="prev-text nav-mobile">Prev</span>
           </a>
         
-          <a class="next" href="/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/">
+          <a class="next" href="/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93--%E5%89%8D%E7%AB%AF/">
             <span class="next-text nav-default">实现简单的SQL数据库--前端</span>
             <span class="prev-text nav-mobile">Next</span>
             

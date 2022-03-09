@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/mit6.824-mapreduce/" />
@@ -428,21 +428,21 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">14
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="n">map</span><span class="p">(</span><span class="n">String</span> <span class="n">key</span><span class="p">,</span> <span class="n">String</span> <span class="n">value</span><span class="p">)</span><span class="o">:</span>
-  <span class="c1">// key: document name
-</span><span class="c1"></span>  <span class="c1">// value: document contents
-</span><span class="c1"></span>  <span class="k">for</span> <span class="n">each</span> <span class="n">word</span> <span class="n">w</span> <span class="n">in</span> <span class="nl">value</span><span class="p">:</span>
-    <span class="n">EmitIntermediate</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="err">“</span><span class="mi">1</span><span class="err">”</span><span class="p">);</span>
-
-
-<span class="n">reduce</span><span class="p">(</span><span class="n">String</span> <span class="n">key</span><span class="p">,</span> <span class="n">Iterator</span> <span class="n">values</span><span class="p">)</span><span class="o">:</span>
-  <span class="c1">// key: a word
-</span><span class="c1"></span>  <span class="c1">// values: a list of counts
-</span><span class="c1"></span>  <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="k">for</span> <span class="n">each</span> <span class="n">v</span> <span class="n">in</span> <span class="nl">values</span><span class="p">:</span>
-    <span class="n">result</span> <span class="o">+=</span> <span class="n">ParseInt</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
-  <span class="n">Emit</span><span class="p">(</span><span class="n">AsString</span><span class="p">(</span><span class="n">result</span><span class="p">));</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">map</span><span class="p">(</span><span class="n">String</span> <span class="n">key</span><span class="p">,</span> <span class="n">String</span> <span class="n">value</span><span class="p">)</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// key: document name
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// value: document contents
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">for</span> <span class="n">each</span> <span class="n">word</span> <span class="n">w</span> <span class="n">in</span> <span class="nl">value</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">EmitIntermediate</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="err">“</span><span class="mi">1</span><span class="err">”</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">reduce</span><span class="p">(</span><span class="n">String</span> <span class="n">key</span><span class="p">,</span> <span class="n">Iterator</span> <span class="n">values</span><span class="p">)</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// key: a word
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// values: a list of counts
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="n">each</span> <span class="n">v</span> <span class="n">in</span> <span class="nl">values</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">+=</span> <span class="n">ParseInt</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">Emit</span><span class="p">(</span><span class="n">AsString</span><span class="p">(</span><span class="n">result</span><span class="p">));</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h3 id="mapreduce执行过程">MapReduce执行过程</h3>
 <p>Distrubuted MapReduce System采用主从的设计，在MapReduce计算过程中，一般有一个Master，以及若干个Worker。</p>
@@ -509,18 +509,18 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">11
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Master</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="c1">// Your definitions here.
-</span><span class="c1"></span>	<span class="nx">nReduce</span>      <span class="kt">int</span>
-	<span class="nx">taskQueue</span>    <span class="kd">chan</span> <span class="nx">Task</span>
-	<span class="nx">tasksContext</span> <span class="p">[]</span><span class="nx">TaskContext</span>
-	<span class="nx">lock</span>         <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
-	<span class="nx">files</span>        <span class="p">[]</span><span class="kt">string</span>
-	<span class="nx">phase</span>        <span class="nx">PhaseKind</span>
-	<span class="nx">done</span>         <span class="kt">bool</span>
-	<span class="nx">workerID</span>     <span class="kt">int</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Master</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Your definitions here.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">nReduce</span>      <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">taskQueue</span>    <span class="kd">chan</span> <span class="nx">Task</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">tasksContext</span> <span class="p">[]</span><span class="nx">TaskContext</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">lock</span>         <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">files</span>        <span class="p">[]</span><span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">phase</span>        <span class="nx">PhaseKind</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">done</span>         <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">workerID</span>     <span class="kt">int</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="worker-1">Worker</h4>
 <div class="highlight"><div class="chroma">
@@ -534,14 +534,14 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">7
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">worker</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">ID</span>      <span class="kt">int</span>
-	<span class="nx">mapf</span>    <span class="kd">func</span><span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">string</span><span class="p">)</span> <span class="p">[]</span><span class="nx">KeyValue</span>
-	<span class="nx">reducef</span> <span class="kd">func</span><span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">string</span>
-	<span class="nx">nReduce</span> <span class="kt">int</span>
-	<span class="nx">nMap</span>    <span class="kt">int</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">worker</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ID</span>      <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mapf</span>    <span class="kd">func</span><span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">string</span><span class="p">)</span> <span class="p">[]</span><span class="nx">KeyValue</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">reducef</span> <span class="kd">func</span><span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">nReduce</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">nMap</span>    <span class="kt">int</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="task--taskcontext">Task &amp; TaskContext</h4>
 <div class="highlight"><div class="chroma">
@@ -560,19 +560,19 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">12
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Task</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">ID</span>       <span class="kt">int</span>
-	<span class="nx">Filename</span> <span class="kt">string</span>
-	<span class="nx">Phase</span>    <span class="nx">PhaseKind</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">TaskContext</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">t</span>         <span class="o">*</span><span class="nx">Task</span>
-	<span class="nx">state</span>     <span class="nx">ContextState</span>
-	<span class="nx">workerID</span>  <span class="kt">int</span>
-	<span class="nx">startTime</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Task</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ID</span>       <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Filename</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Phase</span>    <span class="nx">PhaseKind</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">TaskContext</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">t</span>         <span class="o">*</span><span class="nx">Task</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">state</span>     <span class="nx">ContextState</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">workerID</span>  <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">startTime</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="rpc-args--reply">Rpc Args &amp; Reply</h4>
 <div class="highlight"><div class="chroma">
@@ -604,32 +604,32 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">25
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">RegTaskArgs</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">WorkerID</span> <span class="kt">int</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">RegTaskReply</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">T</span>    <span class="nx">Task</span>
-	<span class="nx">HasT</span> <span class="kt">bool</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">ReportTaskArgs</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">WorkerID</span> <span class="kt">int</span>
-	<span class="nx">TaskID</span>   <span class="kt">int</span>
-	<span class="nx">State</span>    <span class="nx">ContextState</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">ReportTaskReply</span> <span class="kd">struct</span> <span class="p">{</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">RegWorkerArgs</span> <span class="kd">struct</span> <span class="p">{</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">RegWorkerReply</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">ID</span>      <span class="kt">int</span>
-	<span class="nx">NReduce</span> <span class="kt">int</span>
-	<span class="nx">NMap</span>    <span class="kt">int</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">RegTaskArgs</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">WorkerID</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">RegTaskReply</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">T</span>    <span class="nx">Task</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">HasT</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">ReportTaskArgs</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">WorkerID</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">TaskID</span>   <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">State</span>    <span class="nx">ContextState</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">ReportTaskReply</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">RegWorkerArgs</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">RegWorkerReply</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ID</span>      <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">NReduce</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">NMap</span>    <span class="kt">int</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="constant--type">Constant &amp; Type</h4>
 <div class="highlight"><div class="chroma">
@@ -657,28 +657,28 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">21
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">const</span> <span class="p">(</span>
-	<span class="nx">RUNNING</span> <span class="nx">ContextState</span> <span class="p">=</span> <span class="kc">iota</span>
-	<span class="nx">FAILED</span>
-	<span class="nx">READY</span>
-	<span class="nx">IDEL</span>
-	<span class="nx">COMPLETE</span>
-<span class="p">)</span>
-
-<span class="kd">const</span> <span class="p">(</span>
-	<span class="nx">MAX_PROCESSING_TIME</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="o">*</span> <span class="mi">5</span>
-	<span class="nx">SCHEDULE_INTERVAL</span>   <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span>
-<span class="p">)</span>
-
-<span class="kd">const</span> <span class="p">(</span>
-	<span class="nx">MAP</span> <span class="nx">PhaseKind</span> <span class="p">=</span> <span class="kc">iota</span>
-	<span class="nx">REDUCE</span>
-<span class="p">)</span>
-
-<span class="kd">type</span> <span class="nx">ContextState</span> <span class="kt">int</span>
-
-<span class="kd">type</span> <span class="nx">PhaseKind</span> <span class="kt">int</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">const</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">RUNNING</span> <span class="nx">ContextState</span> <span class="p">=</span> <span class="kc">iota</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">FAILED</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">READY</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">IDEL</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">COMPLETE</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">const</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">MAX_PROCESSING_TIME</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="o">*</span> <span class="mi">5</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">SCHEDULE_INTERVAL</span>   <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">const</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">MAP</span> <span class="nx">PhaseKind</span> <span class="p">=</span> <span class="kc">iota</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">REDUCE</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">ContextState</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">PhaseKind</span> <span class="kt">int</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h3 id="运行与测试">运行与测试</h3>
 <h4 id="运行">运行</h4>
@@ -692,13 +692,13 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">6
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># In main directory</span>
-<span class="nb">cd</span> ./src/main
-<span class="c1"># Master</span>
-go run ./mrmaster.go pg*.txt                                              
-<span class="c1"># Worker</span>
-go build -buildmode<span class="o">=</span>plugin ../mrapps/wc.go <span class="o">&amp;&amp;</span> go run ./mrworker.go ./wc.so 
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># In main directory</span>
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> ./src/main
+</span></span><span class="line"><span class="cl"><span class="c1"># Master</span>
+</span></span><span class="line"><span class="cl">go run ./mrmaster.go pg*.txt                                              
+</span></span><span class="line"><span class="cl"><span class="c1"># Worker</span>
+</span></span><span class="line"><span class="cl">go build -buildmode<span class="o">=</span>plugin ../mrapps/wc.go <span class="o">&amp;&amp;</span> go run ./mrworker.go ./wc.so 
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="测试">测试</h4>
 <div class="highlight"><div class="chroma">
@@ -708,10 +708,10 @@ go build -buildmode<span class="o">=</span>plugin ../mrapps/wc.go <span class="o
 </span><span class="lnt">3
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="nb">cd</span> ./src/main
-
-sh  ./test-mr.sh
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">cd</span> ./src/main
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">sh  ./test-mr.sh
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h2 id="优化">优化</h2>
 <p>这些优化是在我完成实验之后，回顾自己代码时想到的可以优化的一些设计。</p>

@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/mit6.824-bigtable/" />
@@ -427,10 +427,10 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">3
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 映射抽象
-</span><span class="c1"></span><span class="p">(</span><span class="nx">row</span><span class="p">:</span><span class="kt">string</span><span class="p">,</span> <span class="nx">column</span><span class="p">:</span><span class="kt">string</span><span class="p">,</span><span class="nx">time</span><span class="p">:</span><span class="kt">int64</span><span class="p">)</span><span class="o">-</span><span class="p">&gt;</span><span class="kt">string</span>
-<span class="c1">// 一个Row Key实际上是 {Row , Column, Timestamp} 组成的多维结构。
-</span></code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// 映射抽象
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">(</span><span class="nx">row</span><span class="p">:</span><span class="kt">string</span><span class="p">,</span> <span class="nx">column</span><span class="p">:</span><span class="kt">string</span><span class="p">,</span><span class="nx">time</span><span class="p">:</span><span class="kt">int64</span><span class="p">)</span><span class="o">-</span><span class="p">&gt;</span><span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 一个Row Key实际上是 {Row , Column, Timestamp} 组成的多维结构。
+</span></span></span></code></pre></td></tr></table>
 </div>
 </div><p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gufarm0ykaj615k0d0jts02.jpg" alt="image-20210913205832997"></p>
 <p>论文对数据模型原文阐述如下：</p>
@@ -526,26 +526,26 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">19
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="c1">// Writing to Bigtable
-</span><span class="c1">// Open the table Table *T = OpenOrDie(&#34;/bigtable/web/webtable&#34;); // Write a new anchor and delete an old anchor 
-</span><span class="c1"></span><span class="n">RowMutation</span> <span class="nf">r1</span><span class="p">(</span><span class="n">T</span><span class="p">,</span>   <span class="s">&#34;com.cnn.www&#34;</span><span class="p">);</span> 
-<span class="n">r1</span><span class="p">.</span><span class="n">Set</span><span class="p">(</span><span class="s">&#34;anchor:www.c-span.org&#34;</span><span class="p">,</span> <span class="s">&#34;CNN&#34;</span><span class="p">);</span> <span class="n">r1</span><span class="p">.</span><span class="n">Delete</span><span class="p">(</span><span class="s">&#34;anchor:www.abc.com&#34;</span><span class="p">);</span> 
-<span class="n">Operation</span> <span class="n">op</span><span class="p">;</span> <span class="n">Apply</span><span class="p">(</span><span class="o">&amp;</span><span class="n">op</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">r1</span><span class="p">)</span>
-
-
- <span class="c1">// Reading from Bigtable
-</span><span class="c1"></span><span class="n">Scanner</span> <span class="n">scanner</span><span class="p">(</span><span class="n">T</span><span class="p">);</span> <span class="n">ScanStream</span> <span class="o">*</span><span class="n">stream</span><span class="p">;</span> 
-<span class="n">stream</span> <span class="o">=</span> <span class="n">scanner</span><span class="p">.</span><span class="n">FetchColumnFamily</span><span class="p">(</span><span class="s">&#34;anchor&#34;</span><span class="p">);</span> 
-<span class="n">stream</span><span class="o">-&gt;</span><span class="n">SetReturnAllVersions</span><span class="p">();</span> 
-<span class="n">scanner</span><span class="p">.</span><span class="n">Lookup</span><span class="p">(</span><span class="s">&#34;com.cnn.www&#34;</span><span class="p">);</span> 
-<span class="k">for</span> <span class="p">(;</span> <span class="o">!</span><span class="n">stream</span><span class="o">-&gt;</span><span class="n">Done</span><span class="p">();</span> <span class="n">stream</span><span class="o">-&gt;</span><span class="n">Next</span><span class="p">())</span> <span class="p">{</span> 
-  <span class="n">printf</span><span class="p">(</span><span class="s">&#34;%s %s %lld %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> 
-         <span class="n">scanner</span><span class="p">.</span><span class="n">RowName</span><span class="p">(),</span> 
-         <span class="n">stream</span><span class="o">-&gt;</span><span class="n">ColumnName</span><span class="p">(),</span> 
-         <span class="n">stream</span><span class="o">-&gt;</span><span class="n">MicroTimestamp</span><span class="p">(),</span> 
-         <span class="n">stream</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">());</span>
-<span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// Writing to Bigtable
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Open the table Table *T = OpenOrDie(&#34;/bigtable/web/webtable&#34;); // Write a new anchor and delete an old anchor 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">RowMutation</span> <span class="nf">r1</span><span class="p">(</span><span class="n">T</span><span class="p">,</span>   <span class="s">&#34;com.cnn.www&#34;</span><span class="p">);</span> 
+</span></span><span class="line"><span class="cl"><span class="n">r1</span><span class="p">.</span><span class="n">Set</span><span class="p">(</span><span class="s">&#34;anchor:www.c-span.org&#34;</span><span class="p">,</span> <span class="s">&#34;CNN&#34;</span><span class="p">);</span> <span class="n">r1</span><span class="p">.</span><span class="n">Delete</span><span class="p">(</span><span class="s">&#34;anchor:www.abc.com&#34;</span><span class="p">);</span> 
+</span></span><span class="line"><span class="cl"><span class="n">Operation</span> <span class="n">op</span><span class="p">;</span> <span class="n">Apply</span><span class="p">(</span><span class="o">&amp;</span><span class="n">op</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">r1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="c1">// Reading from Bigtable
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">Scanner</span> <span class="n">scanner</span><span class="p">(</span><span class="n">T</span><span class="p">);</span> <span class="n">ScanStream</span> <span class="o">*</span><span class="n">stream</span><span class="p">;</span> 
+</span></span><span class="line"><span class="cl"><span class="n">stream</span> <span class="o">=</span> <span class="n">scanner</span><span class="p">.</span><span class="n">FetchColumnFamily</span><span class="p">(</span><span class="s">&#34;anchor&#34;</span><span class="p">);</span> 
+</span></span><span class="line"><span class="cl"><span class="n">stream</span><span class="o">-&gt;</span><span class="n">SetReturnAllVersions</span><span class="p">();</span> 
+</span></span><span class="line"><span class="cl"><span class="n">scanner</span><span class="p">.</span><span class="n">Lookup</span><span class="p">(</span><span class="s">&#34;com.cnn.www&#34;</span><span class="p">);</span> 
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="p">(;</span> <span class="o">!</span><span class="n">stream</span><span class="o">-&gt;</span><span class="n">Done</span><span class="p">();</span> <span class="n">stream</span><span class="o">-&gt;</span><span class="n">Next</span><span class="p">())</span> <span class="p">{</span> 
+</span></span><span class="line"><span class="cl">  <span class="n">printf</span><span class="p">(</span><span class="s">&#34;%s %s %lld %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> 
+</span></span><span class="line"><span class="cl">         <span class="n">scanner</span><span class="p">.</span><span class="n">RowName</span><span class="p">(),</span> 
+</span></span><span class="line"><span class="cl">         <span class="n">stream</span><span class="o">-&gt;</span><span class="n">ColumnName</span><span class="p">(),</span> 
+</span></span><span class="line"><span class="cl">         <span class="n">stream</span><span class="o">-&gt;</span><span class="n">MicroTimestamp</span><span class="p">(),</span> 
+</span></span><span class="line"><span class="cl">         <span class="n">stream</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h2 id="架构设计">架构设计</h2>
 <h3 id="外部组件">外部组件</h3>
@@ -635,21 +635,21 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">14
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"> <span class="n">Mapping</span> <span class="p">{</span>
-   <span class="n">Table</span> <span class="o">=&gt;</span> <span class="n">list</span> <span class="n">of</span> <span class="n">Tablets</span> <span class="c1">// 
-</span><span class="c1"></span>   <span class="n">Tablet</span> <span class="o">=&gt;</span> <span class="n">Tablet</span> <span class="n">handle</span>
-    
-   <span class="k">struct</span> <span class="nc">Tablet</span> <span class="n">handle</span> <span class="p">{</span>
-     <span class="n">list</span> <span class="n">of</span> <span class="n">Rows</span> <span class="c1">// Tablet contains
-</span><span class="c1"></span>     <span class="n">Tablet</span> <span class="n">Server</span> <span class="c1">// where Tablet shores
-</span><span class="c1"></span>     <span class="p">...</span>
-   <span class="n">list</span> <span class="n">of</span> <span class="n">SSTable</span> <span class="c1">// where the tablet stores in GFS
-</span><span class="c1"></span>   <span class="p">}</span>
-   
-   <span class="c1">// Indexes
-</span><span class="c1"></span>   <span class="n">Row</span> <span class="n">or</span> <span class="n">Column</span> <span class="n">Key</span> <span class="o">=&gt;</span> <span class="n">Tablet</span> <span class="n">Location</span> <span class="o">=&gt;</span> <span class="n">SSTable</span> 
- <span class="p">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"> <span class="n">Mapping</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="n">Table</span> <span class="o">=&gt;</span> <span class="n">list</span> <span class="n">of</span> <span class="n">Tablets</span> <span class="c1">// 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>   <span class="n">Tablet</span> <span class="o">=&gt;</span> <span class="n">Tablet</span> <span class="n">handle</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">   <span class="k">struct</span> <span class="nc">Tablet</span> <span class="n">handle</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">     <span class="n">list</span> <span class="n">of</span> <span class="n">Rows</span> <span class="c1">// Tablet contains
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>     <span class="n">Tablet</span> <span class="n">Server</span> <span class="c1">// where Tablet shores
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>     <span class="p">...</span>
+</span></span><span class="line"><span class="cl">   <span class="n">list</span> <span class="n">of</span> <span class="n">SSTable</span> <span class="c1">// where the tablet stores in GFS
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>   <span class="p">}</span>
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">   <span class="c1">// Indexes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>   <span class="n">Row</span> <span class="n">or</span> <span class="n">Column</span> <span class="n">Key</span> <span class="o">=&gt;</span> <span class="n">Tablet</span> <span class="n">Location</span> <span class="o">=&gt;</span> <span class="n">SSTable</span> 
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div></blockquote>
 <p>Bigtable通过<code>Root Tablet + METADATA Table</code>进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。</p>

@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/" />
@@ -71,7 +71,7 @@
 <meta itemprop="name" content="基于朴素贝叶斯的中文垃圾电子邮件分类">
 <meta itemprop="description" content="基于朴素贝叶斯的中文垃圾电子邮件分类 训练数据和测试数据 本次主要使用了github上的开源数据 数据处理 首先使用正则表达式对训练集中的中文邮件的"><meta itemprop="datePublished" content="2020-05-06T00:00:00+00:00" />
 <meta itemprop="dateModified" content="2020-05-06T00:00:00+00:00" />
-<meta itemprop="wordCount" content="1888">
+<meta itemprop="wordCount" content="1896">
 <meta itemprop="keywords" content="ML," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="基于朴素贝叶斯的中文垃圾电子邮件分类"/>
 <meta name="twitter:description" content="基于朴素贝叶斯的中文垃圾电子邮件分类 训练数据和测试数据 本次主要使用了github上的开源数据 数据处理 首先使用正则表达式对训练集中的中文邮件的"/>
@@ -389,16 +389,16 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <h2 id="训练与预测">训练与预测</h2>
 <p>训练和预测的过程主要使计算$ P(Spam|word_1,word_2,&hellip;,word_n) $的概率，当这个概率大于某个阈值的时候，这个邮件被分类为垃圾邮件。</p>
 <blockquote>
-<p>根据朴素贝叶斯的条件独立假设，并设先验概率$P(s)=P(s^{'})=0.5$,则有：		P(s|w_1,w_2,&hellip;,w_n)=$\frac {P(s,w_1,w_2,&hellip;,w_n)}{P(w_1,w_2,&hellip;,w_n)}$</p>
-<p>=$\frac {P(w_1,w_2,&hellip;,w_n|s)P(s)}{P(w_1,w_2,&hellip;,w_n)}$=$\frac {P(w_1,w_2,&hellip;,w_n|s)P(s)}{P(w_1,w_2,&hellip;,w_n|s)\cdot p(s)+P(w_1,w_2,&hellip;,w_n|s^{'})\cdot p(s^{'})}\qquad\qquad$</p>
+<p>根据朴素贝叶斯的条件独立假设，并设先验概率$P(s)=P(s^{&rsquo;})=0.5$,则有：		P(s|w_1,w_2,&hellip;,w_n)=$\frac {P(s,w_1,w_2,&hellip;,w_n)}{P(w_1,w_2,&hellip;,w_n)}$</p>
+<p>=$\frac {P(w_1,w_2,&hellip;,w_n|s)P(s)}{P(w_1,w_2,&hellip;,w_n)}$=$\frac {P(w_1,w_2,&hellip;,w_n|s)P(s)}{P(w_1,w_2,&hellip;,w_n|s)\cdot p(s)+P(w_1,w_2,&hellip;,w_n|s^{&rsquo;})\cdot p(s^{&rsquo;})}\qquad\qquad$</p>
 <p>因为P(spam)=P(not spam),则有</p>
-<p>$\frac {\prod\limits_{j=1}^nP(w_j|s)}{\prod\limits_{j=1}^nP(w_j|s)+\prod\limits_{j=1}^nP(w_j|s^{'})}$
+<p>$\frac {\prod\limits_{j=1}^nP(w_j|s)}{\prod\limits_{j=1}^nP(w_j|s)+\prod\limits_{j=1}^nP(w_j|s^{&rsquo;})}$
 再利用贝叶斯$P(w_j|s)=\frac{P(s|w_j)\cdot P(w_j)}{P(s)}$,式子化为
-$\frac {\prod\limits_{j=1}^nP(s|w_j)}{\prod\limits_{j=1}^nP(s|w_j)+\prod\limits_{j=1}^nP(s^{'}|w_j)}$</p>
+$\frac {\prod\limits_{j=1}^nP(s|w_j)}{\prod\limits_{j=1}^nP(s|w_j)+\prod\limits_{j=1}^nP(s^{&rsquo;}|w_j)}$</p>
 </blockquote>
 <p>具体流程</p>
 <ul>
-<li>对测试集中的每一封邮件做同样的处理，并计算得到$P(s|w)$最高的n个词，在计算过程中，若该词只出现在垃圾邮件的词典中，则令$P(w|s^{'})=0.01$，反之亦然；若都未出现，则令$P(s|w)=0.4$。PS.这里做的几个假设基于前人做的一些研究工作得出的。</li>
+<li>对测试集中的每一封邮件做同样的处理，并计算得到$P(s|w)$最高的n个词，在计算过程中，若该词只出现在垃圾邮件的词典中，则令$P(w|s^{&rsquo;})=0.01$，反之亦然；若都未出现，则令$P(s|w)=0.4$。PS.这里做的几个假设基于前人做的一些研究工作得出的。</li>
 <li>对得到的每封邮件中重要的15个词利用式2计算概率，若概率$&gt;$阈值$\alpha(一般设为0.9)$，则判为垃圾邮件，否则判为正常邮件。</li>
 </ul>
 <p>具体的代码细节可以参见附加的代码。</p>
@@ -409,8 +409,8 @@ $\frac {\prod\limits_{j=1}^nP(s|w_j)}{\prod\limits_{j=1}^nP(s|w_j)+\prod\limits_
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="n">选择29个词汇</span> <span class="p">:</span> <span class="mf">0.9642857142857143</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">选择29个词汇</span> <span class="p">:</span> <span class="mf">0.9642857142857143</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h2 id="附加">附加</h2>
 <ul>
@@ -624,207 +624,201 @@ $\frac {\prod\limits_{j=1}^nP(s|w_j)}{\prod\limits_{j=1}^nP(s|w_j)+\prod\limits_
 </span><span class="lnt">190
 </span><span class="lnt">191
 </span><span class="lnt">192
-</span><span class="lnt">193
-</span><span class="lnt">194
-</span><span class="lnt">195
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="c1"># utils.py</span>
-<span class="kn">import</span> <span class="nn">jieba</span>
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
-
-<span class="n">spam_file_num</span><span class="o">=</span><span class="mi">7775</span> 
-<span class="n">normal_file_num</span><span class="o">=</span><span class="mi">7063</span>
-
-<span class="c1">#todo 原始邮件数据的预处理</span>
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">获取中文的停用词表
-</span><span class="s1">【停用词】（https://zh.wikipedia.org/wiki/</span><span class="si">%E</span><span class="s1">5</span><span class="si">%81%</span><span class="s1">9C</span><span class="si">%E</span><span class="s1">7</span><span class="si">%94%</span><span class="s1">A8</span><span class="si">%E</span><span class="s1">8%AF%8D）
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-<span class="k">def</span> <span class="nf">get_stopwords</span><span class="p">():</span>
-    <span class="k">return</span> <span class="p">[</span>
-        <span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;./data/中文停用词表.txt&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;gbk&#39;</span><span class="p">)</span>
-    <span class="p">]</span>
-
-
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">    读取原始文件，进行简单的处理和分词，返回分词列表
-</span><span class="s1">
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-
-<span class="k">def</span> <span class="nf">get_raw_str_list</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-    <span class="n">stop_list</span> <span class="o">=</span> <span class="n">get_stopwords</span><span class="p">()</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;gbk&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">raw_str</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-    <span class="n">pattern</span> <span class="o">=</span> <span class="s1">&#39;[^</span><span class="se">\u4E00</span><span class="s1">-</span><span class="se">\u9FA5</span><span class="s1">]&#39;</span>  <span class="c1">#中文的unicode编码的范围</span>
-    <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
-    <span class="n">ret</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">raw_str</span><span class="p">)</span>
-    <span class="n">handled_str</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">raw_str</span><span class="p">)</span>
-    <span class="n">str_list</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">word</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">jieba</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">handled_str</span><span class="p">)</span> <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stop_list</span>
-    <span class="p">]</span>
-    <span class="k">return</span> <span class="n">str_list</span>
-
-<span class="c1">#分词以及统计词频，得到词汇表</span>
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">返回一个字典，记录了分词后的词汇表
-</span><span class="s1">path:k可以使dir或者file路径，默认为存放文本的dir
-</span><span class="s1">is_file_path:表示输入路径是不是文件
-</span><span class="s1">
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-
-<span class="k">def</span> <span class="nf">get_voca</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">is_file_path</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">is_file_path</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">read_voca_from_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-
-    <span class="n">voca</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="c1"># 获取垃圾邮件列表</span>
-    <span class="n">file_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">file</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">)]</span>
-    <span class="c1">#获得词汇表</span>
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">file_list</span><span class="p">:</span>  <span class="c1">#测试用</span>
-        <span class="n">raw_str_list</span> <span class="o">=</span> <span class="n">get_raw_str_list</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">file</span><span class="p">))</span>
-        <span class="k">for</span> <span class="n">raw_str</span> <span class="ow">in</span> <span class="n">raw_str_list</span><span class="p">:</span>
-            <span class="n">voca</span><span class="p">[</span><span class="n">raw_str</span><span class="p">]</span> <span class="o">=</span> <span class="n">voca</span><span class="p">[</span><span class="n">raw_str</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
-
-    <span class="k">return</span> <span class="n">voca</span>
-
-
-
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">    将得到的词汇表保存到json文件中，以便下次读取
-</span><span class="s1">    voca:词汇表字典
-</span><span class="s1">    path:文件的保存路径
-</span><span class="s1">    sort_by_value:是否按value值排序
-</span><span class="s1">
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-
-<span class="k">def</span> <span class="nf">save_voca2json</span><span class="p">(</span><span class="n">voca</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">sort_by_value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">indent_</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">sort_by_value</span><span class="p">:</span>
-        <span class="n">sorted_by_value</span><span class="p">(</span><span class="n">voca</span><span class="p">)</span>
-
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">voca</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent_</span><span class="p">))</span>
-
-
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">从json文件中读取voca
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-<span class="k">def</span> <span class="nf">read_voca_from_file</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-    <span class="n">voca</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">voca</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">voca</span>
-
-
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">将字典基于value排序
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-<span class="k">def</span> <span class="nf">sorted_by_value</span><span class="p">(</span><span class="n">_dict</span><span class="p">):</span>
-    <span class="n">_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">spam_voca</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-
-
-<span class="c1">#计算 P(Spam|word)</span>
-
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">    计算邮件和邮件分类最相关词语及其 P(spam|word)
-</span><span class="s1">    words_size:最终使用词语的数量，用于最后的预测
-</span><span class="s1">
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-<span class="k">def</span> <span class="nf">get_top_words_prob</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">,</span><span class="n">words_size</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
-    <span class="n">critical_words</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">get_raw_str_list</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">spam_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">normal_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="c1"># 如果word在两边都出现</span>
-            <span class="n">p_w_s</span><span class="o">=</span><span class="n">spam_voca</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">/</span><span class="n">spam_file_num</span>
-            <span class="n">p_w_n</span><span class="o">=</span><span class="n">normal_voca</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">/</span><span class="n">normal_file_num</span>
-            <span class="n">p_s_w</span><span class="o">=</span><span class="n">p_w_s</span><span class="o">/</span><span class="p">(</span><span class="n">p_w_n</span><span class="o">+</span><span class="n">p_w_s</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">spam_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">normal_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="c1"># 如果word只在spam出现</span>
-            <span class="n">p_w_s</span><span class="o">=</span><span class="n">spam_voca</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">/</span><span class="n">spam_file_num</span>
-            <span class="n">p_w_n</span><span class="o">=</span><span class="mf">0.01</span>
-            <span class="n">p_s_w</span><span class="o">=</span><span class="n">p_w_s</span><span class="o">/</span><span class="p">(</span><span class="n">p_w_n</span><span class="o">+</span><span class="n">p_w_s</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spam_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">normal_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="c1"># 如果word只在normal出现</span>
-            <span class="n">p_w_s</span><span class="o">=</span><span class="mf">0.01</span>
-            <span class="n">p_w_n</span><span class="o">=</span><span class="n">normal_voca</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">/</span><span class="n">normal_file_num</span>
-            <span class="n">p_s_w</span><span class="o">=</span><span class="n">p_w_s</span><span class="o">/</span><span class="p">(</span><span class="n">p_w_n</span><span class="o">+</span><span class="n">p_w_s</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1">#如果都不出现</span>
-            <span class="n">p_s_w</span><span class="o">=</span><span class="mf">0.4</span>
-        <span class="c1">#以上设定的数值均是基于前人的研究得到的数据</span>
-        <span class="n">critical_words</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">word</span><span class="p">,</span><span class="n">p_s_w</span><span class="p">])</span>
-
-    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">critical_words</span><span class="p">[:</span><span class="n">words_size</span><span class="p">],</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">    计算贝叶斯概率
-</span><span class="s1">    words_prob：包含词汇以及其P(spam|word)概率的一个字典
-</span><span class="s1">    spam_voca:垃圾邮件词汇表
-</span><span class="s1">    normal_voca:正常邮件词汇表
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-
-<span class="k">def</span> <span class="nf">caculate_bayes</span><span class="p">(</span><span class="n">words_prob</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">):</span>
-    <span class="n">p_s_w</span><span class="o">=</span><span class="mi">1</span>
-    <span class="n">p_s_nw</span><span class="o">=</span><span class="mi">1</span>
-    <span class="k">for</span> <span class="n">word</span><span class="p">,</span><span class="n">prob</span> <span class="ow">in</span> <span class="n">words_prob</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">p_s_w</span><span class="o">*=</span><span class="n">prob</span>
-        <span class="n">p_s_nw</span><span class="o">*=</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">prob</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">p_s_w</span><span class="o">/</span><span class="p">(</span><span class="n">p_s_w</span><span class="o">+</span><span class="n">p_s_nw</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">bayes</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.9</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">bayes</span><span class="o">&gt;=</span><span class="n">threshold</span>    
-
-
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">    返回文件名和label
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-<span class="k">def</span> <span class="nf">get_files_labels</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span><span class="n">is_spam</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="n">raw_files_list</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
-    <span class="n">files_list</span><span class="o">=</span> <span class="p">[</span><span class="n">dir_path</span><span class="o">+</span><span class="n">file</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">raw_files_list</span><span class="p">]</span>
-    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="n">is_spam</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">files_list</span><span class="p">))]</span>
-    <span class="k">return</span> <span class="n">files_list</span><span class="p">,</span><span class="n">labels</span>
-
-
-<span class="s1">&#39;&#39;&#39;
-</span><span class="s1">    预测测试集结果并打印
-</span><span class="s1">    file_list：测试集文件路径集合
-</span><span class="s1">    y:测试集结果标签
-</span><span class="s1">    word_size：预测的指标
-</span><span class="s1">&#39;&#39;&#39;</span>
-
-<span class="k">def</span> <span class="nf">predict_result</span><span class="p">(</span><span class="n">file_list</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">,</span><span class="n">word_size</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
-    <span class="n">ret</span><span class="o">=</span><span class="p">[]</span>
-    <span class="n">right</span><span class="o">=</span><span class="mi">0</span>
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">file_list</span><span class="p">:</span>
-<span class="c1">#         raw_strs=get_raw_str_list(str(file))</span>
-        <span class="n">words_prob</span><span class="o">=</span><span class="n">get_top_words_prob</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">,</span><span class="n">words_size</span><span class="o">=</span><span class="n">word_size</span><span class="p">)</span>
-        <span class="n">bayes</span><span class="o">=</span><span class="n">caculate_bayes</span><span class="p">(</span><span class="n">words_prob</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">)</span>
-        <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">predict</span><span class="p">(</span><span class="n">bayes</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)):</span>
-        <span class="k">if</span> <span class="n">ret</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
-            <span class="n">right</span><span class="o">+=</span><span class="mi">1</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="n">right</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-
-
-
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># utils.py</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">jieba</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">numpy</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">re</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">os</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">spam_file_num</span><span class="o">=</span><span class="mi">7775</span> 
+</span></span><span class="line"><span class="cl"><span class="n">normal_file_num</span><span class="o">=</span><span class="mi">7063</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#todo 原始邮件数据的预处理</span>
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">获取中文的停用词表
+</span></span></span><span class="line"><span class="cl"><span class="s1">【停用词】（https://zh.wikipedia.org/wiki/</span><span class="si">%E</span><span class="s1">5</span><span class="si">%81%</span><span class="s1">9C</span><span class="si">%E</span><span class="s1">7</span><span class="si">%94%</span><span class="s1">A8</span><span class="si">%E</span><span class="s1">8%AF%8D）
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_stopwords</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;./data/中文停用词表.txt&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;gbk&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">    读取原始文件，进行简单的处理和分词，返回分词列表
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_raw_str_list</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">stop_list</span> <span class="o">=</span> <span class="n">get_stopwords</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;gbk&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">raw_str</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pattern</span> <span class="o">=</span> <span class="s1">&#39;[^</span><span class="se">\u4E00</span><span class="s1">-</span><span class="se">\u9FA5</span><span class="s1">]&#39;</span>  <span class="c1">#中文的unicode编码的范围</span>
+</span></span><span class="line"><span class="cl">    <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ret</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">raw_str</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">handled_str</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">raw_str</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">str_list</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="n">word</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">jieba</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">handled_str</span><span class="p">)</span> <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stop_list</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">str_list</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#分词以及统计词频，得到词汇表</span>
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">返回一个字典，记录了分词后的词汇表
+</span></span></span><span class="line"><span class="cl"><span class="s1">path:k可以使dir或者file路径，默认为存放文本的dir
+</span></span></span><span class="line"><span class="cl"><span class="s1">is_file_path:表示输入路径是不是文件
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_voca</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">is_file_path</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">is_file_path</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">read_voca_from_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">voca</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># 获取垃圾邮件列表</span>
+</span></span><span class="line"><span class="cl">    <span class="n">file_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">file</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">)]</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#获得词汇表</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">file_list</span><span class="p">:</span>  <span class="c1">#测试用</span>
+</span></span><span class="line"><span class="cl">        <span class="n">raw_str_list</span> <span class="o">=</span> <span class="n">get_raw_str_list</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">file</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">raw_str</span> <span class="ow">in</span> <span class="n">raw_str_list</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">voca</span><span class="p">[</span><span class="n">raw_str</span><span class="p">]</span> <span class="o">=</span> <span class="n">voca</span><span class="p">[</span><span class="n">raw_str</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">voca</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">    将得到的词汇表保存到json文件中，以便下次读取
+</span></span></span><span class="line"><span class="cl"><span class="s1">    voca:词汇表字典
+</span></span></span><span class="line"><span class="cl"><span class="s1">    path:文件的保存路径
+</span></span></span><span class="line"><span class="cl"><span class="s1">    sort_by_value:是否按value值排序
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">save_voca2json</span><span class="p">(</span><span class="n">voca</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">sort_by_value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">indent_</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">sort_by_value</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sorted_by_value</span><span class="p">(</span><span class="n">voca</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">voca</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent_</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">从json文件中读取voca
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">read_voca_from_file</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">voca</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl">    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">voca</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">voca</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">将字典基于value排序
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">sorted_by_value</span><span class="p">(</span><span class="n">_dict</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">spam_voca</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#计算 P(Spam|word)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">    计算邮件和邮件分类最相关词语及其 P(spam|word)
+</span></span></span><span class="line"><span class="cl"><span class="s1">    words_size:最终使用词语的数量，用于最后的预测
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_top_words_prob</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">,</span><span class="n">words_size</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">critical_words</span><span class="o">=</span><span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">get_raw_str_list</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">spam_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">normal_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 如果word在两边都出现</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_w_s</span><span class="o">=</span><span class="n">spam_voca</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">/</span><span class="n">spam_file_num</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_w_n</span><span class="o">=</span><span class="n">normal_voca</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">/</span><span class="n">normal_file_num</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_s_w</span><span class="o">=</span><span class="n">p_w_s</span><span class="o">/</span><span class="p">(</span><span class="n">p_w_n</span><span class="o">+</span><span class="n">p_w_s</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">elif</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">spam_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">normal_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 如果word只在spam出现</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_w_s</span><span class="o">=</span><span class="n">spam_voca</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">/</span><span class="n">spam_file_num</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_w_n</span><span class="o">=</span><span class="mf">0.01</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_s_w</span><span class="o">=</span><span class="n">p_w_s</span><span class="o">/</span><span class="p">(</span><span class="n">p_w_n</span><span class="o">+</span><span class="n">p_w_s</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">elif</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spam_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">normal_voca</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 如果word只在normal出现</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_w_s</span><span class="o">=</span><span class="mf">0.01</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_w_n</span><span class="o">=</span><span class="n">normal_voca</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">/</span><span class="n">normal_file_num</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_s_w</span><span class="o">=</span><span class="n">p_w_s</span><span class="o">/</span><span class="p">(</span><span class="n">p_w_n</span><span class="o">+</span><span class="n">p_w_s</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">#如果都不出现</span>
+</span></span><span class="line"><span class="cl">            <span class="n">p_s_w</span><span class="o">=</span><span class="mf">0.4</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">#以上设定的数值均是基于前人的研究得到的数据</span>
+</span></span><span class="line"><span class="cl">        <span class="n">critical_words</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">word</span><span class="p">,</span><span class="n">p_s_w</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">critical_words</span><span class="p">[:</span><span class="n">words_size</span><span class="p">],</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">    计算贝叶斯概率
+</span></span></span><span class="line"><span class="cl"><span class="s1">    words_prob：包含词汇以及其P(spam|word)概率的一个字典
+</span></span></span><span class="line"><span class="cl"><span class="s1">    spam_voca:垃圾邮件词汇表
+</span></span></span><span class="line"><span class="cl"><span class="s1">    normal_voca:正常邮件词汇表
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">caculate_bayes</span><span class="p">(</span><span class="n">words_prob</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p_s_w</span><span class="o">=</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p_s_nw</span><span class="o">=</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">word</span><span class="p">,</span><span class="n">prob</span> <span class="ow">in</span> <span class="n">words_prob</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="n">p_s_w</span><span class="o">*=</span><span class="n">prob</span>
+</span></span><span class="line"><span class="cl">        <span class="n">p_s_nw</span><span class="o">*=</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">prob</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">p_s_w</span><span class="o">/</span><span class="p">(</span><span class="n">p_s_w</span><span class="o">+</span><span class="n">p_s_nw</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">bayes</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.9</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">bayes</span><span class="o">&gt;=</span><span class="n">threshold</span>    
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">    返回文件名和label
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_files_labels</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span><span class="n">is_spam</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">raw_files_list</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">files_list</span><span class="o">=</span> <span class="p">[</span><span class="n">dir_path</span><span class="o">+</span><span class="n">file</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">raw_files_list</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="n">is_spam</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">files_list</span><span class="p">))]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">files_list</span><span class="p">,</span><span class="n">labels</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">    预测测试集结果并打印
+</span></span></span><span class="line"><span class="cl"><span class="s1">    file_list：测试集文件路径集合
+</span></span></span><span class="line"><span class="cl"><span class="s1">    y:测试集结果标签
+</span></span></span><span class="line"><span class="cl"><span class="s1">    word_size：预测的指标
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">predict_result</span><span class="p">(</span><span class="n">file_list</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">,</span><span class="n">word_size</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ret</span><span class="o">=</span><span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">right</span><span class="o">=</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">file_list</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#         raw_strs=get_raw_str_list(str(file))</span>
+</span></span><span class="line"><span class="cl">        <span class="n">words_prob</span><span class="o">=</span><span class="n">get_top_words_prob</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">,</span><span class="n">words_size</span><span class="o">=</span><span class="n">word_size</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">bayes</span><span class="o">=</span><span class="n">caculate_bayes</span><span class="p">(</span><span class="n">words_prob</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">predict</span><span class="p">(</span><span class="n">bayes</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">ret</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">right</span><span class="o">+=</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">right</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -847,30 +841,28 @@ $\frac {\prod\limits_{j=1}^nP(s|w_j)}{\prod\limits_{j=1}^nP(s|w_j)+\prod\limits_
 </span><span class="lnt">17
 </span><span class="lnt">18
 </span><span class="lnt">19
-</span><span class="lnt">20
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="c1">#main.py</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="o">*</span>
-
-<span class="k">if</span> <span class="vm">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="c1">#获取词典并保存，一遍下次读取</span>
-    <span class="n">spam_voca</span><span class="o">=</span><span class="n">get_voca</span><span class="p">(</span><span class="s1">&#39;./spam_voca.json&#39;</span><span class="p">,</span><span class="n">is_file_path</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">normal_voca</span><span class="o">=</span><span class="n">get_voca</span><span class="p">(</span><span class="s1">&#39;./normal_voca.json&#39;</span><span class="p">,</span><span class="n">is_file_path</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="c1">#保存方便下次读取</span>
-    <span class="n">save_voca2json</span><span class="p">(</span><span class="n">spam_voca</span><span class="p">,</span><span class="s1">&#39;./spam_voca.json&#39;</span><span class="p">)</span>
-    <span class="n">save_voca2json</span><span class="p">(</span><span class="n">normal_voca</span><span class="p">,</span><span class="s1">&#39;./snormal_voca.json&#39;</span><span class="p">)</span>
-    <span class="c1">#预处理测试数据</span>
-    <span class="n">s_x</span><span class="p">,</span><span class="n">s_y</span><span class="o">=</span><span class="n">get_files_labels</span><span class="p">(</span><span class="s1">&#39;./data/test/spam/&#39;</span><span class="p">)</span>
-    <span class="n">n_x</span><span class="p">,</span><span class="n">n_y</span><span class="o">=</span><span class="n">get_files_labels</span><span class="p">(</span><span class="s1">&#39;./data/test/normal/&#39;</span><span class="p">,</span><span class="n">is_spam</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">s_x</span><span class="o">+</span><span class="n">n_x</span><span class="p">),</span><span class="n">s_y</span><span class="o">+</span><span class="n">n_y</span>
-    <span class="c1">#预测结果</span>
-
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">40</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39; : &#39;</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
-        <span class="n">predict_result</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">,</span><span class="n">word_size</span><span class="o">=</span><span class="n">i</span><span class="p">)</span>
-
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1">#main.py</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#获取词典并保存，一遍下次读取</span>
+</span></span><span class="line"><span class="cl">    <span class="n">spam_voca</span><span class="o">=</span><span class="n">get_voca</span><span class="p">(</span><span class="s1">&#39;./spam_voca.json&#39;</span><span class="p">,</span><span class="n">is_file_path</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">normal_voca</span><span class="o">=</span><span class="n">get_voca</span><span class="p">(</span><span class="s1">&#39;./normal_voca.json&#39;</span><span class="p">,</span><span class="n">is_file_path</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#保存方便下次读取</span>
+</span></span><span class="line"><span class="cl">    <span class="n">save_voca2json</span><span class="p">(</span><span class="n">spam_voca</span><span class="p">,</span><span class="s1">&#39;./spam_voca.json&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">save_voca2json</span><span class="p">(</span><span class="n">normal_voca</span><span class="p">,</span><span class="s1">&#39;./snormal_voca.json&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#预处理测试数据</span>
+</span></span><span class="line"><span class="cl">    <span class="n">s_x</span><span class="p">,</span><span class="n">s_y</span><span class="o">=</span><span class="n">get_files_labels</span><span class="p">(</span><span class="s1">&#39;./data/test/spam/&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">n_x</span><span class="p">,</span><span class="n">n_y</span><span class="o">=</span><span class="n">get_files_labels</span><span class="p">(</span><span class="s1">&#39;./data/test/normal/&#39;</span><span class="p">,</span><span class="n">is_spam</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">s_x</span><span class="o">+</span><span class="n">n_x</span><span class="p">),</span><span class="n">s_y</span><span class="o">+</span><span class="n">n_y</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#预测结果</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">40</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39; : &#39;</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">predict_result</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">spam_voca</span><span class="p">,</span><span class="n">normal_voca</span><span class="p">,</span><span class="n">word_size</span><span class="o">=</span><span class="n">i</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div></li>
 </ul>
@@ -913,7 +905,7 @@ $\frac {\prod\limits_{j=1}^nP(s|w_j)}{\prod\limits_{j=1}^nP(s|w_j)+\prod\limits_
       
       <nav class="post-nav">
         
-          <a class="prev" href="/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/">
+          <a class="prev" href="/post/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93--%E5%89%8D%E7%AB%AF/">
             
             <i class="iconfont">
               <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"

@@ -32,7 +32,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.92.0" />
+<meta name="generator" content="Hugo 0.93.1" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/arch&#43;dwm%E5%A5%97%E9%A4%90/" />
@@ -431,9 +431,9 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">2
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell">fdisk -l 查看硬盘信息
-利用cfdisk /dev/nvme 对硬盘分区
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">fdisk -l 查看硬盘信息
+</span></span><span class="line"><span class="cl">利用cfdisk /dev/nvme 对硬盘分区
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="分区格式化">分区格式化</h4>
 <div class="highlight"><div class="chroma">
@@ -443,10 +443,10 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span><span class="lnt">3
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell">mkfs.ext4 <span class="si">${</span><span class="nv">root</span><span class="si">}</span>
-mkswap <span class="si">${</span><span class="nv">swap</span><span class="si">}</span>
-mkfs.fat -F <span class="m">32</span> <span class="si">${</span><span class="nv">efi</span><span class="si">}</span>
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">mkfs.ext4 <span class="si">${</span><span class="nv">root</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl">mkswap <span class="si">${</span><span class="nv">swap</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl">mkfs.fat -F <span class="m">32</span> <span class="si">${</span><span class="nv">efi</span><span class="si">}</span>
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="分区配置和安装系统">分区配置和安装系统</h4>
 <ul>
@@ -467,9 +467,9 @@ mkfs.fat -F <span class="m">32</span> <span class="si">${</span><span class="nv"
 </span><span class="lnt">2
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell">mount /dev/<span class="si">${</span><span class="nv">root_partition</span><span class="si">}</span> /mnt
-arch-chroot /mnt
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">mount /dev/<span class="si">${</span><span class="nv">root_partition</span><span class="si">}</span> /mnt
+</span></span><span class="line"><span class="cl">arch-chroot /mnt
+</span></span></code></pre></td></tr></table>
 </div>
 </div><ul>
 <li>
@@ -557,22 +557,22 @@ arch-chroot /mnt
 </span><span class="lnt">15
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="c1"># .xinitc</span>
-fcitx5 <span class="p">&amp;</span>
-xautolock -time <span class="m">10</span> -locker slock <span class="p">&amp;</span>
-
-autorandr -l home
-picom -b
-feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
-<span class="nb">exec</span> slstatus <span class="p">&amp;</span>
-<span class="nb">exec</span> dwm
-
-<span class="c1"># .xprofile</span>
-<span class="nb">export</span> <span class="nv">INPUT_METHOD</span><span class="o">=</span>fcitx5
-<span class="nb">export</span> <span class="nv">GTK_IM_MODULE</span><span class="o">=</span>fcitx5
-<span class="nb">export</span> <span class="nv">QT_IM_MODULE</span><span class="o">=</span>fcitx5
-<span class="nb">export</span> <span class="nv">XMODIFIERS</span><span class="o">=</span>@im<span class="o">=</span>fcitx5
-</code></pre></td></tr></table>
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="c1"># .xinitc</span>
+</span></span><span class="line"><span class="cl">fcitx5 <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl">xautolock -time <span class="m">10</span> -locker slock <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">autorandr -l home
+</span></span><span class="line"><span class="cl">picom -b
+</span></span><span class="line"><span class="cl">feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
+</span></span><span class="line"><span class="cl"><span class="nb">exec</span> slstatus <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">exec</span> dwm
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># .xprofile</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">INPUT_METHOD</span><span class="o">=</span>fcitx5
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">GTK_IM_MODULE</span><span class="o">=</span>fcitx5
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">QT_IM_MODULE</span><span class="o">=</span>fcitx5
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">XMODIFIERS</span><span class="o">=</span>@im<span class="o">=</span>fcitx5
+</span></span></code></pre></td></tr></table>
 </div>
 </div><h4 id="美化以及易用">美化以及易用</h4>
 <table>
