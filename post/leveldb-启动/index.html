@@ -415,22 +415,18 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span></span><span class="line"><span class="cl">└── MANIFEST-000007   // descriptor_file, 元数据文件
 </span></span></code></pre></td></tr></table>
 </div>
-</div><blockquote>
-<p>值得深究的问题，之后也许会写相关博客，暂时先抛出：</p>
+</div><p>值得深究的问题，之后也许会写相关博客，暂时先抛出：</p>
 <ul>
-<li>
-<p>LOCK怎么保证只有一个DB实例持有数据库</p>
+<li>LOCK怎么保证只有一个DB实例持有数据库</li>
+</ul>
 <blockquote>
 <p>其实本质上是利用<code>fcntl</code>系统调用，在LOCK文件上设置写锁</p>
 </blockquote>
-</li>
-<li>
-<p>各种文件的编码问题</p>
+<ul>
+<li>各种文件的编码问题</li>
+</ul>
 <blockquote>
 <p>之后会有相关博客说说leveldb的编码设计</p>
-</blockquote>
-</li>
-</ul>
 </blockquote>
 <h3 id="db-state">DB State</h3>
 <p>Leveldb是一种嵌入式数据库，一般作为一些应用的组件存在（比如用于分布式存储系统中元数据节点的数据落盘）。这些应用可能会crush或者优雅退出，此时会有遗留的leveldb数据文件存在，所以我们一般需要在启动时恢复原先数据库的状态。故而我们需要明确一个db实例的状态信息，以便在使用时确保这些数据crush save，在启动时能及时回复数据状态机。</p>

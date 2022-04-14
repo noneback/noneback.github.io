@@ -80,22 +80,18 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;└── MANIFEST-000007   // descriptor_file, 元数据文件
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;blockquote&gt;
-&lt;p&gt;值得深究的问题，之后也许会写相关博客，暂时先抛出：&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;值得深究的问题，之后也许会写相关博客，暂时先抛出：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;LOCK怎么保证只有一个DB实例持有数据库&lt;/p&gt;
+&lt;li&gt;LOCK怎么保证只有一个DB实例持有数据库&lt;/li&gt;
+&lt;/ul&gt;
 &lt;blockquote&gt;
 &lt;p&gt;其实本质上是利用&lt;code&gt;fcntl&lt;/code&gt;系统调用，在LOCK文件上设置写锁&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;各种文件的编码问题&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;各种文件的编码问题&lt;/li&gt;
+&lt;/ul&gt;
 &lt;blockquote&gt;
 &lt;p&gt;之后会有相关博客说说leveldb的编码设计&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;h3 id=&#34;db-state&#34;&gt;DB State&lt;/h3&gt;
 &lt;p&gt;Leveldb是一种嵌入式数据库，一般作为一些应用的组件存在（比如用于分布式存储系统中元数据节点的数据落盘）。这些应用可能会crush或者优雅退出，此时会有遗留的leveldb数据文件存在，所以我们一般需要在启动时恢复原先数据库的状态。故而我们需要明确一个db实例的状态信息，以便在使用时确保这些数据crush save，在启动时能及时回复数据状态机。&lt;/p&gt;
