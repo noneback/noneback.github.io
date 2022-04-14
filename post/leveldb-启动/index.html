@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>LevelDB 启动 - NoneBack</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="NoneBack" />
+  <meta name="description" content="之前就听LevelDB是所有搞存储的人都会读的一个代码库。最近正好忙完了搞完了毕设的代码，稍微闲了一些，于是也打算看看LevelDB的源码。" />
+<meta name="keywords" content="LevelDB, LSM, KV" />
+
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.96.0" />
+
+
+<link rel="canonical" href="https://noneback.github.io/post/leveldb-%E5%90%AF%E5%8A%A8/" />
+
+
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.fa4b2b9f31b5c6d0b683db81157a9226e17b06e61911791ab547242a4a0556f2.css" integrity="sha256-&#43;ksrnzG1xtC2g9uBFXqSJuF7BuYZEXkatUckKkoFVvI=" media="screen" crossorigin="anonymous">
+
+
+
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+<meta property="og:title" content="LevelDB 启动" />
+<meta property="og:description" content="之前就听LevelDB是所有搞存储的人都会读的一个代码库。最近正好忙完了搞完了毕设的代码，稍微闲了一些，于是也打算看看LevelDB的源码。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/post/leveldb-%E5%90%AF%E5%8A%A8/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2022-04-09T14:43:25+08:00" />
+<meta property="article:modified_time" content="2022-04-09T14:43:25+08:00" />
+
+<meta itemprop="name" content="LevelDB 启动">
+<meta itemprop="description" content="之前就听LevelDB是所有搞存储的人都会读的一个代码库。最近正好忙完了搞完了毕设的代码，稍微闲了一些，于是也打算看看LevelDB的源码。"><meta itemprop="datePublished" content="2022-04-09T14:43:25+08:00" />
+<meta itemprop="dateModified" content="2022-04-09T14:43:25+08:00" />
+<meta itemprop="wordCount" content="3210">
+<meta itemprop="keywords" content="LevelDB,LSM,LevelDB," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="LevelDB 启动"/>
+<meta name="twitter:description" content="之前就听LevelDB是所有搞存储的人都会读的一个代码库。最近正好忙完了搞完了毕设的代码，稍微闲了一些，于是也打算看看LevelDB的源码。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">今日目标:摸鱼</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      今日目标:摸鱼
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://github.com/noneback" rel="noopener" target="_blank">
+              NoneBack
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+
+    
+    
+
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+    
+    <header class="post-header">
+      <h1 class="post-title">LevelDB 启动</h1>
+      
+      <div class="post-meta">
+        <time datetime="2022-04-09" class="post-time">
+          2022-04-09
+        </time>
+        <div class="post-category">
+            <a href="https://noneback.github.io/categories/storage/"> Storage </a>
+            <a href="https://noneback.github.io/categories/lsm/"> LSM </a>
+            <a href="https://noneback.github.io/categories/leveldb/"> LevelDB </a>
+            
+          </div>
+        
+
+        
+        
+
+        
+        
+      </div>
+    </header>
+
+    
+    
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#预备知识">预备知识</a>
+      <ul>
+        <li><a href="#数据库文件">数据库文件</a></li>
+        <li><a href="#db-state">DB State</a></li>
+        <li><a href="#版本控制">版本控制</a></li>
+      </ul>
+    </li>
+    <li><a href="#db-state恢复流程">DB State恢复流程</a></li>
+    <li><a href="#主体的open流程">主体的Open流程</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+
+    
+    <div class="post-content">
+      <!-- raw HTML omitted -->
+<p>之前就听LevelDB是所有搞存储的人都会读的一个代码库。最近正好忙完了搞完了毕设的代码，稍微闲了一些，于是也打算看看LevelDB的源码。</p>
+<p>这是LevelDB源码阅读笔记第一章，有关LevelDB的启动流程。本文并不是<strong>step by step</strong>的源码阅读教程，而是仅仅作为我的学习笔记，简单记录我的问题与思考。</p>
+<p>带注释的代码库之后应该也会放在github上供大家学习参考。</p>
+<h2 id="预备知识">预备知识</h2>
+<h3 id="数据库文件">数据库文件</h3>
+<p>编码和命名等等等设计的相关的细节暂时不论（我也没看到那部分），先专注与文件的意义与作用</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">├── 000005.ldb
+</span></span><span class="line"><span class="cl">├── 000008.ldb  // sst or ldb 都是 sst文件
+</span></span><span class="line"><span class="cl">├── 000009.log  // WAL
+</span></span><span class="line"><span class="cl">├── CURRENT  // 记录了使用的manifest文件的名字也用于表示数据库存在
+</span></span><span class="line"><span class="cl">├── LOCK  // 空文件，用于保证只有一个db实例操作数据库
+</span></span><span class="line"><span class="cl">├── LOG  // level打印的日志
+</span></span><span class="line"><span class="cl">├── LOG.old 
+</span></span><span class="line"><span class="cl">└── MANIFEST-000007   // descriptor_file, 元数据文件
+</span></span></code></pre></td></tr></table>
+</div>
+</div><blockquote>
+<p>值得深究的问题，之后也许会写相关博客，暂时先抛出：</p>
+<ul>
+<li>
+<p>LOCK怎么保证只有一个DB实例持有数据库</p>
+<blockquote>
+<p>其实本质上是利用<code>fcntl</code>系统调用，在LOCK文件上设置写锁</p>
+</blockquote>
+</li>
+<li>
+<p>各种文件的编码问题</p>
+<blockquote>
+<p>之后会有相关博客说说leveldb的编码设计</p>
+</blockquote>
+</li>
+</ul>
+</blockquote>
+<h3 id="db-state">DB State</h3>
+<p>Leveldb是一种嵌入式数据库，一般作为一些应用的组件存在（比如用于分布式存储系统中元数据节点的数据落盘）。这些应用可能会crush或者优雅退出，此时会有遗留的leveldb数据文件存在，所以我们一般需要在启动时恢复原先数据库的状态。故而我们需要明确一个db实例的状态信息，以便在使用时确保这些数据crush save，在启动时能及时回复数据状态机。</p>
+<p>那么第一个问题是DB state应该包括什么？leveldb是一个LSM存储引擎，本质上是<code>LSM Tree 数据结构 + 各种读写和存储优化</code>，基于此，结合leveldb的文档，DB state包含的需要持久化信息至少有：</p>
+<ul>
+<li>
+<p>每层Level对应相关的sst文件，每个sst文件对应的key range</p>
+<blockquote>
+<p>key range 主要是为了避免不必要的IO</p>
+</blockquote>
+</li>
+<li>
+<p>全局逻辑时钟，last_seq_number</p>
+<blockquote>
+<p>数据更新都有个seq_num 标记更新操作的新旧, 并与排序相关</p>
+</blockquote>
+</li>
+<li>
+<p>compaction相关的参数 (file_to_compact, score, point)</p>
+<blockquote>
+<p>compact 相关, 以便在crush之后出发compaction</p>
+</blockquote>
+</li>
+<li>
+<p>cmp name</p>
+<blockquote>
+<p>db初始化后，数据的排序逻辑就确定了，不允许被更改，用此名字作为凭证</p>
+</blockquote>
+</li>
+<li>
+<p>log_number, next_file_number</p>
+<blockquote>
+<p>wal的编号 和 下一个可用的file编号</p>
+</blockquote>
+</li>
+<li>
+<p>deleted_files 和 add_files</p>
+<blockquote>
+<p>compaction 或者 ref == 0 等原因导致的需要删除和添加的sst文件</p>
+</blockquote>
+</li>
+</ul>
+<p>具体实现上，每次leveldb的元数据变更行为（一般由Compact导致）都会被记录在<code>VersionEdit</code>这个数据结构之中，所以leveldb的DB State实际上是<code>初始状态 + list of Applied VersionEdit</code>。</p>
+<h3 id="版本控制">版本控制</h3>
+<p>既然说到了VersionEdit, 那就顺带说一说启动流程里有关LevelDB的版本控制相关的设计，主要涉及<code>Version</code>, <code>VersionEdit</code>,<code>VersionSet</code>三种数据结构。</p>
+<p>为什么需要版本控制？简单来说就是leveldb使用了MVCC机制来避免使用大锁来提高性能。</p>
+<p>命令记录级别的快照读是通过<code>sequence_number</code>来实现的，所有操作都会附带当前的<code>sequence_number</code>，以此判断当前操作允许读取的数据，大于命令seq_number的记录对于操作将不可见。</p>
+<p>sst文件级别的MVCC是通过Version链实现的，主要为了避免以下场景的冲突：正在读取某个文件时，而后台major compaction试图删除此文件。</p>
+<h4 id="相关数据结构">相关数据结构</h4>
+<p>与启动流程相关的主要是sst级别的MVCC，主要有<code>Version</code>，<code>VersionEdit</code>，<code>VersionSet</code>三个数据结构。</p>
+<h5 id="version">Version</h5>
+<p>每次启动时或者Compact之后最新的数据状态。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Version</span> <span class="p">{</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">VersionSet</span><span class="o">*</span> <span class="n">vset_</span><span class="p">;</span>  <span class="c1">// VersionSet to which this Version belongs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="n">Version</span><span class="o">*</span> <span class="n">next_</span><span class="p">;</span>     <span class="c1">// Next version in linked list
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="n">Version</span><span class="o">*</span> <span class="n">prev_</span><span class="p">;</span>     <span class="c1">// Previous version in linked list
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="kt">int</span> <span class="n">refs_</span><span class="p">;</span>          <span class="c1">// Number of live refs to this version
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// List of files and meta per level
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FileMetaData</span><span class="o">*&gt;</span> <span class="n">files_</span><span class="p">[</span><span class="n">config</span><span class="o">::</span><span class="n">kNumLevels</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Next file to compact based on seek stats. （allowed_seek耗尽导致的compact）
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">file_to_compact_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="kt">int</span> <span class="n">file_to_compact_level_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Level that should be compacted next and its compaction score.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="c1">// Score &lt; 1 means compaction is not strictly needed.  These fields
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="c1">// are initialized by Finalize().
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="kt">double</span> <span class="n">compaction_score_</span><span class="p">;</span>  <span class="c1">// score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="kt">int</span> <span class="n">compaction_level_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h5 id="versionset">VersionSet</h5>
+<p>管理整个db的当前运行时状态。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">VersionSet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Env</span><span class="o">*</span> <span class="k">const</span> <span class="n">env_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">dbname_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">Options</span><span class="o">*</span> <span class="k">const</span> <span class="n">options_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">TableCache</span><span class="o">*</span> <span class="k">const</span> <span class="n">table_cache_</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">InternalKeyComparator</span> <span class="n">icmp_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">next_file_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">manifest_file_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">last_sequence_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">log_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">prev_log_number_</span><span class="p">;</span>  <span class="c1">// 0 or backing store for memtable being compacted
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Opened lazily
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WritableFile</span><span class="o">*</span> <span class="n">descriptor_file_</span><span class="p">;</span> <span class="c1">// descriptor_ is for manifest file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">log</span><span class="o">::</span><span class="n">Writer</span><span class="o">*</span> <span class="n">descriptor_log_</span><span class="p">;</span> <span class="c1">// descriptor_ is for manifest file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">Version</span> <span class="n">dummy_versions_</span><span class="p">;</span>  <span class="c1">// Head of circular doubly-linked list of versions. 正在使用的version的链表
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">Version</span><span class="o">*</span> <span class="n">current_</span><span class="p">;</span>        <span class="c1">// == dummy_versions_.prev_
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Per-level key at which the next compaction at that level should start.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// Either an empty string, or a valid InternalKey.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">compact_pointer_</span><span class="p">[</span><span class="n">config</span><span class="o">::</span><span class="n">kNumLevels</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h5 id="versionedit">VersionEdit</h5>
+<p>元数据变更行为的数据与操作的封装。这样的封装可以缩小Version切换的时间窗口。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">VersionEdit</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="cm">/** other code */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span> <span class="kt">uint64_t</span><span class="o">&gt;&gt;</span> <span class="n">DeletedFileSet</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">comparator_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">log_number_</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">prev_log_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">next_file_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">SequenceNumber</span> <span class="n">last_sequence_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_comparator_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_log_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_prev_log_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_next_file_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_last_sequence_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span> <span class="n">InternalKey</span><span class="o">&gt;&gt;</span> <span class="n">compact_pointers_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">DeletedFileSet</span> <span class="n">deleted_files_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span> <span class="n">FileMetaData</span><span class="o">&gt;&gt;</span> <span class="n">new_files_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="manifest-content">Manifest Content</h4>
+<p>上文我们说到Manifest是leveldb的元数据文件，保存了数据库需要持久化的状态。leveldb在启动流程中，可能需要通过已有的数据文件回复原有db的状态。除此之外，但出现版本变更时，leveldb会生成VersionEdit, VersionEdit记录的元数据变动也需要及时持久化到manifest中，以此保证leveldb MVCC多版本状态的Crush Safe。所以Manifest的中编码布局十分重要。</p>
+<p>在Manifest内部，元数据状态机编码成<code>SnapshotSessionRecord +list of SessionRecords</code>，本质上是<code>初始状态 + list of Applied VersionEdit </code>。</p>
+<p><img src="https://s2.loli.net/2022/04/11/AUusMjdYROz874v.jpg" alt="img"></p>
+<p>一个Manifest内部包含若干条Session Record，<strong>其中第一条Session Record</strong>记载了当时leveldb的<em>全量版本信息</em>，其余若干条Session Record仅记录每次更迭的变化情况。</p>
+<blockquote>
+<p>一个Session Record可能包含以下字段：</p>
+<ul>
+<li>Comparer的名称；</li>
+<li>最新的WAL文件编号；</li>
+<li>下一个可以使用的文件编号；</li>
+<li>数据库已经持久化数据项中最大的sequence number；</li>
+<li>新增的文件信息；</li>
+<li>删除的文件信息；</li>
+<li>compaction记录信息</li>
+</ul>
+</blockquote>
+<h5 id="menifest写入版本变更">Menifest写入版本变更</h5>
+<p><img src="https://s2.loli.net/2022/04/14/7tlwEMPGgXHIp6s.jpg" alt="img"></p>
+<p>对于leveldb来说，增减某些sstable文件需要作为一个<strong>原子性操作</strong>，状态变更前后需要保持<strong>数据库的一致性</strong>。</p>
+<h6 id="原子性">原子性</h6>
+<p><strong>原子性</strong>体现在：整个操作的完成标志为manifest文件中完整的写入了一条session record，在此之前，即便某些文件写入失败导致进程退出，数据库重启启动时，仍然能够恢复到崩溃之前正确的状态，而将这些无用的sstable文件删除，重新进行compaction动作。</p>
+<h6 id="一致性">一致性</h6>
+<p><strong>一致性</strong>体现在：leveldb状态变更的操作都是以version更新为标记，而version更新是整个流程的最后一步，因此数据库必然都是从一个一致性的状态变更到另外一个一致性的状态。</p>
+<h5 id="从manifest中恢复db">从Manifest中恢复DB</h5>
+<p><img src="https://s2.loli.net/2022/04/14/Jk5eyRzUWowi4YH.jpg" alt="img"></p>
+<p>随着leveldb运行时间的增长，一个manifest中包含的session record会越来越多，故leveldb在每次启动时都会重新创建一个manifest文件，并将第一条session record中记录当前version的快照状态。</p>
+<p>其他过期的manifest文件会在下次启动的recover流程中进行删除。</p>
+<blockquote>
+<p>leveldb通过这种方式，来控制manifest文件的大小，但是数据库本身没有重启，manifest还是会一直增长。</p>
+</blockquote>
+<h2 id="db-state恢复流程">DB State恢复流程</h2>
+<ol>
+<li>检查上锁情况，创建数据目录</li>
+<li>检查<code>lockfile</code>，判断是否有其他db实例</li>
+<li>检查<code>Current file</code>是否存在</li>
+<li>从<code>manifest</code>中恢复记录的元数据</li>
+<li>从wal里回复<code>last_seq_number</code>和<code>file_number</code></li>
+</ol>
+<h2 id="主体的open流程">主体的Open流程</h2>
+<ol>
+<li>新建默认DB，VersionEdit实例</li>
+<li>加锁</li>
+<li>从manifest和wal中恢复元数据</li>
+<li>如果新db实例没有memtable,新建memtable和wal file</li>
+<li>将VersionEdit apply, 并落盘到manifest中</li>
+<li>尝试删除无用文件</li>
+<li>尝试进行compact</li>
+</ol>
+<h2 id="参考">参考</h2>
+<p><a href="https://zhaox.github.io/leveldb/2015/12/23/leveldb-files">leveldb-files</a></p>
+<p><a href="https://leveldb-handbook.readthedocs.io/zh/latest/">leveldb-handbook</a></p>
+<p><a href="https://github.com/google/leveldb/blob/main/doc/impl.md">leveldb-doc</a></p>
+<p><a href="https://github.com/1Feng/decode-leveldb/blob/master/doc/leveldb%E5%AE%9E%E7%8E%B0%E8%A7%A3%E6%9E%90.pdf">leveldb 实现解析</a></p>
+<p><a href="https://github.com/noneback/leveldb_annotated">my note for leveldb</a></p>
+
+    </div>
+
+    
+    
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">NoneBack</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+      2022-04-09
+      
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+
+    <footer class="post-footer">
+      <div class="post-tags">
+          <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+          <a href="https://noneback.github.io/tags/lsm/">LSM</a>
+          <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+          
+        </div>
+
+      
+      <nav class="post-nav">
+        
+        
+          <a class="next" href="/post/mit6.824-raft/">
+            <span class="next-text nav-default">MIT6.824-Raft</span>
+            <span class="prev-text nav-mobile">Next</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+
+  
+  
+
+  
+  
+
+  
+
+  
+  
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "noneback/noneback.github.io"
+            issue-term="title"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+  
+
+  
+
+  
+
+  
+
+    
+
+  
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="icon-links">
+  
+  
+    <a href="chenlan2333@gmail.com" rel="me noopener" class="iconfont"
+      title="email"  target="_blank"
+      >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+  
+    <a href="https://github.com/noneback" rel="me noopener" class="iconfont"
+      title="github"  target="_blank"
+      >
+      <svg class="icon" style="" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M512 12.672c-282.88 0-512 229.248-512 512 0 226.261333 146.688 418.133333 350.08 485.76 25.6 4.821333 34.986667-11.008 34.986667-24.618667 0-12.16-0.426667-44.373333-0.64-87.04-142.421333 30.890667-172.458667-68.693333-172.458667-68.693333C188.672 770.986667 155.008 755.2 155.008 755.2c-46.378667-31.744 3.584-31.104 3.584-31.104 51.413333 3.584 78.421333 52.736 78.421333 52.736 45.653333 78.293333 119.850667 55.68 149.12 42.581333 4.608-33.109333 17.792-55.68 32.426667-68.48-113.706667-12.8-233.216-56.832-233.216-253.013333 0-55.893333 19.84-101.546667 52.693333-137.386667-5.76-12.928-23.04-64.981333 4.48-135.509333 0 0 42.88-13.738667 140.8 52.48 40.96-11.392 84.48-17.024 128-17.28 43.52 0.256 87.04 5.888 128 17.28 97.28-66.218667 140.16-52.48 140.16-52.48 27.52 70.528 10.24 122.581333 5.12 135.509333 32.64 35.84 52.48 81.493333 52.48 137.386667 0 196.693333-119.68 240-233.6 252.586667 17.92 15.36 34.56 46.762667 34.56 94.72 0 68.522667-0.64 123.562667-0.64 140.202666 0 13.44 8.96 29.44 35.2 24.32C877.44 942.592 1024 750.592 1024 524.672c0-282.752-229.248-512-512-512"></path>
+</svg>
+
+    </a>
+
+
+<a href="https://noneback.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+   
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2020 -
+    2022
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        @noneback
+        
+      </span></span>
+
+  
+  
+
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
