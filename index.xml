@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Sat, 09 Apr 2022 14:43:25 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 15 Apr 2022 10:49:57 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -40,6 +40,86 @@
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;!-- raw HTML omitted --&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>MIT6.824 RaftKV</title>
+      <link>https://noneback.github.io/post/mit6.824-raftkv/</link>
+      <pubDate>Fri, 15 Apr 2022 10:49:57 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/mit6.824-raftkv/</guid>
+      
+        <description>&lt;p&gt;之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。&lt;/p&gt;
+&lt;h2 id=&#34;实验相关&#34;&gt;实验相关&lt;/h2&gt;
+&lt;p&gt;Lab03的内容是在Raft基础上构建一个分布式KV服务。我们需要实现此服务的Server和Client。&lt;/p&gt;
+&lt;p&gt;RaftKV的结构和各个模块的交互如图所示：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34; alt=&#34;image-20220429211429808&#34;&gt;&lt;/p&gt;
+&lt;p&gt;相比于上个实验难度低了不少，实现上可以参考这篇大佬的&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;实现&lt;/a&gt;，我就不多写了。&lt;/p&gt;
+&lt;h2 id=&#34;raft-相关&#34;&gt;Raft 相关&lt;/h2&gt;
+&lt;p&gt;接下来说说Raft中有关客户端交互有关的内容。&lt;/p&gt;
+&lt;h3 id=&#34;路由与线性化语义&#34;&gt;路由与线性化语义&lt;/h3&gt;
+&lt;p&gt;想要在Raft之上构建允许客户端访问的服务，首先要解决&lt;strong&gt;路由&lt;/strong&gt;和&lt;strong&gt;线性化语义&lt;/strong&gt;的问题。&lt;/p&gt;
+&lt;h4 id=&#34;路由&#34;&gt;路由&lt;/h4&gt;
+&lt;p&gt;Raft是一个&lt;strong&gt;Strong Leader&lt;/strong&gt;的共识算法，读写请求一般都需要通过Leader执行。客户端反问Raft集群时，一般会随机访问集群中一个节点，如果它不是Leader, 那么它会将保存的leader信息返回给客户端，客户端会将请求重定向到Leader节点重试。&lt;/p&gt;
+&lt;h4 id=&#34;线性化语义&#34;&gt;线性化语义&lt;/h4&gt;
+&lt;p&gt;此为，目前的Raft只支持&lt;strong&gt;At Least Once&lt;/strong&gt;的语义，对于客户端的一次请求，Raft状态机可能会应用多次命令，而这样的语义特别不适用于基于共识的系统。&lt;/p&gt;
+&lt;p&gt;为了实现线性化语义，很显然，我们需要让发出的请求实现幂等。&lt;/p&gt;
+&lt;p&gt;一个基本的思路是客户端给每个请求分配UID, 而服务端利用这个&lt;code&gt;UID&lt;/code&gt;维护一个Session,对成功请求的Response进行缓存。当有重复的请求到达服务端时，它可以直接利用Session缓存的Response相应，这样就实现了请求幂等。&lt;/p&gt;
+&lt;p&gt;当然这带来了Session管理的问题，但这个并非本文重点。&lt;/p&gt;
+&lt;h3 id=&#34;只读优化&#34;&gt;只读优化&lt;/h3&gt;
+&lt;p&gt;解决了上面两个问题之后，我们得到了一个可用的基于Raft的服务。&lt;/p&gt;
+&lt;p&gt;但我们会发现，无论是读或是写请求，我们的应用都需要经过Leader 发起一次&lt;code&gt;AppendEntries&lt;/code&gt;的通信，在收到了Quorum成功的ACK，以及附加的落盘操作，在Log Committed再之后才能将结果返回给客户端。&lt;/p&gt;
+&lt;p&gt;写操作会改变数据状态机，所以对于写请求这些是必要的。但读操作并不会改变状态机，我们可以对只读请求进行一些优化，让只读请求绕过Raft日志，以便减少同步写操作带来的磁盘IO开销。&lt;/p&gt;
+&lt;p&gt;问题在于，如果没有其他的措施，绕过Raft日志的只读查询结果可能是过时的。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;比如，旧集群Leader和一个选出新Leader的集群发生了分区，此时客户端在旧Leader上的查询结果可能会过时。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Raft论文中提到了&lt;strong&gt;Read Index&lt;/strong&gt;和&lt;strong&gt;Lease Read&lt;/strong&gt;两种方法来绕过Raft日志，优化只读请求。&lt;/p&gt;
+&lt;h4 id=&#34;read-index&#34;&gt;Read Index&lt;/h4&gt;
+&lt;p&gt;&lt;strong&gt;Read Index&lt;/strong&gt;方案需要解决几个问题：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;旧任期遗留的已提交的日志&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;如old leader提交Log后，没来的及发送心跳就崩溃了。此时其他节点选中为新Leader，但根据Raft论文，新leader并不会主动提交旧leader时的日志。&lt;/p&gt;
+&lt;p&gt;为了解决这个问题，我们需要在新Leader当选后提交一个no-op日志，将旧Log提交。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;CommitIndex和AppliedIndex的间隔&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;引入&lt;code&gt;readIndex&lt;/code&gt;变量，领导者将当前&lt;code&gt;commitIndex&lt;/code&gt;保存在局部变量&lt;code&gt;readIndx&lt;/code&gt;，以此作为查询时AppliedIndex的界限，当只读请求到来时，需要先将Log应用到&lt;code&gt;readIndex&lt;/code&gt;记录的位置，之后Leader才能查询状态机，提供读服务。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;在提供只读服务时候保证Leader不发生切换&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;为了解决这个问题，我们在收到读请求后，Leader会先进行心跳，并需要收到Quorum数量的Ack，保证在此时不存在其他任期更大的Leader，保证&lt;code&gt;readIndex&lt;/code&gt;是集群中的最大提交索引。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;具体的流程以及Batch和Follower Read的优化可以参考Raft作者的博士论文，在此不再赘述。&lt;/p&gt;
+&lt;h4 id=&#34;lease-read&#34;&gt;Lease Read&lt;/h4&gt;
+&lt;p&gt;&lt;strong&gt;Read Index&lt;/strong&gt;的方案其实只优化了磁盘IO的开销，它依旧需要进行一轮集群的网络通信。但实际上，这部分开销也是可以进行优化的，于是就有了&lt;strong&gt;Lease Read&lt;/strong&gt;的方案。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Lease Read&lt;/strong&gt;方案的&lt;strong&gt;核心思路&lt;/strong&gt;是利用一次Leader Election至少需要经过一轮ElectionTimeout时间。在此期间，系统不会进行重新选举。这样就避免了提供只读服务时Leader切换的问题。所以我们可以利用时钟优化网络IO。&lt;/p&gt;
+&lt;h5 id=&#34;实现&#34;&gt;实现&lt;/h5&gt;
+&lt;p&gt;在实现上，为了让时钟代替网络信息交互，我们需要额外提供一种租约机制。一旦Quorum数量的集群认可了领导者的&lt;code&gt;Heartbeat&lt;/code&gt;，Leader可以认为在&lt;code&gt;ElectionTimeout&lt;/code&gt;期间没有其他人能成为Leader，它可以相应的延长其租约。但Leader持有租约时，它可以直接服务只读查询而不需要额外的网络通信。&lt;/p&gt;
+&lt;p&gt;但其实服务器中间可能会存在&lt;strong&gt;时钟偏移&lt;/strong&gt;，这样Follower就无法保证在Leader持有租约时不会超时。这就引出了&lt;code&gt;Lease Read&lt;/code&gt;的关键设计：&lt;strong&gt;用什么策略延长租期呢？&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;论文中，假设$ClokcDrift$是有界的，每次心跳成功更新租约时，租约延长到$start + \frac{ElectionTimeout}{ClockDriftBound}$ 。&lt;/p&gt;
+&lt;p&gt;$ClokcDriftBound$代表了集群时钟漂移的界限，但是这个界限的发现和维护十分困难，因为导致时钟漂移的原因有很多，并且具有实时性。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;如GC，虚拟机调度，云服务机器扩缩容等&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;实践上，一般会牺牲一定的安全性来换取&lt;code&gt;LeaseRead&lt;/code&gt;的性能。一般使用$StatrTime +ElectionTimeout - \Delta{t}$来延长租期。$\Delta{t}$是一个正数，这就使得每次延长租约的时间小于&lt;code&gt;ElectionTimeout&lt;/code&gt;，在网络IO开销和安全性之间Trade Off。&lt;/p&gt;
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+&lt;p&gt;Raft构建服务时，首先需要设计好访问服务以及路由和幂等机制。&lt;/p&gt;
+&lt;p&gt;对于只读操作，优化手段主要有两种，&lt;strong&gt;Read Index&lt;/strong&gt; 和 &lt;strong&gt;Lease Read&lt;/strong&gt;。其中前者优化了读操作时的磁盘IO，后者利用时钟优化了网络IO。&lt;/p&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;Implimetation doc&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf&#34;&gt;Raft Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Official&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/raft-thesis-zh_cn&#34;&gt;Consensus: Bridging Theory and Practice - zh&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pingcap.com/zh/blog/lease-read&#34;&gt;Tikv lease-read&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>
@@ -3071,354 +3151,6 @@
 &lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://www.kancloud.cn/wizardforcel/linux-c-api-ref/98511&#34;&gt;vfork&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;%5Bhttps://cloud.tencent.com/developer/article/1338482%5D&#34;&gt;fork函数详解&lt;/a&gt;&lt;/p&gt;
-</description>
-      
-    </item>
-    
-    <item>
-      <title>MIT6.824-MapReduce</title>
-      <link>https://noneback.github.io/post/mit6.824-mapreduce/</link>
-      <pubDate>Fri, 22 Jan 2021 17:02:44 +0800</pubDate>
-      
-      <guid>https://noneback.github.io/post/mit6.824-mapreduce/</guid>
-      
-        <description>&lt;p&gt;大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一个论文或者实验都会记录在文章中。&lt;/p&gt;
-&lt;p&gt;本文Distributed System学习笔记的第一章。&lt;/p&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;论文相关&#34;&gt;论文相关&lt;/h2&gt;
-&lt;p&gt;论文最核心的内容是提出的MapReduce分布式计算模型，以及实现&lt;strong&gt;Distributed&lt;/strong&gt; MapReduce System的思路，包括Master数据结构，容错以及一些refinement等内容。&lt;/p&gt;
-&lt;h3 id=&#34;mapreduce计算模型&#34;&gt;MapReduce计算模型&lt;/h3&gt;
-&lt;p&gt;模型接受一系列的键值对作为输入，并输出一系列键值对作为结果。用户通过设计Map和Reduce函数来使用MapReduce System&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;Map：接受输入数据，生成一组中间键值对&lt;/li&gt;
-&lt;li&gt;Reduce：接受中间键值对作为输入，将所有相同key的数据合并并作为结果输出。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;map&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;String&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;key&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;String&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;value&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// key: document name
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;c1&#34;&gt;// value: document contents
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;each&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;word&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;w&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;in&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;value&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;EmitIntermediate&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;w&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;err&#34;&gt;“&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;”&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;reduce&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;String&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;key&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Iterator&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;values&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// key: a word
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;c1&#34;&gt;// values: a list of counts
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;result&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;each&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;v&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;in&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;values&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;result&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ParseInt&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;v&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;n&#34;&gt;Emit&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;AsString&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;result&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;));&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h3 id=&#34;mapreduce执行过程&#34;&gt;MapReduce执行过程&lt;/h3&gt;
-&lt;p&gt;Distrubuted MapReduce System采用主从的设计，在MapReduce计算过程中，一般有一个Master，以及若干个Worker。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;Master：负责Map以及Reduce任务的创建、分配、调度等&lt;/li&gt;
-&lt;li&gt;Worker：负责执行Map以及Reduce任务&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png&#34; alt=&#34;Screenshot_20210112_125637&#34;&gt;&lt;/p&gt;
-&lt;p&gt;更详细的描述为:&lt;/p&gt;
-&lt;p&gt;1.MapReduce的整个执行过程包含M个Map Task 和R个Reduce Task，分为两个执行阶段Map Phase 和Reduce Phase。&lt;/p&gt;
-&lt;p&gt;2.输入的文件被拆分为M个split，计算进入Map Phase阶段，Master分配Map Task给空闲Worker。分配了Task的Worker读取对应的split data，执行Task。直到所有的Map Task都完成，Map Phase结束。利用Partition函数（一般为&lt;code&gt;hash(key) mod R&lt;/code&gt;)得到R组中间键值对，保存在文件中，并将文件路径告知Master，以便Reduce Task的操作。&lt;/p&gt;
-&lt;p&gt;3.计算进入Reduce Phase阶段，Master分配Reduce Task，每个Worker读取对应的中间键值对文件，执行Task。所有Reduce执行完成后，计算完成。结果保存到结果文件中。&lt;/p&gt;
-&lt;h3 id=&#34;mapreduce--容错机制&#34;&gt;MapReduce  容错机制&lt;/h3&gt;
-&lt;p&gt;由于 Google MapReduce 很大程度上利用了由 Google File System 提供的分布式原子文件读写操作，所以 MapReduce 集群的容错机制实现相比之下便简洁很多，也主要集中在任务意外中断的恢复上。&lt;/p&gt;
-&lt;h4 id=&#34;worker容错&#34;&gt;Worker容错&lt;/h4&gt;
-&lt;p&gt;在集群中，Master 会周期地向每一个 Worker 发送 Ping 信号。如果某个 Worker 在一段时间内没有响应，Master 就会认为这个 Worker 已经不可用。&lt;/p&gt;
-&lt;p&gt;任何分配给该 Worker 的 Map 任务，无论是正在运行还是已经完成，都需要由 Master 重新分配给其他 Worker，因为该 Worker 不可用也意味着存储在该 Worker 本地磁盘上的中间结果也不可用了。Master 也会将这次重试通知给所有 Reducer，没能从原本的 Mapper 上完整获取中间结果的 Reducer 便会开始从新的 Mapper 上获取数据。&lt;/p&gt;
-&lt;p&gt;如果有 Reduce 任务分配给该 Worker，Master 则会选取其中尚未完成的 Reduce 任务分配给其他 Worker。鉴于 Google MapReduce 的结果是存储在 Google File System 上的，已完成的 Reduce 任务的结果的可用性由 Google File System 提供，因此 MapReduce Master 只需要处理未完成的 Reduce 任务即可。&lt;/p&gt;
-&lt;p&gt;如果集群中有某个 Worker 花了特别长的时间来完成最后的几个 Map 或 Reduce 任务，整个 MapReduce 计算任务的耗时就会因此被拖长，这样的 Worker 也就成了落后者（Straggler）。&lt;/p&gt;
-&lt;p&gt;MapReduce 在整个计算完成到一定程度时就会将剩余的任务进行备份，即同时将其分配给其他空闲 Worker 来执行，并在其中一个 Worker 完成后将该任务视作已完成。&lt;/p&gt;
-&lt;h4 id=&#34;master容错&#34;&gt;Master容错&lt;/h4&gt;
-&lt;p&gt;整个 MapReduce 集群中只会有一个 Master 结点，因此 Master 失效的情况并不多见。&lt;/p&gt;
-&lt;p&gt;Master 结点在运行时会周期性地将集群的当前状态作为保存点（Checkpoint）写入到磁盘中。Master 进程终止后，重新启动的 Master 进程即可利用存储在磁盘中的数据恢复到上一次保存点的状态。&lt;/p&gt;
-&lt;h3 id=&#34;refinement&#34;&gt;Refinement&lt;/h3&gt;
-&lt;h4 id=&#34;partition-function&#34;&gt;Partition Function&lt;/h4&gt;
-&lt;p&gt;于Map Phase阶段使用，将中间键值对按照规则分配到R个文件中保存&lt;/p&gt;
-&lt;h4 id=&#34;combiner&#34;&gt;Combiner&lt;/h4&gt;
-&lt;p&gt;在某些情形下，用户所定义的 Map 任务可能会产生大量重复的中间结果键，Combiner 函数以对中间结果进行局部合并，减少 Mapper 和 Reducer 间需要传输的数据量。&lt;/p&gt;
-&lt;h2 id=&#34;实验相关&#34;&gt;实验相关&lt;/h2&gt;
-&lt;p&gt;实验内容主要是设计实现Master和Worker，补全Simple MapReduce System的主要功能。&lt;/p&gt;
-&lt;p&gt;实验中通过Rpc调用实现单Master以及多Worker的模型，通过Go Plugin运行Map和Reduce函数组成的不同应用。&lt;/p&gt;
-&lt;h3 id=&#34;masterworker功能&#34;&gt;Master&amp;amp;Worker功能&lt;/h3&gt;
-&lt;h4 id=&#34;master&#34;&gt;Master&lt;/h4&gt;
-&lt;ul&gt;
-&lt;li&gt;任务的创建，调度等&lt;/li&gt;
-&lt;li&gt;Worker的注册，为其分配Task&lt;/li&gt;
-&lt;li&gt;接受Worker当前的运行状态&lt;/li&gt;
-&lt;li&gt;监听Task运行状态&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h4 id=&#34;worker&#34;&gt;worker&lt;/h4&gt;
-&lt;ul&gt;
-&lt;li&gt;在Master中注册&lt;/li&gt;
-&lt;li&gt;获取任务并处理&lt;/li&gt;
-&lt;li&gt;报告运行状态&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;注：Master通过Rpc提供相应功能给Worker调用&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h3 id=&#34;主要数据结构&#34;&gt;主要数据结构&lt;/h3&gt;
-&lt;p&gt;数据结构的设计是主要的工作，良好的设计结构有助于功能的实现。此处之展示数据结构相关代码，具体的功能实现见&lt;a href=&#34;https://github.com/noneback/Toys/tree/master/6.824-Lab1-MapReduce&#34;&gt;GitHub&lt;/a&gt;&lt;/p&gt;
-&lt;h4 id=&#34;master-1&#34;&gt;Master&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;Master&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;c1&#34;&gt;// Your definitions here.
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;	&lt;span class=&#34;nx&#34;&gt;nReduce&lt;/span&gt;      &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;taskQueue&lt;/span&gt;    &lt;span class=&#34;kd&#34;&gt;chan&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;Task&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;tasksContext&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;[]&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;TaskContext&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;lock&lt;/span&gt;         &lt;span class=&#34;nx&#34;&gt;sync&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;Mutex&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;files&lt;/span&gt;        &lt;span class=&#34;p&#34;&gt;[]&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;string&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;phase&lt;/span&gt;        &lt;span class=&#34;nx&#34;&gt;PhaseKind&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;done&lt;/span&gt;         &lt;span class=&#34;kt&#34;&gt;bool&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;workerID&lt;/span&gt;     &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h4 id=&#34;worker-1&#34;&gt;Worker&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;7
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;worker&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;ID&lt;/span&gt;      &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;mapf&lt;/span&gt;    &lt;span class=&#34;kd&#34;&gt;func&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;string&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;string&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;[]&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;KeyValue&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;reducef&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;func&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;string&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;[]&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;string&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;string&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;nReduce&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;nMap&lt;/span&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h4 id=&#34;task--taskcontext&#34;&gt;Task &amp;amp; TaskContext&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;Task&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;ID&lt;/span&gt;       &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;Filename&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;string&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;Phase&lt;/span&gt;    &lt;span class=&#34;nx&#34;&gt;PhaseKind&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;TaskContext&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;t&lt;/span&gt;         &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;Task&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;state&lt;/span&gt;     &lt;span class=&#34;nx&#34;&gt;ContextState&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;workerID&lt;/span&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;startTime&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;time&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;Time&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h4 id=&#34;rpc-args--reply&#34;&gt;Rpc Args &amp;amp; Reply&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;21
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;22
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;23
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;24
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;25
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;RegTaskArgs&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;WorkerID&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;RegTaskReply&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;T&lt;/span&gt;    &lt;span class=&#34;nx&#34;&gt;Task&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;HasT&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;bool&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;ReportTaskArgs&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;WorkerID&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;TaskID&lt;/span&gt;   &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;State&lt;/span&gt;    &lt;span class=&#34;nx&#34;&gt;ContextState&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;ReportTaskReply&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;RegWorkerArgs&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;RegWorkerReply&lt;/span&gt; &lt;span class=&#34;kd&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;ID&lt;/span&gt;      &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;NReduce&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;NMap&lt;/span&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h4 id=&#34;constant--type&#34;&gt;Constant &amp;amp; Type&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;21
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;const&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;RUNNING&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;ContextState&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;kc&#34;&gt;iota&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;FAILED&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;READY&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;IDEL&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;COMPLETE&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;const&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;MAX_PROCESSING_TIME&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;time&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;Second&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;5&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;SCHEDULE_INTERVAL&lt;/span&gt;   &lt;span class=&#34;p&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;time&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;Second&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;const&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;MAP&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;PhaseKind&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;kc&#34;&gt;iota&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;nx&#34;&gt;REDUCE&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;ContextState&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kd&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;PhaseKind&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h3 id=&#34;运行与测试&#34;&gt;运行与测试&lt;/h3&gt;
-&lt;h4 id=&#34;运行&#34;&gt;运行&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# In main directory&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; ./src/main
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# Master&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;go run ./mrmaster.go pg*.txt                                              
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# Worker&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;go build -buildmode&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;plugin ../mrapps/wc.go &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; go run ./mrworker.go ./wc.so 
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h4 id=&#34;测试&#34;&gt;测试&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; ./src/main
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sh  ./test-mr.sh
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;优化&#34;&gt;优化&lt;/h2&gt;
-&lt;p&gt;这些优化是在我完成实验之后，回顾自己代码时想到的可以优化的一些设计。&lt;/p&gt;
-&lt;h3 id=&#34;热点问题&#34;&gt;热点问题&lt;/h3&gt;
-&lt;p&gt;这里的热点问题是，可能会有一个热点数据频繁的出现在数据集中。Map阶段的中间结果值K-V形式的，这样会导致在shuffle步骤的时候，一个Key频繁的出现，进而导致有个别机器的磁盘IO和网络IO被大量的占用。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;这个问题的本质在于，MapReduce中的Shuffle在&lt;strong&gt;设计&lt;/strong&gt;上是强依赖于数据的。&lt;/p&gt;
-&lt;p&gt;它的&lt;strong&gt;设计目的&lt;/strong&gt;就是为了聚合中间结果数据以便Reduce阶段能够更好的进行处理。基于此，在数据极度分布不均的时候，自然会有热点问题。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;实际上，问题本质是，大量的Key在Hash处理后被分配到以一个磁盘文件中，作为后续Reduce的输入。&lt;/p&gt;
-&lt;p&gt;同一个Key的Hash值理当是相同的，所以问题可以变形为：&lt;em&gt;如何让相同的Key的Hash分桶到不一样机器中？&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;目前我想到的可行方式就是在Shuffle的Hash计算中，为Key添加随机salt，使得Hash的值不相同，减少哈希分桶到同一个机器的概率，进而解决热点问题。&lt;/p&gt;
-&lt;h3 id=&#34;容错问题&#34;&gt;容错问题&lt;/h3&gt;
-&lt;p&gt;对于容错问题其实论文中已经有了一些解决方案。这个问题的场景是：Worker节点的机器突然Crash，并在重启之后重新连接。Master观测到Worker的Crash并将其任务重新分配给其他节点执行，这是Worker节点重新连接，之前的执行还在继续，双方都执行，可能导致生成两份结果文件。&lt;/p&gt;
-&lt;p&gt;这里的潜在问题是，这两份文件可能会导致结果出现错误。同时，重新连接的Worker继续执行原有的任务，浪费CPU，IO资源。&lt;/p&gt;
-&lt;p&gt;基于此，我们需要标明生成结果文件的新旧，只有最新的文件才能够被作为结果统计，这样就解决了文件冲突；同时，为Worker节点添加一个Rpc接口，使得其重新连接的时候，Master可以调用以清除原有任务。&lt;/p&gt;
-&lt;h3 id=&#34;长尾问题&#34;&gt;长尾问题&lt;/h3&gt;
-&lt;p&gt;长尾问题，就是指某个Task执行时间长，导致MapReduce无法迅速完成。其实本质上就是热点问题和Worker的Crash处理问题，可以参考上述博客。&lt;/p&gt;
-&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Distributed System&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/labs/lab-mr.html&#34;&gt;Lab Official Site&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;http://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf&#34;&gt;MapReduce: Simplified Data Processing on Large Clusters&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/34849261&#34;&gt;Google MapReduce 论文详解&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;​&lt;/p&gt;
 </description>
       
     </item>
