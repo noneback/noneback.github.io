@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>MIT6.824-RaftKV - NoneBack</title>
+  <title>LevelDB Write - NoneBack</title>
   
 
 <meta name="renderer" content="webkit" />
@@ -23,8 +23,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <meta name="author" content="NoneBack" />
-  <meta name="description" content="之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra" />
-<meta name="keywords" content="Raft, Distributed System, Consensu, MIT6.824" />
+  <meta name="description" content="LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是step by step的源码阅读教程，而是仅仅作为我的学习笔记，" />
+<meta name="keywords" content="LevelDB, LSM, KV" />
 
 
 
@@ -35,7 +35,7 @@
 <meta name="generator" content="Hugo 0.101.0" />
 
 
-<link rel="canonical" href="https://noneback.github.io/post/mit6.824-raftkv/" />
+<link rel="canonical" href="https://noneback.github.io/post/leveldb-write/" />
 
 
 
@@ -61,20 +61,20 @@
 <link rel="stylesheet" href="/css/custom.css">
 
 
-<meta property="og:title" content="MIT6.824-RaftKV" />
-<meta property="og:description" content="之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra" />
+<meta property="og:title" content="LevelDB Write" />
+<meta property="og:description" content="LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是step by step的源码阅读教程，而是仅仅作为我的学习笔记，" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://noneback.github.io/post/mit6.824-raftkv/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2022-04-15T10:49:57+08:00" />
-<meta property="article:modified_time" content="2022-04-15T10:49:57+08:00" />
+<meta property="og:url" content="https://noneback.github.io/post/leveldb-write/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2022-05-10T17:14:14+08:00" />
+<meta property="article:modified_time" content="2022-05-10T17:14:14+08:00" />
 
-<meta itemprop="name" content="MIT6.824-RaftKV">
-<meta itemprop="description" content="之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra"><meta itemprop="datePublished" content="2022-04-15T10:49:57+08:00" />
-<meta itemprop="dateModified" content="2022-04-15T10:49:57+08:00" />
-<meta itemprop="wordCount" content="2336">
-<meta itemprop="keywords" content="Raft,Distributed System,Consensu,MIT6.824," /><meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824-RaftKV"/>
-<meta name="twitter:description" content="之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra"/>
+<meta itemprop="name" content="LevelDB Write">
+<meta itemprop="description" content="LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是step by step的源码阅读教程，而是仅仅作为我的学习笔记，"><meta itemprop="datePublished" content="2022-05-10T17:14:14+08:00" />
+<meta itemprop="dateModified" content="2022-05-10T17:14:14+08:00" />
+<meta itemprop="wordCount" content="1423">
+<meta itemprop="keywords" content="LevelDB,LSM,LevelDB," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="LevelDB Write"/>
+<meta name="twitter:description" content="LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是step by step的源码阅读教程，而是仅仅作为我的学习笔记，"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -340,17 +340,16 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
           <article class="post bg-white">
     
     <header class="post-header">
-      <h1 class="post-title">MIT6.824-RaftKV</h1>
+      <h1 class="post-title">LevelDB Write</h1>
       
       <div class="post-meta">
-        <time datetime="2022-04-15" class="post-time">
-          2022-04-15
+        <time datetime="2022-05-10" class="post-time">
+          2022-05-10
         </time>
         <div class="post-category">
-            <a href="https://noneback.github.io/categories/raft/"> Raft </a>
-            <a href="https://noneback.github.io/categories/distributed-system/"> Distributed System </a>
-            <a href="https://noneback.github.io/categories/consensu/"> Consensu </a>
-            <a href="https://noneback.github.io/categories/mit6.824/"> MIT6.824 </a>
+            <a href="https://noneback.github.io/categories/storage/"> Storage </a>
+            <a href="https://noneback.github.io/categories/lsm/"> LSM </a>
+            <a href="https://noneback.github.io/categories/leveldb/"> LevelDB </a>
             
           </div>
         
@@ -370,15 +369,19 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
   <div class="post-toc-content">
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#实验相关">实验相关</a></li>
-    <li><a href="#raft-相关">Raft 相关</a>
+    <li><a href="#主流程">主流程</a>
       <ul>
-        <li><a href="#路由与线性化语义">路由与线性化语义</a></li>
-        <li><a href="#只读优化">只读优化</a></li>
+        <li><a href="#writebatch">WriteBatch</a></li>
       </ul>
     </li>
-    <li><a href="#总结">总结</a></li>
-    <li><a href="#参考">参考</a></li>
+    <li><a href="#写入流程">写入流程</a>
+      <ul>
+        <li><a href="#初始化writer">初始化Writer</a></li>
+        <li><a href="#writer调度">Writer调度</a></li>
+        <li><a href="#writers-batches-写入">Writers Batches 写入</a></li>
+      </ul>
+    </li>
+    <li><a href="#reference">Reference</a></li>
   </ul>
 </nav>
   </div>
@@ -386,75 +389,154 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     
     <div class="post-content">
-      <p>之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。</p>
-<h2 id="实验相关">实验相关</h2>
-<p>Lab03的内容是在Raft基础上构建一个分布式KV服务。我们需要实现此服务的Server和Client。</p>
-<p>RaftKV的结构和各个模块的交互如图所示：</p>
-<p><img src="https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png" alt="image-20220429211429808"></p>
-<p>相比于上个实验难度低了不少，实现上可以参考这篇大佬的<a href="https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md">实现</a>，我就不多写了。</p>
-<h2 id="raft-相关">Raft 相关</h2>
-<p>接下来说说Raft中有关客户端交互有关的内容。</p>
-<h3 id="路由与线性化语义">路由与线性化语义</h3>
-<p>想要在Raft之上构建允许客户端访问的服务，首先要解决<strong>路由</strong>和<strong>线性化语义</strong>的问题。</p>
-<h4 id="路由">路由</h4>
-<p>Raft是一个<strong>Strong Leader</strong>的共识算法，读写请求一般都需要通过Leader执行。客户端反问Raft集群时，一般会随机访问集群中一个节点，如果它不是Leader, 那么它会将保存的leader信息返回给客户端，客户端会将请求重定向到Leader节点重试。</p>
-<h4 id="线性化语义">线性化语义</h4>
-<p>此为，目前的Raft只支持<strong>At Least Once</strong>的语义，对于客户端的一次请求，Raft状态机可能会应用多次命令，而这样的语义特别不适用于基于共识的系统。</p>
-<p>为了实现线性化语义，很显然，我们需要让发出的请求实现幂等。</p>
-<p>一个基本的思路是客户端给每个请求分配UID, 而服务端利用这个<code>UID</code>维护一个Session,对成功请求的Response进行缓存。当有重复的请求到达服务端时，它可以直接利用Session缓存的Response相应，这样就实现了请求幂等。</p>
-<p>当然这带来了Session管理的问题，但这个并非本文重点。</p>
-<h3 id="只读优化">只读优化</h3>
-<p>解决了上面两个问题之后，我们得到了一个可用的基于Raft的服务。</p>
-<p>但我们会发现，无论是读或是写请求，我们的应用都需要经过Leader 发起一次<code>AppendEntries</code>的通信，在收到了Quorum成功的ACK，以及附加的落盘操作，在Log Committed再之后才能将结果返回给客户端。</p>
-<p>写操作会改变数据状态机，所以对于写请求这些是必要的。但读操作并不会改变状态机，我们可以对只读请求进行一些优化，让只读请求绕过Raft日志，以便减少同步写操作带来的磁盘IO开销。</p>
-<p>问题在于，如果没有其他的措施，绕过Raft日志的只读查询结果可能是过时的。</p>
+      <p>LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是<strong>step by step</strong>的源码阅读教程，而是仅仅作为我的学习笔记，简单记录我的问题与思考。</p>
+<h2 id="主流程">主流程</h2>
+<p>LevelDB主要的写入逻辑其实比较简单。首先将写入操作封装到WriteBatch中，之后再执行写入。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">batch</span><span class="p">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="nf">Write</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">batch</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="writebatch">WriteBatch</h3>
+<p>WriteBatch是对一组更新操作的封装，这一组操作会<strong>原子性</strong>的应用到状态机上。使用一块内存将用户的更新操作保存。</p>
 <blockquote>
-<p>比如，旧集群Leader和一个选出新Leader的集群发生了分区，此时客户端在旧Leader上的查询结果可能会过时。</p>
+<p>InMemory Format:
+<code>| seq_num: 8 bytes | count: 4 bytes | list of records{ type + key + value}</code></p>
 </blockquote>
-<p>Raft论文中提到了<strong>Read Index</strong>和<strong>Lease Read</strong>两种方法来绕过Raft日志，优化只读请求。</p>
-<h4 id="read-index">Read Index</h4>
-<p><strong>Read Index</strong>方案需要解决几个问题：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">WriteBatch</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="p">...</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// See comment in write_batch.cc for the format of rep_;
+</span></span></span><span class="line"><span class="cl"><span class="c1">// WriteBatch::rep_ :=
+</span></span></span><span class="line"><span class="cl"><span class="c1">//    sequence: fixed64
+</span></span></span><span class="line"><span class="cl"><span class="c1">//    count: fixed32
+</span></span></span><span class="line"><span class="cl"><span class="c1">//    data: record[count]
+</span></span></span><span class="line"><span class="cl"><span class="c1">// record :=
+</span></span></span><span class="line"><span class="cl"><span class="c1">//    kTypeValue varstring varstring         |
+</span></span></span><span class="line"><span class="cl"><span class="c1">//    kTypeDeletion varstring
+</span></span></span><span class="line"><span class="cl"><span class="c1">// varstring :=
+</span></span></span><span class="line"><span class="cl"><span class="c1">//    len: varint32
+</span></span></span><span class="line"><span class="cl"><span class="c1">//    data: uint8[len]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">rep_</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// some opt
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="n">WriteBatch</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">SetCount</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Count</span><span class="p">(</span><span class="k">this</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">rep_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">(</span><span class="n">kTypeValue</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PutLengthPrefixedSlice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rep_</span><span class="p">,</span> <span class="n">key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PutLengthPrefixedSlice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rep_</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="写入流程">写入流程</h2>
+<p>写入操作主要有四步：</p>
+<h3 id="初始化writer">初始化Writer</h3>
+<p>Writer实际上就是一次写入操作需要的全部信息。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// Information kept for every waiting writer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">struct</span> <span class="nc">DBImpl</span><span class="o">::</span><span class="n">Writer</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">explicit</span> <span class="nf">Writer</span><span class="p">(</span><span class="n">port</span><span class="o">::</span><span class="n">Mutex</span><span class="o">*</span> <span class="n">mu</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">      <span class="o">:</span> <span class="n">batch</span><span class="p">(</span><span class="k">nullptr</span><span class="p">),</span> <span class="n">sync</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span> <span class="n">done</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span> <span class="n">cv</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">Status</span> <span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">batch</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">bool</span> <span class="n">sync</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">bool</span> <span class="n">done</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">port</span><span class="o">::</span><span class="n">CondVar</span> <span class="n">cv</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="writer调度">Writer调度</h3>
+<p>​    LevelDB的写入其实是一种多生产者单消费者的模式，多线程生产Writer，单线程消费Writer。每个Writer由一个线程产生，但可以被多个线程消费。
+​    在LevelDB内部维护了一个Writer队列，每个线程的写入删除等更新操作会先将Writer追加到队列末尾，并用锁保证队列的数据安全。Writer被放入队列之后会进入等待，直到出现在队列头部（被调度）或者已完成（被其他线程处理）才会被唤醒。</p>
+<blockquote>
+<p>在消费Writer, 执行具体的更新操作时，LevelDB通过将同类型（根据sync类型）的Writer合并来优化写入任务。</p>
+</blockquote>
+<h3 id="writers-batches-写入">Writers Batches 写入</h3>
 <ul>
-<li>旧任期遗留的已提交的日志</li>
-</ul>
-<blockquote>
-<p>如old leader提交Log后，没来的及发送心跳就崩溃了。此时其他节点选中为新Leader，但根据Raft论文，新leader并不会主动提交旧leader时的日志。</p>
-<p>为了解决这个问题，我们需要在新Leader当选后提交一个no-op日志，将旧Log提交。</p>
-</blockquote>
+<li>
+<p>首先<code>MakeRoomForWrite</code>确保memtable有足够的空间以及WAL保证写入成功。如果当前的memtable有空间则复用，如果空间不足，则新建memtable和WAL，并将原来的memtable转为immemtable，等待触发compaction（minor compaction 是串行的）。</p>
+</li>
+<li>
+<p>除此之外，函数还会判断L0文件的数量，通过配置以及触发器判断是否需要对写入速率进行限制。其中主要包含两个配置：</p>
 <ul>
-<li>CommitIndex和AppliedIndex的间隔</li>
+<li>Slowdown Trigger。触发是会让写入线程Sleep，以减缓写入的速度，使得compaction任务得以处理；同时，以此限制Level 0 文件的数量，保证读效率。</li>
+<li>StopWritesTrigger。停止写入线程。</li>
 </ul>
-<blockquote>
-<p>引入<code>readIndex</code>变量，领导者将当前<code>commitIndex</code>保存在局部变量<code>readIndx</code>，以此作为查询时AppliedIndex的界限，当只读请求到来时，需要先将Log应用到<code>readIndex</code>记录的位置，之后Leader才能查询状态机，提供读服务。</p>
-</blockquote>
-<ul>
-<li>在提供只读服务时候保证Leader不发生切换</li>
+</li>
+<li>
+<p><code>BuildBatchGroup</code>则会将队列从头部开始同类型的Writer任务中需要写入的batches合并，只得到一个batch。</p>
+</li>
+<li>
+<p>之后则是将合并之后的Batch先写WAL,再写memtable中。</p>
+</li>
 </ul>
+<h4 id="wal">WAL</h4>
+<p>WAL文件被拆分为Blocks, Blocks由Record组成。格式如下图：<img src="https://s2.loli.net/2022/08/15/KTuf85zaIsvoLEW.jpg" alt="img"></p>
+<h5 id="wal-record-encoding">WAL Record Encoding</h5>
 <blockquote>
-<p>为了解决这个问题，我们在收到读请求后，Leader会先进行心跳，并需要收到Quorum数量的Ack，保证在此时不存在其他任期更大的Leader，保证<code>readIndex</code>是集群中的最大提交索引。</p>
+<p><code>| Header{ checksum(4 bytes) + len(2 bytes) + type(1 bytes)} | Data |</code></p>
 </blockquote>
-<p>具体的流程以及Batch和Follower Read的优化可以参考Raft作者的博士论文，在此不再赘述。</p>
-<h4 id="lease-read">Lease Read</h4>
-<p><strong>Read Index</strong>的方案其实只优化了磁盘IO的开销，它依旧需要进行一轮集群的网络通信。但实际上，这部分开销也是可以进行优化的，于是就有了<strong>Lease Read</strong>的方案。</p>
-<p><strong>Lease Read</strong>方案的<strong>核心思路</strong>是利用一次Leader Election至少需要经过一轮ElectionTimeout时间。在此期间，系统不会进行重新选举。这样就避免了提供只读服务时Leader切换的问题。所以我们可以利用时钟优化网络IO。</p>
-<h5 id="实现">实现</h5>
-<p>在实现上，为了让时钟代替网络信息交互，我们需要额外提供一种租约机制。一旦Quorum数量的集群认可了领导者的<code>Heartbeat</code>，Leader可以认为在<code>ElectionTimeout</code>期间没有其他人能成为Leader，它可以相应的延长其租约。但Leader持有租约时，它可以直接服务只读查询而不需要额外的网络通信。</p>
-<p>但其实服务器中间可能会存在<strong>时钟偏移</strong>，这样Follower就无法保证在Leader持有租约时不会超时。这就引出了<code>Lease Read</code>的关键设计：<strong>用什么策略延长租期呢？</strong></p>
-<p>论文中，假设$ClokcDrift$是有界的，每次心跳成功更新租约时，租约延长到$start + \frac{ElectionTimeout}{ClockDriftBound}$ 。</p>
-<p>$ClokcDriftBound$代表了集群时钟漂移的界限，但是这个界限的发现和维护十分困难，因为导致时钟漂移的原因有很多，并且具有实时性。</p>
+<p>其中Record主要有五类：Zero，Full，First，Middle，Last。其中Zero是预留给预分配文件。由于有个KV可能长度过长，需要由若干个Chunk记录，于是有了其他四种类型。</p>
+<h5 id="写入的流程imghttpss2lolinet202208153tokslnhjumig9yjpg">写入的流程<img src="https://s2.loli.net/2022/08/15/3TOkslnhjuMIg9Y.jpg" alt="img"></h5>
+<h4 id="memtable">memtable</h4>
+<p>memtable的核心设计有两个：跳表以及KV在跳表中的编码。跳表保证了插入数据的有序性，具体的实现思路可以参考我的另一篇博客。</p>
+<p>memtable的Key的编码之后的Key称之为<code>Internal Key</code>,其编码为<code>| Original Key(varstring) + seq num(7 by) + type(1 byte) | </code><img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt="img"></p>
 <blockquote>
-<p>如GC，虚拟机调度，云服务机器扩缩容等</p>
+<p>SeqNum 是在每次更新操作时生成的一个递增的序号，作为逻辑时钟标记操作的新旧。基于SeqNum可以实现基于快照（版本号）的读取。</p>
 </blockquote>
-<p>实践上，一般会牺牲一定的安全性来换取<code>LeaseRead</code>的性能。一般使用$StatrTime +ElectionTimeout - \Delta{t}$来延长租期。$\Delta{t}$是一个正数，这就使得每次延长租约的时间小于<code>ElectionTimeout</code>，在网络IO开销和安全性之间Trade Off。</p>
-<h2 id="总结">总结</h2>
-<p>Raft构建服务时，首先需要设计好访问服务以及路由和幂等机制。</p>
-<p>对于只读操作，优化手段主要有两种，<strong>Read Index</strong> 和 <strong>Lease Read</strong>。其中前者优化了读操作时的磁盘IO，后者利用时钟优化了网络IO。</p>
-<h2 id="参考">参考</h2>
-<p><a href="https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md">Implimetation doc</a></p>
-<p><a href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">Raft Paper</a></p>
-<p><a href="https://pdos.csail.mit.edu/6.824/index.html">MIT6.824 Official</a></p>
-<p><a href="https://github.com/OneSizeFitsQuorum/raft-thesis-zh_cn">Consensus: Bridging Theory and Practice - zh</a></p>
-<p><a href="https://pingcap.com/zh/blog/lease-read">Tikv lease-read</a></p>
+<h2 id="reference">Reference</h2>
+<p><a href="https://leveldb-handbook.readthedocs.io/zh/latest/index.html">LevelDB handbook</a></p>
 
     </div>
 
@@ -468,7 +550,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
   <p class="copyright-item">
     <span class="item-title">LastMod</span>
     <span class="item-content">
-      2022-04-15
+      2022-05-10
       
     </span>
   </p>
@@ -485,32 +567,18 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     <footer class="post-footer">
       <div class="post-tags">
-          <a href="https://noneback.github.io/tags/raft/">Raft</a>
-          <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
-          <a href="https://noneback.github.io/tags/consensu/">Consensu</a>
-          <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
+          <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+          <a href="https://noneback.github.io/tags/lsm/">LSM</a>
+          <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
           
         </div>
 
       
       <nav class="post-nav">
         
-          <a class="prev" href="/post/leveldb-write/">
-            
-            <i class="iconfont">
-              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
-  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-  width="18" height="18">
-  <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
-</svg>
-
-            </i>
-            <span class="prev-text nav-default">LevelDB Write</span>
-            <span class="prev-text nav-mobile">Prev</span>
-          </a>
         
-          <a class="next" href="/post/leveldb-%E5%90%AF%E5%8A%A8/">
-            <span class="next-text nav-default">LevelDB 启动</span>
+          <a class="next" href="/post/mit6.824-raftkv/">
+            <span class="next-text nav-default">MIT6.824-RaftKV</span>
             <span class="prev-text nav-mobile">Next</span>
             
             <i class="iconfont">
