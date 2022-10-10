@@ -23,7 +23,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <meta name="author" content="NoneBack" />
-  <meta name="description" content="Flink-Iceberg-Connector 写入提交流程总览 Flink 通过 RowData -&amp;gt; distributeStream -&amp;gt; WriterStream -&amp;gt; CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入ma" />
+  <meta name="description" content="Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。 写入提交流程总览 Flink 通过 RowData -&amp;gt; distributeStream -&amp;gt; WriterStream -&amp;gt; Committer" />
 <meta name="keywords" content="big data, lake house, stream compute, storage" />
 
 
@@ -62,19 +62,19 @@
 
 
 <meta property="og:title" content="Flink-Iceberg-Connector写入流程" />
-<meta property="og:description" content="Flink-Iceberg-Connector 写入提交流程总览 Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入ma" />
+<meta property="og:description" content="Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。 写入提交流程总览 Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; Committer" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/post/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/" /><meta property="article:section" content="post" />
 <meta property="article:published_time" content="2022-10-10T10:43:38+08:00" />
 <meta property="article:modified_time" content="2022-10-10T10:43:38+08:00" />
 
 <meta itemprop="name" content="Flink-Iceberg-Connector写入流程">
-<meta itemprop="description" content="Flink-Iceberg-Connector 写入提交流程总览 Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入ma"><meta itemprop="datePublished" content="2022-10-10T10:43:38+08:00" />
+<meta itemprop="description" content="Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。 写入提交流程总览 Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; Committer"><meta itemprop="datePublished" content="2022-10-10T10:43:38+08:00" />
 <meta itemprop="dateModified" content="2022-10-10T10:43:38+08:00" />
-<meta itemprop="wordCount" content="3709">
+<meta itemprop="wordCount" content="3752">
 <meta itemprop="keywords" content="big data,lake house,stream compute,storage," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Flink-Iceberg-Connector写入流程"/>
-<meta name="twitter:description" content="Flink-Iceberg-Connector 写入提交流程总览 Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入ma"/>
+<meta name="twitter:description" content="Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。 写入提交流程总览 Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; Committer"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -368,7 +368,6 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
   <div class="post-toc-content">
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#flink-iceberg-connector">Flink-Iceberg-Connector</a></li>
     <li><a href="#写入提交流程总览">写入提交流程总览</a></li>
     <li><a href="#写入流程源码分析">写入流程源码分析</a>
       <ul>
@@ -384,7 +383,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     
     <div class="post-content">
-      <h2 id="flink-iceberg-connector">Flink-Iceberg-Connector</h2>
+      <p>Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。</p>
 <h2 id="写入提交流程总览">写入提交流程总览</h2>
 <p>Flink 通过 <code>RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream</code>，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest + snapshot + metadata，数据文件对外部可见）</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1655962006990-826460c7-b6fc-4efe-a8e0-65cc080ffea9.png#clientId=uc8a9769d-f729-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=242&amp;id=u2b3c9cf7&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=483&amp;originWidth=1080&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=95146&amp;status=done&amp;style=none&amp;taskId=ufe2588e9-b29d-40dc-8f25-4bbe725336d&amp;title=&amp;width=540" alt="image.png"></p>
@@ -1274,7 +1273,9 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <ul>
 <li>Batch Commit : 引入缓存层或者一个额外的服务，批量提交到数据湖，降低提交操作并发度。同时缓存层也许可以对多次的数据文件进行compact</li>
 </ul>
+<blockquote>
 <p><a href="https://zhuanlan.zhihu.com/p/472617094">https://zhuanlan.zhihu.com/p/472617094</a><a href="https://www.infoq.cn/article/hfft7c7ahoomgayjsouz">https://www.infoq.cn/article/hfft7c7ahoomgayjsouz</a></p>
+</blockquote>
 <ol start="3">
 <li>Flink Iceberg Connector不支持隐藏分区，也不支持分区字段预处理。</li>
 </ol>
@@ -1320,7 +1321,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
         
         
           <a class="next" href="/post/apacheorc%E8%B0%83%E7%A0%94/">
-            <span class="next-text nav-default">ApacheORC调研</span>
+            <span class="next-text nav-default">Apache-ORC调研</span>
             <span class="prev-text nav-mobile">Next</span>
             
             <i class="iconfont">

@@ -51,7 +51,7 @@
       
       <guid>https://noneback.github.io/post/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/</guid>
       
-        <description>&lt;h2 id=&#34;flink-iceberg-connector&#34;&gt;Flink-Iceberg-Connector&lt;/h2&gt;
+        <description>&lt;p&gt;Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。&lt;/p&gt;
 &lt;h2 id=&#34;写入提交流程总览&#34;&gt;写入提交流程总览&lt;/h2&gt;
 &lt;p&gt;Flink 通过 &lt;code&gt;RowData -&amp;gt; distributeStream -&amp;gt; WriterStream -&amp;gt; CommitterStream&lt;/code&gt;，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest + snapshot + metadata，数据文件对外部可见）&lt;/p&gt;
 &lt;p&gt;&lt;img src=&#34;https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1655962006990-826460c7-b6fc-4efe-a8e0-65cc080ffea9.png#clientId=uc8a9769d-f729-4&amp;amp;crop=0&amp;amp;crop=0&amp;amp;crop=1&amp;amp;crop=1&amp;amp;from=paste&amp;amp;height=242&amp;amp;id=u2b3c9cf7&amp;amp;margin=%5Bobject%20Object%5D&amp;amp;name=image.png&amp;amp;originHeight=483&amp;amp;originWidth=1080&amp;amp;originalType=binary&amp;amp;ratio=1&amp;amp;rotation=0&amp;amp;showTitle=false&amp;amp;size=95146&amp;amp;status=done&amp;amp;style=none&amp;amp;taskId=ufe2588e9-b29d-40dc-8f25-4bbe725336d&amp;amp;title=&amp;amp;width=540&#34; alt=&#34;image.png&#34;&gt;&lt;/p&gt;
@@ -941,7 +941,9 @@
 &lt;ul&gt;
 &lt;li&gt;Batch Commit : 引入缓存层或者一个额外的服务，批量提交到数据湖，降低提交操作并发度。同时缓存层也许可以对多次的数据文件进行compact&lt;/li&gt;
 &lt;/ul&gt;
+&lt;blockquote&gt;
 &lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/472617094&#34;&gt;https://zhuanlan.zhihu.com/p/472617094&lt;/a&gt;&lt;a href=&#34;https://www.infoq.cn/article/hfft7c7ahoomgayjsouz&#34;&gt;https://www.infoq.cn/article/hfft7c7ahoomgayjsouz&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
 &lt;ol start=&#34;3&#34;&gt;
 &lt;li&gt;Flink Iceberg Connector不支持隐藏分区，也不支持分区字段预处理。&lt;/li&gt;
 &lt;/ol&gt;
@@ -950,14 +952,13 @@
     </item>
     
     <item>
-      <title>ApacheORC调研</title>
+      <title>Apache-ORC调研</title>
       <link>https://noneback.github.io/post/apacheorc%E8%B0%83%E7%A0%94/</link>
       <pubDate>Wed, 05 Oct 2022 19:56:01 +0800</pubDate>
       
       <guid>https://noneback.github.io/post/apacheorc%E8%B0%83%E7%A0%94/</guid>
       
-        <description>&lt;h2 id=&#34;背景&#34;&gt;背景&lt;/h2&gt;
-&lt;p&gt;iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后续湖仓查询性能以及数据湖的ACID需求，现对ORC进行调研，以支持后续Flink+iceberg+orc的demo测试。&lt;/p&gt;
+        <description>&lt;p&gt;iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后续湖仓查询性能以及数据湖的ACID需求，现对ORC进行调研，以支持后续Flink+iceberg+orc的demo测试。&lt;/p&gt;
 &lt;p&gt;调研重点：ORC文件的编码以及文件组织方式，索引支持。&lt;/p&gt;
 &lt;h2 id=&#34;file-layout&#34;&gt;File Layout&lt;/h2&gt;
 &lt;p&gt;一个ORC文件总体上可以分为三大部分：&lt;/p&gt;
@@ -1609,16 +1610,18 @@ Case in Hive DDL：
 &lt;h2 id=&#34;数据访问路径&#34;&gt;数据访问路径&lt;/h2&gt;
 &lt;p&gt;Postscript -&amp;gt; Footer -&amp;gt; 获取对于的StripeInfomation -&amp;gt; Stripe Footer -&amp;gt; Stripe Index -&amp;gt; Stripe Row Group -&amp;gt; Column&lt;/p&gt;
 &lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&#34;https://webcdn.nexla.com/n3x_ctx/uploads/2018/05/An-Introduction-to-Big-Data-Formats-Nexla.pdf&#34;&gt;https://webcdn.nexla.com/n3x_ctx/uploads/2018/05/An-Introduction-to-Big-Data-Formats-Nexla.pdf&lt;/a&gt;
-&lt;a href=&#34;https://orc.apache.org/docs/&#34;&gt;https://orc.apache.org/docs/&lt;/a&gt;
-&lt;a href=&#34;https://orc.apache.org/specification/ORCv1/&#34;&gt;https://orc.apache.org/specification/ORCv1/&lt;/a&gt;
-&lt;a href=&#34;https://cloud.tencent.com/developer/article/1757862&#34;&gt;https://cloud.tencent.com/developer/article/1757862&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://webcdn.nexla.com/n3x_ctx/uploads/2018/05/An-Introduction-to-Big-Data-Formats-Nexla.pdf&#34;&gt;https://webcdn.nexla.com/n3x_ctx/uploads/2018/05/An-Introduction-to-Big-Data-Formats-Nexla.pdf&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://orc.apache.org/docs/&#34;&gt;https://orc.apache.org/docs/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://orc.apache.org/specification/ORCv1/&#34;&gt;https://orc.apache.org/specification/ORCv1/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://cloud.tencent.com/developer/article/1757862&#34;&gt;https://cloud.tencent.com/developer/article/1757862&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </description>
       
     </item>
     
     <item>
-      <title>ApacheIceberg调研</title>
+      <title>Apache-Iceberg调研</title>
       <link>https://noneback.github.io/post/apacheiceberg%E8%B0%83%E7%A0%94/</link>
       <pubDate>Wed, 05 Oct 2022 19:55:54 +0800</pubDate>
       
@@ -1641,37 +1644,31 @@ Case in Hive DDL：
 &lt;ul&gt;
 &lt;li&gt;支持安全高效的schema，partition变更和演进，self-define schema，hidden partition&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;抽象了自己的schema，不绑定任何计算引擎层面的schema；schema层面维护partition&lt;/p&gt;
-&lt;p&gt;partition和sort order 提供transformer函数，如 date(timestamp)&lt;/p&gt;
+&lt;p&gt;抽象了自己的schema，不绑定任何计算引擎层面的schema；schema层面维护partition。partition和sort order 提供transformer函数，如 date(timestamp)&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;支持对象存储，对fs语义依赖少&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;利好alluxio&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;ACID语义支持，读写并行，写操作串行化&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;读写快照分离；乐观处理写并行冲突，重试保证写入&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;snapshot，支持数据回滚以及时间回溯，支持snapshot过期删除（默认不删除数据文件，但可以定制删除行为(&lt;a href=&#34;https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html&#34;&gt;related api doc&lt;/a&gt;)）&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;通过对比snapshot差异可以实现增量读取&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;查询优化友好，predict pushdown， data file statistics&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;目前好像不支持compaction, 可以在snapshot过期删除的删除无效文件(&lt;a href=&#34;https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html#deleteWith-java.util.function.Consumer-&#34;&gt;deleteWith&lt;/a&gt;)&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;抽象程度高，方便改造优化拓展。catalog，读写路径，文件格式，存储依赖 插件化&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;Iceberg的设计初衷是定义于一个标准、开发且通用的数据组织格式，同时屏蔽底层数据存储格式上的差异，向上提供统一的操作API，使得不同的引擎可以通过其提供的API接入。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;其他：文件级别加密解密&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;支持对象存储，对fs语义依赖少&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;ACID语义支持，读写并行，写操作串行化: 读写快照分离；乐观处理写并行冲突，重试保证写入&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;snapshot，支持数据回滚以及时间回溯，支持snapshot过期删除（默认不删除数据文件，但可以定制删除行为(&lt;a href=&#34;https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html&#34;&gt;related api doc&lt;/a&gt;))。通过对比snapshot差异可以实现增量读取。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;查询优化友好，predict pushdown， data file statistics,目前好像不支持compaction, 可以在snapshot过期删除的删除无效文件(&lt;a href=&#34;https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html#deleteWith-java.util.function.Consumer-&#34;&gt;deleteWith&lt;/a&gt;)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;抽象程度高，方便改造优化拓展。catalog，读写路径，文件格式，存储依赖 插件化。Iceberg的设计初衷是定义于一个标准、开发且通用的数据组织格式，同时屏蔽底层数据存储格式上的差异，向上提供统一的操作API，使得不同的引擎可以通过其提供的API接入。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;其他：文件级别加密解密&lt;/p&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;生态&#34;&gt;生态&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;社区对OSS &amp;amp; Flink &amp;amp; Spark &amp;amp; Presto均有一定支持&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
 &lt;ul&gt;
 &lt;li&gt;flink(&lt;a href=&#34;https://iceberg.apache.org/docs/latest/flink/&#34;&gt;detail&lt;/a&gt;)：支持流式读写和增量读取(基于snapshot)，upsert write(&lt;a href=&#34;https://iceberg.apache.org/releases/#0130-release-notes&#34;&gt;0.13.0-release-notes&lt;/a&gt;)&lt;/li&gt;
 &lt;li&gt;presto: &lt;a href=&#34;https://prestodb.io/docs/current/connector/iceberg.html&#34;&gt;Iceberg connector&lt;/a&gt;&lt;/li&gt;
@@ -1680,8 +1677,6 @@ Case in Hive DDL：
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;其他组件对接&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
 &lt;ul&gt;
 &lt;li&gt;对接下层存储：只依赖三种语义In-place write，Seekable reads，Deletes，支持AliOSS(&lt;a href=&#34;https://github.com/apache/iceberg/pull/3686/files&#34;&gt;# pr 3689&lt;/a&gt;)&lt;/li&gt;
 &lt;li&gt;对接其他文件格式：抽象程度高，目前支持avro，parquet，orc&lt;/li&gt;
@@ -1690,16 +1685,12 @@ Case in Hive DDL：
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;性能：TODO&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
 &lt;p&gt;社区开放中立，可以参与贡献，提高影响力&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;表规范&#34;&gt;表规范&lt;/h2&gt;
 &lt;p&gt;对数据文件和元数据文件的组织规范。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&#34;https://iceberg.apache.org/img/iceberg-metadata.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
-&lt;h4 id=&#34;heading&#34;&gt;&lt;/h4&gt;
 &lt;h3 id=&#34;casespark--iceberg--local-fs&#34;&gt;Case：Spark + IceBerg + Local FS&lt;/h3&gt;
 &lt;p&gt;ice-berg 支持parquet，Avro，ORC 三种文件格式&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -1947,7 +1938,9 @@ Case in Hive DDL：
 &lt;li&gt;一个Snapshot对应一个Manifest List File，每次提交一个Snapshot会生成一个manifest list file。&lt;/li&gt;
 &lt;li&gt;乐观并发处理，并发提交snapshot冲突时，后提交的请求会&lt;strong&gt;重试&lt;/strong&gt;保证提交。&lt;/li&gt;
 &lt;/ul&gt;
+&lt;blockquote&gt;
 &lt;p&gt;Each manifest list stores metadata about manifests, including partition stats and data file counts.&lt;/p&gt;
+&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -2051,7 +2044,9 @@ Case in Hive DDL：
 &lt;/div&gt;&lt;h4 id=&#34;imghttpspic2zhimgcom80v2-2e12c90f6cab539342af6a779c6fa73d_1440wjpg&#34;&gt;&lt;img src=&#34;https://pic2.zhimg.com/80/v2-2e12c90f6cab539342af6a779c6fa73d_1440w.jpg&#34; alt=&#34;img&#34;&gt;&lt;/h4&gt;
 &lt;h4 id=&#34;metadata-file&#34;&gt;Metadata File&lt;/h4&gt;
 &lt;p&gt;包含了表的所有状态。表状态变更的时候会生成一个新的metadata，并替换原有的metadata file，&lt;strong&gt;此过程保证原子性。&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
 &lt;p&gt;The table metadata file tracks the &lt;strong&gt;table schema&lt;/strong&gt;, &lt;strong&gt;partitioning config&lt;/strong&gt;, custom properties, and &lt;strong&gt;snapshots&lt;/strong&gt; of the table contents&lt;/p&gt;
+&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;  1
@@ -2288,8 +2283,6 @@ Case in Hive DDL：
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;Nested Types&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
 &lt;ul&gt;
 &lt;li&gt;struct：a tuple of typed values&lt;/li&gt;
 &lt;li&gt;list：a collection of values with some element type&lt;/li&gt;
