@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Mon, 10 Oct 2022 10:43:38 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 03 Jan 2023 23:49:41 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -40,6 +40,61 @@
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;!-- raw HTML omitted --&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>MIT6.824 ZooKeeper</title>
+      <link>https://noneback.github.io/post/mit6.824-zookeeper/</link>
+      <pubDate>Tue, 03 Jan 2023 23:49:41 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/mit6.824-zookeeper/</guid>
+      
+        <description>&lt;p&gt;本文主要讲了ZooKeeper系统在设计和实践上的考量，如wait-free和lock，一致性的选择，系统提供的API以及特定语义上的抉择，这样的trade-off是本文的最大启发。&lt;/p&gt;
+&lt;h2 id=&#34;定位&#34;&gt;定位&lt;/h2&gt;
+&lt;p&gt;wait-free,high-performance 的协调分布式应用的系统。通过提供协调原语（特定语义的API与数据模型）支持分布式应用的协调需求。&lt;/p&gt;
+&lt;h2 id=&#34;设计&#34;&gt;设计&lt;/h2&gt;
+&lt;h3 id=&#34;关键词&#34;&gt;关键词&lt;/h3&gt;
+&lt;p&gt;ZK定位中的关键词有两个：&lt;strong&gt;高性能，分布式应用协调服务&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;ZK的高性能通过WaitFree设计、多副本本地读、Watch机制实现。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;WaitFree应该是将请求异步处理来实现的，这样异步处理可能会导致请求重排序，导致状态机和现实的时序不同，所以ZK提供了FIFO Client Order 顺序保证。同时，这样的异步处理有益于数据的batch pipeline处理，进一步提升性能。&lt;/li&gt;
+&lt;li&gt;Watch机制，当znode变化是通知Client更新，避免Client操作本地缓存的开销。&lt;/li&gt;
+&lt;li&gt;多副本本地读，ZK使用ZAB协议实现数据共识，保证写操作满足linearizability。读请求副本本地读，不走ZAB共识协议，但读请求只满足Serializaility，可能会读到之前的结果，但提升了性能。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;分布式应用协调服务指的是，ZK提供的数据模型以及API语义，分布式应用可以自由使用来满足诸如Group Membership，Distributed Lock等协调需求。&lt;/p&gt;
+&lt;h3 id=&#34;数据模型与api&#34;&gt;数据模型与API&lt;/h3&gt;
+&lt;p&gt;ZK为使用者提供znode数据节点的抽象，数据节点通过分层的命名空间组织。ZK提供了Regular + Ephemeral两种znode的节点的创建，每个节点都存储数据，并通过标准的UNIX文件系统路径访问。&lt;/p&gt;
+&lt;p&gt;实际上，znodes 不是为通用数据存储设计的。 相反，znodes 映射到客户端应用程序的抽象，通常与用于协调的&lt;strong&gt;元数据&lt;/strong&gt;相对应。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;也就是说，使用ZK进行协调时，利用好znode关联的元数据，而不是只将znode当做数据存储。比如，znode 将元数据与时间戳(timestamp)和版本计数器( version counter )关联，客户端可以跟踪对 znode 的更改并根据 znode 的版本执行条件更新。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;这套数据模型本质上是一个简化API的文件系统，只支持完整数据的读写。使用者将在ZK提供的语义下实现分布式应用的协调。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Regular 和 Ephemeral 的区别在于Ephemeral可以在Session结束时自动删除。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155342Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Client通过API与ZK交互，ZK通过Session管理Clinet连接，在Session中Clinet可以观测到反应其操作的状态变化。&lt;/p&gt;
+&lt;h2 id=&#34;cap&#34;&gt;CAP&lt;/h2&gt;
+&lt;p&gt;ZK保证CP，比如在选举leader时，会停止服务，直到选举成功之后才会再次对外提供服务。&lt;/p&gt;
+&lt;h2 id=&#34;实现&#34;&gt;实现&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155414Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;ZK使用多副本实现高可用。&lt;/p&gt;
+&lt;p&gt;简单来说，ZK上层使用ZAB协议处理写请求，保证多副本更新的线性一致性，本地处理读请求，读请求保证顺序一致性。下层数据状态机保存到ZK集群机器上的Replicated Database（内存）+ WAL上，并定期snapshot。整个内存数据库通过 Fuzzy Snapshot + WAL Replay的方式保证单机Crash Safe以及重启恢复的速度。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Fuzzy Snapshot 的优势在于不阻塞在线请求。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;与client的交互&#34;&gt;与Client的交互&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;更新操作会通知并清除相关znode的Watch。&lt;/li&gt;
+&lt;li&gt;读请求本地进行，通过zxid定义与写请求的偏序关系，只保证顺序一致性，可能会Read Stale。ZK提供了sync操作，通过 sync + read 一定程度上解决了这个问题。&lt;/li&gt;
+&lt;li&gt;当Client连接新ZK Server时，会对比两者的最大zxid，落后的ZK Server将不会为Client建立Session。&lt;/li&gt;
+&lt;li&gt;Client通过心跳维持Session，Server对请求进行幂等处理。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/zookeeper.pdf&#34;&gt;ZooKeeper Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/zookeeper-faq.txt&#34;&gt;MIT6.824-ZooKeeper FAQ&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>
@@ -5157,57 +5212,6 @@ Case in Hive DDL：
 &lt;h3 id=&#34;参考&#34;&gt;&lt;strong&gt;参考&lt;/strong&gt;&lt;/h3&gt;
 &lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/34332329&#34;&gt;知乎:服务发现基本原理&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;https://www.infoq.cn/article/lknumimtzy08qxqckqma&#34;&gt;InfoQ:聊一聊微服务架构中的服务发现系统&lt;/a&gt;&lt;/p&gt;
-</description>
-      
-    </item>
-    
-    <item>
-      <title>CPU伪共享</title>
-      <link>https://noneback.github.io/post/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/</link>
-      <pubDate>Sun, 02 May 2021 13:47:30 +0800</pubDate>
-      
-      <guid>https://noneback.github.io/post/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/</guid>
-      
-        <description>&lt;p&gt;起因只是因为面试时被问到的一个问题：什么是CPU伪共享？&lt;/p&gt;
-&lt;h2 id=&#34;cpu缓存&#34;&gt;CPU缓存&lt;/h2&gt;
-&lt;p&gt;让我们先从CPU缓存讲起。&lt;/p&gt;
-&lt;p&gt;CPU Cache是计算机为了解决CPU和主存之间的速度差异，引入 的一种存储介质。在金字塔式存储体系中它位于自顶向下的第二层，仅次于CPU寄存器。其容量远小于内存，但速度却可以接近处理器的频率。&lt;/p&gt;
-&lt;p&gt;缓存的有效实际上是依托于程序的时空局部性原理。&lt;/p&gt;
-&lt;p&gt;使用场景上，当处理器发出内存访问请求时，会先查看缓存内是否有请求数据。如果存在（命中），则不经访问内存直接返回该数据；如果不存在（失效），则要先把内存中的相应数据载入缓存，再将其返回处理器。&lt;/p&gt;
-&lt;h2 id=&#34;cpu缓存架构&#34;&gt;CPU缓存架构&lt;/h2&gt;
-&lt;p&gt;CPU与主存之间通常有三级缓存，缓存靠近CPU缓存的速率就越快，同时容量也越小。CPU获取数据时，它先去 L1 查找所需的数据，再去 L2，然后是 L3，最后如果这些缓存中都没有，所需的数据就要去主内存拿。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png&#34; alt=&#34;608ba4a2f346fb7dd394484a.png&#34;&gt;
-其中：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;L1 紧靠着在使用它的 CPU 内核。L1，L2只能被一个单独的 CPU 核使用。&lt;/li&gt;
-&lt;li&gt;L3 能够被单个插槽上的所有 CPU 核共享。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;cpu缓存块&#34;&gt;CPU缓存块&lt;/h2&gt;
-&lt;p&gt;缓存实际上是以&lt;strong&gt;缓存块&lt;/strong&gt;（或者称之为缓存行）为&lt;strong&gt;最小存取单位&lt;/strong&gt;进行存取的，通常是64个字节，它有效引用了主存中的一块地址（64字节）。&lt;/p&gt;
-&lt;p&gt;缓存的更新一次性至少更新一个缓存块。&lt;/p&gt;
-&lt;p&gt;这样加载缓存的好处是，如果我们需要的数据正好彼此相邻，那么就不需要再次更新缓存；&lt;/p&gt;
-&lt;p&gt;坏处在于可能会导致CPU的伪共享问题。&lt;/p&gt;
-&lt;h2 id=&#34;cpu伪共享&#34;&gt;CPU伪共享&lt;/h2&gt;
-&lt;p&gt;假设这么一个场景：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;首先，我们有个 long 类型的变量 a，它不是数组的一部分，而是一个单独的变量，并且还有另外一个 long 类型的变量 b 紧挨着它，那么当加载 a 的时候将免费加载 b。&lt;/li&gt;
-&lt;li&gt;这个时候，一个 CPU 核心的线程在对 a 进行修改，另一个 CPU 核心的线程却在对 b 进行读取。&lt;/li&gt;
-&lt;li&gt;当前者修改 a 时，会把 a 和 b 同时加载到前者核心的缓存行中，更新完 a 后其它所有包含 a 的缓存行都将失效，因为其它缓存中的 a 不是最新值了。&lt;/li&gt;
-&lt;li&gt;而当后者读取 b 时，发现这个缓存行已经失效了，需要从主内存中重新加载。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;我们的缓存都是以缓存行作为一个单位来处理的，所以失效 a 的缓存的同时，也会把 b 失效，反之亦然。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34; alt=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34;&gt;&lt;/p&gt;
-&lt;p&gt;这样就出现了问题：&lt;/p&gt;
-&lt;p&gt;b 和 a 完全不相干，每次却要因为 a 的更新需要从主内存重新读取，它被缓存未命中给拖慢了。&lt;/p&gt;
-&lt;p&gt;CPU的&lt;em&gt;伪共享&lt;/em&gt;：&lt;strong&gt;当多线程修改互相独立的变量时，如果这些变量共享同一个缓存行，就会无意中影响彼此的性能，这就是伪共享&lt;/strong&gt;。&lt;/p&gt;
-&lt;h2 id=&#34;避免cpu伪共享&#34;&gt;避免CPU伪共享&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;让数据内存分布不相邻&lt;/li&gt;
-&lt;li&gt;编译时让&lt;a href=&#34;https://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%AF%B9%E9%BD%90&#34;&gt;变量对齐&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/65394173&#34;&gt;杂谈:什么是CPU伪共享&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/CPU%E7%BC%93%E5%AD%98&#34;&gt;wikipedia&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>
