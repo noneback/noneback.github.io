@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Archive - NoneBack</title>
+  <title>MIT6.824 ChainReplication - NoneBack</title>
   
 
 <meta name="renderer" content="webkit" />
@@ -23,7 +23,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <meta name="author" content="noneback" />
-  <meta name="description" content="And then there were none" />
+  <meta name="description" content="Chain Replication for Supporting High Throughput and Availability 简介 简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来" />
+
   <meta name="keywords" content="Hugo, theme, jane, BUPT, Blog, noneback" />
 
 
@@ -34,8 +35,8 @@
 <meta name="generator" content="Hugo 0.105.0" />
 
 
-<link rel="canonical" href="https://noneback.github.io/post/" />
-<link href="/post/index.xml" rel="alternate" type="application/rss+xml" title="NoneBack" />
+<link rel="canonical" href="https://noneback.github.io/post/mit6.824-chainreplication/" />
+
 
 
 
@@ -60,15 +61,20 @@
 <link rel="stylesheet" href="/css/custom.css">
 
 
-<meta property="og:title" content="Posts" />
-<meta property="og:description" content="And then there were none" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://noneback.github.io/post/" />
+<meta property="og:title" content="MIT6.824 ChainReplication" />
+<meta property="og:description" content="Chain Replication for Supporting High Throughput and Availability 简介 简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/post/mit6.824-chainreplication/" /><meta property="article:section" content="post" />
 
-<meta itemprop="name" content="Posts">
-<meta itemprop="description" content="And then there were none"><meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Posts"/>
-<meta name="twitter:description" content="And then there were none"/>
+
+
+<meta itemprop="name" content="MIT6.824 ChainReplication">
+<meta itemprop="description" content="Chain Replication for Supporting High Throughput and Availability 简介 简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来">
+
+<meta itemprop="wordCount" content="718">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MIT6.824 ChainReplication"/>
+<meta name="twitter:description" content="Chain Replication for Supporting High Throughput and Availability 简介 简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -331,191 +337,146 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
     <main id="main" class="main bg-llight">
       <div class="content-wrapper">
         <div id="content" class="content container">
-          
-<section id="archive" class="archive">
-    <div class="archive-title">
-      <span class="archive-post-counter">
-          37 posts In Total
-      </span>
-    </div>
+          <article class="post bg-white">
     
-      <div class="collection-title">
-        <h2 class="archive-year">2023</h2>
+    <header class="post-header">
+      <h1 class="post-title">MIT6.824 ChainReplication</h1>
+      
+      <div class="post-meta">
+        <time datetime="0001-01-01" class="post-time">
+          0001-01-01
+        </time>
+        
+        
+
+        
+        
+
+        
+        
       </div>
+    </header>
 
-    <div class="archive-post">
-      <time datetime="2023-01-03" class="archive-post-time">
-        2023-01-03
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/mit6.824-zookeeper/" class="archive-post-link">
-          MIT6.824-ZooKeeper
-        </a>
-      </span>
-    </div>
     
-      <div class="collection-title">
-        <h2 class="archive-year">2022</h2>
-      </div>
-
-    <div class="archive-post">
-      <time datetime="2022-10-10" class="archive-post-time">
-        2022-10-10
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/" class="archive-post-link">
-          Flink-Iceberg-Connector写入流程
-        </a>
-      </span>
-    </div>
     
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#故障处理">故障处理</a></li>
+    <li><a href="#缺点">缺点</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
 
-    <div class="archive-post">
-      <time datetime="2022-10-05" class="archive-post-time">
-        2022-10-05
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/apacheorc%E8%B0%83%E7%A0%94/" class="archive-post-link">
-          Apache-ORC调研
-        </a>
-      </span>
-    </div>
     
+    <div class="post-content">
+      <h1 id="chain-replication-for-supporting-high-throughput-and-availability">Chain Replication for Supporting High Throughput and Availability</h1>
+<h1 id="简介">简介</h1>
+<p>简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来保证服务的可用性。</p>
+<p><img src="/home/noneback/.config/Typora/typora-user-images/image-20230208232032286.png" alt="image-20230208232032286"></p>
+<p>算法的设计很简单巧妙。算法通过链式复制将复制的吞吐均分到所有的CR节点上，每个节点只负责对后续节点的复制。写入请求从头部节向后传播，查询请求交由尾部节点响应。</p>
+<p>为了维护Chain上节点之前的前后关系，CR还引入了一个Master服务，用于管理节点之间的关系，以及处理Node Failure的情况。</p>
+<h2 id="故障处理">故障处理</h2>
+<ol>
+<li>Head Fail：头节点Pending or 没处理完 的请求将被丢失，不影响线性一致性，之后将第二个节点设置为头结点</li>
+<li>Tail Fail：倒数第二个节点将成为尾节点，此时原来Tail Pending的请求将被提交</li>
+<li>Middle Fail：中间节点故障的处理，类比链表的操作。Node_pre 将指向 Node_next，此时我们需要保证故障Node传递的请求被完整的传递下去。每个CR节点会维护一个SendReqList，记录已传递给后续节点的请求，由于请求是从头到尾传播，所以Node_pre只需要Node_next所缺失的数据即可。当Tail接收到请求时，标识数据被提交，此时会从尾至头传递Ack(req)信息，经过的节点都会把req从SendReqList从去除。</li>
+</ol>
+<h2 id="缺点">缺点</h2>
+<p>最大的有点是，可以提高吞吐量，节点的负载比较均衡，同时相对易于实现。整体设计很简洁有效。</p>
+<p>但很明显也会有以下缺点。</p>
+<ol>
+<li>如果传播链条上有一个节点处理慢，将会拖慢整个处理流程。</li>
+<li>除了首尾两个节点，其他节点的数据基本只作为副本存在，而无法提供服务。当然CRAQ里有让中间节点提供只读服务的方法，类似Raft的Read Index，暂不细说。</li>
+</ol>
+<h1 id="参考">参考</h1>
+<p><a href="%5B%5D()"><strong>Chain Replication 论文阅读</strong></a></p>
+<p><a href="%5B%5D()"><strong>CR Paper</strong></a></p>
 
-    <div class="archive-post">
-      <time datetime="2022-10-05" class="archive-post-time">
-        2022-10-05
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/apacheiceberg%E8%B0%83%E7%A0%94/" class="archive-post-link">
-          Apache-Iceberg调研
-        </a>
-      </span>
     </div>
+
     
-
-    <div class="archive-post">
-      <time datetime="2022-05-10" class="archive-post-time">
-        2022-05-10
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/leveldb-write/" class="archive-post-link">
-          LevelDB Write
-        </a>
-      </span>
-    </div>
     
-
-    <div class="archive-post">
-      <time datetime="2022-04-15" class="archive-post-time">
-        2022-04-15
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/mit6.824-raftkv/" class="archive-post-link">
-          MIT6.824-RaftKV
-        </a>
-      </span>
-    </div>
-    
-
-    <div class="archive-post">
-      <time datetime="2022-04-09" class="archive-post-time">
-        2022-04-09
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/leveldb-%E5%90%AF%E5%8A%A8/" class="archive-post-link">
-          LevelDB 启动
-        </a>
-      </span>
-    </div>
-    
-
-    <div class="archive-post">
-      <time datetime="2022-02-21" class="archive-post-time">
-        2022-02-21
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/mit6.824-raft/" class="archive-post-link">
-          MIT6.824-Raft
-        </a>
-      </span>
-    </div>
-    
-
-    <div class="archive-post">
-      <time datetime="2022-01-15" class="archive-post-time">
-        2022-01-15
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/arch&#43;dwm%E5%A5%97%E9%A4%90/" class="archive-post-link">
-          Arch&#43;DWM生产力套餐尝试
-        </a>
-      </span>
-    </div>
-    
-      <div class="collection-title">
-        <h2 class="archive-year">2021</h2>
-      </div>
-
-    <div class="archive-post">
-      <time datetime="2021-12-31" class="archive-post-time">
-        2021-12-31
-      </time>
-      <span class="archive-post-title">
-        <a href="/post/2021%E5%B9%B4%E7%BB%88%E6%80%BB%E7%BB%93/" class="archive-post-link">
-          2021年终总结
-        </a>
-      </span>
-    </div></section>
-
-
-
-
-
-
-  
-  
-  
-
-  
-  
-
-  
-  
-
-  
-  
-
-  
-  
-  <nav class="pagination">
-    <ul>
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">noneback</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+      0001-01-01
       
-      <li  class="active" >
-        <a href="/post/">1</a>
-      </li>
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+
+    <footer class="post-footer">
       
-      <li >
-        <a href="/post/page/2/">2</a>
-      </li>
+
       
-      <li >
-        <a href="/post/page/3/">3</a>
-      </li>
-      
-      <li >
-        <a href="/post/page/4/">4</a>
-      </li>
-      
-    </ul>
-  </nav>
+      <nav class="post-nav">
+        
+          <a class="prev" href="/post/gsoc/">
+            
+            <i class="iconfont">
+              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
+</svg>
+
+            </i>
+            <span class="prev-text nav-default"></span>
+            <span class="prev-text nav-mobile">Prev</span>
+          </a>
+        
+      </nav>
+    </footer>
+  </article>
 
   
   
 
+  
+  
 
+  
 
+  
+  
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "noneback/noneback.github.io"
+            issue-term="title"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+  
 
+  
+
+  
+
+  
+
+    
+
+  
 
         </div>
       </div>
