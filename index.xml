@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Tue, 03 Jan 2023 23:49:41 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 08 Feb 2023 23:05:57 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -40,6 +40,39 @@
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;!-- raw HTML omitted --&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>MIT6.824-ChainReplication</title>
+      <link>https://noneback.github.io/post/mit6.824-chainreplication/</link>
+      <pubDate>Wed, 08 Feb 2023 23:05:57 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/mit6.824-chainreplication/</guid>
+      
+        <description>&lt;p&gt;只是简单写写，有一些具体一点的设计建议去读一下原文。&lt;/p&gt;
+&lt;h1 id=&#34;简介&#34;&gt;简介&lt;/h1&gt;
+&lt;p&gt;简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来保证服务的可用性。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34; alt=&#34;image-20230208232032286&#34;&gt;&lt;/p&gt;
+&lt;p&gt;算法的设计很简单巧妙。算法通过链式复制将复制的吞吐均分到所有的CR节点上，每个节点只负责对后续节点的复制。写入请求从头部节向后传播，查询请求交由尾部节点响应。&lt;/p&gt;
+&lt;p&gt;为了维护Chain上节点之前的前后关系，CR还引入了一个Master服务，用于管理节点之间的关系，以及处理Node Failure的情况。&lt;/p&gt;
+&lt;h2 id=&#34;故障处理&#34;&gt;故障处理&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;Head Fail：头节点Pending or 没处理完 的请求将被丢失，不影响线性一致性，之后将第二个节点设置为头结点&lt;/li&gt;
+&lt;li&gt;Tail Fail：倒数第二个节点将成为尾节点，此时原来Tail Pending的请求将被提交&lt;/li&gt;
+&lt;li&gt;Middle Fail：中间节点故障的处理，类比链表的操作。Node_pre 将指向 Node_next，此时我们需要保证故障Node传递的请求被完整的传递下去。每个CR节点会维护一个SendReqList，记录已传递给后续节点的请求，由于请求是从头到尾传播，所以Node_pre只需要Node_next所缺失的数据即可。当Tail接收到请求时，标识数据被提交，此时会从尾至头传递Ack(req)信息，经过的节点都会把req从SendReqList从去除。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;优缺点&#34;&gt;优缺点&lt;/h2&gt;
+&lt;p&gt;最大的优点是，可以单节点提高吞吐量，节点的负载比较均衡，同时相对易于实现。整体设计很简洁有效。&lt;/p&gt;
+&lt;p&gt;但很明显也会有以下缺点。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;如果传播链条上有一个节点处理慢，将会拖慢整个处理流程。&lt;/li&gt;
+&lt;li&gt;除了首尾两个节点，其他节点的数据基本只作为副本存在，而无法提供服务。当然CRAQ里有让中间节点提供只读服务的方法，类似Raft的Read Index，暂不细说。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1 id=&#34;参考&#34;&gt;参考&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&#34;https://tanxinyu.work/chain-replication-thesis/&#34;&gt;Chain Replication 论文阅读&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;http://nil.csail.mit.edu/6.824/2021/papers/cr-osdi04.pdf&#34;&gt;CR Paper&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>
@@ -5147,71 +5180,6 @@ Case in Hive DDL：
 &lt;/ol&gt;
 &lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/&#34;&gt;分布式事务，这一篇就够了&lt;/a&gt;&lt;/p&gt;
-</description>
-      
-    </item>
-    
-    <item>
-      <title>服务发现基本原理</title>
-      <link>https://noneback.github.io/post/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</link>
-      <pubDate>Wed, 12 May 2021 22:37:30 +0800</pubDate>
-      
-      <guid>https://noneback.github.io/post/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</guid>
-      
-        <description>&lt;p&gt;服务发现是什么？基本的实现思路？&lt;/p&gt;
-&lt;h2 id=&#34;总览&#34;&gt;总览&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg&#34; alt=&#34;https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg&#34;&gt;&lt;/p&gt;
-&lt;h2 id=&#34;服务发现的角色组成&#34;&gt;服务发现的角色组成&lt;/h2&gt;
-&lt;p&gt;服务发现由三种角色组成：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;服务提供者：服务的实际提供者，提供对应的微服务&lt;/li&gt;
-&lt;li&gt;服务消费者：使用服务提供者提供的微服务，一般是其他上游微服务&lt;/li&gt;
-&lt;li&gt;服务中介：用于联系服务的提供者与消费者的一个服务，一般为KV存储，以服务名作为Key，以服务提供者IP作为Value，在&lt;strong&gt;有服务提供者状态变化的时候需要及时的更新与通知&lt;/strong&gt;。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;基本的流程是：首先创建一个服务提供者(微服务)，服务提供者将自身的服务地址(一般为IP:PORT)和服务名称注册到服务中介；服务消费者在调用其他微服务时，去服务中介查找服务地址，进行调用。&lt;/p&gt;
-&lt;h2 id=&#34;服务中介&#34;&gt;服务中介&lt;/h2&gt;
-&lt;p&gt;服务中介是服务发现的核心，除了支持服务注册与查找等基本功能，它还需要解决几个核心的问题：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;服务提供者Crash后，无法主动通知中介，怎么处理？如何保证服务列表的有效性。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;客户端心跳：服务提供者每隔一定时间主动发送“心跳”的方式来向服务端表明自己的服务状态正常，或者维护一个长连接&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;只说明了链路的正常，不代表服务的正常&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;服务端主动探测：服务中介主动调用服务节点的某个接口进行健康检查&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;服务注册中心主动调用服务的某个接口无法做到通用性。在很多场景下服务注册中心到服务发布者的网络是不通的，服务端无法主动发起健康检查，那么往往需要在宿主机器上部署一个 agent 来代替服务端的接口探测&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;服务列表更改之后，如何及时通知服务消费者&lt;/p&gt;
-&lt;p&gt;有一下集中机制处理：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;消费者轮询中介 + 服务列表版本号&lt;/li&gt;
-&lt;li&gt;消费中介推送：TCP长连接推送 or Http Polling&lt;/li&gt;
-&lt;li&gt;推拉结合：消费者主动拉取，中介主动推送&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;服务发现分布式，避免单点问题&lt;/p&gt;
-&lt;p&gt;采用分布式KV存储，如etcd等&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;h2 id=&#34;常见服务发现工具&#34;&gt;&lt;strong&gt;常见服务发现工具&lt;/strong&gt;&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;ECTD&lt;/li&gt;
-&lt;li&gt;ZooKeeper&lt;/li&gt;
-&lt;li&gt;Consul&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;参考&#34;&gt;&lt;strong&gt;参考&lt;/strong&gt;&lt;/h3&gt;
-&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/34332329&#34;&gt;知乎:服务发现基本原理&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://www.infoq.cn/article/lknumimtzy08qxqckqma&#34;&gt;InfoQ:聊一聊微服务架构中的服务发现系统&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>
