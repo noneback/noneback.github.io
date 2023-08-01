@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@noneback</copyright>
-    <lastBuildDate>Wed, 08 Feb 2023 23:05:57 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 01 Aug 2023 16:15:29 +0800</lastBuildDate>
     
         <atom:link href="https://noneback.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -21,19 +21,16 @@
       
         <description>&lt;ul&gt;
 &lt;li&gt;
-&lt;p&gt;A student in BUPT with a branch of courses.&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
 &lt;p&gt;Always sleepy.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;Have no dream but fantasize all day long.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;Currtently learning database and distributed system.&lt;/p&gt;
+&lt;p&gt;&lt;del&gt;Currtently learning database and distributed system&lt;/del&gt;  Code is tedious, I want to play guitar.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;Trying hard to become an infra.&lt;/p&gt;
+&lt;p&gt;&lt;del&gt;Try hard to become an infra&lt;/del&gt;  Try hard to make life interesting.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;Love Linux with DWM.&lt;/p&gt;
@@ -41,6 +38,67 @@
 &lt;/ul&gt;
 &lt;!-- raw HTML omitted --&gt;
 </description>
+      
+    </item>
+    
+    <item>
+      <title>AWS Dynamo</title>
+      <link>https://noneback.github.io/post/dynamo/</link>
+      <pubDate>Tue, 01 Aug 2023 16:15:29 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/dynamo/</guid>
+      
+        <description>&lt;p&gt;一篇AWS的老文章，Dynamo到现在已经售卖了很久了，架构应该也早已不像论文中描述的这样。但文章入选了某年的sigmod best paper，依旧是有很多值得学习的地方。&lt;/p&gt;
+&lt;h2 id=&#34;设计&#34;&gt;设计&lt;/h2&gt;
+&lt;p&gt;Dynamo是一种NoSQL产品，对外提供KV存储语义。在产品定义上强调Highly Available而非Consistency，所以在架构设计以及技术选型上和其他的产品还是有很多不同之处。&lt;/p&gt;
+&lt;h2 id=&#34;技术&#34;&gt;技术&lt;/h2&gt;
+&lt;p&gt;在技术上，Dynamo其实有很多有问题的地方，比如NWR算法本身的一些。但考虑到Dynamo已经经过了很长时间的验证，也许这些问题已经被很好的解决了，只不过论文中语焉不详。所以暂且放下这些，挑一些来说一说。其中我认为值得拿出来说的主要有这几块：&lt;/p&gt;
+&lt;h3 id=&#34;数据的分区&#34;&gt;数据的分区&lt;/h3&gt;
+&lt;p&gt;一致性hash算法。传统的一致性hash算法使用hash ring来解决增减节点rehash范围大的问题，但比如数据倾斜，以及异构机器导致的性能倾斜这类问题是无法避免的。&lt;/p&gt;
+&lt;p&gt;Dynamo实践上，在原有hash ring上引入了虚拟节点，比较优雅的解决了这两个问题。&lt;/p&gt;
+&lt;h3 id=&#34;数据写入问题&#34;&gt;数据写入问题&lt;/h3&gt;
+&lt;p&gt;一般存储系统会在写的同时保证一定的数据一致性，换取较低的读操作复杂度，代价上写性能降低（延迟等）。但Dynamo选择了另一条路线。&lt;/p&gt;
+&lt;p&gt;Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;always writable&lt;/strong&gt;，同时只保证最终的一致性。这样的目标使得Dynamo把解决数据冲突之类的操作放到了读操作中，&lt;strong&gt;以保证写永远不会被拒绝&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;总的来说，问题有两个。一个是数据更新冲突问题，显然多client并发的读写同一个Key很容易遇到这样的问题，因为Dynamo只能提供最终一致性，Dynamo Ring 上多个节点的数据不一定一致。二是节点数据空洞的问题。因为Dynamo使用的是NMR这类的gossip算法，这类理论上会出现所有节点上都不包含完整数据集的情况，需要同步副本之间的数据。&lt;/p&gt;
+&lt;p&gt;前者使用版本时钟来标记数据版本，后续在读操作的时候进行读修复合并数据版本；后者有熵逆过程来处理，使用MerkleTree来&lt;strong&gt;快速检测副本之间的不一致性，以及最小化转移的数据量。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;论文中的这个表格可以清楚的看出Dynamo设计开发需要考虑的方面以及在技术上的选择。剩下这些论文中感觉语焉不详，可以参考原文。&lt;/p&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.raychase.net/2396&#34;&gt;Dynamo 的实现技术和去中心化&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://timyang.net/data/dynamo-flawed-architecture-chinese/&#34;&gt;Dynamo一个缺陷的架构设计(译) – 后端技术 by Tim Yang&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://news.ycombinator.com/item?id=915212&#34;&gt;Dynamo: A flawed architecture  | Hacker News&lt;/a&gt;&lt;/p&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>MIT6.824 AuroraDB</title>
+      <link>https://noneback.github.io/post/mit6.824-auroradb/</link>
+      <pubDate>Tue, 01 Aug 2023 16:11:54 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/post/mit6.824-auroradb/</guid>
+      
+        <description>&lt;p&gt;这篇文章介绍了AWS的数据库产品Aurora的设计考虑，包括存算分离、一写多读、基于Quorum的NRW一致性协议等。同时，文章也提到了PolarDB参考Aurora进行设计，但在网络瓶颈和系统调用方面有所不同。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;Aurora是AWS提供的一种数据库产品，主要面向OLTP的业务场景。&lt;/p&gt;
+&lt;p&gt;设计上，我觉得有这些值得参考的地方：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Aurora设计的前提是，在数据库上云之后，得益于云基础设施的发展，数据库最大的瓶颈从计算和存储变成了网络， 这是AWS在设计Aurora的时候一个很重要的前提。基于此前提，Aurora重提Log is Database的论调，只将RedoLog下推至存储层。&lt;/li&gt;
+&lt;li&gt;存算分离。数据库存储层对接分布式存储底座，通过存储底座提供良好的可靠性和安全性保证。计算和存储层可以独立拓展。同时，存储底座对上层提供的单一数据视图，使得一些核心功能和运维操作效率得到很好的提升（比如备份，数据恢复，HA等）&lt;/li&gt;
+&lt;li&gt;一些有意思的可靠性保证。比如基于Quorum的NRW一致性协议，存储节点读写都需要多数派的投票。保证双AZ级别的容错；用分片存储减少故障处理时间，以此提升SLA。多数读只发生在数据库恢复的时候，此时数据库需要恢复当前的状态。&lt;/li&gt;
+&lt;li&gt;一写多读。不同于ShareNothing架构的NewSQL产品，Aurora只提供了单个写节点。数据一致性保证也因此变得简单，因为单写节点可以通过RedoLog LSN作为逻辑时钟，以此维护数据更新操作的偏序关系，只需要把RedoLog下推至所有节点，并基于此顺序对这些操作Apply就可以保证数据的一致性。&lt;/li&gt;
+&lt;li&gt;事务的实现。由于存储底座对上层提供的单一文件视图，所以对与Aurora来说，其事务的实现几乎与单机事务算法相同，并能提供相同的事务语义。NewSQL的事务一般是基于2PC的分布式事务实现。&lt;/li&gt;
+&lt;li&gt;后台加速前台处理。类似LevelDB的思路，尽可能将存储节点的一些操作异步化（比如日志Apply），提升前台用户感知性能。这些异步的操作通过维护各种xxLSN来记录当前节点的后台处理进度，比如VLSN，commit-LSN等等&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;有趣的是，PolarDB虽然是参考Aurora进行的设计，但它的架构设计认为网络并非瓶颈，而是经过OS的各种系统调用拖慢了整体速度。在彼时阿里云存储底座并不稳定的条件下，所以才有了它架构中的PolarStore，用各种硬件以及FUSE等存储技术越过或者优化系统调用，而如今盘古在稳定性和性能上都做的很不错的情况下，弱化PolarStore这个组件也成为了正常的选择。我认为说的不无道理。&lt;/p&gt;
+&lt;p&gt;另外，为什么他们选择用NWR而不是用Raft之类的一致性协议？目前看上去，NWR在网络上，一次请求的网络比Raft少一轮，可能是这个原因&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34;&gt;&lt;/p&gt;
+&lt;h1 id=&#34;参考&#34;&gt;参考&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/319806107&#34;&gt;https://zhuanlan.zhihu.com/p/319806107&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt&#34;&gt;http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://keys961.github.io/2020/05/05/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB-Aurora/&#34;&gt;论文阅读-Amazon Aurora: Design Considerations for High Throughput Cloud-Native Relational Database - keys961 | keys961 Blog&lt;/a&gt;&lt;/p&gt;</description>
       
     </item>
     
@@ -449,7 +507,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;        &lt;span class=&#34;k&#34;&gt;this&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;currentFile&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;fileFactory&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;newOutputFile&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;partitionKey&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;k&#34;&gt;this&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;currentWriter&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;newWriter&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;currentFile&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;partitionKey&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;k&#34;&gt;this&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;currentRows&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;k&#34;&gt;this&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;currentRows&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
@@ -758,7 +816,7 @@
 &lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kd&#34;&gt;public&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;commit&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;()&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;c1&#34;&gt;// this is always set to the latest commit attempt&amp;#39;s snapshot id.
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;AtomicLong&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;newSnapshotId&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;new&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;AtomicLong&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;1L&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;AtomicLong&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;newSnapshotId&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;new&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;AtomicLong&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1L&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;try&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;n&#34;&gt;Tasks&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;foreach&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ops&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;          &lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;retry&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;base&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;propertyAsInt&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;COMMIT_NUM_RETRIES&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;COMMIT_NUM_RETRIES_DEFAULT&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;))&lt;/span&gt;
@@ -766,7 +824,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;              &lt;span class=&#34;n&#34;&gt;base&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;propertyAsInt&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;COMMIT_MIN_RETRY_WAIT_MS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;COMMIT_MIN_RETRY_WAIT_MS_DEFAULT&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;),&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;              &lt;span class=&#34;n&#34;&gt;base&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;propertyAsInt&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;COMMIT_MAX_RETRY_WAIT_MS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;COMMIT_MAX_RETRY_WAIT_MS_DEFAULT&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;),&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;              &lt;span class=&#34;n&#34;&gt;base&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;propertyAsInt&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;COMMIT_TOTAL_RETRY_TIME_MS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;COMMIT_TOTAL_RETRY_TIME_MS_DEFAULT&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;),&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;              &lt;span class=&#34;n&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;0&lt;/span&gt; &lt;span class=&#34;cm&#34;&gt;/* exponential */&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;              &lt;span class=&#34;mf&#34;&gt;2.0&lt;/span&gt; &lt;span class=&#34;cm&#34;&gt;/* exponential */&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;          &lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;onlyRetryOn&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;CommitFailedException&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;class&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;          &lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;run&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;taskOps&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;            &lt;span class=&#34;n&#34;&gt;Snapshot&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;newSnapshot&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;apply&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;();&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// generate a new snapshot based on new added data file and manifest,manifest list
@@ -902,14 +960,14 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;totalFiles&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;pendingResults&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;values&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;().&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;stream&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;()&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;mapToInt&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;r&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;r&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;dataFiles&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;().&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;length&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;r&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;deleteFiles&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;().&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;length&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;).&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;sum&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;();&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;continuousEmptyCheckpoints&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;totalFiles&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;0&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;?&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;continuousEmptyCheckpoints&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;totalFiles&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;!=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;0&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;||&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;continuousEmptyCheckpoints&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;%&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;maxContinuousEmptyCommits&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;continuousEmptyCheckpoints&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;totalFiles&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;?&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;continuousEmptyCheckpoints&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;totalFiles&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;!=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;||&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;continuousEmptyCheckpoints&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;%&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;maxContinuousEmptyCommits&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;replacePartitions&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;n&#34;&gt;replacePartitions&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;pendingResults&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;newFlinkJobId&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;checkpointId&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;o&#34;&gt;}&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;else&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;n&#34;&gt;commitDeltaTxn&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;pendingResults&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;newFlinkJobId&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;checkpointId&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;n&#34;&gt;continuousEmptyCheckpoints&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;n&#34;&gt;continuousEmptyCheckpoints&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;pendingMap&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;na&#34;&gt;clear&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;();&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
@@ -4850,336 +4908,6 @@ Case in Hive DDL：
 &lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://www.cnblogs.com/lojunren/p/3856290.html&#34;&gt;Linux下的I/O复用与epoll详解&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;https://www.infoq.cn/article/26lpjzsp9echwgnic7lq&#34;&gt;深入理解 epoll&lt;/a&gt;&lt;/p&gt;
-</description>
-      
-    </item>
-    
-    <item>
-      <title>Linux Cgroups简介</title>
-      <link>https://noneback.github.io/post/linux-cgroups%E7%AE%80%E4%BB%8B/</link>
-      <pubDate>Tue, 08 Jun 2021 22:26:17 +0800</pubDate>
-      
-      <guid>https://noneback.github.io/post/linux-cgroups%E7%AE%80%E4%BB%8B/</guid>
-      
-        <description>&lt;p&gt;&lt;strong&gt;Linux Cgroups&lt;/strong&gt;(Control Groups)供了对一组进程及将来子讲程的资源限制、控制和统计的能力。这些资源包括CPU、内存、存储、网络等。通过 Cgroups,可以方便地限制某个进程的资源占用,并且可以实时地监控进程的监控和统计信息。&lt;/p&gt;
-&lt;h2 id=&#34;cgroups中的三个组件&#34;&gt;Cgroups中的三个组件&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;&lt;strong&gt;cgroup&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;对进程分组管理的一种机制,一个 cgroup包含一组进程,并可以在这个 cgroup 上增加 Linux subsystem的各种参数配置,将一组进程和一组 subsystem的系统参数关联起来&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;&lt;strong&gt;subsystem&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;一组资源控制的模块&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png&#34; alt=&#34;image.png&#34;&gt;
-每个 subsystem会关联到定义了相应限制的 cgroup上,并对这个cgroup中的进程做相应的限制和控制。&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;&lt;strong&gt;hierarchy&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;hierarchy的功能是把一组 cgroup串成一个树状结构,一个这样的树便是一个hierarchy&lt;/p&gt;
-&lt;p&gt;通过这种树状结构, Groups可以做到继承。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;场景：
-系统对一组定时的任条进程通过 cgroup1限制了CPU的使用率,然后其中有一个定时dump日志的进程还需要限制磁盘IO&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;为了避免限制了磁盘IO之后影响到其他进程,就可以创建 cgroup2,但其继承于 cgroup1并制磁盘的1O,这样 cgroup2便继承了 cgroup1中对CPU使用率的限制,并且增加了磁盘IO的限制而不影响到 Cgroup1中的其他进程。&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;三者的相互关系&#34;&gt;三者的相互关系&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;系统在创建了新的 hierarchy之后,系统中所有的进程&lt;strong&gt;都会加入&lt;/strong&gt;个 hierarchy的 &lt;strong&gt;Cgroup 根节点&lt;/strong&gt;,这个 Cgroup节点是 hierarchy默认创建的&lt;/li&gt;
-&lt;li&gt;一个subsystem只能附加到一个hierarchy上面&lt;/li&gt;
-&lt;li&gt;一个hierarchy可以附加多个subsystem&lt;/li&gt;
-&lt;li&gt;一个进程可以位于多个从属与不同的hierarchy的cgroup中&lt;/li&gt;
-&lt;li&gt;fork出的子进程是和父进程在同一个cgroup中的。也可以之后移动到其他cgroup中&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;内核接口&#34;&gt;内核接口&lt;/h2&gt;
-&lt;p&gt;Groups中的hierarchy是一种&lt;strong&gt;树状&lt;/strong&gt;的组织结构, Kernel为了使对Cgroups的配置更直观,是通过一个&lt;strong&gt;虚拟的树状文件系统配置 Cgroups&lt;/strong&gt;的,通过层级的目录拟出 Cgroups&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;创建挂载hierarchy，新建子cgroup&lt;/li&gt;
-&lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;21
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;22
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;23
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;mkdir cgroup &lt;span class=&#34;c1&#34;&gt;# 创建挂载点&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo mount -t cgroup -o none,name&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;cgroup-test cgroup-test ./cgroup-test &lt;span class=&#34;c1&#34;&gt;# 挂载hierarchy&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo mkdir cgroup-1
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo mkdir cgroup-2
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;tree
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;.
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├── cgroup-1
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│   ├── cgroup.clone_children
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│   ├── cgroup.procs
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│   ├── notify_on_release
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│   └── tasks
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├── cgroup-2
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│   ├── cgroup.clone_children
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│   ├── cgroup.procs
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│   ├── notify_on_release
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│   └── tasks
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├── cgroup.clone_children
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├── cgroup.procs
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├── cgroup.sane_behavior
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├── notify_on_release
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├── release_agent
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;└── tasks
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;&lt;strong&gt;不同文件的含义&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png&#34; alt=&#34;image.png&#34;&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;在cgroup中添加和移动进程（将进程pid移入对应tasks文件中）&lt;/li&gt;
-&lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo sh -c &lt;span class=&#34;s2&#34;&gt;&amp;#34;echo &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$$&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; &amp;gt;&amp;gt; ./cgroup-1/tasks&amp;#34;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# 将终端进程移入cgroup-1中&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cat /proc/&lt;span class=&#34;nv&#34;&gt;$$&lt;/span&gt;/cgroup
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&amp;gt;&amp;gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;13:name&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;cgroup-test:/cgroup-1
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;12:memory:/user.slice/user-1002.slice/session-12331.scope
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;11:perf_event:/
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;10:cpuset:/
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;9:freezer:/
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;8:blkio:/user.slice
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;7:rdma:/
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;6:hugetlb:/
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;5:pids:/user.slice/user-1002.slice/session-12331.scope
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;4:cpu,cpuacct:/user.slice
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;3:net_cls,net_prio:/
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;2:devices:/user.slice
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;1:name&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;systemd:/user.slice/user-1002.slice/session-12331.scope
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;0::/user.slice/user-1002.slice/session-12331.scope
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;通过subsystem限制cgroup中进程的资源&lt;/p&gt;
-&lt;p&gt;首先将hierarchy关联到subsystem，系统默认将hierarchy关联到memory hierarchy&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# 首先,在不做限制的情况下,启动一个占用内存的stress进程&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo mkdir test-limit-memory &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; test-limit-memory &lt;span class=&#34;c1&#34;&gt;# 创建一个cgroup&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo sh -c &lt;span class=&#34;s2&#34;&gt;&amp;#34;echo &amp;#34;&lt;/span&gt;100m&lt;span class=&#34;s2&#34;&gt;&amp;#34; &amp;gt; memory.limit&amp;#34;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# 设置最大cgroup占用为100m&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo sh -c &lt;span class=&#34;s2&#34;&gt;&amp;#34;echo &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$$&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; &amp;gt; tasks&amp;#34;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# 将当前进程移入cgroup&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h4 id=&#34;最后可以观测到进程占用的内存被限制了&#34;&gt;最后可以观测到进程占用的内存被限制了&lt;/h4&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-      
-    </item>
-    
-    <item>
-      <title>分布式事务</title>
-      <link>https://noneback.github.io/post/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/</link>
-      <pubDate>Thu, 20 May 2021 23:55:11 +0800</pubDate>
-      
-      <guid>https://noneback.github.io/post/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/</guid>
-      
-        <description>&lt;h1 id=&#34;事务与分布式事务&#34;&gt;事务与分布式事务&lt;/h1&gt;
-&lt;h2 id=&#34;事务&#34;&gt;事务&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;事务&lt;/strong&gt;是数据库执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。数据库需要确保事务操作的&lt;strong&gt;原子性&lt;/strong&gt;：当事务成功时，意味着事务的所有操作全部都执行完成；但事务失败时，数据库将所有执行过的SQL操作回滚。&lt;/p&gt;
-&lt;p&gt;数据库单机事务主要拥有四个特性：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;原子性，事务作为一个整体被执行，包含在其中的对数据库的操作要么全部被执行，要么都不执行&lt;/li&gt;
-&lt;li&gt;一致性，事务应确保数据库的状态从一个一致状态转变为另一个一致状态，一致状态的含义是数据库中的数据应满足完整性约束&lt;/li&gt;
-&lt;li&gt;隔离性，多个事务并发执行时，一个事务的执行不应影响其他事务的执行&lt;/li&gt;
-&lt;li&gt;持久性，已被提交的事务对数据库的修改应该永久保存在数据库中&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;分布式事务&#34;&gt;分布式事务&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;分布式事务&lt;/strong&gt;是指事务的&lt;strong&gt;参与者&lt;/strong&gt;、&lt;strong&gt;支持事务的服务器&lt;/strong&gt;、&lt;strong&gt;资源服务器&lt;/strong&gt;以及&lt;strong&gt;事务管理器&lt;/strong&gt;分别位于&lt;strong&gt;不同&lt;/strong&gt;的分布式系统的不同节点之上。&lt;/p&gt;
-&lt;p&gt;随着微服务架构的普及，大型业务域往往包含很多服务，一个业务流程需要由多个服务共同参与完成。在特定的业务场景中，需要保障多个服务之间的数据一致性。&lt;/p&gt;
-&lt;p&gt;例如在大型电商系统中，下单接口通常会扣减库存、减去优惠、生成订单 id, 而订单服务与库存、优惠、订单 id 都是不同的服务，下单接口的成功与否，不仅取决于本地的 db 操作，而且依赖第三方系统的结果，这时候分布式事务就保证这些操作要么全部成功，要么全部失败。&lt;/p&gt;
-&lt;p&gt;所以本质上来说，&lt;strong&gt;分布式事务就是为了保证不同数据库的数据一致性。&lt;/strong&gt;&lt;/p&gt;
-&lt;h1 id=&#34;使用场景&#34;&gt;使用场景&lt;/h1&gt;
-&lt;p&gt;在电商系统中，典型的使用场景有：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;下单扣减库存&lt;/p&gt;
-&lt;p&gt;下单时，需要的操作有生成订单记录，扣减商品库存等操作。两者同上是独立的微服务，所以严格来说，需要分布式事务保证下单操作的原子性。&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;第三方支付&lt;/p&gt;
-&lt;p&gt;微服务架构下，支付与订单都是独立的服务。订单的支付状态依赖于财经服务的通知。财经服务又依赖于第三方支付服务的通知。&lt;/p&gt;
-&lt;p&gt;一个经典的场景如图：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;从图中可以看出有两次调用，第三方支付调用支付服务，以及支付服务调用订单服务，这两步调用都可能出现&lt;strong&gt;调用超时&lt;/strong&gt;的情况，此处如果没有分布式事务的保证，就会出现用户订单实际支付情况与最终用户看到的订单支付情况&lt;strong&gt;不一致&lt;/strong&gt;的情况。&lt;/p&gt;
-&lt;h1 id=&#34;实现方案&#34;&gt;实现方案&lt;/h1&gt;
-&lt;h2 id=&#34;两阶段提交&#34;&gt;两阶段提交&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
-&lt;p&gt;一次事务的提交主要分为两个阶段：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;准备阶段：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;TM开始事务，记录事务开始的日志，并向参与事务的RM询问是否能够执行提交操作，并等待RM响应&lt;/li&gt;
-&lt;li&gt;RM执行本地事务，记录Redo/Undo日志，向TM返回执行结果，但不提交事务&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;提交/回滚阶段&lt;/p&gt;
-&lt;p&gt;（ 1 ）如果所有参与的RM执行成功，进入&lt;strong&gt;提交阶段&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;TM记录事务提交日志，并向所有RM发送提交事务指令&lt;/li&gt;
-&lt;li&gt;RM收到指令后，提交本地事务，向TM返回执行结果&lt;/li&gt;
-&lt;li&gt;TM记录事务结束&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;（ 2 ）如果准备或提交任一RM执行失败或者超时&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;TM记录回滚记录，并向所有RM发送回滚指令&lt;/li&gt;
-&lt;li&gt;RM回滚本地事务，向TM返回结果&lt;/li&gt;
-&lt;li&gt;TM记录事务结束&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;特性&#34;&gt;特性&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;原子性：支持&lt;/li&gt;
-&lt;li&gt;一致性：强一致&lt;/li&gt;
-&lt;li&gt;隔离性：支持&lt;/li&gt;
-&lt;li&gt;持久性：支持&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;弊端&#34;&gt;弊端&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;同步阻塞：当参与事务者存在占用公共资源的情况，其中一个占用了资源，其他事务参与者就只能阻塞等待资源释放，处于阻塞状态。&lt;/li&gt;
-&lt;li&gt;单点故障：一旦事务管理器出现故障，整个系统不可用&lt;/li&gt;
-&lt;li&gt;数据不一致：如果事务管理器只发送了部分 commit 消息，此时网络发生异常，那么只有部分参与者接收到 commit 消息，也就是说只有部分参与者提交了事务，使得系统数据不一致。&lt;/li&gt;
-&lt;li&gt;不确定性：当事务管理器发送 commit 之后，并且此时只有一个参与者收到了 commit，那么当该参与者与事务管理器同时宕机之后，重新选举的事务管理器无法确定该条消息是否提交成功。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;本地消息表&#34;&gt;本地消息表&lt;/h2&gt;
-&lt;p&gt;事务发起方维护一张&lt;strong&gt;本地消息表&lt;/strong&gt;，业务表与本地消息表的操作处于同一个本地事务内，通过异步的&lt;strong&gt;定时任务&lt;/strong&gt;扫描消息表并投递到下游。&lt;/p&gt;
-&lt;p&gt;广义的本地消息表方案中，下游通知方式并不局限于消息投递，也可以通过RPC调用等方式通知。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34; alt=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34;&gt;&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;事务发起者执行本地事务，同时操作业务表和本地消息表&lt;/li&gt;
-&lt;li&gt;定时任务定时扫描待发送的本地消息(本地消息表中)，将其发送到消息队列
-&lt;ul&gt;
-&lt;li&gt;发送成功，则将本地消息标记为已发送&lt;/li&gt;
-&lt;li&gt;发送失败，则重试直至成功&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;消息队列投递消息至下游&lt;/li&gt;
-&lt;li&gt;下游事务参与者收到消息后，执行本地事务
-&lt;ul&gt;
-&lt;li&gt;本地事务执行失败，不返回ACK，消息队列重复投递消息&lt;/li&gt;
-&lt;li&gt;本地事务执行成功，则向消息队列返回ACK，全局事务结束&lt;/li&gt;
-&lt;li&gt;消息或ACK丢失，消息队列重复投递消息&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;h3 id=&#34;异常场景&#34;&gt;异常场景&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;消息发送丢失，通过定时任务重复发送解决&lt;/li&gt;
-&lt;li&gt;投递到下游的消息丢失，通过重复投递机制解决，需保障下游操作幂等&lt;/li&gt;
-&lt;li&gt;下游回复的ACK丢失，通过重复投递机制解决，需保障下游操作幂等&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;优点与问题&#34;&gt;优点与问题&lt;/h3&gt;
-&lt;p&gt;优点：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;系统吞吐量高，通过消息中间件解耦，下游事务异步化&lt;/li&gt;
-&lt;li&gt;业务侵入度适中，需要实现本地消息表和定时任务&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;问题：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;事务支持不完备，不接受下游分支事务的回滚，只能重试&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;特性-1&#34;&gt;特性&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;原子性：支持&lt;/li&gt;
-&lt;li&gt;一致性：最终一致&lt;/li&gt;
-&lt;li&gt;隔离性：不支持（分支事务提交之后对其它事务可见）&lt;/li&gt;
-&lt;li&gt;持久性：支持&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;尽最大努力通知&#34;&gt;尽最大努力通知&lt;/h2&gt;
-&lt;p&gt;最大努力通知是最简单的一种柔性事务，适用于一些最终一致性时间敏感度低的业务，且被动方处理结果 不影响主动方的处理结果。&lt;/p&gt;
-&lt;p&gt;这个方案的大致意思就是：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;系统 A 本地事务执行完之后，发送个消息到 MQ；&lt;/li&gt;
-&lt;li&gt;这里会有个专门消费 MQ 的服务，这个服务会消费 MQ 并调用系统 B 的接口；&lt;/li&gt;
-&lt;li&gt;要是系统 B 执行成功就 ok 了；要是系统 B 执行失败了，那么最大努力通知服务就定时尝试重新调用系统 B, 反复 N 次，最后还是不行就放弃。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;h3 id=&#34;优点与问题-1&#34;&gt;优点与问题&lt;/h3&gt;
-&lt;p&gt;优点：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;实现简单&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;问题：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;无补偿机制，不保证送达&lt;/li&gt;
-&lt;li&gt;幂等要求，需要提供接口保证一致性与原子性，系统无法保证&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;特性-2&#34;&gt;特性&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;原子性：不支持(需要额外接口保证)&lt;/li&gt;
-&lt;li&gt;一致性：不支持(需要额外接口保证)&lt;/li&gt;
-&lt;li&gt;隔离性：不支持（分支事务提交之后对其它事务可见）&lt;/li&gt;
-&lt;li&gt;持久性：支持&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;经典场景&#34;&gt;经典场景&lt;/h3&gt;
-&lt;p&gt;支付回调：&lt;/p&gt;
-&lt;p&gt;支付服务收到第三方服务支付成功通知后，先更新自己库中订单支付状态，然后同步通知订单服务支付成功。如果此次同步通知失败，会通过异步脚步不断重试地调用订单服务的接口。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34;&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/&#34;&gt;分布式事务，这一篇就够了&lt;/a&gt;&lt;/p&gt;
 </description>
       
     </item>

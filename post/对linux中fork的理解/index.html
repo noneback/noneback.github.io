@@ -1,10 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" itemscope itemtype="http://schema.org/WebPage">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Linux中的Fork - NoneBack</title>
-  
+<html
+  lang="en"
+  itemscope
+  itemtype="http://schema.org/WebPage"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>
+          Linux中的Fork - NoneBack
+        </title>
+    
 
 <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
@@ -32,7 +38,7 @@
 
 
 
-<meta name="generator" content="Hugo 0.105.0" />
+<meta name="generator" content="Hugo 0.115.0" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/" />
@@ -53,7 +59,9 @@
 
 
 
-<link rel="stylesheet" href="/sass/jane.min.fa4b2b9f31b5c6d0b683db81157a9226e17b06e61911791ab547242a4a0556f2.css" integrity="sha256-&#43;ksrnzG1xtC2g9uBFXqSJuF7BuYZEXkatUckKkoFVvI=" media="screen" crossorigin="anonymous">
+<link rel="stylesheet" href="/sass/jane.min.d8d87b982993a745e5e7b6a6cbf257be8c3e82aab5e485f0908ad7e6c3501ab2.css" integrity="sha256-2Nh7mCmTp0Xl57amy/JXvow&#43;gqq15IXwkIrX5sNQGrI=" media="screen" crossorigin="anonymous">
+
+
 
 
 
@@ -67,7 +75,6 @@
 <meta property="og:url" content="https://noneback.github.io/post/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/" /><meta property="article:section" content="post" />
 <meta property="article:published_time" content="2021-02-18T15:56:31+08:00" />
 <meta property="article:modified_time" content="2021-02-18T15:56:31+08:00" />
-
 <meta itemprop="name" content="Linux中的Fork">
 <meta itemprop="description" content="这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。 前言 最近最学习操作系统，在《operating system conce"><meta itemprop="datePublished" content="2021-02-18T15:56:31+08:00" />
 <meta itemprop="dateModified" content="2021-02-18T15:56:31+08:00" />
@@ -92,9 +99,11 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
 
 
-</head>
-<body>
-  <div id="mobile-navbar" class="mobile-navbar">
+  </head>
+  <body>
+    <div id="back-to-top"></div>
+
+    <div id="mobile-navbar" class="mobile-navbar">
   <div class="mobile-header-logo">
     <a href="/" class="logo">今日目标:摸鱼</a>
   </div>
@@ -168,8 +177,8 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </nav>
 
 
-  
     
+      
 
 
 
@@ -226,14 +235,15 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
     </div>
 </div>
 
-  
+    
 
-  
+    
 
-  
+    
 
-  <header id="header" class="header container">
-    <div class="logo-wrapper">
+
+    <header id="header" class="header">
+      <div class="logo-wrapper">
   <a href="/" class="logo">
     
       今日目标:摸鱼
@@ -331,62 +341,57 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
   </ul>
 </nav>
 
-  </header>
-
-  <div id="mobile-panel">
-    <main id="main" class="main bg-llight">
-      <div class="content-wrapper">
-        <div id="content" class="content container">
-          <article class="post bg-white">
-    
-    <header class="post-header">
-      <h1 class="post-title">Linux中的Fork</h1>
-      
-      <div class="post-meta">
-        <time datetime="2021-02-18" class="post-time">
-          2021-02-18
-        </time>
-        <div class="post-category">
-            <a href="https://noneback.github.io/categories/os/"> OS </a>
-            
-          </div>
-        
-
-        
-        
-
-        
-        
-      </div>
     </header>
 
+    <div id="mobile-panel">
+      <main id="main" class="main bg-llight wallpaper">
+        <div class="content-wrapper">
+    <div id="content" class="content">
+      <article class="post">
+        
+        <header class="post-header">
+          <h1 class="post-title">Linux中的Fork</h1>
+          
+
+          <div class="post-meta">
+  <div class="post-meta-author">
+    by
+      NoneBack
+    
+  </div>
+
+  <div class="post-meta-time">
+    <time datetime="2021-02-18">
+      2021-02-18
+    </time>
+  </div>
+
+  
+
+
+  <div class="post-meta__right">
+    
+
+    <div class="post-meta-category">
+        <a href="https://noneback.github.io/categories/os/"> OS </a>
+          
+      </div>
+
+
     
     
-<div class="post-toc" id="post-toc">
-  <h2 class="post-toc-title">Table of Contents</h2>
-  <div class="post-toc-content">
-    <nav id="TableOfContents">
-  <ul>
-    <li><a href="#前言"><strong>前言</strong></a></li>
-    <li><a href="#fork函数介绍">fork()函数介绍</a></li>
-    <li><a href="#函数使用分析"><strong>函数使用分析</strong></a></li>
-    <li><a href="#理解fork的执行">理解fork的执行</a></li>
-    <li><a href="#fork里的cow机制">Fork里的COW机制</a>
-      <ul>
-        <li><a href="#什么是copy-on-write">什么是Copy On Write</a></li>
-        <li><a href="#fork中cow技术实现原理">fork中COW技术实现原理</a></li>
-      </ul>
-    </li>
-    <li><a href="#总结">总结</a></li>
-    <li><a href="#参考">参考</a></li>
-  </ul>
-</nav>
+
+
+    
+    
   </div>
 </div>
 
-    
-    <div class="post-content">
-      <p>这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。</p>
+        </header>
+
+        
+        <div class="post-content">
+          <p>这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。</p>
 <h2 id="前言"><strong>前言</strong></h2>
 <p>最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码:</p>
 <div class="highlight"><div class="chroma">
@@ -419,21 +424,21 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">(){</span>
-</span></span><span class="line"><span class="cl">  <span class="n">pid_t</span> <span class="n">pid</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">pid</span><span class="o">=</span><span class="n">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">pid_t</span> <span class="n">pid</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pid</span><span class="o">=</span><span class="nf">fork</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl">  <span class="k">if</span><span class="p">(</span><span class="n">pid</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">){</span>
 </span></span><span class="line"><span class="cl">    <span class="c1">//create process failed
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">printf</span><span class="p">(</span><span class="s">&#34;Failed</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Failed</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="p">}</span><span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">pid</span><span class="o">==</span><span class="mi">0</span><span class="p">){</span>
 </span></span><span class="line"><span class="cl">    <span class="c1">//child process;
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">printf</span> <span class="p">(</span><span class="s">&#34;Child pid %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span><span class="n">getpid</span><span class="p">());</span>
-</span></span><span class="line"><span class="cl">    <span class="n">execlp</span><span class="p">(</span><span class="s">&#34;/bin/ls&#34;</span><span class="p">,</span><span class="s">&#34;ls&#34;</span><span class="p">,</span><span class="nb">NULL</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">printf</span> <span class="p">(</span><span class="s">&#34;Child pid %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span><span class="nf">getpid</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">execlp</span><span class="p">(</span><span class="s">&#34;/bin/ls&#34;</span><span class="p">,</span><span class="s">&#34;ls&#34;</span><span class="p">,</span><span class="nb">NULL</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="p">}</span><span class="k">else</span><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="c1">//parent process;
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">printf</span><span class="p">(</span><span class="s">&#34;Parent pid %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span><span class="n">getpid</span><span class="p">());</span>
-</span></span><span class="line"><span class="cl">  <span class="n">wait</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="n">printf</span> <span class="p">(</span><span class="s">&#34;Child complete</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Parent pid %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span><span class="nf">getpid</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">wait</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">printf</span> <span class="p">(</span><span class="s">&#34;Child complete</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
@@ -457,7 +462,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">pid_t</span> <span class="nf">vfork</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">pid_t</span> <span class="nf">vfork</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>函数说明：</p>
@@ -534,17 +539,17 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">printf</span><span class="p">(</span><span class="s">&#34;i son/pa ppid pid  fpid</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;i son/pa ppid pid  fpid</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="c1">// ppid指当前进程的父进程pid
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// pid指当前进程的pid,
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// fpid指fork返回给当前进程的值
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">pid_t</span> <span class="n">fpid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">pid_t</span> <span class="n">fpid</span> <span class="o">=</span> <span class="nf">fork</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">fpid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">      <span class="n">printf</span><span class="p">(</span><span class="s">&#34;%d child  %4d %4d %4d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">getppid</span><span class="p">(),</span> <span class="n">getpid</span><span class="p">(),</span> <span class="n">fpid</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">      <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%d child  %4d %4d %4d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="nf">getppid</span><span class="p">(),</span> <span class="nf">getpid</span><span class="p">(),</span> <span class="n">fpid</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="k">else</span>
-</span></span><span class="line"><span class="cl">      <span class="n">printf</span><span class="p">(</span><span class="s">&#34;%d parent %4d %4d %4d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">getppid</span><span class="p">(),</span> <span class="n">getpid</span><span class="p">(),</span> <span class="n">fpid</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">wait</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span> <span class="c1">//等待子进程
+</span></span><span class="line"><span class="cl">      <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%d parent %4d %4d %4d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="nf">getppid</span><span class="p">(),</span> <span class="nf">getpid</span><span class="p">(),</span> <span class="n">fpid</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">wait</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span> <span class="c1">//等待子进程
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">}</span>
 </span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
@@ -590,10 +595,10 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 <p><a href="https://www.kancloud.cn/wizardforcel/linux-c-api-ref/98511">vfork</a></p>
 <p><a href="%5Bhttps://cloud.tencent.com/developer/article/1338482%5D">fork函数详解</a></p>
 
-    </div>
+        </div>
 
-    
-    
+        
+        
 <div class="post-copyright">
   <p class="copyright-item">
     <span class="item-title">Author</span>
@@ -614,70 +619,76 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </div>
 
 
-    
-    
 
-    <footer class="post-footer">
-      <div class="post-tags">
-          <a href="https://noneback.github.io/tags/os/">OS</a>
-          <a href="https://noneback.github.io/tags/linux/">Linux</a>
-          
-        </div>
-
-      
-      <nav class="post-nav">
         
-          <a class="prev" href="/post/2020%E5%B9%B4%E7%BB%88%E6%80%BB%E7%BB%93/">
+        
+
+
+        <footer class="post-footer">
+          <div class="post-tags">
+              <a href="https://noneback.github.io/tags/os/">OS</a>
+                <a href="https://noneback.github.io/tags/linux/">Linux</a>
+                
+            </div>
+
+
+          
+          <nav class="post-nav">
             
-            <i class="iconfont">
-              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
+              <a class="prev" href="/post/2020%E5%B9%B4%E7%BB%88%E6%80%BB%E7%BB%93/">
+                
+                <i class="iconfont">
+                  <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
   xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
   width="18" height="18">
   <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
 </svg>
 
-            </i>
-            <span class="prev-text nav-default">2020年终总结</span>
-            <span class="prev-text nav-mobile">Prev</span>
-          </a>
-        
-          <a class="next" href="/post/mit6.824-mapreduce/">
-            <span class="next-text nav-default">MIT6.824-MapReduce</span>
-            <span class="prev-text nav-mobile">Next</span>
+                </i>
+                <span class="prev-text nav-default">2020年终总结</span>
+                <span class="prev-text nav-mobile">Prev</span>
+              </a>
             
-            <i class="iconfont">
-              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+              <a class="next" href="/post/mit6.824-mapreduce/">
+                <span class="next-text nav-default">MIT6.824-MapReduce</span>
+                <span class="prev-text nav-mobile">Next</span>
+                
+                <i class="iconfont">
+                  <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
   xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
   width="18" height="18">
   <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
 </svg>
 
-            </i>
-          </a>
-      </nav>
-    </footer>
-  </article>
+                </i>
+              </a>
+          </nav>
+        </footer>
+      </article>
+
+      
+      
+
+
+      
+      
+
+  
 
   
   
 
   
   
-
-  
-
-  
-  
-    <div class="post bg-white">
-      <script src="https://utteranc.es/client.js"
-            repo= "noneback/noneback.github.io"
-            issue-term="title"
-            theme="github-light"
-            crossorigin="anonymous"
-            async>
-      </script>
-    </div>
-  
+    <div class="post">
+  <script src="https://utteranc.es/client.js"
+        repo= "noneback/noneback.github.io"
+        issue-term="title"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+  </script>
+</div>
 
   
 
@@ -689,12 +700,41 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
   
 
-        </div>
-      </div>
-    </main>
+  
 
-    <footer id="footer" class="footer">
-      <div class="icon-links">
+
+    </div>
+
+    
+    <nav class="toc" id="toc">
+    <div class="toc-title">Table of Contents</div>
+    <div class="toc-content custom-scrollbar">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#前言"><strong>前言</strong></a></li>
+    <li><a href="#fork函数介绍">fork()函数介绍</a></li>
+    <li><a href="#函数使用分析"><strong>函数使用分析</strong></a></li>
+    <li><a href="#理解fork的执行">理解fork的执行</a></li>
+    <li><a href="#fork里的cow机制">Fork里的COW机制</a>
+      <ul>
+        <li><a href="#什么是copy-on-write">什么是Copy On Write</a></li>
+        <li><a href="#fork中cow技术实现原理">fork中COW技术实现原理</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+    </div>
+  </nav>
+
+
+  </div>
+
+      </main>
+
+      <footer id="footer" class="footer">
+        <div class="icon-links">
   
   
     <a href="chenlan2333@gmail.com" rel="me noopener" class="iconfont"
@@ -729,7 +769,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 </svg>
 
   </a>
-   
+  
 </div>
 
 <div class="copyright">
@@ -768,28 +808,30 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
   
 </div>
 
-    </footer>
+      </footer>
 
-    <div class="back-to-top" id="back-to-top">
-      <i class="iconfont">
-        
-        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+      <div class="button__back-to-top">
+        <a href="#back-to-top">
+          <i class="iconfont">
+            
+            <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
   xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
   width="35" height="35">
   <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
 </svg>
 
-      </i>
+          </i>
+        </a>
+      </div>
     </div>
-  </div>
-  
+    
 <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
   <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
 
 
 
 
-<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/js/main.efa7eda68aac7cb6362038e2ce9a5994f8b0b37476ab74cdbff1f2521c527be1.js" integrity="sha256-76ftpoqsfLY2IDjizppZlPiws3R2q3TNv/HyUhxSe&#43;E=" crossorigin="anonymous"></script>
 
 
 
@@ -810,7 +852,6 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
 
   
-    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
     <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
     <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
   
@@ -829,5 +870,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
 
 
-</body>
+
+
+  </body>
 </html>
