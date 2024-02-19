@@ -7,10 +7,10 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>分类 - NoneBack</title>
+    <title>
+          Borg: Large-scale cluster management at Google with Borg - NoneBack
+        </title>
     
-<link rel="alternate" hreflang="en" href="https://noneback.github.io/categories/" />
-
 
 <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
@@ -28,20 +28,21 @@
 
 <meta name="mobile-web-app-capable" content="yes">
 
-<meta name="author" content="noneback" />
-  <meta name="description" content="And then there were none" />
-  <meta name="keywords" content="Hugo, theme, jane, BUPT, Blog, noneback" />
+<meta name="author" content="NoneBack" />
+  <meta name="description" content="Borg 是一个集群管理系统，类似闭源的k8s。 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提" />
+<meta name="keywords" content="borg, k8s, google" />
 
 
 
 
 
 
-<meta name="generator" content="Hugo 0.115.0" />
+
+<meta name="generator" content="Hugo 0.121.2" />
 
 
-<link rel="canonical" href="https://noneback.github.io/zh-cn/categories/" />
-<link href="/zh-cn/categories/index.xml" rel="alternate" type="application/rss+xml" title="NoneBack" />
+<link rel="canonical" href="https://noneback.github.io/post/blog/" />
+
 
 
 
@@ -68,14 +69,19 @@
 <link rel="stylesheet" href="/css/custom.css">
 
 
-<meta property="og:title" content="Categories" />
-<meta property="og:description" content="And then there were none" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://noneback.github.io/zh-cn/categories/" />
-<meta itemprop="name" content="Categories">
-<meta itemprop="description" content="And then there were none"><meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Categories"/>
-<meta name="twitter:description" content="And then there were none"/>
+<meta property="og:title" content="Borg: Large-scale cluster management at Google with Borg" />
+<meta property="og:description" content="Borg 是一个集群管理系统，类似闭源的k8s。 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/post/blog/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2024-02-19T11:12:16+08:00" />
+<meta property="article:modified_time" content="2024-02-19T11:12:16+08:00" />
+
+<meta itemprop="name" content="Borg: Large-scale cluster management at Google with Borg">
+<meta itemprop="description" content="Borg 是一个集群管理系统，类似闭源的k8s。 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提"><meta itemprop="datePublished" content="2024-02-19T11:12:16+08:00" />
+<meta itemprop="dateModified" content="2024-02-19T11:12:16+08:00" />
+<meta itemprop="wordCount" content="1166">
+<meta itemprop="keywords" content="borg,k8s,cluster schedule," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Borg: Large-scale cluster management at Google with Borg"/>
+<meta name="twitter:description" content="Borg 是一个集群管理系统，类似闭源的k8s。 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -86,6 +92,17 @@
   <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
 <![endif]-->
 
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
 
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
@@ -99,7 +116,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     <div id="mobile-navbar" class="mobile-navbar">
   <div class="mobile-header-logo">
-    <a href="/zh-cn/" class="logo">今日目标:摸鱼</a>
+    <a href="/" class="logo">今日目标:摸鱼</a>
   </div>
   <div class="mobile-navbar-icon">
     <span></span>
@@ -113,28 +130,35 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
         
           
           
-            <a class="menu-item-link" href="https://noneback.github.io/zh-cn/">Home</a>
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
           
         
       </li><li class="mobile-menu-item">
         
           
           
-            <a class="menu-item-link" href="https://noneback.github.io/zh-cn/post/">Archives</a>
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
           
         
       </li><li class="mobile-menu-item">
         
           
           
-            <a class="menu-item-link" href="https://noneback.github.io/zh-cn/tags/">Tags</a>
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
           
         
       </li><li class="mobile-menu-item">
         
           
           
-            <a class="menu-item-link" href="https://noneback.github.io/zh-cn/categories/">Categories</a>
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
           
         
       </li><li class="mobile-menu-item">
@@ -157,37 +181,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
           
         
       </li>
-    <li class="mobile-menu-item">
-        
-        <div class="mobile-menu-parent mobile-menu-item-lang">
-          <span class="mobile-submenu-open"></span>
-          <a href="#">
-            
-            <i class="iconfont">
-              <svg height="16" width="16" version="1.1" viewBox="0 0 128 128">
-  <path d="m 64.719501,1.4279814 c -34.694029,0 -62.8192028,28.1251726 -62.8192028,62.8192016 0,34.694036 28.1251738,62.819207 62.8192028,62.819207 4.245691,0 8.392744,-0.42239 12.402214,-1.2253 -1.616124,-0.77296 -1.792473,-6.57213 -0.194346,-9.87848 1.779059,-3.68082 7.361625,-13.00555 1.840404,-16.134231 -5.521221,-3.12869 -3.98755,-4.53968 -7.361625,-8.15914 -3.374083,-3.61947 -1.994181,-4.16357 -2.208492,-5.09179 -0.736158,-3.19004 3.251385,-7.975096 3.435429,-8.465866 0.184043,-0.490781 0.184043,-2.331182 0.122689,-2.883308 -0.06131,-0.552125 -2.515051,-2.024446 -3.12852,-2.085791 -0.613469,-0.06133 -0.920209,0.98154 -1.77906,1.042896 -0.858856,0.06133 -4.601018,-2.269838 -5.39853,-2.883308 -0.797504,-0.61346 -1.165591,-2.085792 -2.269828,-3.190033 -1.104247,-1.104252 -1.226945,-0.24539 -2.944651,-0.920206 -1.717714,-0.674812 -7.238935,-2.69926 -11.471867,-4.416975 -4.23294,-1.717714 -4.601019,-4.125615 -4.662365,-5.827954 -0.06131,-1.702333 -2.57657,-4.171587 -3.756227,-5.950646 -1.179335,-1.77906 -1.396914,-4.232932 -1.826339,-3.680809 -0.429425,0.552114 2.208484,6.993538 1.77906,7.177582 -0.429425,0.184043 -1.349635,-1.77906 -2.576572,-3.374083 -1.226936,-1.595016 1.28829,-0.736159 -2.637915,-8.465864 -3.926198,-7.729705 1.226944,-11.671284 1.472324,-15.704806 0.24539,-4.033514 3.312738,1.472325 1.717715,-1.104238 -1.595016,-2.576571 0.122697,-7.975094 -1.104246,-9.938197 -1.226936,-1.963102 -8.220475,2.208492 -8.220475,2.208492 0.184036,-1.901758 6.134682,-5.153142 10.428966,-8.1591366 4.294277,-3.005996 6.91682,-0.674813 10.367621,0.4294236 3.450803,1.104246 3.680817,0.736167 2.515226,-0.368079 -1.165591,-1.1042446 0.49077,-1.6563686 3.190031,-1.2269356 2.699269,0.429425 3.435428,3.6808086 7.545669,3.3740746 4.110242,-0.306735 0.429425,0.797511 0.981548,1.840412 0.552123,1.042892 -0.613468,0.920202 -3.312729,2.760607 -2.699262,1.840403 0.06131,1.840403 4.846407,5.337177 4.785055,3.496773 3.312729,-2.331183 2.821952,-4.907753 -0.490777,-2.576563 3.496773,-0.552115 3.496773,-0.552115 2.944651,1.963094 2.400546,0.107972 4.547684,0.782784 2.147139,0.674814 7.967076,5.597286 7.967076,5.597286 -7.300273,3.98755 -2.699261,4.416975 -1.472325,5.337178 1.226937,0.920202 -2.515218,2.699261 -2.515218,2.699261 -1.53367,-1.53367 -1.779059,0.06131 -2.760614,0.613476 -0.981548,0.552115 -0.06131,1.963095 -0.06131,1.963095 -5.076415,0.797512 -3.926198,6.13469 -3.864852,7.422971 0.06131,1.288289 -3.251385,3.251384 -4.110242,5.091796 -0.858857,1.840405 2.208491,5.827948 0.613468,6.073336 -1.595016,0.24539 -3.190031,-6.011991 -11.778601,-3.680808 -2.589322,0.702954 -8.343174,3.680808 -5.275824,9.754153 3.06734,6.073336 8.15913,-1.717714 9.876843,-0.858857 1.717714,0.858857 -0.490778,4.72371 -0.122691,4.785055 0.368079,0.06131 4.8464,0.168662 5.09179,5.398522 0.245388,5.229868 6.809502,4.785065 8.220482,4.907755 1.410972,0.12269 6.134682,-3.864859 6.809502,-4.048894 0.674815,-0.184034 3.374076,-2.453876 9.263377,0.920195 5.889301,3.374089 8.895296,2.883308 10.919743,4.294285 2.02445,1.410987 0.61347,4.232939 2.51523,5.153134 1.90175,0.920217 9.50876,-0.306736 11.41051,2.821966 1.90176,3.1287 -7.8524,18.833491 -10.91974,20.551201 -3.06734,1.71772 -4.478321,5.64392 -7.545665,8.15913 -3.067349,2.51523 -7.361625,5.62854 -11.410522,8.03646 -3.583968,2.1311 -4.228845,5.949 -5.825333,7.15419 28.11404,-6.24545 49.13623,-31.328971 49.13623,-61.323497 0,-34.694029 -28.125171,-62.8192016 -62.819206,-62.8192016 z M 79.442753,60.382331 c -0.858857,0.245389 -2.637917,1.840405 -6.993547,-0.736166 -4.35563,-2.576564 -7.361625,-2.085794 -7.729705,-2.515218 0,0 -0.368079,-1.0429 1.533671,-1.226937 3.905098,-0.378065 8.833951,3.619464 9.938196,3.680809 1.104246,0.06131 1.656361,-1.104245 3.619464,-0.471631 1.963103,0.631953 0.490777,1.023755 -0.368079,1.269143 z M 58.891546,7.6853614 c -0.427786,-0.311152 0.354344,-0.669418 0.82058,-1.288281 0.269103,-0.357613 0.0695,-0.951289 0.406356,-1.28829 0.92021,-0.920203 5.459876,-2.208485 4.572225,0.306734 -0.887321,2.515226 -5.12434,2.760614 -5.799161,2.269837 z m 10.98109,7.9750936 c -1.533672,-0.06131 -5.14381,-0.442837 -4.478321,-1.104246 2.591952,-2.576563 -0.981548,-3.312729 -3.190039,-3.496766 -2.208485,-0.184043 -3.128687,-1.4109786 -2.02444,-1.5336776 1.104237,-0.12269 5.521213,0.06139 6.257379,0.6748206 0.736158,0.613469 4.723709,2.208485 4.969099,3.374076 0.24538,1.16559 0,2.147138 -1.533678,2.085793 z M 83.184914,15.23103 c -1.226943,0.981547 -7.400887,-3.521968 -8.588569,-4.539674 -5.153134,-4.4169746 -7.913742,-2.9446486 -8.995903,-3.6808086 -1.082485,-0.736166 -0.696897,-1.717713 0.959464,-3.190039 1.656369,-1.472325 6.318732,0.490778 9.017994,0.797512 2.699262,0.306734 5.827955,2.392527 5.889301,4.871925 0.06131,2.4792256 2.944649,4.7595296 1.717713,5.7410846 z" />
-</svg>
-
-            </i>
-            语言
-          </a>
-        </div>
-        <ul class="mobile-submenu-list">
-          
-            <li>
-              
-                <a href="https://noneback.github.io/"></a>
-              
-            </li>
-          
-            <li>
-              
-                <a href="https://noneback.github.io/zh-cn/"><strong></strong></a>
-              
-            </li>
-          
-        </ul>
-      </li>
+    
 
     
   </ul>
@@ -261,7 +255,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     <header id="header" class="header">
       <div class="logo-wrapper">
-  <a href="/zh-cn/" class="logo">
+  <a href="/" class="logo">
     
       今日目标:摸鱼
     
@@ -276,7 +270,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
         
           
           
-            <a class="menu-item-link" href="https://noneback.github.io/zh-cn/">Home</a>
+            <a class="menu-item-link" href="https://noneback.github.io/">Home</a>
           
 
         
@@ -287,7 +281,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
         
           
           
-            <a class="menu-item-link" href="https://noneback.github.io/zh-cn/post/">Archives</a>
+            <a class="menu-item-link" href="https://noneback.github.io/post/">Archives</a>
           
 
         
@@ -298,7 +292,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
         
           
           
-            <a class="menu-item-link" href="https://noneback.github.io/zh-cn/tags/">Tags</a>
+            <a class="menu-item-link" href="https://noneback.github.io/tags/">Tags</a>
           
 
         
@@ -309,7 +303,18 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
         
           
           
-            <a class="menu-item-link" href="https://noneback.github.io/zh-cn/categories/">Categories</a>
+            <a class="menu-item-link" href="https://noneback.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://noneback.github.io/about/">About</a>
           
 
         
@@ -341,30 +346,6 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
     
 
     
-    <li class="menu-item">
-        
-        <a class="menu-item-link menu-parent menu-item-lang" href="#">
-          
-          <i class="iconfont">
-            <svg height="16" width="16" version="1.1" viewBox="0 0 128 128">
-  <path d="m 64.719501,1.4279814 c -34.694029,0 -62.8192028,28.1251726 -62.8192028,62.8192016 0,34.694036 28.1251738,62.819207 62.8192028,62.819207 4.245691,0 8.392744,-0.42239 12.402214,-1.2253 -1.616124,-0.77296 -1.792473,-6.57213 -0.194346,-9.87848 1.779059,-3.68082 7.361625,-13.00555 1.840404,-16.134231 -5.521221,-3.12869 -3.98755,-4.53968 -7.361625,-8.15914 -3.374083,-3.61947 -1.994181,-4.16357 -2.208492,-5.09179 -0.736158,-3.19004 3.251385,-7.975096 3.435429,-8.465866 0.184043,-0.490781 0.184043,-2.331182 0.122689,-2.883308 -0.06131,-0.552125 -2.515051,-2.024446 -3.12852,-2.085791 -0.613469,-0.06133 -0.920209,0.98154 -1.77906,1.042896 -0.858856,0.06133 -4.601018,-2.269838 -5.39853,-2.883308 -0.797504,-0.61346 -1.165591,-2.085792 -2.269828,-3.190033 -1.104247,-1.104252 -1.226945,-0.24539 -2.944651,-0.920206 -1.717714,-0.674812 -7.238935,-2.69926 -11.471867,-4.416975 -4.23294,-1.717714 -4.601019,-4.125615 -4.662365,-5.827954 -0.06131,-1.702333 -2.57657,-4.171587 -3.756227,-5.950646 -1.179335,-1.77906 -1.396914,-4.232932 -1.826339,-3.680809 -0.429425,0.552114 2.208484,6.993538 1.77906,7.177582 -0.429425,0.184043 -1.349635,-1.77906 -2.576572,-3.374083 -1.226936,-1.595016 1.28829,-0.736159 -2.637915,-8.465864 -3.926198,-7.729705 1.226944,-11.671284 1.472324,-15.704806 0.24539,-4.033514 3.312738,1.472325 1.717715,-1.104238 -1.595016,-2.576571 0.122697,-7.975094 -1.104246,-9.938197 -1.226936,-1.963102 -8.220475,2.208492 -8.220475,2.208492 0.184036,-1.901758 6.134682,-5.153142 10.428966,-8.1591366 4.294277,-3.005996 6.91682,-0.674813 10.367621,0.4294236 3.450803,1.104246 3.680817,0.736167 2.515226,-0.368079 -1.165591,-1.1042446 0.49077,-1.6563686 3.190031,-1.2269356 2.699269,0.429425 3.435428,3.6808086 7.545669,3.3740746 4.110242,-0.306735 0.429425,0.797511 0.981548,1.840412 0.552123,1.042892 -0.613468,0.920202 -3.312729,2.760607 -2.699262,1.840403 0.06131,1.840403 4.846407,5.337177 4.785055,3.496773 3.312729,-2.331183 2.821952,-4.907753 -0.490777,-2.576563 3.496773,-0.552115 3.496773,-0.552115 2.944651,1.963094 2.400546,0.107972 4.547684,0.782784 2.147139,0.674814 7.967076,5.597286 7.967076,5.597286 -7.300273,3.98755 -2.699261,4.416975 -1.472325,5.337178 1.226937,0.920202 -2.515218,2.699261 -2.515218,2.699261 -1.53367,-1.53367 -1.779059,0.06131 -2.760614,0.613476 -0.981548,0.552115 -0.06131,1.963095 -0.06131,1.963095 -5.076415,0.797512 -3.926198,6.13469 -3.864852,7.422971 0.06131,1.288289 -3.251385,3.251384 -4.110242,5.091796 -0.858857,1.840405 2.208491,5.827948 0.613468,6.073336 -1.595016,0.24539 -3.190031,-6.011991 -11.778601,-3.680808 -2.589322,0.702954 -8.343174,3.680808 -5.275824,9.754153 3.06734,6.073336 8.15913,-1.717714 9.876843,-0.858857 1.717714,0.858857 -0.490778,4.72371 -0.122691,4.785055 0.368079,0.06131 4.8464,0.168662 5.09179,5.398522 0.245388,5.229868 6.809502,4.785065 8.220482,4.907755 1.410972,0.12269 6.134682,-3.864859 6.809502,-4.048894 0.674815,-0.184034 3.374076,-2.453876 9.263377,0.920195 5.889301,3.374089 8.895296,2.883308 10.919743,4.294285 2.02445,1.410987 0.61347,4.232939 2.51523,5.153134 1.90175,0.920217 9.50876,-0.306736 11.41051,2.821966 1.90176,3.1287 -7.8524,18.833491 -10.91974,20.551201 -3.06734,1.71772 -4.478321,5.64392 -7.545665,8.15913 -3.067349,2.51523 -7.361625,5.62854 -11.410522,8.03646 -3.583968,2.1311 -4.228845,5.949 -5.825333,7.15419 28.11404,-6.24545 49.13623,-31.328971 49.13623,-61.323497 0,-34.694029 -28.125171,-62.8192016 -62.819206,-62.8192016 z M 79.442753,60.382331 c -0.858857,0.245389 -2.637917,1.840405 -6.993547,-0.736166 -4.35563,-2.576564 -7.361625,-2.085794 -7.729705,-2.515218 0,0 -0.368079,-1.0429 1.533671,-1.226937 3.905098,-0.378065 8.833951,3.619464 9.938196,3.680809 1.104246,0.06131 1.656361,-1.104245 3.619464,-0.471631 1.963103,0.631953 0.490777,1.023755 -0.368079,1.269143 z M 58.891546,7.6853614 c -0.427786,-0.311152 0.354344,-0.669418 0.82058,-1.288281 0.269103,-0.357613 0.0695,-0.951289 0.406356,-1.28829 0.92021,-0.920203 5.459876,-2.208485 4.572225,0.306734 -0.887321,2.515226 -5.12434,2.760614 -5.799161,2.269837 z m 10.98109,7.9750936 c -1.533672,-0.06131 -5.14381,-0.442837 -4.478321,-1.104246 2.591952,-2.576563 -0.981548,-3.312729 -3.190039,-3.496766 -2.208485,-0.184043 -3.128687,-1.4109786 -2.02444,-1.5336776 1.104237,-0.12269 5.521213,0.06139 6.257379,0.6748206 0.736158,0.613469 4.723709,2.208485 4.969099,3.374076 0.24538,1.16559 0,2.147138 -1.533678,2.085793 z M 83.184914,15.23103 c -1.226943,0.981547 -7.400887,-3.521968 -8.588569,-4.539674 -5.153134,-4.4169746 -7.913742,-2.9446486 -8.995903,-3.6808086 -1.082485,-0.736166 -0.696897,-1.717713 0.959464,-3.190039 1.656369,-1.472325 6.318732,0.490778 9.017994,0.797512 2.699262,0.306734 5.827955,2.392527 5.889301,4.871925 0.06131,2.4792256 2.944649,4.7595296 1.717713,5.7410846 z" />
-</svg>
-
-          </i>
-          
-        </a>
-        <ul class="submenu">
-          
-            
-              <li class="submenu-item">
-                <a href="https://noneback.github.io/"></a>
-              </li>
-            
-          
-            
-          
-        </ul>
-      </li>
     
 
     
@@ -375,19 +356,223 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
     <div id="mobile-panel">
       <main id="main" class="main bg-llight wallpaper">
+        <div class="content-wrapper">
+    <div id="content" class="content">
+      <article class="post">
         
+        <header class="post-header">
+          <h1 class="post-title">Borg: Large-scale cluster management at Google with Borg</h1>
+          
+
+          <div class="post-meta">
+  <div class="post-meta-author">
+    by
+      NoneBack
+    
+  </div>
+
+  <div class="post-meta-time">
+    <time datetime="2024-02-19">
+      2024-02-19
+    </time>
+  </div>
+
   
+
+
+  <div class="post-meta__right">
+    <span class="post-meta-more">
+        约 1166 字 -
+        预计阅读 3 分钟
+      </span>
+
+    <div class="post-meta-category">
+        <a href="https://noneback.github.io/categories/distributed-system/"> distributed system </a>
+          <a href="https://noneback.github.io/categories/cluster-management/"> cluster management </a>
+          
+      </div>
+
+
+    
+    
+
+
+    
+    
+  </div>
+</div>
+
+        </header>
+
+        
+        <div class="post-content">
+          <p>Borg 是一个集群管理系统，类似闭源的k8s。</p>
+<ul>
+<li>通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。</li>
+<li>为高可用应用提供了可以减少故障恢复时间的运行时特性，以及降低关联故障概率的调度策略。</li>
+<li>提供声明式的作业描述语言、域名服务集成、实时作业监控、分析和模拟系统行为的工具。简化用户的使用。</li>
+</ul>
+<p>文章本意在介绍系统设计的同时，讲述Google在背后的经验总结。但本文主要关心系统的设计，关注Borg对外提供的服务SLA，关注Borg对负载，资源，调度等方面的抽象。</p>
+<h2 id="系统抽象">系统抽象</h2>
+<p>工作负载上，主要有两种：一是长期运行的服务，二是批处理任务。分别对应两种类型的Job (prod / non-prod)。Job由若干Task组成，不同的Job拥有不同的优先级。</p>
+<p>部署架构上，一个Borg Cluster由若干Cell组成，一个Cell由若干机器组成。</p>
+<p>任务调度上，一切机器上有限的物理或者逻辑单元都需要被视为资源，如cpu，mem，io等资源。</p>
+<h2 id="系统架构">系统架构</h2>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png"></p>
+<p>Master-Slave架构，由一个BorgMaster和若干Borglet节点组成，调度器是一个独立的服务。</p>
+<p>BorgMaster是一个逻辑节点，负责与外部以及Borglet的交互，以及集群内状态的维护。利用Paxos实现多副本以及ha容错。</p>
+<p>Borglet是Cell内没台机器的Borg Proxy。负责启停Task，管理Node的物理资源，上报状态。</p>
+<p>Scheduler是负责进行Task调度的服务。使用Master中记录的状态，并基于此异步的去处理Task的调度，并告知Master二次判断。</p>
+<h2 id="资源调度">资源调度</h2>
+<p>Scheduler是其中的很重要的核心服务。调度算法的好坏决定了资源的利用率，直接与使用成本关联。</p>
+<h3 id="基本流程">基本流程</h3>
+<p>调度算法有两个部分:</p>
+<ul>
+<li><strong>可行性检查</strong>，找到一组可以运行任务的机器</li>
+<li><strong>评分</strong>，从中选择一个合适的机器。</li>
+</ul>
+<p>在可行性检查阶段，调度器会找到一组满足任务约束且有足够可用资源的机器，其中可用资源包括已经 分配给低优先级任务但可以抢占的资源。</p>
+<p>在评分阶段，调度器确定每台可行机器的适宜性。评分考虑了用户特定的偏好，但主要取决于内建的标准：例如最小化被抢占任务的个数和优先级，选择已经有该任务安 装包的机器，尽可能使任务分散在不同的供电和故障域，以及装箱(Packing)质量(在单台机器上混合 高、低优先级的任务，以允许高优先级任务在负载尖峰扩容)等。</p>
+<p>调度器使用一份缓存的 Cell 状态拷贝，重复执行下面的操作:</p>
+<ol>
+<li>从选举出来的 Master 获取状态变更(包括已分配的和等待中的工作);更新自己的本地拷贝。</li>
+<li>执行一轮调度来分配任务;将分配信息发送给 Master。</li>
+<li>Master 会接受并应用这些分配，但如果分配不适合(例如，是基于过时的状态做出的)，就会等待调度器的下一轮调度。</li>
+</ol>
+<h3 id="其他">其他</h3>
+<p>文中还提到了如何提供售卖率以及性能争抢的问题，不过不是本文重点，可以参考一下原文。</p>
+<h2 id="reference">Reference</h2>
+<p><a href="https://www.cnblogs.com/hellojamest/p/16526159.html">https://www.cnblogs.com/hellojamest/p/16526159.html</a></p>
+
+        </div>
+
+        
+        
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">NoneBack</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+      2024-02-19
+      
+    </span>
+  </p>
   
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content">true</span>
+  </p>
+</div>
+
+
+
+        
+        
+<div class="post-reward">
+  <input type="checkbox" name="reward" id="reward" hidden />
+  <label class="reward-button" for="reward">赞赏支持</label>
+  <div class="qr-code">
+    
+    
+    
+  </div>
+</div>
+
+
+        <footer class="post-footer">
+          <div class="post-tags">
+              <a href="https://noneback.github.io/tags/borg/">borg</a>
+                <a href="https://noneback.github.io/tags/k8s/">k8s</a>
+                <a href="https://noneback.github.io/tags/cluster-schedule/">cluster schedule</a>
+                
+            </div>
+
+
+          
+          <nav class="post-nav">
+            
+            
+              <a class="next" href="/post/borg/">
+                <span class="next-text nav-default">Borg: Large-scale cluster management at Google with Borg</span>
+                <span class="prev-text nav-mobile">下一篇</span>
+                
+                <i class="iconfont">
+                  <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+                </i>
+              </a>
+          </nav>
+        </footer>
+      </article>
+
+      
+      
+
+
+      
+      
+
+  
+
   
   
 
   
   
+    <div class="post">
+  <script src="https://utteranc.es/client.js"
+        repo= "noneback/noneback.github.io"
+        issue-term="title"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+  </script>
+</div>
+
+  
+
+  
+
+  
+
+    
+
   
 
   
 
 
+    </div>
+
+    
+    <nav class="toc" id="toc">
+    <div class="toc-title">文章目录</div>
+    <div class="toc-content custom-scrollbar">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#系统抽象">系统抽象</a></li>
+    <li><a href="#系统架构">系统架构</a></li>
+    <li><a href="#资源调度">资源调度</a>
+      <ul>
+        <li><a href="#基本流程">基本流程</a></li>
+        <li><a href="#其他">其他</a></li>
+      </ul>
+    </li>
+    <li><a href="#reference">Reference</a></li>
+  </ul>
+</nav>
+    </div>
+  </nav>
+
+
+  </div>
 
       </main>
 
@@ -418,7 +603,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
     </a>
 
 
-<a href="https://noneback.github.io/zh-cn/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+<a href="https://noneback.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
     class="iconfont" title="rss" target="_blank">
     <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
   xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -443,7 +628,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
     &copy;
     
       2020 -
-    2023
+    2024
     <span class="heart">
       
       <i class="iconfont">
@@ -493,6 +678,13 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
 
 
 
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
 
 
 

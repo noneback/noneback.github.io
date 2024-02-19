@@ -46,7 +46,7 @@ http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt
 
 
 
-<meta name="generator" content="Hugo 0.115.0" />
+<meta name="generator" content="Hugo 0.121.2" />
 
 
 <link rel="canonical" href="https://noneback.github.io/post/mit6.824-auroradb/" />
@@ -104,6 +104,7 @@ http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt
 <meta property="og:url" content="https://noneback.github.io/post/mit6.824-auroradb/" /><meta property="article:section" content="post" />
 <meta property="article:published_time" content="2023-08-01T16:11:54+08:00" />
 <meta property="article:modified_time" content="2023-08-01T16:11:54+08:00" />
+
 <meta itemprop="name" content="MIT6.824 AuroraDB">
 <meta itemprop="description" content="这篇文章介绍了AWS的数据库产品Aurora的设计考虑，包括存算分离、一写多读、基于Quorum的NRW一致性协议等。同时，文章也提到了PolarDB参考Aurora进行设计，但在网络瓶颈和系统调用方面有所不同。
 
@@ -129,8 +130,7 @@ http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt
 论文阅读-Amazon Aurora: Design Considerations for High Throughput Cloud-Native Relational Database - keys961 | keys961 Blog"><meta itemprop="datePublished" content="2023-08-01T16:11:54+08:00" />
 <meta itemprop="dateModified" content="2023-08-01T16:11:54+08:00" />
 <meta itemprop="wordCount" content="1159">
-<meta itemprop="keywords" content="Distributed System,Database,Cloud-Native,MIT6.824," /><meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824 AuroraDB"/>
+<meta itemprop="keywords" content="Distributed System,Database,Cloud-Native,MIT6.824," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824 AuroraDB"/>
 <meta name="twitter:description" content="这篇文章介绍了AWS的数据库产品Aurora的设计考虑，包括存算分离、一写多读、基于Quorum的NRW一致性协议等。同时，文章也提到了PolarDB参考Aurora进行设计，但在网络瓶颈和系统调用方面有所不同。
 
 Aurora是AWS提供的一种数据库产品，主要面向OLTP的业务场景。
@@ -435,7 +435,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
           <h1 class="post-title">MIT6.824 AuroraDB</h1>
           
 
-          <div class="post-meta" style="font-style: italic">
+          <div class="post-meta">
   <div class="post-meta-author">
     by
       NoneBack
@@ -681,7 +681,7 @@ MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
     &copy;
     
       2020 -
-    2023
+    2024
     <span class="heart">
       
       <i class="iconfont">
