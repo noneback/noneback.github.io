@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFS-Haystack</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle &ldquo;lots of small files&rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.
+These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/posts/dfs-haystack/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="xxx" src="https://umami-ochre-nu.vercel.app/hugo-ladder.js"></script>
+
+    <meta property="og:title" content="DFS-Haystack" />
+<meta property="og:description" content="The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle &ldquo;lots of small files&rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.
+These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/posts/dfs-haystack/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-10-06T22:44:01+08:00" />
+<meta property="article:modified_time" content="2021-10-06T22:44:01+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="DFS-Haystack"/>
+<meta name="twitter:description" content="The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle &ldquo;lots of small files&rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.
+These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://noneback.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "DFS-Haystack",
+      "item": "https://noneback.github.io/posts/dfs-haystack/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "DFS-Haystack",
+  "name": "DFS-Haystack",
+  "description": "The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle \u0026ldquo;lots of small files\u0026rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.\nThese notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.",
+  "keywords": [
+    "DFS", "Distributed System", "Paper Reading"
+  ],
+  "articleBody": "The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle “lots of small files” (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.\nThese notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.\nIntroduction Haystack is a storage system designed by Facebook for small files. In traditional DFS, file addressing typically involves using caches to store metadata, reducing disk interaction and improving lookup efficiency. For each file, a separate set of metadata must be maintained, with the volume of metadata depending on the number of files. In high-concurrency scenarios, metadata is cached in memory to reduce disk I/O.\nWith a large number of small files, the volume of metadata becomes significant. Considering the maintenance overhead of in-memory metadata, this approach becomes impractical. Therefore, Haystack was developed specifically for small files, with the core idea of aggregating multiple small files into a larger one to reduce metadata.\nBackground The “small files” in the paper specifically refer to image data.\nFacebook, as a social media company, deals heavily with image uploads and retrieval. As the business scaled, it became necessary to have a dedicated service to handle the massive, high-concurrency requests for image reads and writes.\nIn the social networking context, this type of data is characterized as written once, read often, never modified, and rarely deleted. Based on this, Facebook developed Haystack to support image sharing services.\nDesign Traditional Design The paper describes two historical designs: CDN-based and NAS-based solutions.\nCDN-based Solution The core of this solution is to use CDN (Content Delivery Network) to cache hot image data, reducing network transmission.\nThis approach optimizes access to hot images but also has some issues. Firstly, CDN is expensive and has limited capacity. Secondly, image sharing includes many less popular images, which leads to the long tail effect, slowing down access.\nCDNs are generally used to serve static data and are often pre-warmed before an event, making them unsuitable as an image cache service. Many less popular images do not enter the CDN, leading to the long tail effect.\nNAS-based Solution This was Facebook’s initial design and is essentially a variation of the CDN-based solution.\nThey introduced NAS (Network Attached Storage) for horizontal storage expansion, incorporating file system semantics, but disk I/O remained an issue. Similar to local files, reading uncached data requires at least three disk I/O operations:\nRead directory metadata into memory Load the inode into memory Read the content of the file PhotoStore was used as a caching layer to store some metadata like file handles to speed up the addressing process.\nThe NAS-based design did not solve the fundamental issue of excessive metadata that could not be fully cached. When the number of files reaches a certain threshold, disk I/O becomes inevitable.\nThe fundamental issue is the one-to-one relationship between files and addressing metadata, causing the volume of metadata to change with the number of files.\nThus, the key to optimization is changing the one-to-one relationship between files and metadata, reducing the frequency of disk I/O during addressing.\nHaystack-based Solution The core idea of Haystack is to aggregate multiple small files into a larger one, maintaining a single piece of metadata for the large file. This changes the mapping between metadata and files, making it feasible to keep all metadata in memory.\nMetadata is maintained only for the aggregated file, and the position of small files within the large file is maintained separately.\nImplementation Haystack mainly consists of three components: Haystack Directory, Haystack Cache, and Haystack Store.\nFile Mapping and Storage File data is ultimately stored on logical volumes, each of which corresponds to multiple physical volumes across machines.\nUsers first access the Directory to obtain access paths and then use the URL generated by the Directory to access other components to retrieve the required data.\nComponents Haystack Directory This is Haystack’s access layer, responsible for file addressing and access control.\nRead and write requests first go through the Directory. For read requests, the Directory generates an access URL containing the path: http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}. For write requests, it provides a volume to write into.\nThe Directory has four main functions:\nLoad balancing for read and write requests. Determine request access paths (e.g., CDN or direct access) and generate access URLs. Metadata and mapping management, e.g., logical attributes to volume mapping. Logical volume read/write management, where volumes can be read-only or write-enabled. This design is based on the data characteristics: “write once, read more.” This setup improves concurrency.\nThe Directory stores metadata such as file-to-volume mappings, logical-to-physical mappings, and volume attributes (size, owner, etc.). It relies on a distributed key-value store and a cache service to ensure low latency and high availability.\nProxy, Metadata Mapping, Access Control\nHaystack Cache The Cache layer optimizes addressing and image retrieval. The core design is the Cache Rule, which determines what data should be cached and how to handle cache misses.\nImages are cached if they meet these criteria:\nThe request is directly from a user, not from a CDN. The photo is retrieved from a write-enabled store machine. If a cache miss occurs, the Cache fetches the image from the Store and pushes it to both the user and the CDN.\nThe caching policy is based on typical access patterns.\nHaystack Store The Store layer is responsible for data storage operations.\nThe addressing abstraction is: filename + offset =\u003e logical volume id + offset =\u003e data.\nMultiple physical volumes constitute a logical volume. In the Store, small files are encapsulated as Needles managed by physical volumes.\nNeedles represent a way to encapsulate small files and manage volume blocks.\nStore data is accessed at the Needle level. To speed up addressing, a memory map is used: key/alternate key =\u003e needle's flag/offset/other attributes.\nThese maps are persisted in Index Files on disk to provide a checkpoint for quick metadata recovery after a crash.\nEach volume maintains its own in-memory mapping and index file.\nWhen updating the in-memory mapping (e.g., adding or modifying a file), the index file is updated asynchronously. Deleted files are only marked as deleted, not removed from the index file.\nThe index serves as a lookup aid. Needles without an index can still be addressed, making the asynchronous update and index retention strategy feasible.\nWorkloads Read (Logical Volume ID, key, alternate key, cookies) =\u003e photo\nFor a read request, Store queries the in-memory mapping for the corresponding Needle. If found, it fetches the data from the volume and verifies the cookie and integrity; otherwise, it returns an error.\nCookies are randomly generated strings that prevent malicious attacks.\nWrite (Logical Volume ID, key, alternate key, cookies, data) =\u003e result\nHaystack only supports appending data rather than overwriting. When a write request is received, Store asynchronously appends data to a Needle and updates the in-memory mapping. If it’s an existing file, the Directory updates its metadata to point to the latest version.\nOlder volumes are frozen as read-only, and new writes are appended, so a larger offset indicates a newer version.\nDelete Deletion is handled using Mark Delete + Compact GC.\nFault Tolerance Store ensures fault tolerance through monitoring + hot backup. Directory and Cache use Raft-like consistency algorithms for data replication and availability.\nOptimization The main optimizations include: Compaction, Batch Load, and In-Memory processing.\nSummary Key abstraction optimizations include asynchronous processing, batch operations, and caching. Identifying the core issues, such as metadata management burden for a large number of small files, is crucial. References Finding a needle in Haystack: Facebook’s photo storage\n",
+  "wordCount" : "1284",
+  "inLanguage": "en",
+  "datePublished": "2021-10-06T22:44:01+08:00",
+  "dateModified": "2021-10-06T22:44:01+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/posts/dfs-haystack/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/posts">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-ochre-nu.vercel.app/share/R1lHz7QY/hugo-ladder-exampleSite">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>DFS-Haystack</h1>
+  </header>
+
+  <p>
+  <small>
+    October 6, 2021&nbsp;· 1284 words&nbsp;· 7 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/dfs/">DFS</a>
+      
+      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
+      
+      <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#background">Background</a></li>
+    <li><a href="#design">Design</a>
+      <ul>
+        <li><a href="#traditional-design">Traditional Design</a></li>
+        <li><a href="#haystack-based-solution">Haystack-based Solution</a></li>
+      </ul>
+    </li>
+    <li><a href="#implementation">Implementation</a>
+      <ul>
+        <li><a href="#file-mapping-and-storage">File Mapping and Storage</a></li>
+        <li><a href="#components">Components</a></li>
+        <li><a href="#workloads">Workloads</a></li>
+        <li><a href="#fault-tolerance">Fault Tolerance</a></li>
+      </ul>
+    </li>
+    <li><a href="#optimization">Optimization</a></li>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle &ldquo;lots of small files&rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.</p>
+<p>These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.</p>
+<h2 id="introduction">Introduction</h2>
+<p>Haystack is a storage system designed by Facebook for small files. In traditional DFS, file addressing typically involves using caches to store metadata, reducing disk interaction and improving lookup efficiency. For each file, a separate set of metadata must be maintained, with the volume of metadata depending on the number of files. In high-concurrency scenarios, metadata is cached in memory to reduce disk I/O.</p>
+<p>With a large number of small files, the volume of metadata becomes significant. Considering the maintenance overhead of in-memory metadata, this approach becomes impractical. Therefore, Haystack was developed specifically for small files, with the core idea of aggregating multiple small files into a larger one to reduce metadata.</p>
+<h2 id="background">Background</h2>
+<p>The &ldquo;small files&rdquo; in the paper specifically refer to image data.</p>
+<p>Facebook, as a social media company, deals heavily with image uploads and retrieval. As the business scaled, it became necessary to have a dedicated service to handle the massive, high-concurrency requests for image reads and writes.</p>
+<p>In the social networking context, this type of data is characterized as <code>written once, read often, never modified, and rarely deleted</code>. Based on this, Facebook developed Haystack to support image sharing services.</p>
+<h2 id="design">Design</h2>
+<h3 id="traditional-design">Traditional Design</h3>
+<p>The paper describes two historical designs: CDN-based and NAS-based solutions.</p>
+<h4 id="cdn-based-solution">CDN-based Solution</h4>
+<p>The core of this solution is to use CDN (Content Delivery Network) to cache hot image data, reducing network transmission.</p>
+<p>This approach optimizes access to hot images but also has some issues. Firstly, CDN is expensive and has limited capacity. Secondly, image sharing includes many <code>less popular</code> images, which leads to the long tail effect, slowing down access.</p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202411011455343.png"></p>
+<blockquote>
+<p>CDNs are generally used to serve static data and are often pre-warmed before an event, making them unsuitable as an image cache service. Many <code>less popular</code> images do not enter the CDN, leading to the long tail effect.</p>
+</blockquote>
+<h4 id="nas-based-solution">NAS-based Solution</h4>
+<p>This was Facebook&rsquo;s initial design and is essentially a variation of the CDN-based solution.</p>
+<p>They introduced NAS (Network Attached Storage) for horizontal storage expansion, incorporating file system semantics, but disk I/O remained an issue. Similar to local files, reading uncached data requires at least three disk I/O operations:</p>
+<ul>
+<li>Read directory metadata into memory</li>
+<li>Load the inode into memory</li>
+<li>Read the content of the file</li>
+</ul>
+<p>PhotoStore was used as a caching layer to store some metadata like file handles to speed up the addressing process.</p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202411011454979.png"></p>
+<p>The NAS-based design did not solve the fundamental issue of excessive metadata that could not be fully cached. When the number of files reaches a certain threshold, disk I/O becomes inevitable.</p>
+<blockquote>
+<p>The fundamental issue is the <strong>one-to-one relationship between files and addressing metadata</strong>, causing the volume of metadata to change with the number of files.</p>
+</blockquote>
+<p>Thus, the key to optimization is changing the <strong>one-to-one relationship between files and metadata</strong>, reducing the frequency of disk I/O during addressing.</p>
+<h3 id="haystack-based-solution">Haystack-based Solution</h3>
+<p>The core idea of Haystack is to <strong>aggregate multiple small files into a larger one</strong>, maintaining a single piece of metadata for the large file. This changes the mapping between metadata and files, making it feasible to keep all metadata in memory.</p>
+<blockquote>
+<p>Metadata is maintained only for the aggregated file, and the position of small files within the large file is maintained separately.</p>
+</blockquote>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202411011456020.png"></p>
+<h2 id="implementation">Implementation</h2>
+<p>Haystack mainly consists of three components: Haystack Directory, Haystack Cache, and Haystack Store.</p>
+<h3 id="file-mapping-and-storage">File Mapping and Storage</h3>
+<p>File data is ultimately stored on logical volumes, each of which corresponds to multiple physical volumes across machines.</p>
+<p>Users first access the Directory to obtain access paths and then use the URL generated by the Directory to access other components to retrieve the required data.</p>
+<h3 id="components">Components</h3>
+<h4 id="haystack-directory">Haystack Directory</h4>
+<p>This is Haystack&rsquo;s access layer, responsible for <strong>file addressing</strong> and <strong>access control</strong>.</p>
+<p>Read and write requests first go through the Directory. For read requests, the Directory generates an access URL containing the path: <code>http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}</code>. For write requests, it provides a volume to write into.</p>
+<p>The Directory has four main functions:</p>
+<ol>
+<li>Load balancing for read and write requests.</li>
+<li>Determine request access paths (e.g., CDN or direct access) and generate access URLs.</li>
+<li>Metadata and mapping management, e.g., logical attributes to volume mapping.</li>
+<li>Logical volume read/write management, where volumes can be read-only or write-enabled.</li>
+</ol>
+<blockquote>
+<p>This design is based on the data characteristics: &ldquo;write once, read more.&rdquo; This setup improves concurrency.</p>
+</blockquote>
+<p>The Directory stores metadata such as file-to-volume mappings, logical-to-physical mappings, and volume attributes (size, owner, etc.). It relies on a distributed key-value store and a cache service to ensure low latency and high availability.</p>
+<blockquote>
+<p><strong>Proxy, Metadata Mapping, Access Control</strong></p>
+</blockquote>
+<h4 id="haystack-cache">Haystack Cache</h4>
+<p>The Cache layer optimizes addressing and image retrieval. The core design is the <strong>Cache Rule</strong>, which determines what data should be cached and how to handle <strong>cache misses</strong>.</p>
+<p>Images are cached if they meet these criteria:</p>
+<ol>
+<li>The request is directly from a user, not from a CDN.</li>
+<li>The photo is retrieved from a write-enabled store machine.</li>
+</ol>
+<p>If a cache miss occurs, the Cache fetches the image from the Store and pushes it to both the user and the CDN.</p>
+<blockquote>
+<p>The caching policy is based on typical access patterns.</p>
+</blockquote>
+<h4 id="haystack-store">Haystack Store</h4>
+<p>The Store layer is responsible for data storage operations.</p>
+<p>The addressing abstraction is: <code>filename + offset =&gt; logical volume id + offset =&gt; data</code>.</p>
+<p>Multiple physical volumes constitute a logical volume. In the Store, small files are encapsulated as <strong>Needles</strong> managed by physical volumes.</p>
+<p><img alt="Needle Abstraction" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg"></p>
+<blockquote>
+<p>Needles represent a way to encapsulate small files and manage volume blocks.</p>
+</blockquote>
+<p>Store data is accessed at the Needle level. To speed up addressing, a memory map is used: <code>key/alternate key =&gt; needle's flag/offset/other attributes</code>.</p>
+<p>These maps are persisted in <strong>Index Files</strong> on disk to provide a checkpoint for quick metadata recovery after a crash.</p>
+<p><img alt="Index File" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg"></p>
+<p><img alt="Volume Mapping" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg"></p>
+<blockquote>
+<p>Each volume maintains its own in-memory mapping and index file.</p>
+</blockquote>
+<p>When updating the in-memory mapping (e.g., adding or modifying a file), the index file is updated asynchronously. Deleted files are only marked as deleted, not removed from the index file.</p>
+<blockquote>
+<p>The index serves as a lookup aid. Needles without an index can still be addressed, making the asynchronous update and index retention strategy feasible.</p>
+</blockquote>
+<h3 id="workloads">Workloads</h3>
+<h4 id="read">Read</h4>
+<p><code>(Logical Volume ID, key, alternate key, cookies) =&gt; photo</code></p>
+<p>For a read request, Store queries the in-memory mapping for the corresponding Needle. If found, it fetches the data from the volume and verifies the cookie and integrity; otherwise, it returns an error.</p>
+<blockquote>
+<p>Cookies are randomly generated strings that prevent malicious attacks.</p>
+</blockquote>
+<h4 id="write">Write</h4>
+<p><code>(Logical Volume ID, key, alternate key, cookies, data) =&gt; result</code></p>
+<p>Haystack only supports appending data rather than overwriting. When a write request is received, Store asynchronously appends data to a Needle and updates the in-memory mapping. If it&rsquo;s an existing file, the Directory updates its metadata to point to the latest version.</p>
+<blockquote>
+<p>Older volumes are frozen as read-only, and new writes are appended, so a larger offset indicates a newer version.</p>
+</blockquote>
+<h4 id="delete">Delete</h4>
+<p>Deletion is handled using <strong>Mark Delete + Compact GC</strong>.</p>
+<h3 id="fault-tolerance">Fault Tolerance</h3>
+<p>Store ensures fault tolerance through <strong>monitoring + hot backup</strong>. Directory and Cache use Raft-like consistency algorithms for data replication and availability.</p>
+<h2 id="optimization">Optimization</h2>
+<p>The main optimizations include: Compaction, Batch Load, and In-Memory processing.</p>
+<h2 id="summary">Summary</h2>
+<ul>
+<li>Key abstraction optimizations include asynchronous processing, batch operations, and caching.</li>
+<li>Identifying the core issues, such as metadata management burden for a large number of small files, is crucial.</li>
+</ul>
+<h2 id="references">References</h2>
+<p><a href="https://www.usenix.org/legacy/event/osdi10/tech/full_papers/Beaver.pdf">Finding a needle in Haystack: Facebook’s photo storage</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/posts/kylin%E6%A6%82%E8%BF%B0/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Kylin Overview</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/posts/mit6.824-bigtable/"><span>MIT6.824 Bigtable</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+</article>
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

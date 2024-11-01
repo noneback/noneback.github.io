@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding. Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/posts/percolator/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="xxx" src="https://umami-ochre-nu.vercel.app/hugo-ladder.js"></script>
+
+    <meta property="og:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications" />
+<meta property="og:description" content="It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding. Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/posts/percolator/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-09-28T10:43:23+08:00" />
+<meta property="article:modified_time" content="2023-09-28T10:43:23+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications"/>
+<meta name="twitter:description" content="It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding. Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://noneback.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications",
+      "item": "https://noneback.github.io/posts/percolator/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications",
+  "name": "Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications",
+  "description": "It has been a while since I last studied, and I wanted to learn something interesting. This time, I\u0026rsquo;ll be covering Percolator, a distributed transaction system. I won\u0026rsquo;t translate the paper or delve into detailed algorithms; I\u0026rsquo;ll just document my understanding. Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a",
+  "keywords": [
+    "Percolator", "Distributed System", "Transaction"
+  ],
+  "articleBody": "It has been a while since I last studied, and I wanted to learn something interesting. This time, I’ll be covering Percolator, a distributed transaction system. I won’t translate the paper or delve into detailed algorithms; I’ll just document my understanding.\nPercolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator’s requests, completing prepare operations and commit/abort operations based on those requests.\nThe 2PC protocol ensures the atomicity (ACD) of a transaction but does not implement isolation (I), relying instead on single-node transactions for ACD. The coordinator is clearly a critical point, which can become a bottleneck or cause blocking if it fails.\nCoordinator Participant QUERY TO COMMIT --------------------------------\u003e VOTE YES/NO prepare*/abort* \u003c------------------------------- commit*/abort* COMMIT/ROLLBACK --------------------------------\u003e ACKNOWLEDGMENT commit*/abort* \u003c-------------------------------- end Percolator Percolator can be seen as an optimized version of 2PC, with some improvements such as:\nOptimizing the use of locks by introducing primary-secondary dual-level locks, which eliminates the reliance on a coordinator. Providing full ACID semantics and supporting MVCC (Multi-Version Concurrency Control) through a timestamp service. Percolator Protocol Details The Percolator system consists of three main components:\nClient: The client initiating a transaction. It acts as the control center for the entire protocol and is the coordinator of the two-phase commit process.\nTO (Time Observer): Responsible for assigning timestamps, providing unique and incrementing timestamps to implement MVCC.\nBigtable: Provides single-row transactions, storing data as well as some attributes for transactional control.\nlock + write + data: for transactions, where lock indicates that a cell is held by a transaction, and write represents the data visibility.\nnotify + ack: for watcher or notifier mechanisms.\nExternally, Percolator is provided to businesses through an SDK, offering transactions and R/W operations. The model is similar to Begin Txn → Sets of RW Operations → Commit or Abort or Rollback. Bigtable acts as the persistent component, hiding details about Tablet Server data sharding. Each write operation (including read-then-write) in the transaction is treated as a participant in a distributed transaction and may be dispatched to multiple Tablet Server nodes.\nAlgorithm Workflow All writes in a transaction are cached on the client before being written during the commit phase. The commit phase itself is a standard two-phase commit consisting of prewrite and commit stages.\nPrewrite Obtain a timestamp from TO as the start time of the transaction. Lock the data, marking it as held by the current transaction. If locking fails, it means the data is held by another transaction, and the current transaction fails. The locking process utilizes the primary-secondary mechanism, where one write is chosen as the primary and all others as secondary. The secondary locks point to the primary.\nClearly, data in the prewrite phase is invisible to other transactions.\nCommit Attempt to commit the data prewritten. The commit starts by committing the primary record, whose commit time will serve as the commit time for the entire transaction. First, the lock record is checked. If the lock does not exist, it indicates that the lock from the prewrite phase has been cleaned by another transaction, causing the current transaction to fail. If the lock exists, the write column is updated to indicate that the data is visible to the system. In an asynchronous network, single-node failures and network delays are common. The algorithm must detect and clean up these locks to avoid deadlocks. Therefore, in the commit phase, if a lock is found to be missing, it means that an issue occurred with a participant, and the current transaction must be cleaned.\nAfter successfully committing, clean up the lock record. Lock cleanup can be done asynchronously. These designs eliminate the dependency on a centralized coordinator. Previously, a centralized service was required to maintain information about all transaction participants. In this algorithm, the primary-secondary lock and the write column achieve the same goal. The write column indicates the visibility and version chain of the data, while the lock column shows which transaction holds the data. The primary-secondary locks record the logical relationship among participants. Thus, committing the primary record becomes the commit point for the entire transaction. Once the primary is committed, all secondary records can be asynchronously committed by checking the corresponding primary record’s write column.\nSnapshot Isolation Two-phase commit ensures the atomicity of a transaction. On top of that, Percolator also provides snapshot isolation. In simple terms, snapshot isolation requires that committed transactions do not cause data conflicts and that read operations within a transaction satisfy snapshot reads. By leveraging the transaction start time and the primary commit time, a total ordering among transactions can be maintained, solving these issues naturally.\nDeadlock Issues in Asynchronous Networks As mentioned earlier, in an asynchronous network, single-node failures and network delays are common. The algorithm must clean up locks to prevent deadlocks when such failures are detected. The failure detection strategy can be as simple as a timeout, causing the current transaction to fail. When a node fails and then recovers, its previous transaction has already failed, and the relevant lock records must be cleaned up. Lock cleanup can be asynchronous; for example, during the prewrite phase, if a record’s lock column is found to be non-empty, its primary lock can be checked. If the primary lock is not empty, it means the transaction is incomplete, and the lock can be cleaned up; if empty, the transaction has committed, and the data should be committed and the lock cleaned (RollForward).\nNotification Mechanism A notification mechanism is crucial for state observation and linkage in asynchronous systems, but it is not the focus of this article.\nPercolator in TiDB Based on our analysis above, Percolator is an optimized 2PC distributed transaction implementation, relying on a storage engine that supports single-node transactions.\nLet’s briefly look at how TiDB uses Percolator to implement distributed transactions.\nThe architecture of TiDB and TiKV is shown above. Data from relational tables in TiDB is ultimately mapped to KV pairs in TiKV. TiKV is a distributed KV store based on Raft and RocksDB. RocksDB supports transactional operations on KV pairs.\nThus, the transaction path in TiDB is as follows: a relational table transaction is converted into a set of KV transactions, which are executed based on Percolator to achieve relational table transaction operations.\nOf course, it cannot provide the same transactional semantics and performance guarantees as a single-node TP database. However, a shared-nothing architecture has its own advantages, which may make this trade-off acceptable.\nReferences Engineering Practice of Two-Phase Commit\nPolarDB Database Kernel Monthly Report\nPercolator: Online Incremental Processing System (Chinese Translation)\nPercolator: Online Incremental Processing System (Chinese Translation) | A Small Bird\nTwo-Phase Commit - Wikipedia\nPercolator and TiDB Transaction Algorithm\nTwo-Phase Commit | OceanBase Learning Guide\nTiDB Architecture Overview\n",
+  "wordCount" : "1135",
+  "inLanguage": "en",
+  "datePublished": "2023-09-28T10:43:23+08:00",
+  "dateModified": "2023-09-28T10:43:23+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/posts/percolator/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/posts">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-ochre-nu.vercel.app/share/R1lHz7QY/hugo-ladder-exampleSite">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications</h1>
+  </header>
+
+  <p>
+  <small>
+    September 28, 2023&nbsp;· 1135 words&nbsp;· 3 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
+      
+      <a href="https://noneback.github.io/tags/transaction/">Transaction</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#percolator-and-2pc">Percolator and 2PC</a>
+      <ul>
+        <li><a href="#2pc">2PC</a></li>
+        <li><a href="#percolator">Percolator</a></li>
+      </ul>
+    </li>
+    <li><a href="#percolator-protocol-details">Percolator Protocol Details</a>
+      <ul>
+        <li><a href="#algorithm-workflow">Algorithm Workflow</a></li>
+        <li><a href="#snapshot-isolation">Snapshot Isolation</a></li>
+        <li><a href="#deadlock-issues-in-asynchronous-networks">Deadlock Issues in Asynchronous Networks</a></li>
+        <li><a href="#notification-mechanism">Notification Mechanism</a></li>
+      </ul>
+    </li>
+    <li><a href="#percolator-in-tidb">Percolator in TiDB</a></li>
+    <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding.</p>
+<h2 id="percolator-and-2pc">Percolator and 2PC</h2>
+<h3 id="2pc">2PC</h3>
+<p>The Two-Phase Commit (2PC) protocol involves two types of roles: <strong>Coordinator and Participant</strong>. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator&rsquo;s requests, completing prepare operations and commit/abort operations based on those requests.</p>
+<blockquote>
+<p><strong>The 2PC protocol ensures the atomicity (ACD) of a transaction</strong> but does not implement <strong>isolation (I)</strong>, relying instead on single-node transactions for ACD. The coordinator is clearly a critical point, which can become a bottleneck or cause blocking if it fails.</p>
+</blockquote>
+<pre tabindex="0"><code>    Coordinator                                          Participant
+                              QUERY TO COMMIT
+                --------------------------------&gt;
+                              VOTE YES/NO           prepare*/abort*
+                &lt;-------------------------------
+commit*/abort*                COMMIT/ROLLBACK
+                --------------------------------&gt;
+                              ACKNOWLEDGMENT        commit*/abort*
+                &lt;--------------------------------
+end
+</code></pre><h3 id="percolator">Percolator</h3>
+<p>Percolator can be seen as an optimized version of 2PC, with some improvements such as:</p>
+<ul>
+<li>Optimizing the use of locks by introducing primary-secondary dual-level locks, which eliminates the reliance on a <strong>coordinator</strong>.</li>
+<li>Providing full ACID semantics and supporting MVCC (Multi-Version Concurrency Control) through a timestamp service.</li>
+</ul>
+<h2 id="percolator-protocol-details">Percolator Protocol Details</h2>
+<p>The Percolator system consists of three main components:</p>
+<ul>
+<li>
+<p><strong>Client</strong>: The client initiating a transaction. It acts as the control center for the entire protocol and is the coordinator of the two-phase commit process.</p>
+</li>
+<li>
+<p><strong>TO (Time Observer)</strong>: Responsible for assigning timestamps, providing unique and incrementing timestamps to implement MVCC.</p>
+</li>
+<li>
+<p><strong>Bigtable</strong>: Provides single-row transactions, storing data as well as some attributes for transactional control.</p>
+<blockquote>
+<p><code>lock + write + data</code>: for transactions, where <code>lock</code> indicates that a cell is held by a transaction, and <code>write</code> represents the data visibility.</p>
+<p><code>notify + ack</code>: for watcher or notifier mechanisms.</p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png"></p>
+</blockquote>
+</li>
+</ul>
+<p>Externally, Percolator is provided to businesses through an SDK, offering transactions and R/W operations. The model is similar to <code>Begin Txn → Sets of RW Operations → Commit or Abort or Rollback</code>. Bigtable acts as the persistent component, hiding details about Tablet Server data sharding. Each write operation (including read-then-write) in the transaction is treated as a participant in a distributed transaction and may be dispatched to multiple Tablet Server nodes.</p>
+<h3 id="algorithm-workflow">Algorithm Workflow</h3>
+<p>All writes in a transaction are cached on the client before being written during the commit phase. The commit phase itself is a standard two-phase commit consisting of prewrite and commit stages.</p>
+<h4 id="prewrite">Prewrite</h4>
+<ol>
+<li>Obtain a timestamp from TO as the start time of the transaction.</li>
+<li>Lock the data, marking it as held by the current transaction. If locking fails, it means the data is held by another transaction, and the current transaction fails.</li>
+</ol>
+<blockquote>
+<p>The locking process utilizes the primary-secondary mechanism, where one write is chosen as the <strong>primary</strong> and all others as <strong>secondary</strong>. The secondary locks point to the primary.</p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png" src="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png"></p>
+</blockquote>
+<p>Clearly, data in the prewrite phase is invisible to other transactions.</p>
+<h4 id="commit">Commit</h4>
+<ol>
+<li>Attempt to commit the data prewritten. The commit starts by committing the primary record, whose commit time will serve as the commit time for the entire transaction. First, the lock record is checked. If the lock does not exist, it indicates that the lock from the prewrite phase has been cleaned by another transaction, causing the current transaction to fail. If the lock exists, the <code>write</code> column is updated to indicate that the data is visible to the system.</li>
+</ol>
+<blockquote>
+<p>In an asynchronous network, single-node failures and network delays are common. The algorithm must detect and clean up these locks to avoid deadlocks. Therefore, in the commit phase, if a lock is found to be missing, it means that an issue occurred with a participant, and the current transaction must be cleaned.</p>
+</blockquote>
+<ol start="2">
+<li>After successfully committing, clean up the lock record. Lock cleanup can be done asynchronously.</li>
+</ol>
+<p>These designs eliminate the dependency on a centralized <strong>coordinator</strong>. Previously, a centralized service was required to maintain information about all transaction participants. In this algorithm, the primary-secondary lock and the <code>write</code> column achieve the same goal. The <code>write</code> column indicates the visibility and version chain of the data, while the <code>lock</code> column shows which transaction holds the data. The primary-secondary locks record the logical relationship among participants. Thus, committing the primary record becomes the commit point for the entire transaction. Once the primary is committed, all secondary records can be asynchronously committed by checking the corresponding primary record&rsquo;s <code>write</code> column.</p>
+<h3 id="snapshot-isolation">Snapshot Isolation</h3>
+<p>Two-phase commit ensures the atomicity of a transaction. On top of that, Percolator also provides <strong>snapshot isolation</strong>. In simple terms, snapshot isolation requires that committed transactions do not cause data conflicts and that read operations within a transaction satisfy snapshot reads. By leveraging the transaction start time and the primary commit time, a total ordering among transactions can be maintained, solving these issues naturally.</p>
+<h3 id="deadlock-issues-in-asynchronous-networks">Deadlock Issues in Asynchronous Networks</h3>
+<p>As mentioned earlier, in an asynchronous network, single-node failures and network delays are common. The algorithm must clean up locks to prevent deadlocks when such failures are detected. The failure detection strategy can be as simple as a timeout, causing the current transaction to fail. When a node fails and then recovers, its previous transaction has already failed, and the relevant lock records must be cleaned up. Lock cleanup can be asynchronous; for example, during the prewrite phase, if a record&rsquo;s lock column is found to be non-empty, its primary lock can be checked. If the primary lock is not empty, it means the transaction is incomplete, and the lock can be cleaned up; if empty, the transaction has committed, and the data should be committed and the lock cleaned (RollForward).</p>
+<h3 id="notification-mechanism">Notification Mechanism</h3>
+<p>A notification mechanism is crucial for state observation and linkage in asynchronous systems, but it is not the focus of this article.</p>
+<h2 id="percolator-in-tidb">Percolator in TiDB</h2>
+<p>Based on our analysis above, Percolator is an optimized 2PC distributed transaction implementation, relying on a storage engine that supports single-node transactions.</p>
+<p>Let&rsquo;s briefly look at how TiDB uses Percolator to implement distributed transactions.</p>
+<p><img alt="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png" src="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png"></p>
+<p>The architecture of TiDB and TiKV is shown above. Data from relational tables in TiDB is ultimately mapped to KV pairs in TiKV. TiKV is a distributed KV store based on Raft and RocksDB. RocksDB supports transactional operations on KV pairs.</p>
+<p><img alt="https://download.pingcap.com/images/docs/tikv-rocksdb.png" src="https://download.pingcap.com/images/docs/tikv-rocksdb.png"></p>
+<p>Thus, the transaction path in TiDB is as follows: a relational table transaction is converted into a set of KV transactions, which are executed based on Percolator to achieve relational table transaction operations.</p>
+<blockquote>
+<p>Of course, it cannot provide the same transactional semantics and performance guarantees as a single-node TP database. However, a shared-nothing architecture has its own advantages, which may make this trade-off acceptable.</p>
+</blockquote>
+<h2 id="references">References</h2>
+<p><a href="https://zhuanlan.zhihu.com/p/22594180">Engineering Practice of Two-Phase Commit</a></p>
+<p><a href="http://mysql.taobao.org/monthly/2018/11/02/">PolarDB Database Kernel Monthly Report</a></p>
+<p><a href="https://karellincoln.github.io/2018/04/05/percolator-translate/">Percolator: Online Incremental Processing System (Chinese Translation)</a></p>
+<p><a href="https://www.notion.so/percolator-879c8f72f80b4966a2ec1e41edc74560?pvs=21">Percolator: Online Incremental Processing System (Chinese Translation) | A Small Bird</a></p>
+<p><a href="https://zh.wikipedia.org/zh-hans/%E4%BA%8C%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4">Two-Phase Commit - Wikipedia</a></p>
+<p><a href="https://cn.pingcap.com/blog/percolator-and-txn">Percolator and TiDB Transaction Algorithm</a></p>
+<p><a href="http://www.oceanbase.wiki/concept/transaction-management/transactions/distributed-transactions/two-phase-commit">Two-Phase Commit | OceanBase Learning Guide</a></p>
+<p><a href="https://docs.pingcap.com/zh/tidb/stable/tidb-architecture">TiDB Architecture Overview</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/posts/borg/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Borg: Large-scale Cluster Management at Google with Borg</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/posts/dynamo/"><span>Dynamo: Amazon’s Highly Available Key-value Store</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+</article>
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

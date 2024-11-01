@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apache-Iceberg调研</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@一种用于大规模分析数据集的表格式。 一种对数据文件和元数据文件的组织规范。 一种介于存储和计算中间的schema语义抽象。 netflix开发开源">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/posts/zh/apacheiceberg%E8%B0%83%E7%A0%94/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="xxx" src="https://umami-ochre-nu.vercel.app/hugo-ladder.js"></script>
+
+    <meta property="og:title" content="Apache-Iceberg调研" />
+<meta property="og:description" content="一种用于大规模分析数据集的表格式。 一种对数据文件和元数据文件的组织规范。 一种介于存储和计算中间的schema语义抽象。 netflix开发开源" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/posts/zh/apacheiceberg%E8%B0%83%E7%A0%94/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-10-05T19:55:54+08:00" />
+<meta property="article:modified_time" content="2022-06-05T19:55:54+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Apache-Iceberg调研"/>
+<meta name="twitter:description" content="一种用于大规模分析数据集的表格式。 一种对数据文件和元数据文件的组织规范。 一种介于存储和计算中间的schema语义抽象。 netflix开发开源"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://noneback.github.io/zh/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Apache-Iceberg调研",
+      "item": "https://noneback.github.io/zh/posts/zh/apacheiceberg%E8%B0%83%E7%A0%94/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Apache-Iceberg调研",
+  "name": "Apache-Iceberg调研",
+  "description": "一种用于大规模分析数据集的表格式。 一种对数据文件和元数据文件的组织规范。 一种介于存储和计算中间的schema语义抽象。 netflix开发开源",
+  "keywords": [
+    "lake house", "storage", "big data"
+  ],
+  "articleBody": " 一种用于大规模分析数据集的表格式。 一种对数据文件和元数据文件的组织规范。 一种介于存储和计算中间的schema语义抽象。 netflix开发开源，旨在提升拓展性、可靠性、以及易用性。 背景 HIVE 上云遇到的一系列问题：\n依赖List和Rename语义，无法使用更廉价的OSS代替HDFS。 可拓展性问题。Hive中的Schema信息集中存储于metastore中，可能会成为性能瓶颈 不安全操作、cbo不友好、etc 特性 支持安全高效的schema，partition变更和演进，self-define schema，hidden partition 抽象了自己的schema，不绑定任何计算引擎层面的schema；schema层面维护partition。partition和sort order 提供transformer函数，如 date(timestamp)\n支持对象存储，对fs语义依赖少\nACID语义支持，读写并行，写操作串行化: 读写快照分离；乐观处理写并行冲突，重试保证写入\nsnapshot，支持数据回滚以及时间回溯，支持snapshot过期删除（默认不删除数据文件，但可以定制删除行为(related api doc))。通过对比snapshot差异可以实现增量读取。\n查询优化友好，predict pushdown， data file statistics,目前好像不支持compaction, 可以在snapshot过期删除的删除无效文件(deleteWith)\n抽象程度高，方便改造优化拓展。catalog，读写路径，文件格式，存储依赖 插件化。Iceberg的设计初衷是定义于一个标准、开发且通用的数据组织格式，同时屏蔽底层数据存储格式上的差异，向上提供统一的操作API，使得不同的引擎可以通过其提供的API接入。\n其他：文件级别加密解密\n生态 社区对OSS \u0026 Flink \u0026 Spark \u0026 Presto均有一定支持\nflink(detail)：支持流式读写和增量读取(基于snapshot)，upsert write(0.13.0-release-notes) presto: Iceberg connector Aliyun oss: # pr 3689 其他组件对接\n对接下层存储：只依赖三种语义In-place write，Seekable reads，Deletes，支持AliOSS(# pr 3689) 对接其他文件格式：抽象程度高，目前支持avro，parquet，orc Catalog：可定制化(Doc:Custom Catalog Implementation),目前支持JDBC，Hive metastore，hadoop等 对接计算层：提供原生 JAVA \u0026 Python API，抽象程度高，支持大多数计算引擎 社区开放中立，可以参与贡献，提高影响力\n表规范 对数据文件和元数据文件的组织规范。\nCase：Spark + IceBerg + Local FS ice-berg 支持parquet，Avro，ORC 三种文件格式\n# 存储组织 test2 ├── data │ ├── 00000-1-ccff6767-12cc-481c-93fc-db9f1a57438c-00001.parquet │ └── 00001-2-6c1e5a0b-89fe-4e77-b90a-1773a7fbbcc8-00001.parquet └── metadata ├── 2c1dc0e8-1843-4cb9-9c55-ae43f800bf3f-m0.avro // manifest file ├── snap-8512048775051875497-1-2c1dc0e8-1843-4cb9-9c55-ae43f800bf3f.avro // manifest list file ├── v1.metadata.json // metadata file ├── v2.metadata.json └── version-hint.text // catalog DataFile 数据文件，列存，parquet，orc\n有三种类型的Data File，data file，partition delete file，equality delete file（\nManifest File 索引数据文件，同时包含statistics, partition,\n[ { \"status\":1, \"snapshot_id\":{ \"long\":1274364374047997583 }, \"data_file\":{ \"file_path\":\"/tmp/warehouse/db/test3/data/id=1/00000-31-401a9d2e-d501-434c-a38f-5df5f08ebbd7-00001.parquet\", \"file_format\":\"PARQUET\", \"partition\":{ \"id\":{ \"long\":1 } }, \"record_count\":1, \"file_size_in_bytes\":643, \"block_size_in_bytes\":67108864, \"column_sizes\":{ \"array\":[ { \"key\":1, \"value\":46 }, { \"key\":2, \"value\":48 } ] }, \"value_counts\":{ \"array\":[ { \"key\":1, \"value\":1 }, { \"key\":2, \"value\":1 } ] }, \"null_value_counts\":{ \"array\":[ { \"key\":1, \"value\":0 }, { \"key\":2, \"value\":0 } ] }, \"nan_value_counts\":{ \"array\":[ ] }, \"lower_bounds\":{ \"array\":[ { \"key\":1, \"value\":\"\\u0001\\u0000\\u0000\\u0000\\u0000\\u0000\\u0000\\u0000\" }, { \"key\":2, \"value\":\"a\" } ] }, \"upper_bounds\":{ \"array\":[ { \"key\":1, \"value\":\"\\u0001\\u0000\\u0000\\u0000\\u0000\\u0000\\u0000\\u0000\" }, { \"key\":2, \"value\":\"a\" } ] }, \"key_metadata\":null, \"split_offsets\":{ \"array\":[ 4 ] }, \"sort_order_id\":{ \"int\":0 } } }, { // another data file meta } ] Snapshot 代表某个时刻Table的状态。通过Manifest List File保存。 每次对Table进行数据变更都会生成一个新的Snapshot。 Manifest List File 包含了一个Snapshot包含的所有Manifest文件的信息，以及Partition stats和Data File Count。 一个Snapshot对应一个Manifest List File，每次提交一个Snapshot会生成一个manifest list file。 乐观并发处理，并发提交snapshot冲突时，后提交的请求会重试保证提交。 Each manifest list stores metadata about manifests, including partition stats and data file counts.\n[ { \"manifest_path\":\"/tmp/warehouse/db/test3/metadata/f22b748f-a7bc-4e4c-ad6c-3e335c1c0c2b-m0.avro\", \"manifest_length\":6019, \"partition_spec_id\":0, \"added_snapshot_id\":{ \"long\":1274364374047997583 }, \"added_data_files_count\":{ \"int\":2 }, \"existing_data_files_count\":{ \"int\":0 }, \"deleted_data_files_count\":{ \"int\":0 }, \"partitions\":{ \"array\":[ { \"contains_null\":false, \"contains_nan\":{ \"boolean\":false }, \"lower_bound\":{ \"bytes\":\"\\u0001\\u0000\\u0000\\u0000\\u0000\\u0000\\u0000\\u0000\" }, \"upper_bound\":{ \"bytes\":\"\\u0002\\u0000\\u0000\\u0000\\u0000\\u0000\\u0000\\u0000\" } } ] }, \"added_rows_count\":{ \"long\":2 }, \"existing_rows_count\":{ \"long\":0 }, \"deleted_rows_count\":{ \"long\":0 } }, { // another manifest file } ] Metadata File 包含了表的所有状态。表状态变更的时候会生成一个新的metadata，并替换原有的metadata file，此过程保证原子性。\nThe table metadata file tracks the table schema, partitioning config, custom properties, and snapshots of the table contents\n{ \"format-version\":1, \"table-uuid\":\"175d0b61-8507-40b2-9c19-3338b05f3d48\", \"location\":\"/tmp/warehouse/db/test3\", \"last-updated-ms\":1653387947819, \"last-column-id\":2, \"schema\":{ \"type\":\"struct\", \"schema-id\":0, \"fields\":[ { \"id\":1, \"name\":\"id\", \"required\":false, \"type\":\"long\" }, Object{...} ] }, \"current-schema-id\":0, \"schemas\":[ { \"type\":\"struct\", \"schema-id\":0, \"fields\":[ { \"id\":1, \"name\":\"id\", \"required\":false, \"type\":\"long\" }, Object{...} ] } ], \"partition-spec\":[ { \"name\":\"id\", \"transform\":\"identity\", \"source-id\":1, \"field-id\":1000 } ], \"default-spec-id\":0, \"partition-specs\":[ { \"spec-id\":0, \"fields\":[ { \"name\":\"id\", \"transform\":\"identity\", \"source-id\":1, \"field-id\":1000 } ] } ], \"last-partition-id\":1000, \"default-sort-order-id\":0, \"sort-orders\":[ { \"order-id\":0, \"fields\":[ ] } ], \"properties\":{ \"owner\":\"chenlan\" }, \"current-snapshot-id\":1274364374047997700, \"snapshots\":[ { \"snapshot-id\":1274364374047997700, \"timestamp-ms\":1653387947819, \"summary\":{ \"operation\":\"append\", \"spark.app.id\":\"local-1653381214613\", \"added-data-files\":\"2\", \"added-records\":\"2\", \"added-files-size\":\"1286\", \"changed-partition-count\":\"2\", \"total-records\":\"2\", \"total-files-size\":\"1286\", \"total-data-files\":\"2\", \"total-delete-files\":\"0\", \"total-position-deletes\":\"0\", \"total-equality-deletes\":\"0\" }, \"manifest-list\":\"/tmp/warehouse/db/test3/metadata/snap-1274364374047997583-1-f22b748f-a7bc-4e4c-ad6c-3e335c1c0c2b.avro\", \"schema-id\":0 } ], \"snapshot-log\":[ { \"timestamp-ms\":1653387947819, \"snapshot-id\":1274364374047997700 } ], \"metadata-log\":[ { \"timestamp-ms\":1653387937345, \"metadata-file\":\"/tmp/warehouse/db/test3/metadata/v1.metadata.json\" } ] } Catalog 记录最新的metadata file路径\n特性 ACID语义保证：原子性的表状态变更 + 基于快照读写 分区管理灵活：hidden partition，无感分区变更 支持增量读取：可以根据snapshot来增量读取每一次修改的数据 数据多版本：利好数据回滚 无副作用、安全的schema、partition变更 数据类型 不同数据格式的数据文件，对不同的Type会有不同定义\nNested Types\nstruct：a tuple of typed values list：a collection of values with some element type map：a collection of key-value pairs with a key type and a value type. Primitive Type\nPrimitive type Description Requirements **boolean** True or false **int** 32-bit signed integers Can promote to long **long** 64-bit signed integers **float** 32-bit IEEE 754 floating point Can promote to double **double** 64-bit IEEE 754 floating point **decimal(P,S)** Fixed-point decimal; precision P, scale S Scale is fixed [1], precision must be 38 or less **date** Calendar date without timezone or time **time** Time of day without date, timezone Microsecond precision [2] **timestamp** Timestamp without timezone Microsecond precision [2] **timestamptz** Timestamp with timezone Stored as UTC [2] **string** Arbitrary-length character sequences Encoded with UTF-8 [3] **uuid** Universally unique identifiers Should use 16-byte fixed **fixed(L)** Fixed-length byte array of length L **binary** Arbitrary-length byte array 读取 \u0026 写入路径 select：catalog -\u003e manifest list file -\u003e manifest file -\u003e data file -\u003e data group\ninsert：reverse（catalog -\u003e manifest list file -\u003e manifest file -\u003e data file -\u003e data group）\nupdate：delete \u0026 insert， data file + partition delete file + equality delete file，\n使用Patition delete file transaction 内同一行数据反复插入删除的语义问题\ndelete：row level delete\n参考 ice-berg spec\nFlink+Iceberg的数据湖建设\nFlink + Iceberg 全场景实时数仓的建设实践 Flink 中文社区\nice-berg aliyun oss\nice-berg Flink支持\n基于Flink+Iceberg构建企业级实时数据湖\nFlink 如何实时分析 Iceberg 数据湖的 CDC 数据\niceberg github\nalluxio POXIS API\n深度对比delta、iceberg和hudi三大开源数据湖方案\n",
+  "wordCount" : "2426",
+  "inLanguage": "zh",
+  "datePublished": "2022-10-05T19:55:54+08:00",
+  "dateModified": "2022-06-05T19:55:54+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/posts/zh/apacheiceberg%E8%B0%83%E7%A0%94/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/posts">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-ochre-nu.vercel.app/share/R1lHz7QY/hugo-ladder-exampleSite">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>Apache-Iceberg调研</h1>
+  </header>
+
+  <p>
+  <small>
+    2022年10月5日&nbsp;· 2426 字&nbsp;· 5 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/lake-house/">Lake House</a>
+      
+      <a href="https://noneback.github.io/zh/tags/storage/">Storage</a>
+      
+      <a href="https://noneback.github.io/zh/tags/big-data/">Big Data</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#特性">特性</a></li>
+    <li><a href="#生态">生态</a></li>
+    <li><a href="#表规范">表规范</a>
+      <ul>
+        <li><a href="#casespark--iceberg--local-fs">Case：Spark + IceBerg + Local FS</a></li>
+        <li><a href="#特性-1">特性</a></li>
+        <li><a href="#数据类型">数据类型</a></li>
+        <li><a href="#读取--写入路径">读取 &amp; 写入路径</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><ul>
+<li>一种用于大规模分析数据集的表格式。</li>
+<li>一种对数据文件和元数据文件的组织规范。</li>
+<li>一种介于存储和计算中间的schema语义抽象。</li>
+<li>netflix开发开源，旨在提升拓展性、可靠性、以及易用性。</li>
+</ul>
+<h2 id="背景">背景</h2>
+<p>HIVE 上云遇到的一系列问题：</p>
+<ul>
+<li>依赖List和Rename语义，无法使用更廉价的OSS代替HDFS。</li>
+<li>可拓展性问题。Hive中的Schema信息集中存储于metastore中，可能会成为性能瓶颈</li>
+<li>不安全操作、cbo不友好、etc</li>
+</ul>
+<h2 id="特性">特性</h2>
+<ul>
+<li>支持安全高效的schema，partition变更和演进，self-define schema，hidden partition</li>
+</ul>
+<p>抽象了自己的schema，不绑定任何计算引擎层面的schema；schema层面维护partition。partition和sort order 提供transformer函数，如 date(timestamp)</p>
+<ul>
+<li>
+<p>支持对象存储，对fs语义依赖少</p>
+</li>
+<li>
+<p>ACID语义支持，读写并行，写操作串行化: 读写快照分离；乐观处理写并行冲突，重试保证写入</p>
+</li>
+<li>
+<p>snapshot，支持数据回滚以及时间回溯，支持snapshot过期删除（默认不删除数据文件，但可以定制删除行为(<a href="https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html">related api doc</a>))。通过对比snapshot差异可以实现增量读取。</p>
+</li>
+<li>
+<p>查询优化友好，predict pushdown， data file statistics,目前好像不支持compaction, 可以在snapshot过期删除的删除无效文件(<a href="https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html#deleteWith-java.util.function.Consumer-">deleteWith</a>)</p>
+</li>
+<li>
+<p>抽象程度高，方便改造优化拓展。catalog，读写路径，文件格式，存储依赖 插件化。Iceberg的设计初衷是定义于一个标准、开发且通用的数据组织格式，同时屏蔽底层数据存储格式上的差异，向上提供统一的操作API，使得不同的引擎可以通过其提供的API接入。</p>
+</li>
+<li>
+<p>其他：文件级别加密解密</p>
+</li>
+</ul>
+<h2 id="生态">生态</h2>
+<ul>
+<li>
+<p>社区对OSS &amp; Flink &amp; Spark &amp; Presto均有一定支持</p>
+<ul>
+<li>flink(<a href="https://iceberg.apache.org/docs/latest/flink/">detail</a>)：支持流式读写和增量读取(基于snapshot)，upsert write(<a href="https://iceberg.apache.org/releases/#0130-release-notes">0.13.0-release-notes</a>)</li>
+<li>presto: <a href="https://prestodb.io/docs/current/connector/iceberg.html">Iceberg connector</a></li>
+<li>Aliyun oss: <a href="https://github.com/apache/iceberg/pull/3686/files"># pr 3689</a></li>
+</ul>
+</li>
+<li>
+<p>其他组件对接</p>
+<ul>
+<li>对接下层存储：只依赖三种语义In-place write，Seekable reads，Deletes，支持AliOSS(<a href="https://github.com/apache/iceberg/pull/3686/files"># pr 3689</a>)</li>
+<li>对接其他文件格式：抽象程度高，目前支持avro，parquet，orc</li>
+<li>Catalog：可定制化(<a href="https://iceberg.apache.org/docs/latest/custom-catalog/">Doc:Custom Catalog Implementation</a>),目前支持JDBC，Hive metastore，hadoop等</li>
+<li>对接计算层：提供原生 JAVA &amp; Python API，抽象程度高，支持大多数计算引擎</li>
+</ul>
+</li>
+<li>
+<p>社区开放中立，可以参与贡献，提高影响力</p>
+</li>
+</ul>
+<h2 id="表规范">表规范</h2>
+<p>对数据文件和元数据文件的组织规范。</p>
+<p><img alt="img" src="https://iceberg.apache.org/img/iceberg-metadata.png"></p>
+<h3 id="casespark--iceberg--local-fs">Case：Spark + IceBerg + Local FS</h3>
+<p>ice-berg 支持parquet，Avro，ORC 三种文件格式</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#960050;background-color:#1e0010">存储组织</span>
+</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">test</span><span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#960050;background-color:#1e0010">data</span>
+</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">│</span>   <span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#ae81ff">00000-1</span><span style="color:#960050;background-color:#1e0010">-ccff</span><span style="color:#ae81ff">6767-12</span><span style="color:#960050;background-color:#1e0010">cc</span><span style="color:#ae81ff">-481</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">-93</span><span style="color:#960050;background-color:#1e0010">fc-db</span><span style="color:#ae81ff">9</span><span style="color:#960050;background-color:#1e0010">f</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">a</span><span style="color:#ae81ff">57438</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">-00001</span><span style="color:#960050;background-color:#1e0010">.parquet</span> 
+</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">│</span>   <span style="color:#960050;background-color:#1e0010">└──</span> <span style="color:#ae81ff">00001-2-6</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">1e5</span><span style="color:#960050;background-color:#1e0010">a</span><span style="color:#ae81ff">0</span><span style="color:#960050;background-color:#1e0010">b</span><span style="color:#ae81ff">-89</span><span style="color:#960050;background-color:#1e0010">fe</span><span style="color:#ae81ff">-4e77</span><span style="color:#960050;background-color:#1e0010">-b</span><span style="color:#ae81ff">90</span><span style="color:#960050;background-color:#1e0010">a</span><span style="color:#ae81ff">-1773</span><span style="color:#960050;background-color:#1e0010">a</span><span style="color:#ae81ff">7</span><span style="color:#960050;background-color:#1e0010">fbbcc</span><span style="color:#ae81ff">8-00001</span><span style="color:#960050;background-color:#1e0010">.parquet</span>
+</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">└──</span> <span style="color:#960050;background-color:#1e0010">metadata</span>
+</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#ae81ff">2</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">dc</span><span style="color:#ae81ff">0e8</span><span style="color:#ae81ff">-1843-4</span><span style="color:#960050;background-color:#1e0010">cb</span><span style="color:#ae81ff">9-9</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">55</span><span style="color:#960050;background-color:#1e0010">-ae</span><span style="color:#ae81ff">43</span><span style="color:#960050;background-color:#1e0010">f</span><span style="color:#ae81ff">800</span><span style="color:#960050;background-color:#1e0010">bf</span><span style="color:#ae81ff">3</span><span style="color:#960050;background-color:#1e0010">f-m</span><span style="color:#ae81ff">0</span><span style="color:#960050;background-color:#1e0010">.avro</span> <span style="color:#75715e">// manifest file
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#960050;background-color:#1e0010">snap</span><span style="color:#ae81ff">-8512048775051875497-1-2</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">dc</span><span style="color:#ae81ff">0e8</span><span style="color:#ae81ff">-1843-4</span><span style="color:#960050;background-color:#1e0010">cb</span><span style="color:#ae81ff">9-9</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">55</span><span style="color:#960050;background-color:#1e0010">-ae</span><span style="color:#ae81ff">43</span><span style="color:#960050;background-color:#1e0010">f</span><span style="color:#ae81ff">800</span><span style="color:#960050;background-color:#1e0010">bf</span><span style="color:#ae81ff">3</span><span style="color:#960050;background-color:#1e0010">f.avro</span> <span style="color:#75715e">// manifest list file
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#960050;background-color:#1e0010">v</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">.metadata.json</span> <span style="color:#75715e">// metadata file
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#960050;background-color:#1e0010">v</span><span style="color:#ae81ff">2</span><span style="color:#960050;background-color:#1e0010">.metadata.json</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#960050;background-color:#1e0010">└──</span> <span style="color:#960050;background-color:#1e0010">version-hint.text</span> <span style="color:#75715e">// catalog
+</span></span></span></code></pre></div><h4 id="datafile">DataFile</h4>
+<p>数据文件，列存，parquet，orc</p>
+<p>有三种类型的Data File，data file，partition delete file，equality delete file（</p>
+<h4 id="manifest-file">Manifest File</h4>
+<p>索引数据文件，同时包含statistics, partition,</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>[
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;status&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;snapshot_id&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">1274364374047997583</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;data_file&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;file_path&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3/data/id=1/00000-31-401a9d2e-d501-434c-a38f-5df5f08ebbd7-00001.parquet&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;file_format&#34;</span>:<span style="color:#e6db74">&#34;PARQUET&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;partition&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;id&#34;</span>:{
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;record_count&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;file_size_in_bytes&#34;</span>:<span style="color:#ae81ff">643</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;block_size_in_bytes&#34;</span>:<span style="color:#ae81ff">67108864</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;column_sizes&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">46</span>
+</span></span><span style="display:flex;"><span>                    },
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">48</span>
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                ]
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;value_counts&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>                    },
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                ]
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;null_value_counts&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>                    },
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                ]
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;nan_value_counts&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                ]
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;lower_bounds&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#e6db74">&#34;\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
+</span></span><span style="display:flex;"><span>                    },
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#e6db74">&#34;a&#34;</span>
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                ]
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;upper_bounds&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#e6db74">&#34;\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
+</span></span><span style="display:flex;"><span>                    },
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#e6db74">&#34;a&#34;</span>
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                ]
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;key_metadata&#34;</span>:<span style="color:#66d9ef">null</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;split_offsets&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
+</span></span><span style="display:flex;"><span>                    <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>                ]
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;sort_order_id&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;int&#34;</span>:<span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>       <span style="color:#75715e">// another data file meta
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    }
+</span></span><span style="display:flex;"><span>]
+</span></span></code></pre></div><h4 id="imghttpspic1zhimgcom80v2-328c53c1fe88f4f1bce6952a94f514a0_1440wjpg"><img alt="img" src="https://pic1.zhimg.com/80/v2-328c53c1fe88f4f1bce6952a94f514a0_1440w.jpg"></h4>
+<h4 id="snapshot">Snapshot</h4>
+<ul>
+<li>代表某个时刻Table的状态。通过Manifest List File保存。</li>
+<li><strong>每次对Table进行数据变更都会生成一个新的Snapshot。</strong></li>
+</ul>
+<h4 id="manifest-list-file">Manifest List File</h4>
+<ul>
+<li>包含了一个Snapshot包含的所有Manifest文件的信息，以及Partition stats和Data File Count。</li>
+<li>一个Snapshot对应一个Manifest List File，每次提交一个Snapshot会生成一个manifest list file。</li>
+<li>乐观并发处理，并发提交snapshot冲突时，后提交的请求会<strong>重试</strong>保证提交。</li>
+</ul>
+<blockquote>
+<p>Each manifest list stores metadata about manifests, including partition stats and data file counts.</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>[
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;manifest_path&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3/metadata/f22b748f-a7bc-4e4c-ad6c-3e335c1c0c2b-m0.avro&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;manifest_length&#34;</span>:<span style="color:#ae81ff">6019</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;partition_spec_id&#34;</span>:<span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;added_snapshot_id&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">1274364374047997583</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;added_data_files_count&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;int&#34;</span>:<span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;existing_data_files_count&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;int&#34;</span>:<span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;deleted_data_files_count&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;int&#34;</span>:<span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;partitions&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;array&#34;</span>:[
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;contains_null&#34;</span>:<span style="color:#66d9ef">false</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;contains_nan&#34;</span>:{
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;boolean&#34;</span>:<span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>                    },
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;lower_bound&#34;</span>:{
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;bytes&#34;</span>:<span style="color:#e6db74">&#34;\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
+</span></span><span style="display:flex;"><span>                    },
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;upper_bound&#34;</span>:{
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;bytes&#34;</span>:<span style="color:#e6db74">&#34;\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            ]
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;added_rows_count&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;existing_rows_count&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;deleted_rows_count&#34;</span>:{
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// another manifest file
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    }
+</span></span><span style="display:flex;"><span>]
+</span></span></code></pre></div><h4 id="imghttpspic2zhimgcom80v2-2e12c90f6cab539342af6a779c6fa73d_1440wjpg"><img alt="img" src="https://pic2.zhimg.com/80/v2-2e12c90f6cab539342af6a779c6fa73d_1440w.jpg"></h4>
+<h4 id="metadata-file">Metadata File</h4>
+<p>包含了表的所有状态。表状态变更的时候会生成一个新的metadata，并替换原有的metadata file，<strong>此过程保证原子性。</strong></p>
+<blockquote>
+<p>The table metadata file tracks the <strong>table schema</strong>, <strong>partitioning config</strong>, custom properties, and <strong>snapshots</strong> of the table contents</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;format-version&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;table-uuid&#34;</span>:<span style="color:#e6db74">&#34;175d0b61-8507-40b2-9c19-3338b05f3d48&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;location&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;last-updated-ms&#34;</span>:<span style="color:#ae81ff">1653387947819</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;last-column-id&#34;</span>:<span style="color:#ae81ff">2</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;schema&#34;</span>:{
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;struct&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;schema-id&#34;</span>:<span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;fields&#34;</span>:[
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;id&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;name&#34;</span>:<span style="color:#e6db74">&#34;id&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;required&#34;</span>:<span style="color:#66d9ef">false</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;long&#34;</span>
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#960050;background-color:#1e0010">Object</span>{<span style="color:#960050;background-color:#1e0010">...</span>}
+</span></span><span style="display:flex;"><span>        ]
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;current-schema-id&#34;</span>:<span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;schemas&#34;</span>:[
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;struct&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;schema-id&#34;</span>:<span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;fields&#34;</span>:[
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;id&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;name&#34;</span>:<span style="color:#e6db74">&#34;id&#34;</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;required&#34;</span>:<span style="color:#66d9ef">false</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;long&#34;</span>
+</span></span><span style="display:flex;"><span>                },
+</span></span><span style="display:flex;"><span>                <span style="color:#960050;background-color:#1e0010">Object</span>{<span style="color:#960050;background-color:#1e0010">...</span>}
+</span></span><span style="display:flex;"><span>            ]
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;partition-spec&#34;</span>:[
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>:<span style="color:#e6db74">&#34;id&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;transform&#34;</span>:<span style="color:#e6db74">&#34;identity&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;source-id&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;field-id&#34;</span>:<span style="color:#ae81ff">1000</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default-spec-id&#34;</span>:<span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;partition-specs&#34;</span>:[
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;spec-id&#34;</span>:<span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;fields&#34;</span>:[
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;name&#34;</span>:<span style="color:#e6db74">&#34;id&#34;</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;transform&#34;</span>:<span style="color:#e6db74">&#34;identity&#34;</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;source-id&#34;</span>:<span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;field-id&#34;</span>:<span style="color:#ae81ff">1000</span>
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            ]
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;last-partition-id&#34;</span>:<span style="color:#ae81ff">1000</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default-sort-order-id&#34;</span>:<span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;sort-orders&#34;</span>:[
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;order-id&#34;</span>:<span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;fields&#34;</span>:[
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            ]
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;properties&#34;</span>:{
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;owner&#34;</span>:<span style="color:#e6db74">&#34;chenlan&#34;</span>
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;current-snapshot-id&#34;</span>:<span style="color:#ae81ff">1274364374047997700</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;snapshots&#34;</span>:[
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;snapshot-id&#34;</span>:<span style="color:#ae81ff">1274364374047997700</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;timestamp-ms&#34;</span>:<span style="color:#ae81ff">1653387947819</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;summary&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;operation&#34;</span>:<span style="color:#e6db74">&#34;append&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;spark.app.id&#34;</span>:<span style="color:#e6db74">&#34;local-1653381214613&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;added-data-files&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;added-records&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;added-files-size&#34;</span>:<span style="color:#e6db74">&#34;1286&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;changed-partition-count&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-records&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-files-size&#34;</span>:<span style="color:#e6db74">&#34;1286&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-data-files&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-delete-files&#34;</span>:<span style="color:#e6db74">&#34;0&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-position-deletes&#34;</span>:<span style="color:#e6db74">&#34;0&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-equality-deletes&#34;</span>:<span style="color:#e6db74">&#34;0&#34;</span>
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;manifest-list&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3/metadata/snap-1274364374047997583-1-f22b748f-a7bc-4e4c-ad6c-3e335c1c0c2b.avro&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;schema-id&#34;</span>:<span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;snapshot-log&#34;</span>:[
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;timestamp-ms&#34;</span>:<span style="color:#ae81ff">1653387947819</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;snapshot-id&#34;</span>:<span style="color:#ae81ff">1274364374047997700</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;metadata-log&#34;</span>:[
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;timestamp-ms&#34;</span>:<span style="color:#ae81ff">1653387937345</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;metadata-file&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3/metadata/v1.metadata.json&#34;</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ]
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="catalog">Catalog</h4>
+<p>记录最新的metadata file路径</p>
+<p><img alt="img" src="https://pic3.zhimg.com/80/v2-27edee80bbac03b462898a0564722a56_1440w.jpg"></p>
+<h3 id="特性-1">特性</h3>
+<ul>
+<li>ACID语义保证：原子性的表状态变更 + 基于快照读写</li>
+<li>分区管理灵活：hidden partition，无感分区变更</li>
+<li>支持增量读取：可以根据snapshot来增量读取每一次修改的数据</li>
+<li>数据多版本：利好数据回滚</li>
+<li>无副作用、安全的schema、partition变更</li>
+</ul>
+<h3 id="数据类型">数据类型</h3>
+<p>不同数据格式的数据文件，对不同的Type会有不同定义</p>
+<ul>
+<li>
+<p>Nested Types</p>
+<ul>
+<li>struct：a tuple of typed values</li>
+<li>list：a collection of values with some element type</li>
+<li>map：a collection of key-value pairs with a key type and a value type.</li>
+</ul>
+</li>
+<li>
+<p>Primitive Type</p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Primitive type</th>
+<th>Description</th>
+<th>Requirements</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>**boolean**</code></td>
+<td>True or false</td>
+<td></td>
+</tr>
+<tr>
+<td><code>**int**</code></td>
+<td>32-bit signed integers</td>
+<td>Can promote to <code>long</code></td>
+</tr>
+<tr>
+<td><code>**long**</code></td>
+<td>64-bit signed integers</td>
+<td></td>
+</tr>
+<tr>
+<td><code>**float**</code></td>
+<td><a href="https://en.wikipedia.org/wiki/IEEE_754">32-bit IEEE 754</a> floating point</td>
+<td>Can promote to double</td>
+</tr>
+<tr>
+<td><code>**double**</code></td>
+<td><a href="https://en.wikipedia.org/wiki/IEEE_754">64-bit IEEE 754</a> floating point</td>
+<td></td>
+</tr>
+<tr>
+<td><code>**decimal(P,S)**</code></td>
+<td>Fixed-point decimal; precision P, scale S</td>
+<td>Scale is fixed [1], precision must be 38 or less</td>
+</tr>
+<tr>
+<td><code>**date**</code></td>
+<td>Calendar date without timezone or time</td>
+<td></td>
+</tr>
+<tr>
+<td><code>**time**</code></td>
+<td>Time of day without date, timezone</td>
+<td>Microsecond precision [2]</td>
+</tr>
+<tr>
+<td><code>**timestamp**</code></td>
+<td>Timestamp without timezone</td>
+<td>Microsecond precision [2]</td>
+</tr>
+<tr>
+<td><code>**timestamptz**</code></td>
+<td>Timestamp with timezone</td>
+<td>Stored as UTC [2]</td>
+</tr>
+<tr>
+<td><code>**string**</code></td>
+<td>Arbitrary-length character sequences</td>
+<td>Encoded with UTF-8 [3]</td>
+</tr>
+<tr>
+<td><code>**uuid**</code></td>
+<td>Universally unique identifiers</td>
+<td>Should use 16-byte fixed</td>
+</tr>
+<tr>
+<td><code>**fixed(L)**</code></td>
+<td>Fixed-length byte array of length L</td>
+<td></td>
+</tr>
+<tr>
+<td><code>**binary**</code></td>
+<td>Arbitrary-length byte array</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="读取--写入路径">读取 &amp; 写入路径</h3>
+<p>select：catalog -&gt; manifest list file -&gt; manifest file -&gt; data file -&gt; data group</p>
+<p>insert：reverse（catalog -&gt; manifest list file -&gt; manifest file -&gt; data file -&gt; data group）</p>
+<p>update：delete &amp; insert， data file + partition delete file + equality delete file，</p>
+<p>使用Patition delete file transaction 内同一行数据反复插入删除的语义问题</p>
+<p>delete：row level delete</p>
+<h2 id="参考">参考</h2>
+<p><a href="https://iceberg.apache.org/spec/">ice-berg spec</a></p>
+<p><a href="https://www.datatong.net/thread-39745-1-1.html">Flink+Iceberg的数据湖建设</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/347660549">Flink + Iceberg 全场景实时数仓的建设实践 Flink 中文社区</a></p>
+<p><a href="https://github.com/apache/iceberg/pull/3686">ice-berg  aliyun oss</a></p>
+<p><a href="https://iceberg.apache.org/docs/latest/flink/">ice-berg Flink支持</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/305746643">基于Flink+Iceberg构建企业级实时数据湖</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/353030161">Flink 如何实时分析 Iceberg 数据湖的 CDC 数据</a></p>
+<p><a href="https://github.com/apache/iceberg">iceberg github</a></p>
+<p><a href="https://docs.alluxio.io/os/user/stable/cn/api/POSIX-API.html">alluxio POXIS API</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/110748218">深度对比delta、iceberg和hudi三大开源数据湖方案</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/posts/zh/apacheorc%E8%B0%83%E7%A0%94/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Apache-ORC调研</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/posts/zh/leveldb-write/"><span>LevelDB Write</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+</article>
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

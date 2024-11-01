@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIT6.824 Bigtable</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@I recently found a translated version of the Bigtable paper online and saved it, but hadn&rsquo;t gotten around to reading it. Lately, I&rsquo;ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.
+This is the last of Google&rsquo;s three foundational distributed system papers, and although it wasn&rsquo;t originally part of the MIT6.824 reading list, I&rsquo;ve categorized it here for consistency.">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/posts/mit6.824-bigtable/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="xxx" src="https://umami-ochre-nu.vercel.app/hugo-ladder.js"></script>
+
+    <meta property="og:title" content="MIT6.824 Bigtable" />
+<meta property="og:description" content="I recently found a translated version of the Bigtable paper online and saved it, but hadn&rsquo;t gotten around to reading it. Lately, I&rsquo;ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.
+This is the last of Google&rsquo;s three foundational distributed system papers, and although it wasn&rsquo;t originally part of the MIT6.824 reading list, I&rsquo;ve categorized it here for consistency." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/posts/mit6.824-bigtable/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-09-16T22:54:59+08:00" />
+<meta property="article:modified_time" content="2021-09-16T22:54:59+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824 Bigtable"/>
+<meta name="twitter:description" content="I recently found a translated version of the Bigtable paper online and saved it, but hadn&rsquo;t gotten around to reading it. Lately, I&rsquo;ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.
+This is the last of Google&rsquo;s three foundational distributed system papers, and although it wasn&rsquo;t originally part of the MIT6.824 reading list, I&rsquo;ve categorized it here for consistency."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://noneback.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "MIT6.824 Bigtable",
+      "item": "https://noneback.github.io/posts/mit6.824-bigtable/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "MIT6.824 Bigtable",
+  "name": "MIT6.824 Bigtable",
+  "description": "I recently found a translated version of the Bigtable paper online and saved it, but hadn\u0026rsquo;t gotten around to reading it. Lately, I\u0026rsquo;ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.\nThis is the last of Google\u0026rsquo;s three foundational distributed system papers, and although it wasn\u0026rsquo;t originally part of the MIT6.824 reading list, I\u0026rsquo;ve categorized it here for consistency.",
+  "keywords": [
+    "Bigtable", "DFS", "Distributed System", "Paper Reading"
+  ],
+  "articleBody": "I recently found a translated version of the Bigtable paper online and saved it, but hadn’t gotten around to reading it. Lately, I’ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.\nThis is the last of Google’s three foundational distributed system papers, and although it wasn’t originally part of the MIT6.824 reading list, I’ve categorized it here for consistency.\nAs with previous notes, I won’t dive deep into the technical details but will instead focus on the design considerations and thoughts on the problem.\nIntroduction Bigtable is a distributed structured data storage system built on top of GFS, designed to store large amounts of structured and semi-structured data. It is a NoSQL data store that emphasizes scalability and performance, as well as reliable fault tolerance through GFS.\nDesign Goal: Wide Applicability, Scalability, High Performance, High Availability\nData Model Bigtable’s data model is No Schema and provides a simple model. It treats all data as strings, with encoding and decoding handled by the application layer.\nBigtable is essentially a sparse, distributed, persistent multidimensional sorted Map. The index of the Map is composed of Row Key, Column Key, and TimeStamp, and the value is an unstructured byte array.\n// Mapping abstraction (row:string, column:string, time:int64) -\u003e string // A Row Key is essentially a multi-dimensional structure composed of {Row, Column, Timestamp}. The paper describes the data model as follows:\nA Bigtable is a sparse, distributed, persistent multidimensional sorted map.\nSparse means that columns in the same table can be null, which is quite common.\nRow Columns Row1 {ID, Name, Phone} Row2 {ID, Name, Phone, Address} Row3 {ID, Name, Phone, Email} Distributed refers to scalability and fault tolerance, i.e., Replication and Sharding. Bigtable leverages GFS replicas for fault tolerance and uses Tablet for partitioning data to achieve scalability.\nPersistent Multidimensional Sorted indicates data is eventually persisted, and Bigtable optimizes write and read latency with WAL and LSM.\nThe open-source implementation of Bigtable is HBase, a row and column database.\nRows Bigtable organizes data using lexicographic order of row keys. A Row Key can be any string, and read and write operations are atomic at the row level.\nLexicographic ordering helps aggregate related row records. MySQL achieves atomic row operations using an undo log.\nColumn Family A set of column keys forms a Column Family, where the data often shares the same type.\nA column key is composed of Column Family : Qualifier. The column family’s name must be a printable string, whereas the qualifier name can be any string.\nThe paper mentions:\nAccess control and both disk and memory accounting are performed at the column-family level.\nThis is because business users tend to retrieve data by columns, e.g., reading webpage content. In practice, column data is often compressed for storage. Thus, the Column Family level is a more suitable level for access control and resource accounting than rows.\nTimeStamp The timestamp is used to maintain different versions of the same data, serving as a logical clock. It is also used as an index to query data versions.\nTypically, timestamps are sorted in reverse chronological order. When the number of versions is low, a pointer to the previous version is used to maintain data versioning; when the number of versions increases, an index structure is needed. TimeStamp indexing inherently requires range queries, so a sortable data structure is appropriate for indexing. Extra version management increases maintenance overhead, usually handled by limiting the number of data versions and garbage collecting outdated versions.\nTablet Bigtable uses a range-based data sharding strategy, and Tablet is the basic unit for data sharding and load balancing.\nA tablet is a collection of rows, managed by a Tablet Server. Rows in Bigtable are ultimately stored in a tablet, which is split or merged for load balancing among Tablet Servers.\nRange-based sharding is beneficial for range queries, compared to hash-based sharding.\nSSTable SSTable is a persistent, sorted, immutable Map. Both keys and values are arbitrary byte arrays.\nA tablet in Bigtable is stored in the form of SSTable files.\nSSTable is organized into data blocks (typically 64KB each), with an index for fast data lookup. Data is read by first reading the index, searching the index, and then reading the data block.\nAPI The paper provides an API that highlights the differences from RDBMS.\n// Writing to Bigtable // Open the table Table *T = OpenOrDie(\"/bigtable/web/webtable\"); // Write a new anchor and delete an old anchor RowMutation r1(T, \"com.cnn.www\"); r1.Set(\"anchor:www.c-span.org\", \"CNN\"); r1.Delete(\"anchor:www.abc.com\"); Operation op; Apply(\u0026op, \u0026r1); // Reading from Bigtable Scanner scanner(T); ScanStream *stream; stream = scanner.FetchColumnFamily(\"anchor\"); stream-\u003eSetReturnAllVersions(); scanner.Lookup(\"com.cnn.www\"); for (; !stream-\u003eDone(); stream-\u003eNext()) { printf(\"%s %s %lld %s\\n\", scanner.RowName(), stream-\u003eColumnName(), stream-\u003eMicroTimestamp(), stream-\u003eValue()); } Architecture Design External Components Bigtable is built on top of other components in Google’s ecosystem, which significantly simplifies Bigtable’s design.\nGFS GFS is Bigtable’s underlying storage, providing replication and fault tolerance.\nRefer to the previous notes for details.\nChubby Chubby is a highly available distributed lock service that provides a namespace, where directories and files can serve as distributed locks.\nHigh availability means maintaining multiple service replicas, with consistency ensured via Paxos. A lease mechanism prevents defunct Chubby clients from holding onto locks indefinitely.\nWhy Chubby? What is its role?\nStores Column Family information Stores ACL (Access Control List) Stores root metadata for the Root Tablet location, which is essential for Bigtable startup. Bigtable uses a three-layer B+ tree-like structure for metadata. The Root Tablet location is in Chubby, which helps locate other metadata tablets, which in turn store user Tablet locations.\nTablet Server lifecycle monitoring Each Tablet Server creates a unique file in a designated directory in Chubby and acquires an exclusive lock on it. The server is considered offline if it loses the lock.\nIn summary, Chubby’s functionality can be categorized into two parts. One is to store critical metadata as a highly available node, while the other is to manage the lifecycle of storage nodes (Tablet Servers) using distributed locking.\nIn GFS, these responsibilities are handled by the Master. By offloading them to Chubby, Bigtable simplifies the Master design and reduces its load.\nConceptually, Chubby can be seen as part of the Master node.\nInternal Components Master Bigtable follows a Master-Slave architecture, similar to GFS and MapReduce. However, unlike GFS, Bigtable relies on Chubby and Tablet Servers to store metadata, with the Master only responsible for orchestrating the process and not storing tablet locations.\nResponsibilities include Tablet allocation, garbage collection, monitoring Tablet Server health, load balancing, and metadata updates. The Master requires:\nAll Tablet information to determine allocation and distribution. Tablet Server status information to decide on allocations. Tablet Server Tablet Servers manage tablets, handling reads and writes, splitting and merging tablets when necessary.\nMetadata is not stored by the Master. Clients interact directly with Chubby and Tablet Servers for reading data. Tablets are split by Tablet Servers, and Master may not be notified instantly. WAL+retry mechanisms should be employed to ensure operations aren’t lost.\nClient SDK The client SDK is the entry point for businesses to access Bigtable. To minimize metadata lookup overhead, caching and prefetching are used to reduce the frequency of network interactions, making use of temporal and spatial locality.\nCaching may introduce inconsistency issues, which require appropriate solutions, such as retries during inconsistent states.\nStorage Design Mapping and Addressing Bigtable data is uniquely determined by a (Table, Row, Column) tuple, stored in tablets, which in turn are stored in SSTable format on GFS.\nTablets are logical representations of Bigtable’s on-disk entity, managed by Tablet Servers.\nBigtable uses Root Tablet + METADATA Table for addressing. The Root Tablet location is stored in Chubby, while the METADATA Table is maintained by Tablet Servers.\nThe Root Tablet stores the location of METADATA Tablets, and each METADATA Tablet contains the location of user tablets.\nMETADATA Table Row: (TableID, encoding of last row in Tablet) =\u003e Tablet Location\nThe system uses a B+ tree-like three-layer structure to maintain tablet location information.\nScheduling and Monitoring Scheduling Scheduling involves Tablet allocation and load balancing.\nA Tablet can only be assigned to one Tablet Server at any given time. The Master maintains Tablet Server states and sends allocation requests as needed.\nThe Master does not maintain addressing information but holds Tablet Server states (including tablet count, status, and available resources) for scheduling.\nMonitoring Monitoring is carried out by Chubby and the Master.\nEach Tablet Server creates a unique file in a Chubby directory and acquires an exclusive lock. When the Tablet Server disconnects and loses its lease, the lock is released.\nThe unique file determines whether a Tablet Server is active, and the Master may delete the file as needed. In cases of network disconnection, the Tablet Server will try to re-acquire the exclusive lock if the file still exists. If the file doesn’t exist, the disconnected Tablet Server should automatically leave the cluster.\nThe Master ensures its uniqueness by acquiring an exclusive lock on a unique file in Chubby, and monitors a specific directory for Tablet Server files.\nOnce it detects a failure, it deletes the Tablet Server’s Chubby file and reallocates its tablets to other Tablet Servers.\nCompaction Bigtable provides read and write services and uses an LSM-like structure to optimize write performance. For each write operation, the ACL information is first retrieved from Chubby to verify permissions. The write is then logged in WAL and stored in Memtable before eventually being persisted in SSTable.\nWhen Memtable grows to a certain size, it triggers a Minor Compaction to convert Memtable to SSTable and write it to GFS.\nMemtable is first converted into an immutable Memtable before becoming SSTable. This intermediate step ensures that Minor Compaction does not interfere with incoming writes.\nBigtable uses Compaction to accelerate writes, converting random writes into sequential writes and writing data in the background. Compaction occurs in three types:\nMinor Compaction: Converts Memtable to SSTable, discarding deleted data and retaining only the latest version. Merge Compaction: Combines Memtable and SSTable into a new SSTable. Major Compaction: Combines multiple SSTables into one. For reads, data aggregation is required across Memtable and multiple SSTables, as data may be distributed across these structures. Second-level caching and Bloom filters are used to speed up reads.\nTablet Servers have two levels of caching:\nScan Cache: Caches frequently read key-value pairs. Block Cache: Caches SSTable blocks. Bloom filters are also employed to reduce the number of SSTable lookups by indicating whether a key is not present.\nOptimization Locality High-frequency columns can be grouped together into one SSTable, reducing the time to fetch related data.\nSpace is traded for time, leveraging locality principles.\nCompression SSTable blocks are compressed to reduce network bandwidth and latency during transfers.\nCompression is performed in blocks to reduce encoding/decoding time and improve parallelism.\nCommitLog Design Tablet Servers maintain one Commit Log each, instead of one per Tablet, to minimize disk seeks and enable batch operations. During recovery, log entries must be sorted by (Table, Row, Log Seq Num) to facilitate recovery.\nSummary Keep it simple: Simple is better than complex. Cluster monitoring is crucial for distributed services. Google’s three papers emphasize cluster monitoring and scheduling. Do not make assumptions about other systems in your design. Issues may range from common network issues to unexpected operational problems. Leverage background operations to accelerate user-facing actions, such as making writes fast and using background processes for cleanups. References Wikipedia - Bigtable Bigtable Paper Bigtable Analysis LSM Tree Explained ",
+  "wordCount" : "1908",
+  "inLanguage": "en",
+  "datePublished": "2021-09-16T22:54:59+08:00",
+  "dateModified": "2021-09-16T22:54:59+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/posts/mit6.824-bigtable/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/posts">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-ochre-nu.vercel.app/share/R1lHz7QY/hugo-ladder-exampleSite">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>MIT6.824 Bigtable</h1>
+  </header>
+
+  <p>
+  <small>
+    September 16, 2021&nbsp;· 1908 words&nbsp;· 9 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
+      
+      <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
+      
+      <a href="https://noneback.github.io/tags/dfs/">DFS</a>
+      
+      <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#data-model">Data Model</a>
+      <ul>
+        <li><a href="#rows">Rows</a></li>
+        <li><a href="#column-family">Column Family</a></li>
+        <li><a href="#timestamp">TimeStamp</a></li>
+        <li><a href="#tablet">Tablet</a></li>
+        <li><a href="#sstable">SSTable</a></li>
+        <li><a href="#api">API</a></li>
+      </ul>
+    </li>
+    <li><a href="#architecture-design">Architecture Design</a>
+      <ul>
+        <li><a href="#external-components">External Components</a></li>
+        <li><a href="#internal-components">Internal Components</a></li>
+      </ul>
+    </li>
+    <li><a href="#storage-design">Storage Design</a>
+      <ul>
+        <li><a href="#mapping-and-addressing">Mapping and Addressing</a></li>
+        <li><a href="#scheduling-and-monitoring">Scheduling and Monitoring</a></li>
+      </ul>
+    </li>
+    <li><a href="#compaction">Compaction</a></li>
+    <li><a href="#optimization">Optimization</a>
+      <ul>
+        <li><a href="#locality">Locality</a></li>
+        <li><a href="#compression">Compression</a></li>
+        <li><a href="#commitlog-design">CommitLog Design</a></li>
+      </ul>
+    </li>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>I recently found a translated version of the Bigtable paper online and saved it, but hadn&rsquo;t gotten around to reading it. Lately, I&rsquo;ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.</p>
+<p>This is the last of Google&rsquo;s three foundational distributed system papers, and although it wasn&rsquo;t originally part of the MIT6.824 reading list, I&rsquo;ve categorized it here for consistency.</p>
+<p>As with previous notes, I won&rsquo;t dive deep into the technical details but will instead focus on the design considerations and thoughts on the problem.</p>
+<h2 id="introduction">Introduction</h2>
+<p>Bigtable is a distributed <strong>structured data</strong> storage system built on top of GFS, designed to store large amounts of structured and semi-structured data. It is a NoSQL data store that emphasizes scalability and performance, as well as reliable fault tolerance through GFS.</p>
+<blockquote>
+<p>Design Goal: Wide Applicability, Scalability, High Performance, High Availability</p>
+</blockquote>
+<h2 id="data-model">Data Model</h2>
+<p>Bigtable&rsquo;s data model is No Schema and provides a simple model. It treats all data as strings, with encoding and decoding handled by the application layer.</p>
+<p>Bigtable is essentially a <strong>sparse, distributed, persistent multidimensional sorted Map</strong>. The <strong>index</strong> of the Map is composed of <strong>Row Key, Column Key, and TimeStamp</strong>, and the <strong>value</strong> is an unstructured byte array.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#75715e">// Mapping abstraction
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>(<span style="color:#a6e22e">row</span>:<span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">column</span>:<span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">time</span>:<span style="color:#66d9ef">int64</span>) <span style="color:#f92672">-</span>&gt; <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// A Row Key is essentially a multi-dimensional structure composed of {Row, Column, Timestamp}.
+</span></span></span></code></pre></div><p>The paper describes the data model as follows:</p>
+<blockquote>
+<p>A Bigtable is a sparse, distributed, persistent multidimensional sorted map.</p>
+</blockquote>
+<p><strong>Sparse</strong> means that columns in the same table can be null, which is quite common.</p>
+<table>
+<thead>
+<tr>
+<th>Row</th>
+<th>Columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Row1</td>
+<td>{ID, Name, Phone}</td>
+</tr>
+<tr>
+<td>Row2</td>
+<td>{ID, Name, Phone, Address}</td>
+</tr>
+<tr>
+<td>Row3</td>
+<td>{ID, Name, Phone, Email}</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Distributed</strong> refers to scalability and fault tolerance, i.e., <strong>Replication</strong> and <strong>Sharding</strong>. Bigtable leverages GFS replicas for fault tolerance and uses <strong>Tablet</strong> for partitioning data to achieve scalability.</p>
+<p><strong>Persistent Multidimensional Sorted</strong> indicates data is eventually persisted, and Bigtable optimizes write and read latency with WAL and LSM.</p>
+<blockquote>
+<p>The open-source implementation of Bigtable is HBase, a row and column database.</p>
+</blockquote>
+<h3 id="rows">Rows</h3>
+<p>Bigtable organizes data using lexicographic order of row keys. A Row Key can be any string, and read and write operations are atomic at the row level.</p>
+<blockquote>
+<p>Lexicographic ordering helps aggregate related row records.
+MySQL achieves atomic row operations using an undo log.</p>
+</blockquote>
+<h3 id="column-family">Column Family</h3>
+<p>A set of column keys forms a Column Family, where the data often shares the same type.</p>
+<p>A column key is composed of <code>Column Family : Qualifier</code>. The column family&rsquo;s name must be a printable string, whereas the qualifier name can be any string.</p>
+<blockquote>
+<p>The paper mentions:</p>
+<blockquote>
+<p>Access control and both disk and memory accounting are performed at the column-family level.</p>
+</blockquote>
+<p>This is because business users tend to retrieve data by columns, e.g., reading webpage content. In practice, column data is often compressed for storage. Thus, the Column Family level is a more suitable level for access control and resource accounting than rows.</p>
+</blockquote>
+<h3 id="timestamp">TimeStamp</h3>
+<p>The timestamp is used to maintain different versions of the same data, serving as a logical clock. It is also used as an index to query data versions.</p>
+<blockquote>
+<p>Typically, timestamps are sorted in reverse chronological order. When the number of versions is low, a pointer to the previous version is used to maintain data versioning; when the number of versions increases, an index structure is needed.
+TimeStamp indexing inherently requires range queries, so a sortable data structure is appropriate for indexing.
+Extra version management increases maintenance overhead, usually handled by limiting the number of data versions and garbage collecting outdated versions.</p>
+</blockquote>
+<h3 id="tablet">Tablet</h3>
+<p>Bigtable uses a <strong>range-based data sharding</strong> strategy, and <strong>Tablet</strong> is the basic unit for data sharding and load balancing.</p>
+<p>A tablet is a collection of rows, managed by a Tablet Server. Rows in Bigtable are ultimately stored in a tablet, which is split or merged for load balancing among Tablet Servers.</p>
+<blockquote>
+<p>Range-based sharding is beneficial for range queries, compared to hash-based sharding.</p>
+</blockquote>
+<h3 id="sstable">SSTable</h3>
+<p>SSTable is a <strong>persistent, sorted, immutable Map</strong>. Both keys and values are arbitrary byte arrays.</p>
+<p>A tablet in Bigtable is stored in the form of SSTable files.</p>
+<blockquote>
+<p>SSTable is organized into data blocks (typically 64KB each), with an index for fast data lookup. Data is read by first reading the index, searching the index, and then reading the data block.</p>
+</blockquote>
+<h3 id="api">API</h3>
+<p>The paper provides an API that highlights the differences from RDBMS.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">// Writing to Bigtable
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// Open the table 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>Table <span style="color:#f92672">*</span>T <span style="color:#f92672">=</span> OpenOrDie(<span style="color:#e6db74">&#34;/bigtable/web/webtable&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Write a new anchor and delete an old anchor 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>RowMutation <span style="color:#a6e22e">r1</span>(T, <span style="color:#e6db74">&#34;com.cnn.www&#34;</span>); 
+</span></span><span style="display:flex;"><span>r1.Set(<span style="color:#e6db74">&#34;anchor:www.c-span.org&#34;</span>, <span style="color:#e6db74">&#34;CNN&#34;</span>); 
+</span></span><span style="display:flex;"><span>r1.Delete(<span style="color:#e6db74">&#34;anchor:www.abc.com&#34;</span>); 
+</span></span><span style="display:flex;"><span>Operation op; 
+</span></span><span style="display:flex;"><span>Apply(<span style="color:#f92672">&amp;</span>op, <span style="color:#f92672">&amp;</span>r1);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Reading from Bigtable
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>Scanner <span style="color:#a6e22e">scanner</span>(T); 
+</span></span><span style="display:flex;"><span>ScanStream <span style="color:#f92672">*</span>stream; 
+</span></span><span style="display:flex;"><span>stream <span style="color:#f92672">=</span> scanner.FetchColumnFamily(<span style="color:#e6db74">&#34;anchor&#34;</span>); 
+</span></span><span style="display:flex;"><span>stream<span style="color:#f92672">-&gt;</span>SetReturnAllVersions(); 
+</span></span><span style="display:flex;"><span>scanner.Lookup(<span style="color:#e6db74">&#34;com.cnn.www&#34;</span>); 
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span> (; <span style="color:#f92672">!</span>stream<span style="color:#f92672">-&gt;</span>Done(); stream<span style="color:#f92672">-&gt;</span>Next()) { 
+</span></span><span style="display:flex;"><span>  printf(<span style="color:#e6db74">&#34;%s %s %lld %s</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, 
+</span></span><span style="display:flex;"><span>         scanner.RowName(), 
+</span></span><span style="display:flex;"><span>         stream<span style="color:#f92672">-&gt;</span>ColumnName(), 
+</span></span><span style="display:flex;"><span>         stream<span style="color:#f92672">-&gt;</span>MicroTimestamp(), 
+</span></span><span style="display:flex;"><span>         stream<span style="color:#f92672">-&gt;</span>Value());
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="architecture-design">Architecture Design</h2>
+<h3 id="external-components">External Components</h3>
+<p>Bigtable is built on top of other components in Google&rsquo;s ecosystem, which significantly simplifies Bigtable&rsquo;s design.</p>
+<h4 id="gfs">GFS</h4>
+<p>GFS is Bigtable&rsquo;s underlying storage, providing replication and fault tolerance.</p>
+<blockquote>
+<p>Refer to the previous notes for details.</p>
+</blockquote>
+<h4 id="chubby">Chubby</h4>
+<p>Chubby is a highly available distributed lock service that provides a namespace, where directories and files can serve as distributed locks.</p>
+<blockquote>
+<p>High availability means maintaining multiple service replicas, with consistency ensured via Paxos. A lease mechanism prevents defunct Chubby clients from holding onto locks indefinitely.</p>
+</blockquote>
+<p>Why Chubby? What is its role?</p>
+<ul>
+<li>Stores Column Family information</li>
+<li>Stores ACL (Access Control List)</li>
+<li>Stores root metadata for the Root Tablet location, which is essential for Bigtable startup.
+<blockquote>
+<p>Bigtable uses a three-layer B+ tree-like structure for metadata. The Root Tablet location is in Chubby, which helps locate other metadata tablets, which in turn store user Tablet locations.</p>
+</blockquote>
+</li>
+<li>Tablet Server lifecycle monitoring
+<blockquote>
+<p>Each Tablet Server creates a unique file in a designated directory in Chubby and acquires an exclusive lock on it. The server is considered offline if it loses the lock.</p>
+</blockquote>
+</li>
+</ul>
+<p>In summary, Chubby&rsquo;s functionality can be categorized into two parts. One is to store critical metadata as a highly available node, while the other is to manage the lifecycle of storage nodes (Tablet Servers) using distributed locking.</p>
+<p>In GFS, these responsibilities are handled by the Master. By offloading them to Chubby, Bigtable simplifies the Master design and reduces its load.</p>
+<blockquote>
+<p>Conceptually, Chubby can be seen as part of the Master node.</p>
+</blockquote>
+<h3 id="internal-components">Internal Components</h3>
+<h4 id="master">Master</h4>
+<p>Bigtable follows a Master-Slave architecture, similar to GFS and MapReduce. However, unlike GFS, Bigtable relies on Chubby and Tablet Servers to store metadata, with the Master only responsible for orchestrating the process and not storing tablet locations.</p>
+<blockquote>
+<p>Responsibilities include Tablet allocation, garbage collection, monitoring Tablet Server health, load balancing, and metadata updates.
+The Master requires:</p>
+<ol>
+<li>All Tablet information to determine allocation and distribution.</li>
+<li>Tablet Server status information to decide on allocations.</li>
+</ol>
+</blockquote>
+<h4 id="tablet-server">Tablet Server</h4>
+<p>Tablet Servers manage tablets, handling reads and writes, splitting and merging tablets when necessary.</p>
+<blockquote>
+<p>Metadata is not stored by the Master. Clients interact directly with Chubby and Tablet Servers for reading data.
+Tablets are split by Tablet Servers, and Master may not be notified instantly. WAL+retry mechanisms should be employed to ensure operations aren&rsquo;t lost.</p>
+</blockquote>
+<h4 id="client-sdk">Client SDK</h4>
+<p>The client SDK is the entry point for businesses to access Bigtable. To minimize metadata lookup overhead, caching and prefetching are used to reduce the frequency of network interactions, making use of temporal and spatial locality.</p>
+<blockquote>
+<p>Caching may introduce inconsistency issues, which require appropriate solutions, such as retries during inconsistent states.</p>
+</blockquote>
+<h2 id="storage-design">Storage Design</h2>
+<h3 id="mapping-and-addressing">Mapping and Addressing</h3>
+<p>Bigtable data is uniquely determined by a <code>(Table, Row, Column)</code> tuple, stored in tablets, which in turn are stored in SSTable format on GFS.</p>
+<p>Tablets are logical representations of Bigtable&rsquo;s on-disk entity, managed by Tablet Servers.</p>
+<p>Bigtable uses <code>Root Tablet + METADATA Table</code> for addressing. The Root Tablet location is stored in Chubby, while the METADATA Table is maintained by Tablet Servers.</p>
+<p>The Root Tablet stores the location of METADATA Tablets, and each METADATA Tablet contains the location of user tablets.</p>
+<blockquote>
+<p>METADATA Table Row: <code>(TableID, encoding of last row in Tablet) =&gt; Tablet Location</code></p>
+</blockquote>
+<blockquote>
+<p>The system uses a B+ tree-like three-layer structure to maintain tablet location information.</p>
+</blockquote>
+<h3 id="scheduling-and-monitoring">Scheduling and Monitoring</h3>
+<h4 id="scheduling">Scheduling</h4>
+<p>Scheduling involves Tablet allocation and load balancing.</p>
+<p>A Tablet can only be assigned to one Tablet Server at any given time. The Master maintains Tablet Server states and sends allocation requests as needed.</p>
+<blockquote>
+<p>The Master does not maintain addressing information but holds Tablet Server states (including tablet count, status, and available resources) for scheduling.</p>
+</blockquote>
+<h4 id="monitoring">Monitoring</h4>
+<p>Monitoring is carried out by Chubby and the Master.</p>
+<p>Each Tablet Server creates a unique file in a Chubby directory and acquires an exclusive lock. When the Tablet Server disconnects and loses its lease, the lock is released.</p>
+<blockquote>
+<p>The unique file determines whether a Tablet Server is active, and the Master may delete the file as needed.
+In cases of network disconnection, the Tablet Server will try to re-acquire the exclusive lock if the file still exists.
+If the file doesn&rsquo;t exist, the disconnected Tablet Server should automatically leave the cluster.</p>
+</blockquote>
+<p>The Master ensures its uniqueness by acquiring an exclusive lock on a unique file in Chubby, and monitors a specific directory for Tablet Server files.</p>
+<p>Once it detects a failure, it deletes the Tablet Server&rsquo;s Chubby file and reallocates its tablets to other Tablet Servers.</p>
+<h2 id="compaction">Compaction</h2>
+<p>Bigtable provides read and write services and uses an LSM-like structure to optimize write performance. For each write operation, the ACL information is first retrieved from Chubby to verify permissions. The write is then logged in WAL and stored in Memtable before eventually being persisted in SSTable.</p>
+<p>When Memtable grows to a certain size, it triggers a <strong>Minor Compaction</strong> to convert Memtable to SSTable and write it to GFS.</p>
+<blockquote>
+<p>Memtable is first converted into an immutable Memtable before becoming SSTable. This intermediate step ensures that Minor Compaction does not interfere with incoming writes.</p>
+</blockquote>
+<p>Bigtable uses <strong>Compaction</strong> to accelerate writes, converting random writes into sequential writes and writing data in the background. Compaction occurs in three types:</p>
+<ul>
+<li><strong>Minor Compaction</strong>: Converts Memtable to SSTable, discarding deleted data and retaining only the latest version.</li>
+<li><strong>Merge Compaction</strong>: Combines Memtable and SSTable into a new SSTable.</li>
+<li><strong>Major Compaction</strong>: Combines multiple SSTables into one.</li>
+</ul>
+<p>For reads, data aggregation is required across Memtable and multiple SSTables, as data may be distributed across these structures. <strong>Second-level caching</strong> and <strong>Bloom filters</strong> are used to speed up reads.</p>
+<p>Tablet Servers have two levels of caching:</p>
+<ol>
+<li><strong>Scan Cache</strong>: Caches frequently read key-value pairs.</li>
+<li><strong>Block Cache</strong>: Caches SSTable blocks.</li>
+</ol>
+<p>Bloom filters are also employed to reduce the number of SSTable lookups by indicating whether a key is not present.</p>
+<h2 id="optimization">Optimization</h2>
+<h3 id="locality">Locality</h3>
+<p>High-frequency columns can be grouped together into one SSTable, reducing the time to fetch related data.</p>
+<blockquote>
+<p>Space is traded for time, leveraging locality principles.</p>
+</blockquote>
+<h3 id="compression">Compression</h3>
+<p>SSTable blocks are compressed to reduce network bandwidth and latency during transfers.</p>
+<blockquote>
+<p>Compression is performed in blocks to reduce encoding/decoding time and improve parallelism.</p>
+</blockquote>
+<h3 id="commitlog-design">CommitLog Design</h3>
+<p>Tablet Servers maintain one <strong>Commit Log</strong> each, instead of one per Tablet, to minimize disk seeks and enable batch operations. During recovery, log entries must be sorted by <code>(Table, Row, Log Seq Num)</code> to facilitate recovery.</p>
+<h2 id="summary">Summary</h2>
+<ul>
+<li>Keep it simple: Simple is better than complex.</li>
+<li>Cluster monitoring is crucial for distributed services. Google&rsquo;s three papers emphasize cluster monitoring and scheduling.</li>
+<li>Do not make assumptions about other systems in your design. Issues may range from common network issues to unexpected operational problems.</li>
+<li>Leverage background operations to accelerate user-facing actions, such as making writes fast and using background processes for cleanups.</li>
+</ul>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://zh.wikipedia.org/wiki/Bigtable">Wikipedia - Bigtable</a></li>
+<li><a href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/bigtable-osdi06.pdf">Bigtable Paper</a></li>
+<li><a href="https://www.cnblogs.com/xybaby/p/9096748.html">Bigtable Analysis</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/181498475">LSM Tree Explained</a></li>
+</ul>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/posts/dfs-haystack/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>DFS-Haystack</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/posts/mit6.824-gfs/"><span>MIT6.824 GFS</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+</article>
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

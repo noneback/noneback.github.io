@@ -3,67 +3,10 @@
   <channel>
     <title>MIT6.824 on NoneBack</title>
     <link>https://noneback.github.io/tags/mit6.824/</link>
-    <description>Recent content in MIT6.824 on NoneBack</description>
+    <description>Recent content in MIT6.824 on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh-cn</language>
-    <copyright>@noneback</copyright>
-    <lastBuildDate>Tue, 01 Aug 2023 16:11:54 +0800</lastBuildDate>
-    <atom:link href="https://noneback.github.io/tags/mit6.824/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>MIT6.824 AuroraDB</title>
-      <link>https://noneback.github.io/post/mit6.824-auroradb/</link>
-      <pubDate>Tue, 01 Aug 2023 16:11:54 +0800</pubDate>
-      <guid>https://noneback.github.io/post/mit6.824-auroradb/</guid>
-      <description>&lt;p&gt;这篇文章介绍了AWS的数据库产品Aurora的设计考虑，包括存算分离、一写多读、基于Quorum的NRW一致性协议等。同时，文章也提到了PolarDB参考Aurora进行设计，但在网络瓶颈和系统调用方面有所不同。&lt;/p&gt;&#xA;&lt;hr&gt;&#xA;&lt;p&gt;Aurora是AWS提供的一种数据库产品，主要面向OLTP的业务场景。&lt;/p&gt;&#xA;&lt;p&gt;设计上，我觉得有这些值得参考的地方：&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Aurora设计的前提是，在数据库上云之后，得益于云基础设施的发展，数据库最大的瓶颈从计算和存储变成了网络， 这是AWS在设计Aurora的时候一个很重要的前提。基于此前提，Aurora重提Log is Database的论调，只将RedoLog下推至存储层。&lt;/li&gt;&#xA;&lt;li&gt;存算分离。数据库存储层对接分布式存储底座，通过存储底座提供良好的可靠性和安全性保证。计算和存储层可以独立拓展。同时，存储底座对上层提供的单一数据视图，使得一些核心功能和运维操作效率得到很好的提升（比如备份，数据恢复，HA等）&lt;/li&gt;&#xA;&lt;li&gt;一些有意思的可靠性保证。比如基于Quorum的NRW一致性协议，存储节点读写都需要多数派的投票。保证双AZ级别的容错；用分片存储减少故障处理时间，以此提升SLA。多数读只发生在数据库恢复的时候，此时数据库需要恢复当前的状态。&lt;/li&gt;&#xA;&lt;li&gt;一写多读。不同于ShareNothing架构的NewSQL产品，Aurora只提供了单个写节点。数据一致性保证也因此变得简单，因为单写节点可以通过RedoLog LSN作为逻辑时钟，以此维护数据更新操作的偏序关系，只需要把RedoLog下推至所有节点，并基于此顺序对这些操作Apply就可以保证数据的一致性。&lt;/li&gt;&#xA;&lt;li&gt;事务的实现。由于存储底座对上层提供的单一文件视图，所以对与Aurora来说，其事务的实现几乎与单机事务算法相同，并能提供相同的事务语义。NewSQL的事务一般是基于2PC的分布式事务实现。&lt;/li&gt;&#xA;&lt;li&gt;后台加速前台处理。类似LevelDB的思路，尽可能将存储节点的一些操作异步化（比如日志Apply），提升前台用户感知性能。这些异步的操作通过维护各种xxLSN来记录当前节点的后台处理进度，比如VLSN，commit-LSN等等&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34;&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34;&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34;&gt;&lt;/p&gt;&#xA;&lt;p&gt;有趣的是，PolarDB虽然是参考Aurora进行的设计，但它的架构设计认为网络并非瓶颈，而是经过OS的各种系统调用拖慢了整体速度。在彼时阿里云存储底座并不稳定的条件下，所以才有了它架构中的PolarStore，用各种硬件以及FUSE等存储技术越过或者优化系统调用，而如今盘古在稳定性和性能上都做的很不错的情况下，弱化PolarStore这个组件也成为了正常的选择。我认为说的不无道理。&lt;/p&gt;&#xA;&lt;p&gt;另外，为什么他们选择用NWR而不是用Raft之类的一致性协议？目前看上去，NWR在网络上，一次请求的网络比Raft少一轮，可能是这个原因&lt;/p&gt;&#xA;&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34;&gt;&lt;/p&gt;&#xA;&lt;h1 id=&#34;参考&#34;&gt;参考&lt;/h1&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/319806107&#34;&gt;https://zhuanlan.zhihu.com/p/319806107&lt;/a&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;a href=&#34;http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt&#34;&gt;http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt&lt;/a&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://keys961.github.io/2020/05/05/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB-Aurora/&#34;&gt;论文阅读-Amazon Aurora: Design Considerations for High Throughput Cloud-Native Relational Database - keys961 | keys961 Blog&lt;/a&gt;&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>MIT6.824-ChainReplication</title>
-      <link>https://noneback.github.io/post/mit6.824-chainreplication/</link>
-      <pubDate>Wed, 08 Feb 2023 23:05:57 +0800</pubDate>
-      <guid>https://noneback.github.io/post/mit6.824-chainreplication/</guid>
-      <description>只是简单写写，有一些具体一点的设计建议去读一下原文。 简介 简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式</description>
-    </item>
-    <item>
-      <title>MIT6.824-ZooKeeper</title>
-      <link>https://noneback.github.io/post/mit6.824-zookeeper/</link>
-      <pubDate>Tue, 03 Jan 2023 23:49:41 +0800</pubDate>
-      <guid>https://noneback.github.io/post/mit6.824-zookeeper/</guid>
-      <description>本文主要讲了ZooKeeper系统在设计和实践上的考量，如wait-free和lock，一致性的选择，系统提供的API以及特定语义上的抉择，</description>
-    </item>
-    <item>
-      <title>MIT6.824-RaftKV</title>
-      <link>https://noneback.github.io/post/mit6.824-raftkv/</link>
-      <pubDate>Fri, 15 Apr 2022 10:49:57 +0800</pubDate>
-      <guid>https://noneback.github.io/post/mit6.824-raftkv/</guid>
-      <description>之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra</description>
-    </item>
-    <item>
-      <title>MIT6.824-Raft</title>
-      <link>https://noneback.github.io/post/mit6.824-raft/</link>
-      <pubDate>Mon, 21 Feb 2022 01:26:46 +0800</pubDate>
-      <guid>https://noneback.github.io/post/mit6.824-raft/</guid>
-      <description>这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内</description>
-    </item>
-    <item>
-      <title>MIT6.824-Bigtable</title>
-      <link>https://noneback.github.io/post/mit6.824-bigtable/</link>
-      <pubDate>Thu, 16 Sep 2021 22:54:59 +0800</pubDate>
-      <guid>https://noneback.github.io/post/mit6.824-bigtable/</guid>
-      <description>之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似</description>
-    </item>
-    <item>
-      <title>MIT6.824-GFS</title>
-      <link>https://noneback.github.io/post/mit6.824-gfs/</link>
-      <pubDate>Thu, 09 Sep 2021 00:44:24 +0800</pubDate>
-      <guid>https://noneback.github.io/post/mit6.824-gfs/</guid>
-      <description>之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了</description>
-    </item>
-    <item>
-      <title>MIT6.824-MapReduce</title>
-      <link>https://noneback.github.io/post/mit6.824-mapreduce/</link>
-      <pubDate>Fri, 22 Jan 2021 17:02:44 +0800</pubDate>
-      <guid>https://noneback.github.io/post/mit6.824-mapreduce/</guid>
-      <description>大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一</description>
-    </item>
+    <language>en</language>
+    <copyright>NoneBack All rights reserved</copyright>
+    <lastBuildDate>Tue, 01 Aug 2023 16:11:54 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/mit6.824/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

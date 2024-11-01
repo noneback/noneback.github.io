@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>算术表达式语法分析</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 拓广文法G： S-&gt;E E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num 构造有效项">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/posts/zh/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="xxx" src="https://umami-ochre-nu.vercel.app/hugo-ladder.js"></script>
+
+    <meta property="og:title" content="算术表达式语法分析" />
+<meta property="og:description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 拓广文法G： S-&gt;E E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num 构造有效项" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/posts/zh/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2020-11-22T20:53:19+08:00" />
+<meta property="article:modified_time" content="2020-11-22T20:53:19+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="算术表达式语法分析"/>
+<meta name="twitter:description" content="编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 文法： E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 拓广文法G： S-&gt;E E-&gt;E&#43;T|E-T|T T-&gt;T*F|T/F|F F-&gt;(E)|num 构造有效项"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://noneback.github.io/zh/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "算术表达式语法分析",
+      "item": "https://noneback.github.io/zh/posts/zh/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "算术表达式语法分析",
+  "name": "算术表达式语法分析",
+  "description": "编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析 文法： E-\u0026gt;E+T|E-T|T T-\u0026gt;T*F|T/F|F F-\u0026gt;(E)|num DFA 首先要根据文法构建一个 DFA 构造拓广文法 G(s) 拓广文法G： S-\u0026gt;E E-\u0026gt;E+T|E-T|T T-\u0026gt;T*F|T/F|F F-\u0026gt;(E)|num 构造有效项",
+  "keywords": [
+    "parsing", "cpp"
+  ],
+  "articleBody": "编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析\n文法： E-\u003eE+T|E-T|T T-\u003eT*F|T/F|F F-\u003e(E)|num DFA 首先要根据文法构建一个 DFA\n构造拓广文法 G(s) 拓广文法G： S-\u003eE E-\u003eE+T|E-T|T T-\u003eT*F|T/F|F F-\u003e(E)|num 构造有效项目集和相应 DFA SLR 从 DFA 中可以观察到使用 LR(0)将会有 Shift-Reduce 冲突，所以最终使用 SLR 分析。\n构造 SLR 需要在 LR(0)的基础上计算出 First 和 Follow 集合\n构造 FIRST 和 FOLLOW 集合 E T F First (,num (,num (,num Follow +,-,#,) +,-,#,*,/,) +,-,#,*,/,) 构造 SLR 分析表 规约时，需要判断下一个的符号是否属于被规约状态的 Follow 集合中。在 Follow 集合中才允许被规约\n编写代码 相对于之前构造 DFA 和分析表，代码的实现显得则更为简单。但要注意代码的质量。\n算法 实现 实现的关键在于：\nAction,ActionKind\nstruct Action { ActionKind kind; int id;};// id is for reduce and shift enum ActionKind { Error, Shift, Reduce, Accpet }; 保存 ActionMap 和 GotoMap,产生式\ntypedef unordered_map\u003cstring, Action\u003e ActionMap;//需要16个，与状态数对应 typedef unordered_map\u003cstring, State\u003e GotoMap;//需要16个，与状态数对应 const pair\u003cstring, string\u003e producers[] = { {\"T\", \"T*F\"}, //... //将产生式填入 }; void initialMaps(vector\u003cActionMap\u003e \u0026am, vector\u003cGotoMap\u003e \u0026gm) { const string actions[16][11]{ {\"s4\", \"\", \"\", \"\", \"\", \"\", \"s5\", \"\"}, {\"\", \"\", \"s7\", \"s6\", \"\", \"\", \"\", \"a11\"}, //... }; const int gotos[16][3] = { {1, 2, 3}, //... }; // （\t）\t-\t+\t*\t/\tnum\t$ // E T F for (int i = 0; i \u003c 16; i++) { ActionMap a; GotoMap g; for (int j = 0; j \u003c 8; j++) { a[T[j]] = parse2Action(actions[i][j]); } for (int k = 0; k \u003c 3; k++) { g[V[k]] = gotos[i][k]; } am.push_back(a); gm.push_back(g); } } //从表中解析出Action // string s format:a char+digits,like s1,r2,a1 Action parse2Action(string s) { if (s.length() == 0 || s.length() \u003e 3) { return Action{Error, Error}; } char kind = tolower(s[0]); int id = stoi(s.substr(1, s.length() - 1)); switch (kind) { case 'r':return Action{Reduce, id}; case 's':return Action{Shift, id}; case 'a':return Action{Accpet, Accpet}; default:return Action{Error, Error}; } } Lexer\n由于是语法分析实验，所以词法分析写的比较简单\n// simple lex,suppose that there is no error in token while lexing // // return like{\"(\",\"num\",\")\"} vector\u003cstring\u003e lex2Str(string sourceStr) { vector\u003cstring\u003e ans; for (int i = 0; i \u003c sourceStr.length(); i++) { string cur = string{sourceStr[i]}; if (T.find(cur) != T.end()) { ans.push_back(cur); } else { // parse num ans.push_back(\"num\"); i += 2; } } return ans; } StatesStack,EnteredStack,CharacterQueue 三个关键数据结构的维护与 Parse 函数的编写\nclass DigitExpressionParser { private: stack\u003cstring\u003e entered; queue\u003cstring\u003e characters; unordered_set\u003cstring\u003e T{\"(\", \")\", \"-\", \"+\", \"*\", \"/\", \"num\", \"$\"}; unordered_set\u003cstring\u003e V{\"E\", \"T\", \"F\"}; stack\u003cState\u003e states; vector\u003cActionMap\u003e am; vector\u003cGotoMap\u003e gm; vector\u003cstring\u003e lex2Str(string sourceStr) // function overload for different container to pop numofEle void pop(queue\u003cstring\u003e \u0026q, int num) void pop(stack\u003cstring\u003e \u0026s, int num) void pop(stack\u003cState\u003e \u0026s, int num) // initial parser bool _init(string sourceString) public: DigitExpressionParser() { initialMaps(am, gm); } // parse bool parse(string sourseStr) { if (!_init(sourseStr)) { cerr \u003c\u003c \"Error:source string empty or wrong token\" \u003c\u003c endl; return false; } while (true) { State curState = states.top(); string curCharacter = characters.front(); auto \u0026action = am[curState][curCharacter]; switch (action.kind) { case Shift:states.push(action.id); entered.push(curCharacter); characters.pop(); break; case Reduce: { // use producer[id] to reduce printProducer(action.id); auto producer = producers[action.id]; int popNum = producer.second == \"num\" ? 1 : producer.second.size(); pop(states, popNum); pop(entered, popNum); entered.push(producer.first); states.push(gm[states.top()][producer.first]); } break; case Error:cerr \u003c\u003c \"Error while parsing\" \u003c\u003c endl; return false; case Accpet:cout \u003c\u003c \"Accepted\" \u003c\u003c endl; return true; } } } }; 优化 实验上有一些是可以优化(卷)的\nFirst 和 Follow 集合，有效项目集，分析表能够使用代码自动生成 num 的可以使用数字代替，解析为 token 如果觉得不够卷还可以\n可视化(呸) 写一个计算器 ",
+  "wordCount" : "861",
+  "inLanguage": "zh",
+  "datePublished": "2020-11-22T20:53:19+08:00",
+  "dateModified": "2020-11-22T20:53:19+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/posts/zh/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/posts">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-ochre-nu.vercel.app/share/R1lHz7QY/hugo-ladder-exampleSite">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>算术表达式语法分析</h1>
+  </header>
+
+  <p>
+  <small>
+    2020年11月22日&nbsp;· 861 字&nbsp;· 2 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/parsing/">Parsing</a>
+      
+      <a href="https://noneback.github.io/zh/tags/cpp/">Cpp</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#dfa">DFA</a>
+      <ul>
+        <li><a href="#构造拓广文法-gs">构造拓广文法 G(s)</a></li>
+        <li><a href="#构造有效项目集和相应-dfa">构造有效项目集和相应 DFA</a></li>
+      </ul>
+    </li>
+    <li><a href="#slr">SLR</a>
+      <ul>
+        <li><a href="#构造-first-和-follow-集合">构造 FIRST 和 FOLLOW 集合</a></li>
+      </ul>
+    </li>
+    <li><a href="#构造-slr-分析表">构造 SLR 分析表</a></li>
+    <li><a href="#编写代码">编写代码</a>
+      <ul>
+        <li><a href="#算法">算法</a></li>
+        <li><a href="#实现">实现</a></li>
+        <li><a href="#优化">优化</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析</p>
+<pre tabindex="0"><code>文法：
+E-&gt;E+T|E-T|T
+T-&gt;T*F|T/F|F
+F-&gt;(E)|num
+</code></pre><h2 id="dfa">DFA</h2>
+<p>首先要根据文法构建一个 DFA</p>
+<h3 id="构造拓广文法-gs">构造拓广文法 G(s)</h3>
+<pre tabindex="0"><code>拓广文法G：
+S-&gt;E
+E-&gt;E+T|E-T|T
+T-&gt;T*F|T/F|F
+F-&gt;(E)|num
+</code></pre><h3 id="构造有效项目集和相应-dfa">构造有效项目集和相应 DFA</h3>
+<p><img alt="DFA.png" src="https://i.loli.net/2020/11/22/Hz5lLiGA9P2woWq.png"></p>
+<h2 id="slr">SLR</h2>
+<p>从 DFA 中可以观察到使用 LR(0)将会有 Shift-Reduce 冲突，所以最终使用 SLR 分析。</p>
+<p>构造 SLR 需要在 LR(0)的基础上计算出 First 和 Follow 集合</p>
+<h3 id="构造-first-和-follow-集合">构造 FIRST 和 FOLLOW 集合</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th>E</th>
+<th>T</th>
+<th>F</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">First</td>
+<td>(,num</td>
+<td>(,num</td>
+<td>(,num</td>
+</tr>
+<tr>
+<td style="text-align:left">Follow</td>
+<td>+,-,#,)</td>
+<td>+,-,#,*,/,)</td>
+<td>+,-,#,*,/,)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="构造-slr-分析表">构造 SLR 分析表</h2>
+<p>规约时，需要判断下一个的符号是否属于被规约状态的 Follow 集合中。在 Follow 集合中才允许被规约</p>
+<p><img alt="image.png" src="https://i.loli.net/2020/11/22/VdNI8BqwePEaOjF.png"></p>
+<h2 id="编写代码">编写代码</h2>
+<p>相对于之前构造 DFA 和分析表，代码的实现显得则更为简单。但要注意代码的质量。</p>
+<h3 id="算法">算法</h3>
+<p><img alt="image.png" src="https://i.loli.net/2020/11/22/IHnOyeqZY9EJ4rt.png"></p>
+<h3 id="实现">实现</h3>
+<p>实现的关键在于：</p>
+<ul>
+<li>
+<p>Action,ActionKind</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">Action</span> {  ActionKind kind;  <span style="color:#66d9ef">int</span> id;};<span style="color:#75715e">// id is for reduce and shift
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">enum</span> <span style="color:#a6e22e">ActionKind</span> { Error, Shift, Reduce, Accpet };
+</span></span></code></pre></div></li>
+<li>
+<p>保存 ActionMap 和 GotoMap,产生式</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> unordered_map<span style="color:#f92672">&lt;</span>string, Action<span style="color:#f92672">&gt;</span> ActionMap;<span style="color:#75715e">//需要16个，与状态数对应
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">typedef</span> unordered_map<span style="color:#f92672">&lt;</span>string, State<span style="color:#f92672">&gt;</span> GotoMap;<span style="color:#75715e">//需要16个，与状态数对应
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> pair<span style="color:#f92672">&lt;</span>string, string<span style="color:#f92672">&gt;</span> producers[] <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>    {<span style="color:#e6db74">&#34;T&#34;</span>, <span style="color:#e6db74">&#34;T*F&#34;</span>},
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//将产生式填入
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initialMaps</span>(vector<span style="color:#f92672">&lt;</span>ActionMap<span style="color:#f92672">&gt;</span> <span style="color:#f92672">&amp;</span>am, vector<span style="color:#f92672">&lt;</span>GotoMap<span style="color:#f92672">&gt;</span> <span style="color:#f92672">&amp;</span>gm) {
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> string actions[<span style="color:#ae81ff">16</span>][<span style="color:#ae81ff">11</span>]{
+</span></span><span style="display:flex;"><span>      {<span style="color:#e6db74">&#34;s4&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;s5&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>},
+</span></span><span style="display:flex;"><span>      {<span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;s7&#34;</span>, <span style="color:#e6db74">&#34;s6&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;a11&#34;</span>},
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">//...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> gotos[<span style="color:#ae81ff">16</span>][<span style="color:#ae81ff">3</span>] <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>     {<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>},
+</span></span><span style="display:flex;"><span>     <span style="color:#75715e">//...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//  （	）	-	+	*	/	num	$
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// E    T    F
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">16</span>; i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>    ActionMap a;
+</span></span><span style="display:flex;"><span>    GotoMap g;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> j <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; j <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">8</span>; j<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>      a[T[j]] <span style="color:#f92672">=</span> parse2Action(actions[i][j]);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> k <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; k <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">3</span>; k<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>      g[V[k]] <span style="color:#f92672">=</span> gotos[i][k];
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    am.push_back(a);
+</span></span><span style="display:flex;"><span>    gm.push_back(g);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//从表中解析出Action
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// string s format:a char+digits,like s1,r2,a1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>Action <span style="color:#a6e22e">parse2Action</span>(string s) {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">if</span> (s.length() <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">||</span> s.length() <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">3</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> Action{Error, Error};
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">char</span> kind <span style="color:#f92672">=</span> tolower(s[<span style="color:#ae81ff">0</span>]);
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> id <span style="color:#f92672">=</span> stoi(s.substr(<span style="color:#ae81ff">1</span>, s.length() <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">switch</span> (kind) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">case</span> <span style="color:#e6db74">&#39;r&#39;</span><span style="color:#f92672">:</span><span style="color:#66d9ef">return</span> Action{Reduce, id};
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">case</span> <span style="color:#e6db74">&#39;s&#39;</span><span style="color:#f92672">:</span><span style="color:#66d9ef">return</span> Action{Shift, id};
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">case</span> <span style="color:#e6db74">&#39;a&#39;</span><span style="color:#f92672">:</span><span style="color:#66d9ef">return</span> Action{Accpet, Accpet};
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">default</span><span style="color:#f92672">:</span><span style="color:#66d9ef">return</span> Action{Error, Error};
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div></li>
+<li>
+<p>Lexer</p>
+<p>由于是语法分析实验，所以词法分析写的比较简单</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">// simple lex,suppose that there is no error in token while lexing
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// return like{&#34;(&#34;,&#34;num&#34;,&#34;)&#34;}
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vector<span style="color:#f92672">&lt;</span>string<span style="color:#f92672">&gt;</span> lex2Str(string sourceStr) {
+</span></span><span style="display:flex;"><span>    vector<span style="color:#f92672">&lt;</span>string<span style="color:#f92672">&gt;</span> ans;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> sourceStr.length(); i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>      string cur <span style="color:#f92672">=</span> string{sourceStr[i]};
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (T.find(cur) <span style="color:#f92672">!=</span> T.end()) {
+</span></span><span style="display:flex;"><span>        ans.push_back(cur);
+</span></span><span style="display:flex;"><span>      } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// parse num
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        ans.push_back(<span style="color:#e6db74">&#34;num&#34;</span>);
+</span></span><span style="display:flex;"><span>        i <span style="color:#f92672">+=</span> <span style="color:#ae81ff">2</span>;
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> ans;
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div></li>
+<li>
+<p>StatesStack,EnteredStack,CharacterQueue 三个关键数据结构的维护与 Parse 函数的编写</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DigitExpressionParser</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>  stack<span style="color:#f92672">&lt;</span>string<span style="color:#f92672">&gt;</span> entered;
+</span></span><span style="display:flex;"><span>  queue<span style="color:#f92672">&lt;</span>string<span style="color:#f92672">&gt;</span> characters;
+</span></span><span style="display:flex;"><span>  unordered_set<span style="color:#f92672">&lt;</span>string<span style="color:#f92672">&gt;</span> T{<span style="color:#e6db74">&#34;(&#34;</span>, <span style="color:#e6db74">&#34;)&#34;</span>, <span style="color:#e6db74">&#34;-&#34;</span>, <span style="color:#e6db74">&#34;+&#34;</span>, <span style="color:#e6db74">&#34;*&#34;</span>, <span style="color:#e6db74">&#34;/&#34;</span>, <span style="color:#e6db74">&#34;num&#34;</span>, <span style="color:#e6db74">&#34;$&#34;</span>};
+</span></span><span style="display:flex;"><span>  unordered_set<span style="color:#f92672">&lt;</span>string<span style="color:#f92672">&gt;</span> V{<span style="color:#e6db74">&#34;E&#34;</span>, <span style="color:#e6db74">&#34;T&#34;</span>, <span style="color:#e6db74">&#34;F&#34;</span>};
+</span></span><span style="display:flex;"><span>  stack<span style="color:#f92672">&lt;</span>State<span style="color:#f92672">&gt;</span> states;
+</span></span><span style="display:flex;"><span>  vector<span style="color:#f92672">&lt;</span>ActionMap<span style="color:#f92672">&gt;</span> am;
+</span></span><span style="display:flex;"><span>  vector<span style="color:#f92672">&lt;</span>GotoMap<span style="color:#f92672">&gt;</span> gm;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  vector<span style="color:#f92672">&lt;</span>string<span style="color:#f92672">&gt;</span> lex2Str(string sourceStr)
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//  function overload for different container to pop numofEle
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">void</span> pop(queue<span style="color:#f92672">&lt;</span>string<span style="color:#f92672">&gt;</span> <span style="color:#f92672">&amp;</span>q, <span style="color:#66d9ef">int</span> num)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">void</span> pop(stack<span style="color:#f92672">&lt;</span>string<span style="color:#f92672">&gt;</span> <span style="color:#f92672">&amp;</span>s, <span style="color:#66d9ef">int</span> num)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">void</span> pop(stack<span style="color:#f92672">&lt;</span>State<span style="color:#f92672">&gt;</span> <span style="color:#f92672">&amp;</span>s, <span style="color:#66d9ef">int</span> num)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// initial parser
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">bool</span> _init(string sourceString)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>  DigitExpressionParser() { initialMaps(am, gm); }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// parse
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">bool</span> <span style="color:#a6e22e">parse</span>(string sourseStr) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>_init(sourseStr)) {
+</span></span><span style="display:flex;"><span>      cerr <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Error:source string empty or wrong token&#34;</span> <span style="color:#f92672">&lt;&lt;</span> endl;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">return</span> false;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">while</span> (true) {
+</span></span><span style="display:flex;"><span>      State curState <span style="color:#f92672">=</span> states.top();
+</span></span><span style="display:flex;"><span>      string curCharacter <span style="color:#f92672">=</span> characters.front();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">auto</span> <span style="color:#f92672">&amp;</span>action <span style="color:#f92672">=</span> am[curState][curCharacter];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">switch</span> (action.kind) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">case</span> Shift:states.push(action.id);
+</span></span><span style="display:flex;"><span>          entered.push(curCharacter);
+</span></span><span style="display:flex;"><span>          characters.pop();
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">case</span> Reduce: {
+</span></span><span style="display:flex;"><span>          <span style="color:#75715e">// use producer[id] to reduce
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>          printProducer(action.id);
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">auto</span> producer <span style="color:#f92672">=</span> producers[action.id];
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">int</span> popNum <span style="color:#f92672">=</span> producer.second <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;num&#34;</span> <span style="color:#f92672">?</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">:</span> producer.second.size();
+</span></span><span style="display:flex;"><span>          pop(states, popNum);
+</span></span><span style="display:flex;"><span>          pop(entered, popNum);
+</span></span><span style="display:flex;"><span>          entered.push(producer.first);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>          states.push(gm[states.top()][producer.first]);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">case</span> Error:cerr <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Error while parsing&#34;</span> <span style="color:#f92672">&lt;&lt;</span> endl;
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">return</span> false;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">case</span> Accpet:cout <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Accepted&#34;</span> <span style="color:#f92672">&lt;&lt;</span> endl;
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">return</span> true;
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div></li>
+</ul>
+<h3 id="优化">优化</h3>
+<p>实验上有一些是可以优化(卷)的</p>
+<ul>
+<li>First 和 Follow 集合，有效项目集，分析表能够使用代码自动生成</li>
+<li>num 的可以使用数字代替，解析为 token</li>
+</ul>
+<p>如果觉得不够卷还可以</p>
+<ul>
+<li>可视化(呸)</li>
+<li>写一个计算器</li>
+</ul>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/posts/zh/mit6.824-mapreduce/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>MIT6.824-MapReduce</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/posts/zh/lc406-%E6%A0%B9%E6%8D%AE%E8%BA%AB%E9%AB%98%E9%87%8D%E5%BB%BA%E9%98%9F%E5%88%97/"><span>LC406 根据身高重建队列</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+</article>
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

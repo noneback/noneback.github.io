@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIT6.824-MapReduce</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.
+This is the first chapter of my Distributed System study notes.
+About the Paper The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the Distributed MapReduce System, including the Master data structure, fault tolerance, and some refinements.">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/posts/mit6.824-mapreduce/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="xxx" src="https://umami-ochre-nu.vercel.app/hugo-ladder.js"></script>
+
+    <meta property="og:title" content="MIT6.824-MapReduce" />
+<meta property="og:description" content="The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.
+This is the first chapter of my Distributed System study notes.
+About the Paper The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the Distributed MapReduce System, including the Master data structure, fault tolerance, and some refinements." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/posts/mit6.824-mapreduce/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-01-22T17:02:44+08:00" />
+<meta property="article:modified_time" content="2021-01-22T17:02:44+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-MapReduce"/>
+<meta name="twitter:description" content="The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.
+This is the first chapter of my Distributed System study notes.
+About the Paper The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the Distributed MapReduce System, including the Master data structure, fault tolerance, and some refinements."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://noneback.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "MIT6.824-MapReduce",
+      "item": "https://noneback.github.io/posts/mit6.824-mapreduce/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "MIT6.824-MapReduce",
+  "name": "MIT6.824-MapReduce",
+  "description": "The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.\nThis is the first chapter of my Distributed System study notes.\nAbout the Paper The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the Distributed MapReduce System, including the Master data structure, fault tolerance, and some refinements.",
+  "keywords": [
+    "MIT6.824", "Distributed System", "Lab", "MapReduce"
+  ],
+  "articleBody": "The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.\nThis is the first chapter of my Distributed System study notes.\nAbout the Paper The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the Distributed MapReduce System, including the Master data structure, fault tolerance, and some refinements.\nMapReduce Computing Model The model takes a series of key-value pairs as input and outputs a series of key-value pairs as a result. Users can use the MapReduce System by designing Map and Reduce functions.\nMap: Takes input data and generates a set of intermediate key-value pairs Reduce: Takes intermediate key-value pairs as input, combines all data with the same key, and outputs the result. map(String key, String value): // key: document name // value: document contents for each word w in value: EmitIntermediate(w, \"1\"); reduce(String key, Iterator values): // key: a word // values: a list of counts int result = 0; for each v in values: result += ParseInt(v); Emit(AsString(result)); MapReduce Execution Process The Distributed MapReduce System adopts a master-slave design. During the MapReduce computation, there is generally one Master and several Workers.\nMaster: Responsible for creating, assigning, and scheduling Map and Reduce tasks Worker: Responsible for executing Map and Reduce tasks A more detailed description is as follows:\nThe entire MapReduce execution process includes M Map Tasks and R Reduce Tasks, divided into two phases: Map Phase and Reduce Phase.\nThe input file is split into M splits, and the computation enters the Map Phase. The Master assigns Map Tasks to idle Workers. The assigned Worker reads the corresponding split data and executes the Task. When all Map Tasks are completed, the Map Phase ends. The Partition function (generally hash(key) mod R) is used to generate R sets of intermediate key-value pairs, which are stored in files and reported to the Master for subsequent Reduce Task operations.\nThe computation enters the Reduce Phase. The Master assigns Reduce Tasks, and each Worker reads the corresponding intermediate key-value file and executes the Task. Once all Reduce tasks are completed, the computation is finished, and the results are stored in result files.\nMapReduce Fault Tolerance Mechanism Since Google MapReduce heavily relies on the distributed atomic file read/write operations provided by Google File System, the fault tolerance mechanism of the MapReduce cluster is much simpler and primarily focuses on recovering from unexpected task interruptions.\nWorker Fault Tolerance In the cluster, the Master periodically sends Ping signals to each Worker. If a Worker does not respond for a period of time, the Master considers the Worker unavailable.\nAny Map task assigned to that Worker, whether running or completed, must be reassigned by the Master to another Worker, as the Worker being unavailable also means the intermediate results stored on that Worker’s local disk are no longer available. The Master will also notify all Reducers about the retry, and Reducers that fail to obtain complete intermediate results from the original Mapper will start fetching data from the new Mapper.\nIf a Reduce task is assigned to that Worker, the Master will select any unfinished Reduce tasks and reassign them to other Workers. Since the results of completed Reduce tasks are stored in Google File System, the availability of these results is ensured by Google File System, and the MapReduce Master only needs to handle unfinished Reduce tasks.\nIf there is a Worker in the cluster that takes an unusually long time to complete the last few Map or Reduce tasks, the entire MapReduce computation time will be prolonged, and such a Worker becomes a straggler.\nOnce the MapReduce computation reaches a certain completion level, any remaining tasks are backed up and assigned to other idle Workers, and the task is considered completed once one of the Workers finishes it.\nMaster Fault Tolerance There is only one Master node in the entire MapReduce cluster, so Master failures are relatively rare.\nDuring operation, the Master node periodically saves the current state of the cluster as a checkpoint to disk. After the Master process terminates, a restarted Master process can use the data stored on disk to recover to the state of the last checkpoint.\nRefinement Partition Function Used during the Map Phase to assign intermediate key-value pairs to R files according to certain rules.\nCombiner In some situations, the user-defined Map task may generate a large number of duplicate intermediate keys. The Combiner function performs a partial merge of the intermediate results to reduce the amount of data that needs to be transmitted between Mapper and Reducer.\nExperiment The experiment involves designing and implementing the Master and Worker to complete the main functionality of a Simple MapReduce System.\nIn the experiment, the single Master and multiple Worker model was implemented through RPC calls, and different applications were formed by running Map and Reduce functions via Go Plugins.\nMaster \u0026 Worker Functionality Master Task creation and scheduling Worker registration and task assignment Receiving the current state of the Worker Monitoring task status Worker Registering with the Master Getting tasks and processing them Reporting status Note: The Master provides corresponding functions to Workers via RPC calls\nMain Data Structures The design of data structures is the main task, and good design helps in implementing functionality. The relevant code is shown here; for the specific implementation, see GitHub.\nMaster type Master struct { // Your definitions here. nReduce int taskQueue chan Task tasksContext []TaskContext lock sync.Mutex files []string phase PhaseKind done bool workerID int } Worker type worker struct { ID int mapf func(string, string) []KeyValue reducef func(string, []string) string nReduce int nMap int } Task \u0026 TaskContext type Task struct { ID int Filename string Phase PhaseKind } type TaskContext struct { t *Task state ContextState workerID int startTime time.Time } Rpc Args \u0026 Reply type RegTaskArgs struct { WorkerID int } type RegTaskReply struct { T Task HasT bool } type ReportTaskArgs struct { WorkerID int TaskID int State ContextState } type ReportTaskReply struct { } type RegWorkerArgs struct { } type RegWorkerReply struct { ID int NReduce int NMap int } Constant \u0026 Type const ( RUNNING ContextState = iota FAILED READY IDEL COMPLETE ) const ( MAX_PROCESSING_TIME = time.Second * 5 SCHEDULE_INTERVAL = time.Second ) const ( MAP PhaseKind = iota REDUCE ) type ContextState int type PhaseKind int Running and Testing Running # In main directory cd ./src/main # Master go run ./mrmaster.go pg*.txt # Worker go build -buildmode=plugin ../mrapps/wc.go \u0026\u0026 go run ./mrworker.go ./wc.so Testing cd ./src/main sh ./test-mr.sh Optimization These optimizations are some designs I thought of that could be improved when reviewing my code after completing the experiment.\nHotspot Issue The hotspot issue here refers to a scenario where a particular data item appears frequently in the dataset. The intermediate key-value pairs generated during the Map phase can lead to a situation where one key appears frequently, resulting in excessive disk IO and network IO for a few machines during the shuffle step.\nThe essence of this issue is that the Shuffle step in MapReduce is highly dependent on the data.\nThe design purpose of Shuffle is to aggregate intermediate results to facilitate processing during the Reduce phase. Consequently, if the data is extremely unbalanced, hotspot issues will naturally arise.\nIn fact, the core problem is that a large number of keys are assigned to a single disk file after being hashed, serving as input for the subsequent Reduce phase.\nThe hash value for the same key should be identical, so the question becomes: How can we assign the same key’s hash value to different machines?\nThe solution I came up with is to add a random salt to the key in the Shuffle’s hash calculation so that the hash values are different, thereby reducing the probability of keys being assigned to the same machine and solving the hotspot issue.\nFault Tolerance The paper already proposes some solutions for fault tolerance. The scenario in question is: a Worker node crashes unexpectedly and reconnects after a reboot. The Master observes the crash and reassigns its tasks to other nodes, but the reconnected Worker continues executing its original tasks, resulting in duplicate result files.\nThe potential issue here is that these two files may cause incorrect results. Furthermore, the reconnected Worker continuing to execute its original tasks wastes CPU and IO resources.\nBased on this, we need to mark the newly generated result files, ensuring only the latest files are used as results, thus resolving the file conflict. Additionally, we should add an RPC interface for Worker nodes so that when they reconnect, the Master can call it to clear out any original tasks.\nStraggler Issue The straggler issue refers to a Task taking a long time to complete, delaying the overall MapReduce computation. Essentially, it is a hotspot issue and Worker crash handling problem, which can be addressed by referring to the above sections.\nReferences MIT6.824 Distributed System\nLab Official Site\nMapReduce: Simplified Data Processing on Large Clusters\nDetailed Explanation of Google MapReduce Paper\n​\n",
+  "wordCount" : "1541",
+  "inLanguage": "en",
+  "datePublished": "2021-01-22T17:02:44+08:00",
+  "dateModified": "2021-01-22T17:02:44+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/posts/mit6.824-mapreduce/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/posts">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-ochre-nu.vercel.app/share/R1lHz7QY/hugo-ladder-exampleSite">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>MIT6.824-MapReduce</h1>
+  </header>
+
+  <p>
+  <small>
+    January 22, 2021&nbsp;· 1541 words&nbsp;· 8 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
+      
+      <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
+      
+      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#about-the-paper">About the Paper</a>
+      <ul>
+        <li><a href="#mapreduce-computing-model">MapReduce Computing Model</a></li>
+        <li><a href="#mapreduce-execution-process">MapReduce Execution Process</a></li>
+        <li><a href="#mapreduce-fault-tolerance-mechanism">MapReduce Fault Tolerance Mechanism</a></li>
+        <li><a href="#refinement">Refinement</a></li>
+      </ul>
+    </li>
+    <li><a href="#experiment">Experiment</a>
+      <ul>
+        <li><a href="#master--worker-functionality">Master &amp; Worker Functionality</a></li>
+        <li><a href="#main-data-structures">Main Data Structures</a></li>
+        <li><a href="#running-and-testing">Running and Testing</a></li>
+      </ul>
+    </li>
+    <li><a href="#optimization">Optimization</a>
+      <ul>
+        <li><a href="#hotspot-issue">Hotspot Issue</a></li>
+        <li><a href="#fault-tolerance">Fault Tolerance</a></li>
+        <li><a href="#straggler-issue">Straggler Issue</a></li>
+      </ul>
+    </li>
+    <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.</p>
+<p>This is the first chapter of my Distributed System study notes.</p>
+<hr>
+<h2 id="about-the-paper">About the Paper</h2>
+<p>The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the <strong>Distributed</strong> MapReduce System, including the Master data structure, fault tolerance, and some refinements.</p>
+<h3 id="mapreduce-computing-model">MapReduce Computing Model</h3>
+<p>The model takes a series of key-value pairs as input and outputs a series of key-value pairs as a result. Users can use the MapReduce System by designing Map and Reduce functions.</p>
+<ul>
+<li>Map: Takes input data and generates a set of intermediate key-value pairs</li>
+<li>Reduce: Takes intermediate key-value pairs as input, combines all data with the same key, and outputs the result.</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>map(String key, String value)<span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// key: document name
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// value: document contents
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">for</span> each word w in value:
+</span></span><span style="display:flex;"><span>    EmitIntermediate(w, <span style="color:#e6db74">&#34;1&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>reduce(String key, Iterator values)<span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// key: a word
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// values: a list of counts
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> result <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">for</span> each v in values:
+</span></span><span style="display:flex;"><span>    result <span style="color:#f92672">+=</span> ParseInt(v);
+</span></span><span style="display:flex;"><span>  Emit(AsString(result));
+</span></span></code></pre></div><h3 id="mapreduce-execution-process">MapReduce Execution Process</h3>
+<p>The Distributed MapReduce System adopts a master-slave design. During the MapReduce computation, there is generally one Master and several Workers.</p>
+<ul>
+<li>Master: Responsible for creating, assigning, and scheduling Map and Reduce tasks</li>
+<li>Worker: Responsible for executing Map and Reduce tasks</li>
+</ul>
+<p><img alt="Screenshot_20210112_125637" src="https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png"></p>
+<p>A more detailed description is as follows:</p>
+<ol>
+<li>
+<p>The entire MapReduce execution process includes M Map Tasks and R Reduce Tasks, divided into two phases: Map Phase and Reduce Phase.</p>
+</li>
+<li>
+<p>The input file is split into M splits, and the computation enters the Map Phase. The Master assigns Map Tasks to idle Workers. The assigned Worker reads the corresponding split data and executes the Task. When all Map Tasks are completed, the Map Phase ends. The Partition function (generally <code>hash(key) mod R</code>) is used to generate R sets of intermediate key-value pairs, which are stored in files and reported to the Master for subsequent Reduce Task operations.</p>
+</li>
+<li>
+<p>The computation enters the Reduce Phase. The Master assigns Reduce Tasks, and each Worker reads the corresponding intermediate key-value file and executes the Task. Once all Reduce tasks are completed, the computation is finished, and the results are stored in result files.</p>
+</li>
+</ol>
+<h3 id="mapreduce-fault-tolerance-mechanism">MapReduce Fault Tolerance Mechanism</h3>
+<p>Since Google MapReduce heavily relies on the distributed atomic file read/write operations provided by Google File System, the fault tolerance mechanism of the MapReduce cluster is much simpler and primarily focuses on recovering from unexpected task interruptions.</p>
+<h4 id="worker-fault-tolerance">Worker Fault Tolerance</h4>
+<p>In the cluster, the Master periodically sends Ping signals to each Worker. If a Worker does not respond for a period of time, the Master considers the Worker unavailable.</p>
+<p>Any Map task assigned to that Worker, whether running or completed, must be reassigned by the Master to another Worker, as the Worker being unavailable also means the intermediate results stored on that Worker&rsquo;s local disk are no longer available. The Master will also notify all Reducers about the retry, and Reducers that fail to obtain complete intermediate results from the original Mapper will start fetching data from the new Mapper.</p>
+<p>If a Reduce task is assigned to that Worker, the Master will select any unfinished Reduce tasks and reassign them to other Workers. Since the results of completed Reduce tasks are stored in Google File System, the availability of these results is ensured by Google File System, and the MapReduce Master only needs to handle unfinished Reduce tasks.</p>
+<p>If there is a Worker in the cluster that takes an unusually long time to complete the last few Map or Reduce tasks, the entire MapReduce computation time will be prolonged, and such a Worker becomes a straggler.</p>
+<p>Once the MapReduce computation reaches a certain completion level, any remaining tasks are backed up and assigned to other idle Workers, and the task is considered completed once one of the Workers finishes it.</p>
+<h4 id="master-fault-tolerance">Master Fault Tolerance</h4>
+<p>There is only one Master node in the entire MapReduce cluster, so Master failures are relatively rare.</p>
+<p>During operation, the Master node periodically saves the current state of the cluster as a checkpoint to disk. After the Master process terminates, a restarted Master process can use the data stored on disk to recover to the state of the last checkpoint.</p>
+<h3 id="refinement">Refinement</h3>
+<h4 id="partition-function">Partition Function</h4>
+<p>Used during the Map Phase to assign intermediate key-value pairs to R files according to certain rules.</p>
+<h4 id="combiner">Combiner</h4>
+<p>In some situations, the user-defined Map task may generate a large number of duplicate intermediate keys. The Combiner function performs a partial merge of the intermediate results to reduce the amount of data that needs to be transmitted between Mapper and Reducer.</p>
+<h2 id="experiment">Experiment</h2>
+<p>The experiment involves designing and implementing the Master and Worker to complete the main functionality of a Simple MapReduce System.</p>
+<p>In the experiment, the single Master and multiple Worker model was implemented through RPC calls, and different applications were formed by running Map and Reduce functions via Go Plugins.</p>
+<h3 id="master--worker-functionality">Master &amp; Worker Functionality</h3>
+<h4 id="master">Master</h4>
+<ul>
+<li>Task creation and scheduling</li>
+<li>Worker registration and task assignment</li>
+<li>Receiving the current state of the Worker</li>
+<li>Monitoring task status</li>
+</ul>
+<h4 id="worker">Worker</h4>
+<ul>
+<li>Registering with the Master</li>
+<li>Getting tasks and processing them</li>
+<li>Reporting status</li>
+</ul>
+<blockquote>
+<p>Note: The Master provides corresponding functions to Workers via RPC calls</p>
+</blockquote>
+<h3 id="main-data-structures">Main Data Structures</h3>
+<p>The design of data structures is the main task, and good design helps in implementing functionality. The relevant code is shown here; for the specific implementation, see <a href="https://github.com/noneback/Toys/tree/master/6.824-Lab1-MapReduce">GitHub</a>.</p>
+<h4 id="master-1">Master</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Master</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#75715e">// Your definitions here.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#a6e22e">nReduce</span>      <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">taskQueue</span>    <span style="color:#66d9ef">chan</span> <span style="color:#a6e22e">Task</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">tasksContext</span> []<span style="color:#a6e22e">TaskContext</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">lock</span>         <span style="color:#a6e22e">sync</span>.<span style="color:#a6e22e">Mutex</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">files</span>        []<span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">phase</span>        <span style="color:#a6e22e">PhaseKind</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">done</span>         <span style="color:#66d9ef">bool</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">workerID</span>     <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="worker-1">Worker</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">worker</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">ID</span>      <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">mapf</span>    <span style="color:#66d9ef">func</span>(<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>) []<span style="color:#a6e22e">KeyValue</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">reducef</span> <span style="color:#66d9ef">func</span>(<span style="color:#66d9ef">string</span>, []<span style="color:#66d9ef">string</span>) <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">nReduce</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">nMap</span>    <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="task--taskcontext">Task &amp; TaskContext</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Task</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">ID</span>       <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">Filename</span> <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">Phase</span>    <span style="color:#a6e22e">PhaseKind</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">TaskContext</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">t</span>         <span style="color:#f92672">*</span><span style="color:#a6e22e">Task</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">state</span>     <span style="color:#a6e22e">ContextState</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">workerID</span>  <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">startTime</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Time</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="rpc-args--reply">Rpc Args &amp; Reply</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegTaskArgs</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">WorkerID</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegTaskReply</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">T</span>    <span style="color:#a6e22e">Task</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">HasT</span> <span style="color:#66d9ef">bool</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ReportTaskArgs</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">WorkerID</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">TaskID</span>   <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">State</span>    <span style="color:#a6e22e">ContextState</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ReportTaskReply</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegWorkerArgs</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegWorkerReply</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">ID</span>      <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">NReduce</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">NMap</span>    <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="constant--type">Constant &amp; Type</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">RUNNING</span> <span style="color:#a6e22e">ContextState</span> = <span style="color:#66d9ef">iota</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">FAILED</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">READY</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">IDEL</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">COMPLETE</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">MAX_PROCESSING_TIME</span> = <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">SCHEDULE_INTERVAL</span>   = <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">MAP</span> <span style="color:#a6e22e">PhaseKind</span> = <span style="color:#66d9ef">iota</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">REDUCE</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ContextState</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">PhaseKind</span> <span style="color:#66d9ef">int</span>
+</span></span></code></pre></div><h3 id="running-and-testing">Running and Testing</h3>
+<h4 id="running">Running</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># In main directory</span>
+</span></span><span style="display:flex;"><span>cd ./src/main
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Master</span>
+</span></span><span style="display:flex;"><span>go run ./mrmaster.go pg*.txt                                                
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Worker</span>
+</span></span><span style="display:flex;"><span>go build -buildmode<span style="color:#f92672">=</span>plugin ../mrapps/wc.go <span style="color:#f92672">&amp;&amp;</span> go run ./mrworker.go ./wc.so
+</span></span></code></pre></div><h4 id="testing">Testing</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cd ./src/main
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>sh  ./test-mr.sh
+</span></span></code></pre></div><h2 id="optimization">Optimization</h2>
+<p>These optimizations are some designs I thought of that could be improved when reviewing my code after completing the experiment.</p>
+<h3 id="hotspot-issue">Hotspot Issue</h3>
+<p>The hotspot issue here refers to a scenario where a particular data item appears frequently in the dataset. The intermediate key-value pairs generated during the Map phase can lead to a situation where one key appears frequently, resulting in excessive disk IO and network IO for a few machines during the shuffle step.</p>
+<blockquote>
+<p>The essence of this issue is that the Shuffle step in MapReduce is highly dependent on the data.</p>
+<p>The <strong>design purpose</strong> of Shuffle is to aggregate intermediate results to facilitate processing during the Reduce phase. Consequently, if the data is extremely unbalanced, hotspot issues will naturally arise.</p>
+</blockquote>
+<p>In fact, the core problem is that a large number of keys are assigned to a single disk file after being hashed, serving as input for the subsequent Reduce phase.</p>
+<p>The hash value for the same key should be identical, so the question becomes: <em>How can we assign the same key&rsquo;s hash value to different machines?</em></p>
+<p>The solution I came up with is to add a random salt to the key in the Shuffle&rsquo;s hash calculation so that the hash values are different, thereby reducing the probability of keys being assigned to the same machine and solving the hotspot issue.</p>
+<h3 id="fault-tolerance">Fault Tolerance</h3>
+<p>The paper already proposes some solutions for fault tolerance. The scenario in question is: a Worker node crashes unexpectedly and reconnects after a reboot. The Master observes the crash and reassigns its tasks to other nodes, but the reconnected Worker continues executing its original tasks, resulting in duplicate result files.</p>
+<p>The potential issue here is that these two files may cause incorrect results. Furthermore, the reconnected Worker continuing to execute its original tasks wastes CPU and IO resources.</p>
+<p>Based on this, we need to mark the newly generated result files, ensuring only the latest files are used as results, thus resolving the file conflict. Additionally, we should add an RPC interface for Worker nodes so that when they reconnect, the Master can call it to clear out any original tasks.</p>
+<h3 id="straggler-issue">Straggler Issue</h3>
+<p>The straggler issue refers to a Task taking a long time to complete, delaying the overall MapReduce computation. Essentially, it is a hotspot issue and Worker crash handling problem, which can be addressed by referring to the above sections.</p>
+<h2 id="references">References</h2>
+<p><a href="https://pdos.csail.mit.edu/6.824/index.html">MIT6.824 Distributed System</a></p>
+<p><a href="https://pdos.csail.mit.edu/6.824/labs/lab-mr.html">Lab Official Site</a></p>
+<p><a href="http://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf">MapReduce: Simplified Data Processing on Large Clusters</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/34849261">Detailed Explanation of Google MapReduce Paper</a></p>
+<p>​</p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/posts/https%E6%B5%85%E6%9E%90/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>HTTPS Introduction</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/posts/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/"><span>Chinese Spam Email Classification Based on Naive Bayes</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+</article>
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

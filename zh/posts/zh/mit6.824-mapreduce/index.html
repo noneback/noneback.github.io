@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIT6.824-MapReduce</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/posts/zh/mit6.824-mapreduce/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="xxx" src="https://umami-ochre-nu.vercel.app/hugo-ladder.js"></script>
+
+    <meta property="og:title" content="MIT6.824-MapReduce" />
+<meta property="og:description" content="大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/posts/zh/mit6.824-mapreduce/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-01-22T17:02:44+08:00" />
+<meta property="article:modified_time" content="2021-01-22T17:02:44+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-MapReduce"/>
+<meta name="twitter:description" content="大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://noneback.github.io/zh/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "MIT6.824-MapReduce",
+      "item": "https://noneback.github.io/zh/posts/zh/mit6.824-mapreduce/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "MIT6.824-MapReduce",
+  "name": "MIT6.824-MapReduce",
+  "description": "大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一",
+  "keywords": [
+    "MIT6.824", "Distributed System", "Lab", "MapReduce"
+  ],
+  "articleBody": "大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一个论文或者实验都会记录在文章中。\n本文Distributed System学习笔记的第一章。\n论文相关 论文最核心的内容是提出的MapReduce分布式计算模型，以及实现Distributed MapReduce System的思路，包括Master数据结构，容错以及一些refinement等内容。\nMapReduce计算模型 模型接受一系列的键值对作为输入，并输出一系列键值对作为结果。用户通过设计Map和Reduce函数来使用MapReduce System\nMap：接受输入数据，生成一组中间键值对 Reduce：接受中间键值对作为输入，将所有相同key的数据合并并作为结果输出。 map(String key, String value): // key: document name // value: document contents for each word w in value: EmitIntermediate(w, “1”); reduce(String key, Iterator values): // key: a word // values: a list of counts int result = 0; for each v in values: result += ParseInt(v); Emit(AsString(result)); MapReduce执行过程 Distrubuted MapReduce System采用主从的设计，在MapReduce计算过程中，一般有一个Master，以及若干个Worker。\nMaster：负责Map以及Reduce任务的创建、分配、调度等 Worker：负责执行Map以及Reduce任务 更详细的描述为:\n1.MapReduce的整个执行过程包含M个Map Task 和R个Reduce Task，分为两个执行阶段Map Phase 和Reduce Phase。\n2.输入的文件被拆分为M个split，计算进入Map Phase阶段，Master分配Map Task给空闲Worker。分配了Task的Worker读取对应的split data，执行Task。直到所有的Map Task都完成，Map Phase结束。利用Partition函数（一般为hash(key) mod R)得到R组中间键值对，保存在文件中，并将文件路径告知Master，以便Reduce Task的操作。\n3.计算进入Reduce Phase阶段，Master分配Reduce Task，每个Worker读取对应的中间键值对文件，执行Task。所有Reduce执行完成后，计算完成。结果保存到结果文件中。\nMapReduce 容错机制 由于 Google MapReduce 很大程度上利用了由 Google File System 提供的分布式原子文件读写操作，所以 MapReduce 集群的容错机制实现相比之下便简洁很多，也主要集中在任务意外中断的恢复上。\nWorker容错 在集群中，Master 会周期地向每一个 Worker 发送 Ping 信号。如果某个 Worker 在一段时间内没有响应，Master 就会认为这个 Worker 已经不可用。\n任何分配给该 Worker 的 Map 任务，无论是正在运行还是已经完成，都需要由 Master 重新分配给其他 Worker，因为该 Worker 不可用也意味着存储在该 Worker 本地磁盘上的中间结果也不可用了。Master 也会将这次重试通知给所有 Reducer，没能从原本的 Mapper 上完整获取中间结果的 Reducer 便会开始从新的 Mapper 上获取数据。\n如果有 Reduce 任务分配给该 Worker，Master 则会选取其中尚未完成的 Reduce 任务分配给其他 Worker。鉴于 Google MapReduce 的结果是存储在 Google File System 上的，已完成的 Reduce 任务的结果的可用性由 Google File System 提供，因此 MapReduce Master 只需要处理未完成的 Reduce 任务即可。\n如果集群中有某个 Worker 花了特别长的时间来完成最后的几个 Map 或 Reduce 任务，整个 MapReduce 计算任务的耗时就会因此被拖长，这样的 Worker 也就成了落后者（Straggler）。\nMapReduce 在整个计算完成到一定程度时就会将剩余的任务进行备份，即同时将其分配给其他空闲 Worker 来执行，并在其中一个 Worker 完成后将该任务视作已完成。\nMaster容错 整个 MapReduce 集群中只会有一个 Master 结点，因此 Master 失效的情况并不多见。\nMaster 结点在运行时会周期性地将集群的当前状态作为保存点（Checkpoint）写入到磁盘中。Master 进程终止后，重新启动的 Master 进程即可利用存储在磁盘中的数据恢复到上一次保存点的状态。\nRefinement Partition Function 于Map Phase阶段使用，将中间键值对按照规则分配到R个文件中保存\nCombiner 在某些情形下，用户所定义的 Map 任务可能会产生大量重复的中间结果键，Combiner 函数以对中间结果进行局部合并，减少 Mapper 和 Reducer 间需要传输的数据量。\n实验相关 实验内容主要是设计实现Master和Worker，补全Simple MapReduce System的主要功能。\n实验中通过Rpc调用实现单Master以及多Worker的模型，通过Go Plugin运行Map和Reduce函数组成的不同应用。\nMaster\u0026Worker功能 Master 任务的创建，调度等 Worker的注册，为其分配Task 接受Worker当前的运行状态 监听Task运行状态 worker 在Master中注册 获取任务并处理 报告运行状态 注：Master通过Rpc提供相应功能给Worker调用\n主要数据结构 数据结构的设计是主要的工作，良好的设计结构有助于功能的实现。此处之展示数据结构相关代码，具体的功能实现见GitHub\nMaster type Master struct { // Your definitions here. nReduce int taskQueue chan Task tasksContext []TaskContext lock sync.Mutex files []string phase PhaseKind done bool workerID int } Worker type worker struct { ID int mapf func(string, string) []KeyValue reducef func(string, []string) string nReduce int nMap int } Task \u0026 TaskContext type Task struct { ID int Filename string Phase PhaseKind } type TaskContext struct { t *Task state ContextState workerID int startTime time.Time } Rpc Args \u0026 Reply type RegTaskArgs struct { WorkerID int } type RegTaskReply struct { T Task HasT bool } type ReportTaskArgs struct { WorkerID int TaskID int State ContextState } type ReportTaskReply struct { } type RegWorkerArgs struct { } type RegWorkerReply struct { ID int NReduce int NMap int } Constant \u0026 Type const ( RUNNING ContextState = iota FAILED READY IDEL COMPLETE ) const ( MAX_PROCESSING_TIME = time.Second * 5 SCHEDULE_INTERVAL = time.Second ) const ( MAP PhaseKind = iota REDUCE ) type ContextState int type PhaseKind int 运行与测试 运行 # In main directory cd ./src/main # Master go run ./mrmaster.go pg*.txt # Worker go build -buildmode=plugin ../mrapps/wc.go \u0026\u0026 go run ./mrworker.go ./wc.so 测试 cd ./src/main sh ./test-mr.sh 优化 这些优化是在我完成实验之后，回顾自己代码时想到的可以优化的一些设计。\n热点问题 这里的热点问题是，可能会有一个热点数据频繁的出现在数据集中。Map阶段的中间结果值K-V形式的，这样会导致在shuffle步骤的时候，一个Key频繁的出现，进而导致有个别机器的磁盘IO和网络IO被大量的占用。\n这个问题的本质在于，MapReduce中的Shuffle在设计上是强依赖于数据的。\n它的设计目的就是为了聚合中间结果数据以便Reduce阶段能够更好的进行处理。基于此，在数据极度分布不均的时候，自然会有热点问题。\n实际上，问题本质是，大量的Key在Hash处理后被分配到以一个磁盘文件中，作为后续Reduce的输入。\n同一个Key的Hash值理当是相同的，所以问题可以变形为：如何让相同的Key的Hash分桶到不一样机器中？\n目前我想到的可行方式就是在Shuffle的Hash计算中，为Key添加随机salt，使得Hash的值不相同，减少哈希分桶到同一个机器的概率，进而解决热点问题。\n容错问题 对于容错问题其实论文中已经有了一些解决方案。这个问题的场景是：Worker节点的机器突然Crash，并在重启之后重新连接。Master观测到Worker的Crash并将其任务重新分配给其他节点执行，这是Worker节点重新连接，之前的执行还在继续，双方都执行，可能导致生成两份结果文件。\n这里的潜在问题是，这两份文件可能会导致结果出现错误。同时，重新连接的Worker继续执行原有的任务，浪费CPU，IO资源。\n基于此，我们需要标明生成结果文件的新旧，只有最新的文件才能够被作为结果统计，这样就解决了文件冲突；同时，为Worker节点添加一个Rpc接口，使得其重新连接的时候，Master可以调用以清除原有任务。\n长尾问题 长尾问题，就是指某个Task执行时间长，导致MapReduce无法迅速完成。其实本质上就是热点问题和Worker的Crash处理问题，可以参考上述博客。\n参考 MIT6.824 Distributed System\nLab Official Site\nMapReduce: Simplified Data Processing on Large Clusters\nGoogle MapReduce 论文详解\n​\n",
+  "wordCount" : "2985",
+  "inLanguage": "zh",
+  "datePublished": "2021-01-22T17:02:44+08:00",
+  "dateModified": "2021-01-22T17:02:44+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/posts/zh/mit6.824-mapreduce/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/posts">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-ochre-nu.vercel.app/share/R1lHz7QY/hugo-ladder-exampleSite">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>MIT6.824-MapReduce</h1>
+  </header>
+
+  <p>
+  <small>
+    2021年1月22日&nbsp;· 2985 字&nbsp;· 6 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/mit6.824/">MIT6.824</a>
+      
+      <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
+      
+      <a href="https://noneback.github.io/zh/tags/paper-reading/">Paper Reading</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#论文相关">论文相关</a>
+      <ul>
+        <li><a href="#mapreduce计算模型">MapReduce计算模型</a></li>
+        <li><a href="#mapreduce执行过程">MapReduce执行过程</a></li>
+        <li><a href="#mapreduce--容错机制">MapReduce  容错机制</a></li>
+        <li><a href="#refinement">Refinement</a></li>
+      </ul>
+    </li>
+    <li><a href="#实验相关">实验相关</a>
+      <ul>
+        <li><a href="#masterworker功能">Master&amp;Worker功能</a></li>
+        <li><a href="#主要数据结构">主要数据结构</a></li>
+        <li><a href="#运行与测试">运行与测试</a></li>
+      </ul>
+    </li>
+    <li><a href="#优化">优化</a>
+      <ul>
+        <li><a href="#热点问题">热点问题</a></li>
+        <li><a href="#容错问题">容错问题</a></li>
+        <li><a href="#长尾问题">长尾问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一个论文或者实验都会记录在文章中。</p>
+<p>本文Distributed System学习笔记的第一章。</p>
+<hr>
+<h2 id="论文相关">论文相关</h2>
+<p>论文最核心的内容是提出的MapReduce分布式计算模型，以及实现<strong>Distributed</strong> MapReduce System的思路，包括Master数据结构，容错以及一些refinement等内容。</p>
+<h3 id="mapreduce计算模型">MapReduce计算模型</h3>
+<p>模型接受一系列的键值对作为输入，并输出一系列键值对作为结果。用户通过设计Map和Reduce函数来使用MapReduce System</p>
+<ul>
+<li>Map：接受输入数据，生成一组中间键值对</li>
+<li>Reduce：接受中间键值对作为输入，将所有相同key的数据合并并作为结果输出。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>map(String key, String value)<span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// key: document name
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// value: document contents
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">for</span> each word w in value:
+</span></span><span style="display:flex;"><span>    EmitIntermediate(w, <span style="color:#960050;background-color:#1e0010">“</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">”</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>reduce(String key, Iterator values)<span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// key: a word
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// values: a list of counts
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> result <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">for</span> each v in values:
+</span></span><span style="display:flex;"><span>    result <span style="color:#f92672">+=</span> ParseInt(v);
+</span></span><span style="display:flex;"><span>  Emit(AsString(result));
+</span></span></code></pre></div><h3 id="mapreduce执行过程">MapReduce执行过程</h3>
+<p>Distrubuted MapReduce System采用主从的设计，在MapReduce计算过程中，一般有一个Master，以及若干个Worker。</p>
+<ul>
+<li>Master：负责Map以及Reduce任务的创建、分配、调度等</li>
+<li>Worker：负责执行Map以及Reduce任务</li>
+</ul>
+<p><img alt="Screenshot_20210112_125637" src="https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png"></p>
+<p>更详细的描述为:</p>
+<p>1.MapReduce的整个执行过程包含M个Map Task 和R个Reduce Task，分为两个执行阶段Map Phase 和Reduce Phase。</p>
+<p>2.输入的文件被拆分为M个split，计算进入Map Phase阶段，Master分配Map Task给空闲Worker。分配了Task的Worker读取对应的split data，执行Task。直到所有的Map Task都完成，Map Phase结束。利用Partition函数（一般为<code>hash(key) mod R</code>)得到R组中间键值对，保存在文件中，并将文件路径告知Master，以便Reduce Task的操作。</p>
+<p>3.计算进入Reduce Phase阶段，Master分配Reduce Task，每个Worker读取对应的中间键值对文件，执行Task。所有Reduce执行完成后，计算完成。结果保存到结果文件中。</p>
+<h3 id="mapreduce--容错机制">MapReduce  容错机制</h3>
+<p>由于 Google MapReduce 很大程度上利用了由 Google File System 提供的分布式原子文件读写操作，所以 MapReduce 集群的容错机制实现相比之下便简洁很多，也主要集中在任务意外中断的恢复上。</p>
+<h4 id="worker容错">Worker容错</h4>
+<p>在集群中，Master 会周期地向每一个 Worker 发送 Ping 信号。如果某个 Worker 在一段时间内没有响应，Master 就会认为这个 Worker 已经不可用。</p>
+<p>任何分配给该 Worker 的 Map 任务，无论是正在运行还是已经完成，都需要由 Master 重新分配给其他 Worker，因为该 Worker 不可用也意味着存储在该 Worker 本地磁盘上的中间结果也不可用了。Master 也会将这次重试通知给所有 Reducer，没能从原本的 Mapper 上完整获取中间结果的 Reducer 便会开始从新的 Mapper 上获取数据。</p>
+<p>如果有 Reduce 任务分配给该 Worker，Master 则会选取其中尚未完成的 Reduce 任务分配给其他 Worker。鉴于 Google MapReduce 的结果是存储在 Google File System 上的，已完成的 Reduce 任务的结果的可用性由 Google File System 提供，因此 MapReduce Master 只需要处理未完成的 Reduce 任务即可。</p>
+<p>如果集群中有某个 Worker 花了特别长的时间来完成最后的几个 Map 或 Reduce 任务，整个 MapReduce 计算任务的耗时就会因此被拖长，这样的 Worker 也就成了落后者（Straggler）。</p>
+<p>MapReduce 在整个计算完成到一定程度时就会将剩余的任务进行备份，即同时将其分配给其他空闲 Worker 来执行，并在其中一个 Worker 完成后将该任务视作已完成。</p>
+<h4 id="master容错">Master容错</h4>
+<p>整个 MapReduce 集群中只会有一个 Master 结点，因此 Master 失效的情况并不多见。</p>
+<p>Master 结点在运行时会周期性地将集群的当前状态作为保存点（Checkpoint）写入到磁盘中。Master 进程终止后，重新启动的 Master 进程即可利用存储在磁盘中的数据恢复到上一次保存点的状态。</p>
+<h3 id="refinement">Refinement</h3>
+<h4 id="partition-function">Partition Function</h4>
+<p>于Map Phase阶段使用，将中间键值对按照规则分配到R个文件中保存</p>
+<h4 id="combiner">Combiner</h4>
+<p>在某些情形下，用户所定义的 Map 任务可能会产生大量重复的中间结果键，Combiner 函数以对中间结果进行局部合并，减少 Mapper 和 Reducer 间需要传输的数据量。</p>
+<h2 id="实验相关">实验相关</h2>
+<p>实验内容主要是设计实现Master和Worker，补全Simple MapReduce System的主要功能。</p>
+<p>实验中通过Rpc调用实现单Master以及多Worker的模型，通过Go Plugin运行Map和Reduce函数组成的不同应用。</p>
+<h3 id="masterworker功能">Master&amp;Worker功能</h3>
+<h4 id="master">Master</h4>
+<ul>
+<li>任务的创建，调度等</li>
+<li>Worker的注册，为其分配Task</li>
+<li>接受Worker当前的运行状态</li>
+<li>监听Task运行状态</li>
+</ul>
+<h4 id="worker">worker</h4>
+<ul>
+<li>在Master中注册</li>
+<li>获取任务并处理</li>
+<li>报告运行状态</li>
+</ul>
+<blockquote>
+<p>注：Master通过Rpc提供相应功能给Worker调用</p>
+</blockquote>
+<h3 id="主要数据结构">主要数据结构</h3>
+<p>数据结构的设计是主要的工作，良好的设计结构有助于功能的实现。此处之展示数据结构相关代码，具体的功能实现见<a href="https://github.com/noneback/Toys/tree/master/6.824-Lab1-MapReduce">GitHub</a></p>
+<h4 id="master-1">Master</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Master</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#75715e">// Your definitions here.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#a6e22e">nReduce</span>      <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">taskQueue</span>    <span style="color:#66d9ef">chan</span> <span style="color:#a6e22e">Task</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">tasksContext</span> []<span style="color:#a6e22e">TaskContext</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">lock</span>         <span style="color:#a6e22e">sync</span>.<span style="color:#a6e22e">Mutex</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">files</span>        []<span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">phase</span>        <span style="color:#a6e22e">PhaseKind</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">done</span>         <span style="color:#66d9ef">bool</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">workerID</span>     <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="worker-1">Worker</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">worker</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">ID</span>      <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">mapf</span>    <span style="color:#66d9ef">func</span>(<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>) []<span style="color:#a6e22e">KeyValue</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">reducef</span> <span style="color:#66d9ef">func</span>(<span style="color:#66d9ef">string</span>, []<span style="color:#66d9ef">string</span>) <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">nReduce</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">nMap</span>    <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="task--taskcontext">Task &amp; TaskContext</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Task</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">ID</span>       <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">Filename</span> <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">Phase</span>    <span style="color:#a6e22e">PhaseKind</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">TaskContext</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">t</span>         <span style="color:#f92672">*</span><span style="color:#a6e22e">Task</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">state</span>     <span style="color:#a6e22e">ContextState</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">workerID</span>  <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">startTime</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Time</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="rpc-args--reply">Rpc Args &amp; Reply</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegTaskArgs</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">WorkerID</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegTaskReply</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">T</span>    <span style="color:#a6e22e">Task</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">HasT</span> <span style="color:#66d9ef">bool</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ReportTaskArgs</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">WorkerID</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">TaskID</span>   <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">State</span>    <span style="color:#a6e22e">ContextState</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ReportTaskReply</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegWorkerArgs</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegWorkerReply</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">ID</span>      <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">NReduce</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">NMap</span>    <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="constant--type">Constant &amp; Type</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">RUNNING</span> <span style="color:#a6e22e">ContextState</span> = <span style="color:#66d9ef">iota</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">FAILED</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">READY</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">IDEL</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">COMPLETE</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">MAX_PROCESSING_TIME</span> = <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">SCHEDULE_INTERVAL</span>   = <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">MAP</span> <span style="color:#a6e22e">PhaseKind</span> = <span style="color:#66d9ef">iota</span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">REDUCE</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ContextState</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">PhaseKind</span> <span style="color:#66d9ef">int</span>
+</span></span></code></pre></div><h3 id="运行与测试">运行与测试</h3>
+<h4 id="运行">运行</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># In main directory</span>
+</span></span><span style="display:flex;"><span>cd ./src/main
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Master</span>
+</span></span><span style="display:flex;"><span>go run ./mrmaster.go pg*.txt                                              
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Worker</span>
+</span></span><span style="display:flex;"><span>go build -buildmode<span style="color:#f92672">=</span>plugin ../mrapps/wc.go <span style="color:#f92672">&amp;&amp;</span> go run ./mrworker.go ./wc.so 
+</span></span></code></pre></div><h4 id="测试">测试</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cd ./src/main
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>sh  ./test-mr.sh
+</span></span></code></pre></div><h2 id="优化">优化</h2>
+<p>这些优化是在我完成实验之后，回顾自己代码时想到的可以优化的一些设计。</p>
+<h3 id="热点问题">热点问题</h3>
+<p>这里的热点问题是，可能会有一个热点数据频繁的出现在数据集中。Map阶段的中间结果值K-V形式的，这样会导致在shuffle步骤的时候，一个Key频繁的出现，进而导致有个别机器的磁盘IO和网络IO被大量的占用。</p>
+<blockquote>
+<p>这个问题的本质在于，MapReduce中的Shuffle在<strong>设计</strong>上是强依赖于数据的。</p>
+<p>它的<strong>设计目的</strong>就是为了聚合中间结果数据以便Reduce阶段能够更好的进行处理。基于此，在数据极度分布不均的时候，自然会有热点问题。</p>
+</blockquote>
+<p>实际上，问题本质是，大量的Key在Hash处理后被分配到以一个磁盘文件中，作为后续Reduce的输入。</p>
+<p>同一个Key的Hash值理当是相同的，所以问题可以变形为：<em>如何让相同的Key的Hash分桶到不一样机器中？</em></p>
+<p>目前我想到的可行方式就是在Shuffle的Hash计算中，为Key添加随机salt，使得Hash的值不相同，减少哈希分桶到同一个机器的概率，进而解决热点问题。</p>
+<h3 id="容错问题">容错问题</h3>
+<p>对于容错问题其实论文中已经有了一些解决方案。这个问题的场景是：Worker节点的机器突然Crash，并在重启之后重新连接。Master观测到Worker的Crash并将其任务重新分配给其他节点执行，这是Worker节点重新连接，之前的执行还在继续，双方都执行，可能导致生成两份结果文件。</p>
+<p>这里的潜在问题是，这两份文件可能会导致结果出现错误。同时，重新连接的Worker继续执行原有的任务，浪费CPU，IO资源。</p>
+<p>基于此，我们需要标明生成结果文件的新旧，只有最新的文件才能够被作为结果统计，这样就解决了文件冲突；同时，为Worker节点添加一个Rpc接口，使得其重新连接的时候，Master可以调用以清除原有任务。</p>
+<h3 id="长尾问题">长尾问题</h3>
+<p>长尾问题，就是指某个Task执行时间长，导致MapReduce无法迅速完成。其实本质上就是热点问题和Worker的Crash处理问题，可以参考上述博客。</p>
+<h2 id="参考">参考</h2>
+<p><a href="https://pdos.csail.mit.edu/6.824/index.html">MIT6.824 Distributed System</a></p>
+<p><a href="https://pdos.csail.mit.edu/6.824/labs/lab-mr.html">Lab Official Site</a></p>
+<p><a href="http://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf">MapReduce: Simplified Data Processing on Large Clusters</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/34849261">Google MapReduce 论文详解</a></p>
+<p>​</p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/posts/zh/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Linux中的Fork</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/posts/zh/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/"><span>算术表达式语法分析</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+</article>
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

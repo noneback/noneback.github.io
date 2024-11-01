@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borg: Large-scale cluster management at Google with Borg</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@Borg 是一个集群管理系统，类似闭源的k8s。 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/posts/zh/borg/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="xxx" src="https://umami-ochre-nu.vercel.app/hugo-ladder.js"></script>
+
+    <meta property="og:title" content="Borg: Large-scale cluster management at Google with Borg" />
+<meta property="og:description" content="Borg 是一个集群管理系统，类似闭源的k8s。 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/posts/zh/borg/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-02-19T11:12:16+08:00" />
+<meta property="article:modified_time" content="2024-02-19T11:12:16+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Borg: Large-scale cluster management at Google with Borg"/>
+<meta name="twitter:description" content="Borg 是一个集群管理系统，类似闭源的k8s。 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://noneback.github.io/zh/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Borg: Large-scale cluster management at Google with Borg",
+      "item": "https://noneback.github.io/zh/posts/zh/borg/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Borg: Large-scale cluster management at Google with Borg",
+  "name": "Borg: Large-scale cluster management at Google with Borg",
+  "description": "Borg 是一个集群管理系统，类似闭源的k8s。 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提",
+  "keywords": [
+    "borg", "k8s", "google", "paper reading"
+  ],
+  "articleBody": "Borg 是一个集群管理系统，类似闭源的k8s。\n通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提供了可以减少故障恢复时间的运行时特性，以及降低关联故障概率的调度策略。 提供声明式的作业描述语言、域名服务集成、实时作业监控、分析和模拟系统行为的工具。简化用户的使用。 文章本意在介绍系统设计的同时，讲述Google在背后的经验总结。但本文主要关心系统的设计，关注Borg对外提供的服务SLA，关注Borg对负载，资源，调度等方面的抽象。\n系统抽象 工作负载上，主要有两种：一是长期运行的服务，二是批处理任务。分别对应两种类型的Job (prod / non-prod)。Job由若干Task组成，不同的Job拥有不同的优先级。\n部署架构上，一个Borg Cluster由若干Cell组成，一个Cell由若干机器组成。\n任务调度上，一切机器上有限的物理或者逻辑单元都需要被视为资源，如cpu，mem，io等资源。\n系统架构 Master-Slave架构，由一个BorgMaster和若干Borglet节点组成，调度器是一个独立的服务。\nBorgMaster是一个逻辑节点，负责与外部以及Borglet的交互，以及集群内状态的维护。利用Paxos实现多副本以及ha容错。\nBorglet是Cell内没台机器的Borg Proxy。负责启停Task，管理Node的物理资源，上报状态。\nScheduler是负责进行Task调度的服务。使用Master中记录的状态，并基于此异步的去处理Task的调度，并告知Master二次判断。\n资源调度 Scheduler是其中的很重要的核心服务。调度算法的好坏决定了资源的利用率，直接与使用成本关联。\n基本流程 调度算法有两个部分:\n可行性检查，找到一组可以运行任务的机器 评分，从中选择一个合适的机器。 在可行性检查阶段，调度器会找到一组满足任务约束且有足够可用资源的机器，其中可用资源包括已经 分配给低优先级任务但可以抢占的资源。\n在评分阶段，调度器确定每台可行机器的适宜性。评分考虑了用户特定的偏好，但主要取决于内建的标准：例如最小化被抢占任务的个数和优先级，选择已经有该任务安 装包的机器，尽可能使任务分散在不同的供电和故障域，以及装箱(Packing)质量(在单台机器上混合 高、低优先级的任务，以允许高优先级任务在负载尖峰扩容)等。\n调度器使用一份缓存的 Cell 状态拷贝，重复执行下面的操作:\n从选举出来的 Master 获取状态变更(包括已分配的和等待中的工作);更新自己的本地拷贝。 执行一轮调度来分配任务;将分配信息发送给 Master。 Master 会接受并应用这些分配，但如果分配不适合(例如，是基于过时的状态做出的)，就会等待调度器的下一轮调度。 其他 文中还提到了如何提供售卖率以及性能争抢的问题，不过不是本文重点，可以参考一下原文。\nReference https://www.cnblogs.com/hellojamest/p/16526159.html\n",
+  "wordCount" : "1166",
+  "inLanguage": "zh",
+  "datePublished": "2024-02-19T11:12:16+08:00",
+  "dateModified": "2024-02-19T11:12:16+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/posts/zh/borg/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/posts">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-ochre-nu.vercel.app/share/R1lHz7QY/hugo-ladder-exampleSite">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>Borg: Large-scale cluster management at Google with Borg</h1>
+  </header>
+
+  <p>
+  <small>
+    2024年2月19日&nbsp;· 1166 字&nbsp;· 3 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/borg/">Borg</a>
+      
+      <a href="https://noneback.github.io/zh/tags/k8s/">K8s</a>
+      
+      <a href="https://noneback.github.io/zh/tags/cluster-management/">Cluster Management</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#系统抽象">系统抽象</a></li>
+    <li><a href="#系统架构">系统架构</a></li>
+    <li><a href="#资源调度">资源调度</a>
+      <ul>
+        <li><a href="#基本流程">基本流程</a></li>
+        <li><a href="#其他">其他</a></li>
+      </ul>
+    </li>
+    <li><a href="#reference">Reference</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>Borg 是一个集群管理系统，类似闭源的k8s。</p>
+<ul>
+<li>通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。</li>
+<li>为高可用应用提供了可以减少故障恢复时间的运行时特性，以及降低关联故障概率的调度策略。</li>
+<li>提供声明式的作业描述语言、域名服务集成、实时作业监控、分析和模拟系统行为的工具。简化用户的使用。</li>
+</ul>
+<p>文章本意在介绍系统设计的同时，讲述Google在背后的经验总结。但本文主要关心系统的设计，关注Borg对外提供的服务SLA，关注Borg对负载，资源，调度等方面的抽象。</p>
+<h2 id="系统抽象">系统抽象</h2>
+<p>工作负载上，主要有两种：一是长期运行的服务，二是批处理任务。分别对应两种类型的Job (prod / non-prod)。Job由若干Task组成，不同的Job拥有不同的优先级。</p>
+<p>部署架构上，一个Borg Cluster由若干Cell组成，一个Cell由若干机器组成。</p>
+<p>任务调度上，一切机器上有限的物理或者逻辑单元都需要被视为资源，如cpu，mem，io等资源。</p>
+<h2 id="系统架构">系统架构</h2>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png" src="https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png"></p>
+<p>Master-Slave架构，由一个BorgMaster和若干Borglet节点组成，调度器是一个独立的服务。</p>
+<p>BorgMaster是一个逻辑节点，负责与外部以及Borglet的交互，以及集群内状态的维护。利用Paxos实现多副本以及ha容错。</p>
+<p>Borglet是Cell内没台机器的Borg Proxy。负责启停Task，管理Node的物理资源，上报状态。</p>
+<p>Scheduler是负责进行Task调度的服务。使用Master中记录的状态，并基于此异步的去处理Task的调度，并告知Master二次判断。</p>
+<h2 id="资源调度">资源调度</h2>
+<p>Scheduler是其中的很重要的核心服务。调度算法的好坏决定了资源的利用率，直接与使用成本关联。</p>
+<h3 id="基本流程">基本流程</h3>
+<p>调度算法有两个部分:</p>
+<ul>
+<li><strong>可行性检查</strong>，找到一组可以运行任务的机器</li>
+<li><strong>评分</strong>，从中选择一个合适的机器。</li>
+</ul>
+<p>在可行性检查阶段，调度器会找到一组满足任务约束且有足够可用资源的机器，其中可用资源包括已经 分配给低优先级任务但可以抢占的资源。</p>
+<p>在评分阶段，调度器确定每台可行机器的适宜性。评分考虑了用户特定的偏好，但主要取决于内建的标准：例如最小化被抢占任务的个数和优先级，选择已经有该任务安 装包的机器，尽可能使任务分散在不同的供电和故障域，以及装箱(Packing)质量(在单台机器上混合 高、低优先级的任务，以允许高优先级任务在负载尖峰扩容)等。</p>
+<p>调度器使用一份缓存的 Cell 状态拷贝，重复执行下面的操作:</p>
+<ol>
+<li>从选举出来的 Master 获取状态变更(包括已分配的和等待中的工作);更新自己的本地拷贝。</li>
+<li>执行一轮调度来分配任务;将分配信息发送给 Master。</li>
+<li>Master 会接受并应用这些分配，但如果分配不适合(例如，是基于过时的状态做出的)，就会等待调度器的下一轮调度。</li>
+</ol>
+<h3 id="其他">其他</h3>
+<p>文中还提到了如何提供售卖率以及性能争抢的问题，不过不是本文重点，可以参考一下原文。</p>
+<h2 id="reference">Reference</h2>
+<p><a href="https://www.cnblogs.com/hellojamest/p/16526159.html">https://www.cnblogs.com/hellojamest/p/16526159.html</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/posts/zh/percolator/"><span>Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications </span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+</article>
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

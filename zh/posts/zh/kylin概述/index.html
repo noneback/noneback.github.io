@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kylin概述</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@之前就想着能做一个有意思的毕设，奈何周围都没有合适的老师。之前在学院启动选题之前找好了一个感觉不错的老师，但没想到最后把我鸽了。不过之前老师">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/posts/zh/kylin%E6%A6%82%E8%BF%B0/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="xxx" src="https://umami-ochre-nu.vercel.app/hugo-ladder.js"></script>
+
+    <meta property="og:title" content="Kylin概述" />
+<meta property="og:description" content="之前就想着能做一个有意思的毕设，奈何周围都没有合适的老师。之前在学院启动选题之前找好了一个感觉不错的老师，但没想到最后把我鸽了。不过之前老师" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/posts/zh/kylin%E6%A6%82%E8%BF%B0/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-11-10T23:45:27+08:00" />
+<meta property="article:modified_time" content="2021-11-10T23:45:27+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Kylin概述"/>
+<meta name="twitter:description" content="之前就想着能做一个有意思的毕设，奈何周围都没有合适的老师。之前在学院启动选题之前找好了一个感觉不错的老师，但没想到最后把我鸽了。不过之前老师"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://noneback.github.io/zh/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Kylin概述",
+      "item": "https://noneback.github.io/zh/posts/zh/kylin%E6%A6%82%E8%BF%B0/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Kylin概述",
+  "name": "Kylin概述",
+  "description": "之前就想着能做一个有意思的毕设，奈何周围都没有合适的老师。之前在学院启动选题之前找好了一个感觉不错的老师，但没想到最后把我鸽了。不过之前老师",
+  "keywords": [
+    "毕设", "OLAP", "DB", "Differential Privacy", "Kylin", "Distributed System"
+  ],
+  "articleBody": "之前就想着能做一个有意思的毕设，奈何周围都没有合适的老师。之前在学院启动选题之前找好了一个感觉不错的老师，但没想到最后把我鸽了。不过之前老师的方向也并不是那么感兴趣，于是也就作罢。 最近学院的毕设流程启动了，也在选题里看到了感兴趣的题目，于是便联系老师接了下来。\n我选的题目是 《基于差分隐私的数据库查询算法的设计与实现》，方向是Differential Privacy + OLAP，具体一点就是为Kylin添加Differential Privacy的Feature。\n总的来说就是如此，至于细节，也许在之后的博客中会写到。这是此系列博客的第一篇。\n简介 Kylin是一种分布式的OLAP数据仓库，基于Hbase和Parquet等列存数据库以及Hadoop和Spark等运算调度框架，支持超大规模数据的多维分析。\n它采用cube预计算的方法，把前台的实时查询变成了查询预计算结果，利用闲时的计算资源以及存储空间换取查询时间的优化，能极大的减少查询数据的时间。\n背景 在Kylin之前，一般使用Hadoop来对大规模数据进行批处理，并将结果存储在Hbase等列式存储中。其中OLAP相关的技术便是大数据并行处理和列式存储。\n大规模并行处理：实际上可以调用多台机其来并行处理计算任务，本质上是利用线性增长的计算资源来换取计算时间的线性下降。\n列式存储：将记录按照列来存储。这方面主要是和OLAP的查询有关的，OLAP一般是对数据做统计等计算，一般都是同类型的列数据。列式存储使得查询时可以只访问需要的列并且可以充分利用顺序IO，提高性能。\n以上两个技术使得Hadoop等平台上对于大数据的SQL查询达到了分钟级。但实际上，分钟级别的SQL查询依旧没法满足交互式分析的需要，效率依旧低下。\n其中本质的原因在于，无论是并行计算或者是列式存储，都没有改变查询本身的时间复杂度，没有改变查询时间和数据量的线性增长关系。于是只能通过增加计算资源和利用局部性原理来对查询进行优化，这两种方法在数据量不断增长的情况下，都能明显的预见其成本上和理论上的瓶颈。\n基于此，Kylin提出预计算策略，通过对不同的维度进行预计算生成多维cube(实际上就是一个数据表),后续的查询直接基于预计算的结果进行。经过预计算,物化视图的规模就只由维度的基数来决定,而不再随着数据量的增长呈线性增长。\n这个策略本质上是利用空闲的计算资源以及额外的存储资源来换取查询时的响应速度，改变了查询时间与数据量之间的正比关系，从而提高效率。\n核心概念 Apache Kylin 的工作原理本质上是MOLAP(Multidimensional Online Analytical Processing)Cube,多维立方体分析技术。\n维度和度量 维度指用于审视，聚合数据的一种角度，一般是数据记录的某一个属性。度量是基于数据计算出来的具体数值。通过维度来聚合计算出度量值 $$D_1,D_2,D_3,… =\u003e S_1,S_2，…$$\ncube理论 Data Cube，数据立方体，其主要涉及构建和查询两种操作，构建时对原始数据建立多维度索引以及预计算，以加速查询。\nCuboid: 指在某一维度组合下所计算出的数据\nCube Segment：Cube Segment是Cube的最小构建单位，一个Cube能被拆分为多个Cube Segment。\nCube增量构建：一般来说，增量构建Cube时是基于时间属性来触发的\nCube基数：Cube中所有维度的基数可以体现Cube的复杂度。复杂度高,Cube膨胀的概率会变高（IO,存储放大）。\n架构设计 整个Kylin系统分为在线查询和离线构建两部分。\n离线构建：主要有数据源，构建引擎，存储引擎三大抽象。从数据源拉取数据构建Cube在存储到列式存储引擎中。\n在线查询：主要有接口层和查询引擎，对外部屏蔽Cube等底层概念。外部应用通过Rest API讲查询并转发给查询引擎，查询引擎查询与相关的数据返回结果。\n总结 作为一个OLAP引擎，Kylin充分利用了并行计算，列式存储，预计算等优化技术提高其在线查询和离线构建性能，故而有如下几个明显的优缺点：\n优点: 标准SQL接口，查询速度快,可拓展架构，BI系统友好\n缺点:依赖的外部系统过多，运维困难；预计算与Cube构建导致的IO和存储放大；数据模型以及Cube基数的局限。\n参考 美团 : Apache Kylin的实践与优化\nKylin官方文档 Kylin权威指南\n",
+  "wordCount" : "1746",
+  "inLanguage": "zh",
+  "datePublished": "2021-11-10T23:45:27+08:00",
+  "dateModified": "2021-11-10T23:45:27+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/posts/zh/kylin%E6%A6%82%E8%BF%B0/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/posts">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-ochre-nu.vercel.app/share/R1lHz7QY/hugo-ladder-exampleSite">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>Kylin概述</h1>
+  </header>
+
+  <p>
+  <small>
+    2021年11月10日&nbsp;· 1746 字&nbsp;· 4 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/%E6%AF%95%E8%AE%BE/">毕设</a>
+      
+      <a href="https://noneback.github.io/zh/tags/olap/">OLAP</a>
+      
+      <a href="https://noneback.github.io/zh/tags/db/">DB</a>
+      
+      <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
+      
+      <a href="https://noneback.github.io/zh/tags/differential-privacy/">Differential Privacy</a>
+      
+      <a href="https://noneback.github.io/zh/tags/kylin/">Kylin</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#简介">简介</a></li>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#核心概念">核心概念</a>
+      <ul>
+        <li><a href="#维度和度量">维度和度量</a></li>
+        <li><a href="#cube理论">cube理论</a></li>
+      </ul>
+    </li>
+    <li><a href="#架构设计">架构设计</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>之前就想着能做一个有意思的毕设，奈何周围都没有合适的老师。之前在学院启动选题之前找好了一个感觉不错的老师，但没想到最后把我鸽了。不过之前老师的方向也并不是那么感兴趣，于是也就作罢。 最近学院的毕设流程启动了，也在选题里看到了感兴趣的题目，于是便联系老师接了下来。</p>
+<p>我选的题目是 <strong>《基于差分隐私的数据库查询算法的设计与实现》</strong>，方向是Differential Privacy + OLAP，具体一点就是为Kylin添加Differential Privacy的Feature。</p>
+<p>总的来说就是如此，至于细节，也许在之后的博客中会写到。这是此系列博客的第一篇。</p>
+<h2 id="简介">简介</h2>
+<p>Kylin是一种分布式的OLAP数据仓库，基于Hbase和Parquet等列存数据库以及Hadoop和Spark等运算调度框架，支持超大规模数据的多维分析。</p>
+<p>它采用cube预计算的方法，把前台的实时查询变成了查询预计算结果，利用闲时的计算资源以及存储空间换取查询时间的优化，能极大的减少查询数据的时间。</p>
+<h2 id="背景">背景</h2>
+<p>在Kylin之前，一般使用Hadoop来对大规模数据进行批处理，并将结果存储在Hbase等列式存储中。其中OLAP相关的技术便是<strong>大数据并行处理</strong>和<strong>列式存储</strong>。</p>
+<ul>
+<li>
+<p><strong>大规模并行处理</strong>：实际上可以调用多台机其来并行处理计算任务，本质上是利用线性增长的计算资源来换取计算时间的线性下降。</p>
+</li>
+<li>
+<p><strong>列式存储</strong>：将记录按照列来存储。这方面主要是和OLAP的查询有关的，OLAP一般是对数据做统计等计算，一般都是同类型的列数据。列式存储使得查询时可以只访问需要的列并且可以充分利用顺序IO，提高性能。</p>
+</li>
+</ul>
+<p>以上两个技术使得Hadoop等平台上对于大数据的SQL查询达到了分钟级。但实际上，分钟级别的SQL查询依旧没法满足交互式分析的需要，效率依旧低下。</p>
+<p>其中本质的原因在于，<strong>无论是并行计算或者是列式存储，都没有改变查询本身的时间复杂度，没有改变查询时间和数据量的线性增长关系</strong>。于是只能通过增加计算资源和利用局部性原理来对查询进行优化，这两种方法在数据量不断增长的情况下，都能明显的预见其成本上和理论上的瓶颈。</p>
+<p>基于此，Kylin提出<strong>预计算策略</strong>，通过对不同的维度进行预计算生成多维<strong>cube</strong>(实际上就是一个数据表),后续的查询直接基于预计算的结果进行。经过预计算,物化视图的规模就只由维度的基数来决定,而不再随着数据量的增长呈线性增长。</p>
+<p>这个策略本质上是<strong>利用空闲的计算资源以及额外的存储资源来换取查询时的响应速度，改变了查询时间与数据量之间的正比关系，从而提高效率</strong>。</p>
+<h2 id="核心概念">核心概念</h2>
+<p>Apache Kylin 的工作原理本质上是<strong>MOLAP(Multidimensional Online Analytical Processing)Cube,多维立方体分析技术</strong>。</p>
+<h3 id="维度和度量">维度和度量</h3>
+<p>维度指用于审视，聚合数据的一种角度，一般是数据记录的某一个属性。度量是基于数据计算出来的具体数值。通过维度来聚合计算出度量值 $$D_1,D_2,D_3,&hellip; =&gt; S_1,S_2，&hellip;$$</p>
+<h3 id="cube理论">cube理论</h3>
+<p><strong>Data Cube，数据立方体</strong>，其主要涉及构建和查询两种操作，构建时对原始数据建立多维度索引以及预计算，以加速查询。</p>
+<ul>
+<li>
+<p><strong>Cuboid</strong>: 指在某一维度组合下所计算出的数据</p>
+</li>
+<li>
+<p><strong>Cube Segment</strong>：Cube Segment是Cube的最小构建单位，一个Cube能被拆分为多个Cube Segment。</p>
+</li>
+<li>
+<p><strong>Cube增量构建</strong>：一般来说，增量构建Cube时是基于时间属性来触发的</p>
+</li>
+<li>
+<p><strong>Cube基数</strong>：Cube中所有维度的基数可以体现Cube的复杂度。复杂度高,Cube膨胀的概率会变高（IO,存储放大）。</p>
+</li>
+</ul>
+<h2 id="架构设计">架构设计</h2>
+<p>整个Kylin系统分为<strong>在线查询</strong>和<strong>离线构建</strong>两部分。</p>
+<p><img src="https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png"></p>
+<ul>
+<li>
+<p><strong>离线构建</strong>：主要有数据源，构建引擎，存储引擎三大抽象。从数据源拉取数据构建Cube在存储到列式存储引擎中。</p>
+</li>
+<li>
+<p><strong>在线查询</strong>：主要有接口层和查询引擎，对外部屏蔽Cube等底层概念。外部应用通过Rest API讲查询并转发给查询引擎，查询引擎查询与相关的数据返回结果。</p>
+</li>
+</ul>
+<h2 id="总结">总结</h2>
+<p>作为一个OLAP引擎，Kylin充分利用了<strong>并行计算，列式存储，预计算</strong>等优化技术提高其在线查询和离线构建性能，故而有如下几个明显的优缺点：</p>
+<ul>
+<li>
+<p><strong>优点</strong>: 标准SQL接口，查询速度快,可拓展架构，BI系统友好</p>
+</li>
+<li>
+<p><strong>缺点</strong>:依赖的外部系统过多，运维困难；预计算与Cube构建导致的IO和存储放大；数据模型以及Cube基数的局限。</p>
+</li>
+</ul>
+<h2 id="参考">参考</h2>
+<p><a href="https://tech.meituan.com/2020/11/19/apache-kylin-practice-in-meituan.html">美团 : Apache Kylin的实践与优化</a></p>
+<p><a href="http://kylin.apache.org/cn/">Kylin官方文档 </a></p>
+<p>Kylin权威指南</p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/posts/zh/how-to-implement-skiplist/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>How to Implement SkipList</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/posts/zh/dfs-haystack/"><span>DFS-Haystack</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+</article>
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>
