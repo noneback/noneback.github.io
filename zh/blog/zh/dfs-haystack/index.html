@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFS-Haystack</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/dfs-haystack/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="DFS-Haystack" />
+<meta property="og:description" content="组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/blog/zh/dfs-haystack/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2021-10-06T22:44:01+08:00" />
+<meta property="article:modified_time" content="2021-10-06T22:44:01+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="DFS-Haystack"/>
+<meta name="twitter:description" content="组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  4 ,
+      "name": "DFS-Haystack",
+      "item": "https://noneback.github.io/zh/blog/zh/dfs-haystack/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "DFS-Haystack",
+  "name": "DFS-Haystack",
+  "description": "组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来",
+  "keywords": [
+    "DFS", "Distributed System", "Paper Reading"
+  ],
+  "articleBody": "组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来源应该就是Haystack。 于是大致阅读了一下这篇论文，写下学习笔记。 笔记依旧不深究具体细节，仅仅记录对问题的思考以及设计的思路。\n介绍 HayStack是Facebook为了小文件设计的一种存储系统。之前的DFS，对于文件的寻址路径一般是都会使用Cache来缓存元数据，以便减少磁盘交互提高寻址效率。一个文件就需要一个维护一类元数据，文件数决定了元数据量。在高并发场景下，我们要减少磁盘IO，一般会选择将寻址需要的元数据缓存在内存中。\n在大量小文件场景下，会有大量的元数据。考虑到在内存元数据维护带来的开销，这种方案变得不可用。于是便有了为小文件特别优化的HayStack。它核心思想是将多个小文件聚合成一个大文件，以减少元数据。\n背景 论文中的小文件其实是特指图片数据。\nFacebook是以社交起家的公司。在社交场景中，图片的上传和读取是常见需求。当业务发展到一定的程度，就需要有专门的服务支撑图片的大量高并发读写请求。\n在社交场景下，这类数据的特点是written once, read often, never modified, and rarely deleted.基于此，Facebook开发了HayStack来支持图片分享服务。\n设计 传统的设计 论文中给出了两种历史设计：基于CDN和基于NAS的方案\n基于CDN的方案 这个方案的核心其实就是利用CDN对热点图片数据进行缓存，减少网络传输。\n常用的设计，对于热点图片的优化很显著。但问题也很明显，一是CDN价格昂贵容量有限；二是图片分享场景，也会有很多less popular的图片数据，这就会导致长尾效应，拖慢速度。\n CDN其实一般服务于静态数据的，并且一般都是在活动之前进行预热，并不适合作为一种图片缓存服务使用。很多的less popular的数据其实并未进入CDN，故而导致长尾效应。\n 基于NAS的方案 这是facebook最初的设计方案，本质和基于CDN的方案区别不大，属于它的一种实现。\n引入NAS横向拓展存储，引入文件系统语义，同时也会有磁盘IO存在。和本地文件类似，对于未读取过的数据，至少需要三次磁盘IO：\n Read directory metadata into memory Load the inode into memory Read the content of the file  PhotoStore作为一层缓存使用，缓存一些元数据如file handle等，以加速寻址过程。\n基于NAS的设计并没有解决元数据过多导致不适合全量缓存这个关键问题，一但文件数量到达临界值，不可避免的需要进行磁盘IO。\n 更本质的问题其实是文件与寻址元数据一一对应的关系，使得元数据量随着文件数的变化而变化。\n 所以，优化的关键是，改变文件与寻址元数据一一对应的关系，降低寻址过程中磁盘IO出现的频率。\n基于HayStack的方案 此方案最核心的思路是将多个小文件聚合成大文件，并只维护一份元数据。本质上是改变了元数据与文件数的映射关系，使将所有元数据保存在内存的方案成为可能。\n 只维护聚合后的大文件的元数据，小文件在大文件中的位置需要另外维护映射\n 实现 Haystack主要有三个组件，Haystack Directory、Haystack Cache、Haystack Store\n文件映射与数据落盘 文件数据最终保存在logic volume上，一个logic volume对应多机器上的多个physical volume。\n用户首先访问Directory来获取访问路径，之后再通过Directory生成的URL访问其他组件，获取需要的数据。\n组件 Haystack Directory 属于Haystack的接入层，主要负责文件寻址以及访问控制。\n读写请求首先访问Directory。对于读请求，Directory会生成一个访问URL，URL包含了访问的路径：http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}。对于写请求，它会指定一个可以写入的volume提供用户写入。\n详细点来说，最主要有四个功能：\n  负载均衡，平衡读写请求，\n  决定请求的访问路径，比如是否通过CDN访问，生产访问URL\n  元数据与映射管理， 如logic attr and logic volume = list of phycial volume mapping\n  logic volume读写管理，logic volume可能是Readonly或者WriteEnabled\n 这部分设计和数据特点有关，write once and read more。可以提高并发度。\n   基于此，Directory就必须记录一些必须的元数据，file to volume，logical to phycial mapping、logical volume attr（size，owner、etc）。\n依赖分布式KV落盘元数据和缓存服务加速访问，以此保证容错可用以及低延迟。\n Proxy，Metadata Mapping，Access Control\n Haystack Cache Cache作为缓存用于优化寻址以及图像获取。核心的设计是Cache Rule，判断什么样的数据需要被缓存以及Cache Miss的处理。\nHaystack中，被缓存的图片数据需要满足这两个特点：\n The request comes directly from a user and not the CDN The photo is fetched from a write-enabled Store machine  当出现Cache Miss时，它会从Store上获取图片数据并同步推送至浏览器以及CDN中。\n 这样的策略是基于图片请求的场景与特点决定的。\n首先，在CDN中Miss的请求，很大概率上也会在Cache中miss，所以重CDN重定向的请求的数据不会被Cache。其次，图片往往在刚刚写入后不久时间内会被频繁的访问，所以这样的数据理应被Cache。\nCDN可以被视为一个External Cache。\n Haystack Store Store属于Haystack的存储层，负责数据存储相关操作。\n首先是它的寻址抽象：filename + offset = logical volume id + offset = data。\n多个Physical Volume组成Logical Volume，并作为实际落盘单位进行维护。在Store中，小文件被抽象成Needle，交由Physical Volume进行管理和维护。\n Needle实际上是对小文件的一种封装，以及对Volume的分块管理。\n Store的数据访问一般是以Needle维度进行的。为了加速文件寻址，一般会在内存中维护一个用于寻址元信息的Map：key/alternate key = needle's flag/offset/other attribute\n这些Map最后会被持久化到磁盘中的Index File中，做为In-Memory Mapping的一种Checkpoint存在，用于Crash后寻址元数据的快速恢复。\n 每个Volume会维护一个自己的In-Memory Mapping和Index File\n 在我们更新In-Memory Mapping的时候（比如修改文件、新增文件），会异步更新Index File。但在文件删除时，我们只异步标记文件删除，而不会修改Index File。\n Index只是作为加速查找的手段，无Index的Needles依旧是可以被寻址的，故而上述策略是有效的。但是由于异步更新和不删除对应文件的Index的设计，引入了Orphan Index和Deleted Index的问题。\nOrphan Index是指无索引记录的Needle，一般Store会检查出这些Needle并为其添加Index。\nDeleted Index一般就直接在查询是检测出文件是Deleted的，并且是Mark Deleted的状态，此时会告知上层为查询到文件，同时及时更新In-Memory Mapping。这样的设计加速了文件NotFound的情况下的查询时间。\n 工作负载 读 (Logical Volume ID, key, alternate key, cookies) = photo\n当接收到从Cache收到读请求时，Store会去查询In-Memory Mapping查询对应的Needle。如果查询到，则根据volume + offset获取文件数据，并校验文件的cookie和完整性；否则返回错误。\n Cookie是在Directory生成URL的时候随机生成的字符串，在寻址的时候带上并校验可以有效防止恶意攻击。\n 写 (Logical Volume ID, key, alternate key, cookies， data) = result\nHaystack不支持文件的覆盖写入，只支持追加写。当收到写请求时，Store会异步Append文件数据到Needle中并更新In-Memory Mapping。如果这是一个老文件，那么Directory会更新它保存的元数据，以便后续的访问不会访问老版本的文件。\n 除了Directory的元信息之外，怎么去判断数据版本的新旧？\n答案是根据volume以及offset。老的volume会被冻结为ReadOnly，新的volume的写入是追加的，所以offset大的必然更新。\n 删除 采取Mark Delete + Compact GC的方式处理删除请求。\n容错设计 对于Store使用监控 + 热备的方式，Directory和Cache可以使用Raft等一致性算法保证数据副本一致与容错。\n优化 优化手段主要有三点：Compaction、Batch Load、In Memory。\n总结  优化的抽象：异步、批处理、缓存 要发现主要问题，比如大量小文件最主要的问题是元数据带来的管理负担。  参考 Finding a needle in Haystack: Facebook’s photo storage\n",
+  "wordCount" : "3596",
+  "inLanguage": "zh",
+  "datePublished": "2021-10-06T22:44:01+08:00",
+  "dateModified": "2021-10-06T22:44:01+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/blog/zh/dfs-haystack/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"
+    integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"
+    integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR"
+    crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMathInElement(document.body, {
+            
+            
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: "\\begin{equation}", right: "\\end{equation}", display: true },
+                { left: "\\begin{align}", right: "\\end{align}", display: true },
+                { left: "\\begin{alignat}", right: "\\end{alignat}", display: true },
+                { left: "\\begin{gather}", right: "\\end{gather}", display: true },
+                { left: "\\begin{CD}", right: "\\end{CD}", display: true },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            
+            throwOnError: false,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command),
+            macros: {
+                "\\eqref": "\\href{###1}{(\\text{#1})}",
+                "\\ref": "\\href{###1}{\\text{#1}}",
+                "\\label": "\\htmlId{#1}{}"
+            }
+        });
+    });
+</script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/blog">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>DFS-Haystack</h1>
+  </header>
+
+  <p>
+  <small>
+    2021年10月6日&nbsp;· 3596 字&nbsp;· 8 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/dfs/">DFS</a>
+      
+      <a href="https://noneback.github.io/zh/tags/paper-reading/">Paper Reading</a>
+      
+      <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#介绍">介绍</a></li>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#设计">设计</a>
+      <ul>
+        <li><a href="#传统的设计">传统的设计</a></li>
+        <li><a href="#基于haystack的方案">基于HayStack的方案</a></li>
+      </ul>
+    </li>
+    <li><a href="#实现">实现</a>
+      <ul>
+        <li><a href="#文件映射与数据落盘">文件映射与数据落盘</a></li>
+        <li><a href="#组件">组件</a></li>
+        <li><a href="#工作负载">工作负载</a></li>
+        <li><a href="#容错设计">容错设计</a></li>
+      </ul>
+    </li>
+    <li><a href="#优化">优化</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来源应该就是Haystack。
+于是大致阅读了一下这篇论文，写下学习笔记。
+笔记依旧不深究具体细节，仅仅记录对问题的思考以及设计的思路。</p>
+<h2 id="介绍">介绍</h2>
+<p>HayStack是Facebook为了小文件设计的一种存储系统。之前的DFS，对于文件的寻址路径一般是都会使用Cache来缓存元数据，以便减少磁盘交互提高寻址效率。一个文件就需要一个维护一类元数据，文件数决定了元数据量。在高并发场景下，我们要减少磁盘IO，一般会选择将寻址需要的元数据缓存在内存中。</p>
+<p>在大量小文件场景下，会有大量的元数据。考虑到在内存元数据维护带来的开销，这种方案变得不可用。于是便有了为小文件特别优化的HayStack。它核心思想是将多个小文件聚合成一个大文件，以减少元数据。</p>
+<h2 id="背景">背景</h2>
+<p>论文中的小文件其实是特指图片数据。</p>
+<p>Facebook是以社交起家的公司。在社交场景中，图片的上传和读取是常见需求。当业务发展到一定的程度，就需要有专门的服务支撑图片的大量高并发读写请求。</p>
+<p>在社交场景下，这类数据的特点是<code>written once, read often, never modified, and rarely deleted.</code>基于此，Facebook开发了HayStack来支持图片分享服务。</p>
+<h2 id="设计">设计</h2>
+<h3 id="传统的设计">传统的设计</h3>
+<p>论文中给出了两种历史设计：基于CDN和基于NAS的方案</p>
+<h4 id="基于cdn的方案">基于CDN的方案</h4>
+<p>这个方案的核心其实就是利用CDN对热点图片数据进行缓存，减少网络传输。</p>
+<p>常用的设计，对于热点图片的优化很显著。但问题也很明显，一是CDN价格昂贵容量有限；二是图片分享场景，也会有很多<code>less popular</code>的图片数据，这就会导致长尾效应，拖慢速度。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1guuaefh22gj610g0s4gnh02.jpg" alt="image-20210926200920113"></p>
+<blockquote>
+<p>CDN其实一般服务于静态数据的，并且一般都是在活动之前进行预热，并不适合作为一种图片缓存服务使用。很多的<code>less popular</code>的数据其实并未进入CDN，故而导致长尾效应。</p>
+</blockquote>
+<h4 id="基于nas的方案">基于NAS的方案</h4>
+<p>这是facebook最初的设计方案，本质和基于CDN的方案区别不大，属于它的一种实现。</p>
+<p>引入NAS横向拓展存储，引入文件系统语义，同时也会有磁盘IO存在。和本地文件类似，对于未读取过的数据，至少需要三次磁盘IO：</p>
+<ul>
+<li>Read directory metadata into memory</li>
+<li>Load the inode into memory</li>
+<li>Read the content of the file</li>
+</ul>
+<p>PhotoStore作为一层缓存使用，缓存一些元数据如file handle等，以加速寻址过程。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1guuafar1rpj60u80scmyx02.jpg" alt="image-20210926201012724"></p>
+<p>基于NAS的设计并没有解决<strong>元数据过多导致不适合全量缓存</strong>这个关键问题，一但文件数量到达临界值，不可避免的需要进行磁盘IO。</p>
+<blockquote>
+<p>更本质的问题其实是<strong>文件与寻址元数据一一对应的关系</strong>，使得元数据量随着文件数的变化而变化。</p>
+</blockquote>
+<p>所以，优化的关键是，改变<strong>文件与寻址元数据一一对应的关系</strong>，降低寻址过程中磁盘IO出现的频率。</p>
+<h3 id="基于haystack的方案">基于HayStack的方案</h3>
+<p>此方案最核心的思路是<strong>将多个小文件聚合成大文件</strong>，并只维护一份元数据。本质上是改变了元数据与文件数的映射关系，使将所有元数据保存在内存的方案成为可能。</p>
+<blockquote>
+<p>只维护聚合后的大文件的元数据，小文件在大文件中的位置需要另外维护映射</p>
+</blockquote>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guv5ytgsmtj60k20jqjsk02.jpg" alt="image-20210927142131959"></p>
+<h2 id="实现">实现</h2>
+<p>Haystack主要有三个组件，Haystack Directory、Haystack Cache、Haystack Store</p>
+<h3 id="文件映射与数据落盘">文件映射与数据落盘</h3>
+<p>文件数据最终保存在logic volume上，一个logic volume对应多机器上的多个physical volume。</p>
+<p>用户首先访问Directory来获取访问路径，之后再通过Directory生成的URL访问其他组件，获取需要的数据。</p>
+<h3 id="组件">组件</h3>
+<h4 id="haystack-directory">Haystack Directory</h4>
+<p>属于Haystack的接入层，主要负责<strong>文件寻址</strong>以及<strong>访问控制</strong>。</p>
+<p>读写请求首先访问Directory。对于读请求，Directory会生成一个访问URL，URL包含了访问的路径：<code>http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}</code>。对于写请求，它会指定一个可以写入的volume提供用户写入。</p>
+<p>详细点来说，最主要有四个功能：</p>
+<ol>
+<li>
+<p>负载均衡，平衡读写请求，</p>
+</li>
+<li>
+<p>决定请求的访问路径，比如是否通过CDN访问，生产访问URL</p>
+</li>
+<li>
+<p>元数据与映射管理， 如<code>logic attr and logic volume =&gt; list of phycial volume mapping</code></p>
+</li>
+<li>
+<p>logic volume读写管理，logic volume可能是Readonly或者WriteEnabled</p>
+<blockquote>
+<p>这部分设计和数据特点有关，write once and read more。可以提高并发度。</p>
+</blockquote>
+</li>
+</ol>
+<p>基于此，Directory就必须记录一些必须的元数据，file to volume，logical to phycial mapping、logical volume attr（size，owner、etc）。</p>
+<p>依赖分布式KV落盘元数据和缓存服务加速访问，以此保证容错可用以及低延迟。</p>
+<blockquote>
+<p><strong>Proxy，Metadata Mapping，Access Control</strong></p>
+</blockquote>
+<h4 id="haystack-cache">Haystack Cache</h4>
+<p>Cache作为缓存用于优化寻址以及图像获取。核心的设计是<strong>Cache Rule</strong>，判断什么样的数据需要被缓存以及<strong>Cache Miss</strong>的处理。</p>
+<p>Haystack中，被缓存的图片数据需要满足这两个特点：</p>
+<ol>
+<li>The request comes directly from a user and not the CDN</li>
+<li>The photo is fetched from a write-enabled Store machine</li>
+</ol>
+<p>当出现Cache Miss时，它会从Store上获取图片数据并同步推送至浏览器以及CDN中。</p>
+<blockquote>
+<p>这样的策略是基于图片请求的场景与特点决定的。</p>
+<p>首先，在CDN中Miss的请求，很大概率上也会在Cache中miss，所以重CDN重定向的请求的数据不会被Cache。其次，图片往往在刚刚写入后不久时间内会被频繁的访问，所以这样的数据理应被Cache。</p>
+<p>CDN可以被视为一个External Cache。</p>
+</blockquote>
+<h4 id="haystack-store">Haystack Store</h4>
+<p>Store属于Haystack的存储层，负责数据存储相关操作。</p>
+<p>首先是它的寻址抽象：<code>filename + offset =&gt;  logical volume id + offset =&gt; data</code>。</p>
+<p>多个Physical Volume组成Logical Volume，并作为实际落盘单位进行维护。在Store中，小文件被抽象成<strong>Needle</strong>，交由Physical Volume进行管理和维护。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg" alt="image-20211006164409801"></p>
+<blockquote>
+<p>Needle实际上是对小文件的一种<strong>封装</strong>，以及对Volume的<strong>分块</strong>管理。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5ooyhloxj61150u043702.jpg" alt="image-20211006164428466"></p>
+</blockquote>
+<p>Store的数据访问一般是以Needle维度进行的。为了加速文件寻址，一般会在内存中维护一个用于寻址元信息的Map：<code>key/alternate key =&gt; needle's flag/offset/other attribute</code></p>
+<p>这些Map最后会被持久化到磁盘中的<strong>Index File</strong>中，做为In-Memory Mapping的一种Checkpoint存在，用于Crash后寻址元数据的快速恢复。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg" alt="image-20211006172431986"></p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg" alt="image-20211006172515258"></p>
+<blockquote>
+<p>每个Volume会维护一个自己的In-Memory Mapping和Index File</p>
+</blockquote>
+<p>在我们更新In-Memory Mapping的时候（比如修改文件、新增文件），会异步更新Index File。但在文件删除时，我们只异步标记文件删除，而不会修改Index File。</p>
+<blockquote>
+<p>Index只是作为加速查找的手段，无Index的Needles依旧是可以被寻址的，故而上述策略是有效的。但是由于异步更新和不删除对应文件的Index的设计，引入了Orphan Index和Deleted Index的问题。</p>
+<p>Orphan Index是指无索引记录的Needle，一般Store会检查出这些Needle并为其添加Index。</p>
+<p>Deleted Index一般就直接在查询是检测出文件是Deleted的，并且是Mark Deleted的状态，此时会告知上层为查询到文件，同时及时更新In-Memory Mapping。这样的设计加速了文件NotFound的情况下的查询时间。</p>
+</blockquote>
+<h3 id="工作负载">工作负载</h3>
+<h4 id="读">读</h4>
+<p><code>(Logical Volume ID, key, alternate key, cookies) =&gt; photo</code></p>
+<p>当接收到从Cache收到读请求时，Store会去查询In-Memory Mapping查询对应的Needle。如果查询到，则根据volume + offset获取文件数据，并校验文件的cookie和完整性；否则返回错误。</p>
+<blockquote>
+<p>Cookie是在Directory生成URL的时候随机生成的字符串，在寻址的时候带上并校验可以有效防止恶意攻击。</p>
+</blockquote>
+<h4 id="写">写</h4>
+<p><code>(Logical Volume ID, key, alternate key, cookies， data) =&gt; result</code></p>
+<p>Haystack不支持文件的覆盖写入，只支持追加写。当收到写请求时，Store会异步Append文件数据到Needle中并更新In-Memory Mapping。如果这是一个老文件，那么Directory会更新它保存的元数据，以便后续的访问不会访问老版本的文件。</p>
+<blockquote>
+<p>除了Directory的元信息之外，怎么去判断数据版本的新旧？</p>
+<p>答案是根据volume以及offset。老的volume会被冻结为ReadOnly，新的volume的写入是追加的，所以offset大的必然更新。</p>
+</blockquote>
+<h4 id="删除">删除</h4>
+<p>采取<strong>Mark Delete + Compact GC</strong>的方式处理删除请求。</p>
+<h3 id="容错设计">容错设计</h3>
+<p>对于Store使用<strong>监控 + 热备</strong>的方式，Directory和Cache可以使用Raft等一致性算法保证数据副本一致与容错。</p>
+<h2 id="优化">优化</h2>
+<p>优化手段主要有三点：Compaction、Batch Load、In Memory。</p>
+<h2 id="总结">总结</h2>
+<ul>
+<li>优化的抽象：异步、批处理、缓存</li>
+<li>要发现主要问题，比如大量小文件最主要的问题是元数据带来的管理负担。</li>
+</ul>
+<h2 id="参考">参考</h2>
+<p><a href="https://www.usenix.org/legacy/event/osdi10/tech/full_papers/Beaver.pdf">Finding a needle in Haystack: Facebook’s photo storage</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/blog/zh/kylin%E6%A6%82%E8%BF%B0/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Kylin概述</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/blog/zh/mit6.824-bigtable/"><span>MIT6.824-Bigtable</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>

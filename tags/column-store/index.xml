@@ -1,12 +1,153 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Column Store on NoneBack</title>
+    <title>column store on NoneBack</title>
     <link>https://noneback.github.io/tags/column-store/</link>
-    <description>Recent content in Column Store on NoneBack created by </description>
+    <description>Recent content in column store on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 05 Oct 2022 19:56:01 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/column-store/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Apache-ORC Quick Research</title>
+      <link>https://noneback.github.io/blog/apacheorc%E8%B0%83%E7%A0%94/</link>
+      <pubDate>Wed, 05 Oct 2022 19:56:01 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/apacheorc%E8%B0%83%E7%A0%94/</guid>
+      <description>&lt;p&gt;Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.&lt;/p&gt;
+&lt;p&gt;Research Focus: ORC file encoding, file organization, and indexing support.&lt;/p&gt;
+&lt;h2 id=&#34;file-layout&#34;&gt;File Layout&lt;/h2&gt;
+&lt;p&gt;An ORC file can be divided into three main sections:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Header&lt;/strong&gt;: Identifies the file type.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Body&lt;/strong&gt;: Contains row data and indexes, as shown below.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Tail&lt;/strong&gt;: Contains top-level file information.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;ORC Specification v1&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1654164675197-b3513a38-dee1-4fea-a582-1e800542dc06.png#clientId=ubff13205-800f-4&amp;amp;crop=0&amp;amp;crop=0&amp;amp;crop=1&amp;amp;crop=1&amp;amp;from=paste&amp;amp;id=udfb74091&amp;amp;margin=%5Bobject%20Object%5D&amp;amp;name=image.png&amp;amp;originHeight=567&amp;amp;originWidth=580&amp;amp;originalType=binary&amp;amp;ratio=1&amp;amp;rotation=0&amp;amp;showTitle=false&amp;amp;size=134693&amp;amp;status=done&amp;amp;style=none&amp;amp;taskId=u3792c89f-94b1-497c-81db-a5f9ae97297&amp;amp;title=&#34; alt=&#34;File Layout&#34;&gt;&lt;/p&gt;
+&lt;h3 id=&#34;file-tail&#34;&gt;File Tail&lt;/h3&gt;
+&lt;p&gt;Since distributed storage generally supports only append-only semantics, the ORC file maintains a tail section for top-level file information.&lt;/p&gt;
+&lt;p&gt;The tail contains:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Postscript&lt;/strong&gt;: Contains essential information for parsing the footer and metadata, such as the length of each section and compression method.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Footer&lt;/strong&gt;: Stores schema information, row count, column statistics, and more.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Stripe Statistics and Metadata&lt;/strong&gt;: Includes column-level statistics.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;postscript&#34;&gt;Postscript&lt;/h4&gt;
+&lt;p&gt;The postscript is uncompressed and contains:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Footer length&lt;/li&gt;
+&lt;li&gt;Compression type&lt;/li&gt;
+&lt;li&gt;Metadata length&lt;/li&gt;
+&lt;li&gt;File identifier (&amp;ldquo;ORC&amp;rdquo;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;footer&#34;&gt;Footer&lt;/h4&gt;
+&lt;p&gt;The footer includes the schema, row count, column-level statistics, and a list of stripes that make up the file body.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-protobuf&#34; data-lang=&#34;protobuf&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;message&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Footer&lt;/span&gt; {&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; headerLength &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; contentLength &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;repeated&lt;/span&gt; StripeInformation stripes &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;repeated&lt;/span&gt; Type types &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;repeated&lt;/span&gt; UserMetadataItem metadata &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; numberOfRows &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;6&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;repeated&lt;/span&gt; ColumnStatistics statistics &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;7&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint32&lt;/span&gt; rowIndexStride &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;8&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint32&lt;/span&gt; writer &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;9&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; Encryption encryption &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; stripeStatisticsLength &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;11&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;}&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Stripe Information&lt;/strong&gt;: Data in the body is organized into multiple &lt;strong&gt;stripes&lt;/strong&gt;. Stripes contain row indexes, row data, and stripe footers, which are stored column-wise.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-protobuf&#34; data-lang=&#34;protobuf&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;message&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;StripeInformation&lt;/span&gt; {&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; offset &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; indexLength &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; dataLength &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; footerLength &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; numberOfRows &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;}&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Type Information&lt;/strong&gt;: ORC uses a tree structure to represent nested data types, and the type schema must remain consistent.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-sql&#34; data-lang=&#34;sql&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;create&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;table&lt;/span&gt; Foobar (
+  myInt int,
+  myMap &lt;span style=&#34;color:#66d9ef&#34;&gt;map&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string, struct&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;myString : string, myDouble: double&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt;,
+  myTime &lt;span style=&#34;color:#66d9ef&#34;&gt;timestamp&lt;/span&gt;
+);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Column Statistics&lt;/strong&gt;: Simple statistics for each column are available to support coarse-grained filtering.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;stripes&#34;&gt;Stripes&lt;/h2&gt;
+&lt;p&gt;The body of an ORC file is split into &lt;strong&gt;stripes&lt;/strong&gt;, which are large chunks of data (typically ~200MB) that contain:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Index Data&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Row Data&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Stripe Footer&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The &lt;strong&gt;Stripe Footer&lt;/strong&gt; holds column encoding details and stream-related information, such as compression and encryption methods.&lt;/p&gt;
+&lt;h2 id=&#34;index-support&#34;&gt;Index Support&lt;/h2&gt;
+&lt;p&gt;ORC supports three levels of indexing:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Level&lt;/th&gt;
+&lt;th&gt;Location&lt;/th&gt;
+&lt;th&gt;Data Content&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;File Level&lt;/td&gt;
+&lt;td&gt;File Footer&lt;/td&gt;
+&lt;td&gt;Column-level statistics for the entire file&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Stripe Level&lt;/td&gt;
+&lt;td&gt;File Footer&lt;/td&gt;
+&lt;td&gt;Column-level statistics for each stripe&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Row Level&lt;/td&gt;
+&lt;td&gt;Beginning of Stripe&lt;/td&gt;
+&lt;td&gt;Statistics for each row group and their start position&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;row-level-index&#34;&gt;Row Level Index&lt;/h3&gt;
+&lt;p&gt;The row-level index contains &lt;strong&gt;Row Group Index&lt;/strong&gt; and &lt;strong&gt;Bloom Filter Index&lt;/strong&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;row-group-index&#34;&gt;Row Group Index&lt;/h4&gt;
+&lt;p&gt;Indexes for primitive types are represented by &lt;strong&gt;ROW_INDEX&lt;/strong&gt; streams, with each row group containing a &lt;strong&gt;RowIndexEntry&lt;/strong&gt;.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Default row group size: 10,000 rows&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-protobuf&#34; data-lang=&#34;protobuf&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;message&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RowIndex&lt;/span&gt; {&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;repeated&lt;/span&gt; RowIndexEntry entry &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;}&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;message&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RowIndexEntry&lt;/span&gt; {&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;repeated&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64&lt;/span&gt; positions &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; [&lt;span style=&#34;color:#66d9ef&#34;&gt;packed&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;true&lt;/span&gt;];&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; ColumnStatistics statistics &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;}&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;bloom-filter-index&#34;&gt;Bloom Filter Index&lt;/h4&gt;
+&lt;p&gt;Each column has a &lt;strong&gt;BLOOM_FILTER&lt;/strong&gt; stream to help speed up searches.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-protobuf&#34; data-lang=&#34;protobuf&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;message&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;BloomFilter&lt;/span&gt; {&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;optional&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;uint32&lt;/span&gt; numHashFunctions &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;repeated&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;fixed64&lt;/span&gt; bitset &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;}&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;data-access-path&#34;&gt;Data Access Path&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Postscript&lt;/strong&gt; -&amp;gt; &lt;strong&gt;Footer&lt;/strong&gt; -&amp;gt; Retrieve Stripe Information -&amp;gt; &lt;strong&gt;Stripe Footer&lt;/strong&gt; -&amp;gt; &lt;strong&gt;Stripe Index&lt;/strong&gt; -&amp;gt; &lt;strong&gt;Row Group&lt;/strong&gt; -&amp;gt; &lt;strong&gt;Column&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://webcdn.nexla.com/n3x_ctx/uploads/2018/05/An-Introduction-to-Big-Data-Formats-Nexla.pdf&#34;&gt;An Introduction to Big Data Formats - Nexla&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://orc.apache.org/docs/&#34;&gt;ORC Documentation&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://orc.apache.org/specification/ORCv1/&#34;&gt;ORC Specification&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://cloud.tencent.com/developer/article/1757862&#34;&gt;ORC Article by Tencent&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

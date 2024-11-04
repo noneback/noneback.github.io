@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIT6.824-GFS</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mit6.824-gfs/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="MIT6.824-GFS" />
+<meta property="og:description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/blog/zh/mit6.824-gfs/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2021-09-09T00:44:24+08:00" />
+<meta property="article:modified_time" content="2021-09-09T00:44:24+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MIT6.824-GFS"/>
+<meta name="twitter:description" content="之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  4 ,
+      "name": "MIT6.824-GFS",
+      "item": "https://noneback.github.io/zh/blog/zh/mit6.824-gfs/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "MIT6.824-GFS",
+  "name": "MIT6.824-GFS",
+  "description": "之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。 这是鸽了",
+  "keywords": [
+    "Distributed System", "GFS", "DFS"
+  ],
+  "articleBody": "之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。\n这是鸽了许久的Distributed System学习笔记的第二章。笔记并没有记录详细的具体操作，仅仅记录了对问题的思考与设计思路。\n介绍 GFS是Google使用的分布式文件系统。它使用大量机器为数据密集型应用构建了一个可靠的分布式文件服务。\n最早出现在在2003年发表的一篇论文。\n背景  首先,组件失效被认为是常态事件，而不是意外事件。   使用大量的廉价机器搭建可靠的服务。每台机器一定概率失效，整体失效概率满足二项分布。\n基于此，我们需要为系统组件设计容错保障机制，使得组件能够被监测，能够发现故障，并及时自动fail over，保证系统的可用性（HA)。\n 文件非常巨大。数 GB 的文件非常普遍。   相对于传统标准而言。对于一个分布式存储系统，我们应该尽量使用大文件为粒度对文件进行维护。\n过多的小文件，意味需要更多的inode等数据结构记录元数据，有效的磁盘存储空间会减少。\n其次，分布式文件寻址一般需要网络通信，寻址结果需要缓存，更多的文件意味着更多的缓存项，这也会造成空间浪费。\n 绝大部分文件的修改是采用在文件尾部追加数据,而不是覆盖原有数据的方式，对文件的随机写入操作在实际中几乎不存在。一旦写完之后,对文件的操作就只有读,而且通常是按顺序读   这是GFS对使用场景的考量和trade_off。\nGoogle内部大部分操作都是 append，因此 GFS 系统优化的中心也放在 record append 操作上，对于随机写则不保证数据的一致性。\n同时顺序IO写也会比随机IO的读写性能好很多。\n 第四，应用程序和文件系统API的协同设计提高了整个系统的灵活性   协同设计，提供类似POXIS文件系统API接口。提供客户端Lib帮助业务方屏蔽底层细节。\n 设计预期 存储能力 预期会有几百万文件,文件的大小通常在100MB或者以上。数个GB大小的文件也是普遍存在,并且要能够被有效的管理。\n系统也必须支持小文件,但是不需要针对小文件做专门的优化。\n工作负载 读工作负载 主要由大规模流式读取和小规模随机读取组成。\n 大规模流式读取：大规模的磁盘顺序IO读取数据 小规模随机读取：小规模磁盘随机IO（任意偏移量）读取数据   对于小规模的随机读有一定的优化，比如对读请求排序，再批量处理，而非来回随机读取。\n 写工作负载 主要是大规模的顺序写操作。将数据append到文件的末尾。\n系统必须高效的、行为定义明确的实现多客户端并行追加数据到同一个文件里的语意。这要求系统提供并发写支持。操作的原子性以及同步开销是主要性能衡量指标。\n带宽与延迟 高持续带宽（High sustained bandwidth）比低延迟更重要\n 这是由GFS的使用背景决定的。大多数GFS的业务方更关心高效率的处理数据，而非延迟。\n 容错设计 系统必须持续监控自身的状态,它必须将组件失效作为一种常态,能够迅速地侦测、冗余并恢复失效的组件。\n 参考背景一\n 操作与接口 对外提供了传统的文件系统接口，但是出于效率和使用性的角度，并没有实现标准的文件系统 POSIX API。\n目录树、文件增删改查、快照、Atomic Record Append。\n 快照指创建文件和目录树的副本\nAtomic Record Append指保证原子性的记录追加操作\n 架构设计  核心问题是：接入，寻址，管理，容错，一致。这些问题决定我们怎样去设计一个DFS的整体架构\n GFS采用Master-Slave架构。\n一个GFS集群包含一个单独的Master Node，多台Chunk Server，以及若干Client。\n 此处Master和Chunk Server实际上都是逻辑上的概念，实际上对应的只是用户态的一个进程，而非指具体物理机器。\n单Master设计简化了GFS的设计，但有一定的单点故障的风险，属于设计上的trade_off\n GFS通过lib的形式提供给业务方使用、接入GFS。\n文件数据最终以chunk为单位保存在chunk server的磁盘中，并且chunk以replica的形式提供可靠服务。\nmaster管理着GFS上所有的元数据（目录树，mapping，chunk metadata，etc）以及相关系统行为（监控，GC，snapshot，etc）。\n用户通过Client，以filename + offset访问Master获取chunk元信息，再根据原信息访问对应chunk server获取具体的数据，执行操作。\n组件设计 Client Client在GFS中实际上只是使用了GFS SDK/LIB的一个应用进程。GFS提供SDK/LIB让业务方接入GFS，并尽可能的屏蔽底层细节，让业务方对GFS无感知。\n因此，Client作为接入层需要提供以下功能：\n 缓存：缓存从Master处获取的元信息，减少网络通信的次数。   缓存也可能会导致元信息不一致的问题，需要设计合理的机制。论文中并未详细说明。\n  封装：屏蔽底层操作，如文件操作失败重试，命令spilt，数据checksum以及校验等 操作优化：batch，load balance等 映射：将参数filename + offset 映射为chunk index + offset  Master Master管理着GFS所有的元数据，在GFS中属于计算层，负责文件以及文件系统的调度与管理。\n其中元信息其实是保存在Master的内存中的，并未持久化，通过chunk server的上报来维护更新。\n 此处也是Trade_off, 简化Master和ChunkServer交互设计，但可能有数据丢失的风险，但为Master扩大内存以便为GFS提供其拓展性，代价比较小，设计者认为这也是可以接受的。\n同时，设计者认为chunk的位置实际上是由chunk server决定，故而不对元信息进行持久化。\n 基于此，Master需要提供以下功能：\n 监控机制：Master节点管理这Chunk Server，并且元信息只保存在内存中，并且ChunkServer和其保存的文件均可能失效，因此需要监控Chunk Server的状态，并收集其保存的文件信息，并持续监控。   一般利用心跳机制，可以双向也可以只从ChunkServer到Master。\n  目录树管理：文件以分层目录的形式管理，因此需要管理名称空间，也需要考虑到并发安全等问题   一般可以将目录树前缀压缩，减少磁盘空间使用。\n加锁，设计合理的加锁策略，提高并发度。比如，写文件时，对文件目录加读锁，只对文件加写锁\n  映射管理：Master接收Client传入的参数，返回其需要的元信息。需要维护两种映射关系：  Table1：filename = list of chunk ID (nv) Table2：chunk ID = chunk handler     chunk handler是一个数据结构，包含\nstruct ChunkHandler { list of ChunkLocation(v);// 标识replica所在的机器  version(nv); // 数据的逻辑时钟，标记数据版本  primary(v); // 用于标记primary chunk，用于分配操作顺序  lease expire(v); // 租约过期时间，防止ChunkServer长期持有primary }  此处的映射实际上就是Master需要维护的数据结构（元信息），其中有一部分是需要持久化保证重启不丢失，以nv（non-volatile)标记。\n Table1适合使用HashMap作为索引结构去查询，Table2则更适合使用B+Tree等数据结构做索引，因为其应该会设计范围查询。\n  容错：Master可能会失效，需要容错机制。   Master使用Raft多副本容错，影子热备，定时CheckPoint备份元信息，以便快速回复内存数据、operation log记录对元信息的修改做持久化记录，WAL保证操作不丢失。\n  系统调度：集群上chunk replica数量会不满足容错要求，这个时候就要新建副本。   如Chunk Server失效，配置变更\n 数据被删除或者发现孤儿Chunk（不包含数据的Chunk）时，Master需要负责GC。\n 一般删除的流程为：标记删除+ 延迟清理，降低前台处理时延，但会有一段时间窗口，占用磁盘的有效空间，也是trade_off\n 快照创建时，也需要Master的参与。\n 会先释放chunk的lease，再以COW的方式生成快照\n Chunk数据的分布可能不满足，Master需要调度，使得数据分布满足可靠容错的要求。\n分配Lease，选择Primary Chunk，管理Version等\nChunk Server ChunkServer属于存储层，负责具体的数据以Linux文件的格式储存。\nClient从Master获取元信息之后，再找到对应的ChunkServer，通过Chunk Index + Offset对文件进行寻址，再对文件进行操作。同时它需要及时上报ChunkServer的运行信息，以及它维护的Chunk的信息，以便Master维护系统的元数据。\n系统内部设计与交互 讲一件上面没有涉及的关键设计思路，并不涉及具体细节\nChunk chunk属于GFS管理数据逻辑最小单元，设计Chunk的关键是Chunk Size。\n Chunk Size过小，在相同有效数据下，会产生大量元信息，加重Master的管理（元数据，cache，调度等）负担；其次，加重了Client和Master之间的网络通信的次数；没有很好的利用局部性原理。\nChunkSize过大，导致对数据的管理粒度过大，空间碎片化，降低磁盘优先使用；其次，被频繁访问的数据可能集中在同一个Chunk上，造成热点问题，并发读写时同步开销大。\n 基于上述原因，GFS中的ChunkSize最终被定为64MB，用一个64位全局唯一ID标识。\n 目前的DFS对小文件的优化实际上也就是将小文件聚合管理，减少其Master处元信息，转而将其元信息以payload的形式写入更小数据单元的header中，以便后续读写。\n还有一个问题是，为什么大文件要分块管理？分块主要是为了提高大文件处理并发度。\n Lease Lease机制主要是为了保证多副本间数据变更的一致性。\n当有并发顺序写请求时，Master会分配Chunk Lease给Chunk涉及的一个ChunkServer上，作为Primary节点。被选中的Primary节点会对并发写请求进行排序，安排处理数据的顺序，保证并发数据安全。并将顺序返回给Master节点。\n只有再有Master节点将处理数据通知其余的Secondaries，它们只能按照此顺序处理数据。\n 这样的设计减少了Master的管理开销，也保证了线程数据安全，将排序交由ChunkServer处理。但ChunkServer可能随时会失效，需要防止Lease被失效的机器长期占有，故而定一个Lease Time，限制单次Lease使用的时间。\nPrimary节点可以通过申请延长Lease时间，满足数据处理的需求。\n Version Version主要是用来标记数据的版本，在分配Lease，选择出primary后递增并告知primary，收到ack后再持久化记录后生效。只有最新版的数据才能证有效，失效的数据需要及时处理。\n ChunkServer可能短暂的失效重连，在这之间对数据的操作就可以通过Version来判断数据的新旧。\n 控制流和数据流 GFS中控制流和数据流是解耦的。数据流和控制流分开推送到所有设计的ChunkServer中，最后再按照Primary决定的处理顺序执行控制指令。\n 解耦的好处是数据流可以基于网络拓扑规划，提高机器带宽利用率，避免网路欧瓶颈和高延时。\n 数据流实际上是以Pipeline的形式推送到所有相关的ChunkServer中的。推送到机器上后，保存在LRU缓存中，再由此机器推送到其他机器，充分利用每一台机器的资源。\n数据安全性 数据完整性 GFS把Chunk分割为64KB大小的Block，每个Block对应一个32位的Chucksum，用于校验数据的完整性。\nChuncsum和数据和用户数据分开存储，保存在内存中，并最终通过WAL持久化。\n 机器磁盘损坏，重复的数据append等都会导致数据完整性有问题\n 冗余存储 Chunk多副本异架异地存储，单副本丢失不会影响系统可用性。\n一致性 我暂时没法很好的理解GFS的一致性模型，于是选择将原文奉上：\n “ The state of a file region after a data mutation depends on the type of mutation, whether it succeeds or fails, and whether there are concurrent mutations.\nA file region is consistent if all clients will always see the same data, regardless of which replicas they read from. A region is defined after a file data mutation if it is consistent and clients will see what the mutation writes in its entirety.\nWhen a mutation succeeds without interference from concurrent writers, the affected region is defined (and by implication consistent): all clients will always see what the mutation has written.\nConcurrent successful mutations leave the region undefined but consistent: all clients see the same data, but it may not reflect what any one mutation has written. Typically, it consists of mingled fragments from multiple mutations.\nA failed mutation makes the region inconsistent (hence also undefined): different clients may see different data at different times ”\n 总之，GFS无法保证数据强一致，它的一致性模型非常宽松。\nLease机制虽然能够使得并发顺序写入得到合理的操作顺序，但实际的数据Atomic Record Append采用的事At least Once消息模型，确保写入成功，但可能重复写入。随机写也无法保证数据一致。\n总结 一切的系统设计都是需求和业务驱动的，设计中必然涉及对场景、业务、需求、实现等多方面的trade_off。\n分布式系统的可扩展性的重要性要远远高于单机性能。\n以上。\n参考 Google File System-GFS 论文阅读\nGFS论文阅读\nGFS论文导读\nGFS Paper\nMIT6.824\n",
+  "wordCount" : "5208",
+  "inLanguage": "zh",
+  "datePublished": "2021-09-09T00:44:24+08:00",
+  "dateModified": "2021-09-09T00:44:24+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/blog/zh/mit6.824-gfs/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"
+    integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"
+    integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR"
+    crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMathInElement(document.body, {
+            
+            
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: "\\begin{equation}", right: "\\end{equation}", display: true },
+                { left: "\\begin{align}", right: "\\end{align}", display: true },
+                { left: "\\begin{alignat}", right: "\\end{alignat}", display: true },
+                { left: "\\begin{gather}", right: "\\end{gather}", display: true },
+                { left: "\\begin{CD}", right: "\\end{CD}", display: true },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            
+            throwOnError: false,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command),
+            macros: {
+                "\\eqref": "\\href{###1}{(\\text{#1})}",
+                "\\ref": "\\href{###1}{\\text{#1}}",
+                "\\label": "\\htmlId{#1}{}"
+            }
+        });
+    });
+</script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/blog">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>MIT6.824-GFS</h1>
+  </header>
+
+  <p>
+  <small>
+    2021年9月9日&nbsp;· 5208 字&nbsp;· 11 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/gfs/">GFS</a>
+      
+      <a href="https://noneback.github.io/zh/tags/mit6.824/">MIT6.824</a>
+      
+      <a href="https://noneback.github.io/zh/tags/paper-reading/">Paper Reading</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#介绍">介绍</a></li>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#设计预期">设计预期</a>
+      <ul>
+        <li><a href="#存储能力">存储能力</a></li>
+        <li><a href="#工作负载">工作负载</a></li>
+        <li><a href="#带宽与延迟">带宽与延迟</a></li>
+        <li><a href="#容错设计">容错设计</a></li>
+        <li><a href="#操作与接口">操作与接口</a></li>
+      </ul>
+    </li>
+    <li><a href="#架构设计">架构设计</a></li>
+    <li><a href="#组件设计">组件设计</a>
+      <ul>
+        <li><a href="#client">Client</a></li>
+        <li><a href="#master">Master</a></li>
+        <li><a href="#chunk-server">Chunk Server</a></li>
+      </ul>
+    </li>
+    <li><a href="#系统内部设计与交互">系统内部设计与交互</a>
+      <ul>
+        <li><a href="#chunk">Chunk</a></li>
+        <li><a href="#lease">Lease</a></li>
+        <li><a href="#version">Version</a></li>
+        <li><a href="#控制流和数据流">控制流和数据流</a></li>
+        <li><a href="#数据安全性">数据安全性</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>之前对GFS的理解并不能支持我写出满意的内容，于是一直搁置。最近刚转岗某司存储部门实习，回想起此文，于是在无所事事之时写下这个笔记。</p>
+<p>这是鸽了许久的Distributed System学习笔记的第二章。笔记并没有记录详细的具体操作，仅仅记录了对问题的思考与设计思路。</p>
+<h2 id="介绍">介绍</h2>
+<p>GFS是Google使用的分布式文件系统。它使用大量机器为数据密集型应用构建了一个可靠的分布式文件服务。</p>
+<p>最早出现在在2003年发表的一篇论文。</p>
+<h2 id="背景">背景</h2>
+<ol>
+<li>首先,组件失效被认为是<strong>常态事件</strong>，而不是意外事件。</li>
+</ol>
+<blockquote>
+<p>使用大量的廉价机器搭建可靠的服务。每台机器一定概率失效，整体失效概率满足二项分布。</p>
+<p>基于此，我们需要为系统组件设计容错保障机制，使得组件能够被监测，能够发现故障，并及时自动fail over，保证系统的可用性（HA)。</p>
+</blockquote>
+<ol start="2">
+<li>文件非常<strong>巨大</strong>。数 GB 的文件非常普遍。</li>
+</ol>
+<blockquote>
+<p>相对于传统标准而言。对于一个分布式存储系统，我们应该尽量使用大文件为粒度对文件进行维护。</p>
+<p>过多的小文件，意味需要更多的inode等数据结构记录元数据，有效的磁盘存储空间会减少。</p>
+<p>其次，分布式文件寻址一般需要网络通信，寻址结果需要缓存，更多的文件意味着更多的缓存项，这也会造成空间浪费。</p>
+</blockquote>
+<ol start="3">
+<li>绝大部分文件的修改是采用在文件尾部追加数据,而不是覆盖原有数据的方式，对文件的随机写入操作在实际中几乎不存在。一旦写完之后,对文件的操作就只有读,而且通常是按<strong>顺序读</strong></li>
+</ol>
+<blockquote>
+<p>这是GFS对使用场景的考量和trade_off。</p>
+<p>Google内部大部分操作都是 append，因此 GFS 系统优化的中心也放在 record append 操作上，对于<strong>随机写则不保证数据的一致性</strong>。</p>
+<p>同时顺序IO写也会比随机IO的读写性能好很多。</p>
+</blockquote>
+<ol start="4">
+<li>第四，应用程序和文件系统API的协同设计提高了整个系统的灵活性</li>
+</ol>
+<blockquote>
+<p>协同设计，提供类似POXIS文件系统API接口。提供客户端Lib帮助业务方屏蔽底层细节。</p>
+</blockquote>
+<h2 id="设计预期">设计预期</h2>
+<h3 id="存储能力">存储能力</h3>
+<p>预期会有几百万文件,文件的大小通常在100MB或者以上。数个GB大小的文件也是普遍存在,并且要能够被有效的管理。</p>
+<p>系统也必须支持小文件,但是不需要针对小文件做专门的优化。</p>
+<h3 id="工作负载">工作负载</h3>
+<h4 id="读工作负载">读工作负载</h4>
+<p>主要由<strong>大规模流式读取</strong>和<strong>小规模随机读取</strong>组成。</p>
+<ul>
+<li>大规模流式读取：大规模的磁盘顺序IO读取数据</li>
+<li>小规模随机读取：小规模磁盘随机IO（任意偏移量）读取数据</li>
+</ul>
+<blockquote>
+<p>对于小规模的随机读有一定的优化，比如对读请求排序，再批量处理，而非来回随机读取。</p>
+</blockquote>
+<h4 id="写工作负载">写工作负载</h4>
+<p>主要是大规模的顺序写操作。将数据append到文件的末尾。</p>
+<p>系统必须高效的、行为定义明确的实现多客户<strong>端并行追加数据到同一个文件</strong>里的语意。这要求系统提供并发写支持。操作的原子性以及同步开销是主要性能衡量指标。</p>
+<h3 id="带宽与延迟">带宽与延迟</h3>
+<p>高<strong>持续</strong>带宽（High sustained bandwidth）比低延迟更重要</p>
+<blockquote>
+<p>这是由GFS的使用背景决定的。大多数GFS的业务方更关心高效率的处理数据，而非延迟。</p>
+</blockquote>
+<h3 id="容错设计">容错设计</h3>
+<p>系统必须持续监控自身的状态,它必须将组件失效作为一种常态,能够迅速地侦测、冗余并恢复失效的组件。</p>
+<blockquote>
+<p>参考背景一</p>
+</blockquote>
+<h3 id="操作与接口">操作与接口</h3>
+<p>对外提供了传统的文件系统接口，但是出于效率和使用性的角度，并没有实现标准的文件系统 POSIX API。</p>
+<p>目录树、文件增删改查、快照、Atomic Record Append。</p>
+<blockquote>
+<p>快照指创建文件和目录树的副本</p>
+<p>Atomic Record Append指保证原子性的记录追加操作</p>
+</blockquote>
+<h2 id="架构设计">架构设计</h2>
+<blockquote>
+<p>核心问题是：接入，寻址，管理，容错，一致。这些问题决定我们怎样去设计一个DFS的整体架构</p>
+</blockquote>
+<p>GFS采用Master-Slave架构。</p>
+<p>一个GFS集群包含一个单独的Master Node，多台Chunk Server，以及若干Client。</p>
+<blockquote>
+<p>此处Master和Chunk Server实际上都是逻辑上的概念，实际上对应的只是用户态的一个进程，而非指具体物理机器。</p>
+<p>单Master设计简化了GFS的设计，但有一定的单点故障的风险，属于设计上的trade_off</p>
+</blockquote>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gu6y6qm5t0j61i40nojuk02.jpg" alt=" image-20210906153847451"></p>
+<p>GFS通过lib的形式提供给业务方使用、接入GFS。</p>
+<p>文件数据最终以chunk为单位保存在chunk server的磁盘中，并且chunk以replica的形式提供可靠服务。</p>
+<p>master管理着GFS上所有的元数据（目录树，mapping，chunk metadata，etc）以及相关系统行为（监控，GC，snapshot，etc）。</p>
+<p>用户通过Client，以filename + offset访问Master获取chunk元信息，再根据原信息访问对应chunk server获取具体的数据，执行操作。</p>
+<!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gu9234vb9nj61ej0u0gq702.jpg" alt=""></p>
+<h2 id="组件设计">组件设计</h2>
+<h3 id="client">Client</h3>
+<p>Client在GFS中实际上只是使用了GFS SDK/LIB的一个应用进程。GFS提供SDK/LIB让业务方接入GFS，并尽可能的屏蔽底层细节，让业务方对GFS无感知。</p>
+<p>因此，Client作为接入层需要提供以下功能：</p>
+<ul>
+<li><strong>缓存</strong>：缓存从Master处获取的元信息，减少网络通信的次数。</li>
+</ul>
+<blockquote>
+<p>缓存也可能会导致元信息不一致的问题，需要设计合理的机制。论文中并未详细说明。</p>
+</blockquote>
+<ul>
+<li><strong>封装</strong>：屏蔽底层操作，如文件操作失败重试，命令spilt，数据checksum以及校验等</li>
+<li><strong>操作优化</strong>：batch，load balance等</li>
+<li><strong>映射</strong>：将参数filename + offset 映射为chunk index + offset</li>
+</ul>
+<h3 id="master">Master</h3>
+<p>Master管理着GFS所有的元数据，在GFS中属于计算层，负责文件以及文件系统的调度与管理。</p>
+<p>其中元信息其实是保存在Master的内存中的，并未持久化，通过chunk server的上报来维护更新。</p>
+<blockquote>
+<p>此处也是Trade_off, 简化Master和ChunkServer交互设计，但可能有数据丢失的风险，但为Master扩大内存以便为GFS提供其拓展性，代价比较小，设计者认为这也是可以接受的。</p>
+<p>同时，设计者认为chunk的位置实际上是由chunk server决定，故而不对元信息进行持久化。</p>
+</blockquote>
+<p>基于此，Master需要提供以下功能：</p>
+<ul>
+<li><strong>监控机制</strong>：Master节点管理这Chunk Server，并且元信息只保存在内存中，并且ChunkServer和其保存的文件均可能失效，因此需要监控Chunk Server的状态，并收集其保存的文件信息，并持续监控。</li>
+</ul>
+<blockquote>
+<p>一般利用心跳机制，可以双向也可以只从ChunkServer到Master。</p>
+</blockquote>
+<ul>
+<li><strong>目录树管理</strong>：文件以分层目录的形式管理，因此需要管理名称空间，也需要考虑到并发安全等问题</li>
+</ul>
+<blockquote>
+<p>一般可以将目录树前缀压缩，减少磁盘空间使用。</p>
+<p>加锁，设计合理的加锁策略，提高并发度。比如，写文件时，对文件目录加读锁，只对文件加写锁</p>
+</blockquote>
+<ul>
+<li><strong>映射管理</strong>：Master接收Client传入的参数，返回其需要的元信息。需要维护两种映射关系：
+<ul>
+<li>Table1：filename =&gt; list of chunk ID (nv)</li>
+<li>Table2：chunk ID =&gt; chunk handler</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>chunk handler是一个数据结构，包含</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">ChunkHandler</span> {
+  list of <span style="color:#a6e22e">ChunkLocation</span>(v);<span style="color:#75715e">// 标识replica所在的机器
+</span><span style="color:#75715e"></span>  version(nv);         <span style="color:#75715e">// 数据的逻辑时钟，标记数据版本
+</span><span style="color:#75715e"></span>  primary(v);       <span style="color:#75715e">// 用于标记primary chunk，用于分配操作顺序
+</span><span style="color:#75715e"></span>  lease <span style="color:#a6e22e">expire</span>(v);     <span style="color:#75715e">// 租约过期时间，防止ChunkServer长期持有primary
+</span><span style="color:#75715e"></span>}
+
+</code></pre></div></blockquote>
+<p>此处的映射实际上就是Master需要维护的数据结构（元信息），其中有一部分是需要持久化保证重启不丢失，以nv（non-volatile)标记。</p>
+<blockquote>
+<p>Table1适合使用HashMap作为索引结构去查询，Table2则更适合使用B+Tree等数据结构做索引，因为其应该会设计范围查询。</p>
+</blockquote>
+<ul>
+<li><strong>容错</strong>：Master可能会失效，需要容错机制。</li>
+</ul>
+<blockquote>
+<p>Master使用Raft多副本容错，影子热备，定时CheckPoint备份元信息，以便快速回复内存数据、operation log记录对元信息的修改做持久化记录，WAL保证操作不丢失。</p>
+</blockquote>
+<ul>
+<li><strong>系统调度</strong>：集群上chunk replica数量会不满足容错要求，这个时候就要新建副本。</li>
+</ul>
+<blockquote>
+<p>如Chunk Server失效，配置变更</p>
+</blockquote>
+<p>数据被删除或者发现孤儿Chunk（不包含数据的Chunk）时，Master需要负责GC。</p>
+<blockquote>
+<p>一般删除的流程为：标记删除+ 延迟清理，降低前台处理时延，但会有一段时间窗口，占用磁盘的有效空间，也是trade_off</p>
+</blockquote>
+<p>快照创建时，也需要Master的参与。</p>
+<blockquote>
+<p>会先释放chunk的lease，再以COW的方式生成快照</p>
+</blockquote>
+<p>Chunk数据的分布可能不满足，Master需要调度，使得数据分布满足可靠容错的要求。</p>
+<p>分配Lease，选择Primary Chunk，管理Version等</p>
+<h3 id="chunk-server">Chunk Server</h3>
+<p>ChunkServer属于存储层，负责具体的数据以Linux文件的格式储存。</p>
+<p>Client从Master获取元信息之后，再找到对应的ChunkServer，通过Chunk Index + Offset对文件进行寻址，再对文件进行操作。同时它需要及时上报ChunkServer的运行信息，以及它维护的Chunk的信息，以便Master维护系统的元数据。</p>
+<h2 id="系统内部设计与交互">系统内部设计与交互</h2>
+<p>讲一件上面没有涉及的关键设计思路，并不涉及具体细节</p>
+<h3 id="chunk">Chunk</h3>
+<p>chunk属于GFS管理数据逻辑最小单元，设计Chunk的关键是Chunk Size。</p>
+<blockquote>
+<p>Chunk Size过小，在相同有效数据下，会产生大量元信息，加重Master的管理（元数据，cache，调度等）负担；其次，加重了Client和Master之间的网络通信的次数；没有很好的利用局部性原理。</p>
+<p>ChunkSize过大，导致对数据的管理粒度过大，空间碎片化，降低磁盘优先使用；其次，被频繁访问的数据可能集中在同一个Chunk上，造成热点问题，并发读写时同步开销大。</p>
+</blockquote>
+<p>基于上述原因，GFS中的ChunkSize最终被定为64MB，用一个64位全局唯一ID标识。</p>
+<blockquote>
+<p>目前的DFS对小文件的优化实际上也就是将小文件聚合管理，减少其Master处元信息，转而将其元信息以payload的形式写入更小数据单元的header中，以便后续读写。</p>
+<p>还有一个问题是，为什么大文件要分块管理？分块主要是为了提高大文件处理并发度。</p>
+</blockquote>
+<h3 id="lease">Lease</h3>
+<p>Lease机制主要是为了保证多副本间数据变更的一致性。</p>
+<p>当有并发顺序写请求时，Master会分配Chunk Lease给Chunk涉及的一个ChunkServer上，作为Primary节点。被选中的Primary节点会对并发写请求进行排序，安排处理数据的顺序，保证并发数据安全。并将顺序返回给Master节点。</p>
+<p>只有再有Master节点将处理数据通知其余的Secondaries，它们只能按照此顺序处理数据。</p>
+<blockquote>
+<p>这样的设计减少了Master的管理开销，也保证了线程数据安全，将排序交由ChunkServer处理。但ChunkServer可能随时会失效，需要防止Lease被失效的机器长期占有，故而定一个Lease Time，限制单次Lease使用的时间。</p>
+<p>Primary节点可以通过申请延长Lease时间，满足数据处理的需求。</p>
+</blockquote>
+<h3 id="version">Version</h3>
+<p>Version主要是用来标记数据的版本，在分配Lease，选择出primary后递增并告知primary，收到ack后再持久化记录后生效。只有最新版的数据才能证有效，失效的数据需要及时处理。</p>
+<blockquote>
+<p>ChunkServer可能短暂的失效重连，在这之间对数据的操作就可以通过Version来判断数据的新旧。</p>
+</blockquote>
+<h3 id="控制流和数据流">控制流和数据流</h3>
+<p>GFS中控制流和数据流是解耦的。数据流和控制流分开推送到所有设计的ChunkServer中，最后再按照Primary决定的处理顺序执行控制指令。</p>
+<blockquote>
+<p>解耦的好处是数据流可以基于网络拓扑规划，提高机器带宽利用率，避免网路欧瓶颈和高延时。</p>
+</blockquote>
+<p>数据流实际上是以Pipeline的形式推送到所有相关的ChunkServer中的。推送到机器上后，保存在LRU缓存中，再由此机器推送到其他机器，充分利用每一台机器的资源。</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gu94bb7jxjj60v90u0tak02.jpg" alt="image-20210908124156337"></p>
+<h3 id="数据安全性">数据安全性</h3>
+<h4 id="数据完整性">数据完整性</h4>
+<p>GFS把Chunk分割为64KB大小的Block，每个Block对应一个32位的Chucksum，用于校验数据的完整性。</p>
+<p>Chuncsum和数据和用户数据分开存储，保存在内存中，并最终通过WAL持久化。</p>
+<blockquote>
+<p>机器磁盘损坏，重复的数据append等都会导致数据完整性有问题</p>
+</blockquote>
+<h4 id="冗余存储">冗余存储</h4>
+<p>Chunk多副本异架异地存储，单副本丢失不会影响系统可用性。</p>
+<h4 id="一致性">一致性</h4>
+<p><img src="https://spongecaptain.cool/images/img_paper/image-20200719211636393.png" alt="image-20210908130412123"></p>
+<p>我暂时没法很好的理解GFS的一致性模型，于是选择将原文奉上：</p>
+<blockquote>
+<p>“ <strong>The state of a file region after a data mutation depends on the type of mutation</strong>, whether it succeeds or fails, and whether there are concurrent mutations.</p>
+<p>A file region is consistent if all clients will always see the same data, regardless of which replicas they read from. A region is defined after a file data mutation if it is consistent and clients will see what the mutation writes in its entirety.</p>
+<p>When a mutation succeeds without interference from concurrent writers, the affected region is defined (and by implication consistent): all clients will always see what the mutation has written.</p>
+<p>Concurrent successful mutations leave the region undefined but consistent: all clients see the same data, but it may not reflect what any one mutation has written. Typically, it consists of mingled fragments from multiple mutations.</p>
+<p>A failed mutation makes the region inconsistent (hence also undefined): different clients may see different data at different times ”</p>
+</blockquote>
+<p>总之，<strong>GFS无法保证数据强一致</strong>，它的一致性模型非常宽松。</p>
+<p>Lease机制虽然能够使得并发顺序写入得到合理的操作顺序，但实际的数据Atomic Record Append采用的事At least Once消息模型，确保写入成功，但可能重复写入。随机写也无法保证数据一致。</p>
+<h2 id="总结">总结</h2>
+<p>一切的系统设计都是需求和业务驱动的，设计中必然涉及对场景、业务、需求、实现等多方面的trade_off。</p>
+<p>分布式系统的可扩展性的重要性要远远高于单机性能。</p>
+<p>以上。</p>
+<h2 id="参考">参考</h2>
+<p><a href="https://spongecaptain.cool/post/paper/googlefilesystem/">Google File System-GFS 论文阅读</a></p>
+<p><a href="https://tanxinyu.work/gfs-thesis/">GFS论文阅读</a></p>
+<p><a href="https://nxwz51a5wp.feishu.cn/docs/doccnNYeo3oXj6cWohseo6yB4id">GFS论文导读</a></p>
+<p><a href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf">GFS Paper</a></p>
+<p><a href="https://pdos.csail.mit.edu/6.824/schedule.html">MIT6.824</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/blog/zh/mit6.824-bigtable/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>MIT6.824-Bigtable</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/blog/zh/epoll-and-io%E5%A4%8D%E7%94%A8/"><span>Epoll and IO复用</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>

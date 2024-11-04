@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Implement SkipList</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I&rsquo;m thinking about it again, I realize I&rsquo;ve forgotten some of the details, so I&rsquo;m writing it down for future reference.
+What is SkipList? SkipList is an ordered data structure that can be seen as an alternative to balanced trees.">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/blog/how-to-implement-skiplist/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="How to Implement SkipList" />
+<meta property="og:description" content="Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I&rsquo;m thinking about it again, I realize I&rsquo;ve forgotten some of the details, so I&rsquo;m writing it down for future reference.
+What is SkipList? SkipList is an ordered data structure that can be seen as an alternative to balanced trees." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/blog/how-to-implement-skiplist/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2021-11-21T15:28:42+08:00" />
+<meta property="article:modified_time" content="2021-11-21T15:28:42+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="How to Implement SkipList"/>
+<meta name="twitter:description" content="Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I&rsquo;m thinking about it again, I realize I&rsquo;ve forgotten some of the details, so I&rsquo;m writing it down for future reference.
+What is SkipList? SkipList is an ordered data structure that can be seen as an alternative to balanced trees."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "How to Implement SkipList",
+      "item": "https://noneback.github.io/blog/how-to-implement-skiplist/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "How to Implement SkipList",
+  "name": "How to Implement SkipList",
+  "description": "Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I\u0026rsquo;m thinking about it again, I realize I\u0026rsquo;ve forgotten some of the details, so I\u0026rsquo;m writing it down for future reference.\nWhat is SkipList? SkipList is an ordered data structure that can be seen as an alternative to balanced trees.",
+  "keywords": [
+    "DataStructure", "SkipList", "Implementation"
+  ],
+  "articleBody": "Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I’m thinking about it again, I realize I’ve forgotten some of the details, so I’m writing it down for future reference.\nWhat is SkipList? SkipList is an ordered data structure that can be seen as an alternative to balanced trees. It essentially uses sparse indexing to accelerate searches in a linked list structure. It combines both data and index into a single structure, allowing efficient insertions and deletions.\n Balanced trees, such as BST and Red-Black Trees, solve the problem of tree imbalance but introduce rotation, coloring, and other complexities. In concurrent scenarios, these can lead to larger lock granularity and affect performance. Compared to balanced trees, SkipList avoids these problems.\n Implementation SkipLists are usually implemented on top of ordered linked lists. The key challenge with ordered linked lists is figuring out how to insert a new node while maintaining order.\nFor arrays, binary search can be used to quickly locate the insert position, and then elements are moved to make room. For linked lists, the overhead of moving elements does not exist, but they do not support jumping directly to a position, making it challenging to locate where to insert.\nThe essence of SkipLists is to maintain a linked list of nodes with multiple layers of sparse indices that can be used to efficiently locate nodes.\n In the base level, all nodes are present. On the next level, approximately every other node is present, and so on. This approach reduces the average time complexity for search, insertion, and deletion.\n Using Randomization To efficiently maintain these index nodes, randomization is used to decide whether a newly added node should be part of the index.\n For a SkipList of maximum level X, each time a new node is added, we use a random approach to determine whether the node should be indexed at each level, with a probability of 1/(2^n) for each level. This results in a roughly equal distribution similar to dividing nodes into even partitions.\n Data Structures type SkipListNode struct { data *codec.Entry nextPtrs []*SkipListNode } type SkipList struct { header, tail *SkipListNode level int size int rwmtx *sync.RWMutex maxSize int } Operations The two most notable operations are search and insertion.\nSearch The key step here is to use the sparse indices in the SkipList, moving from the top level downwards to efficiently locate the required position.\n// findPreNode finds the node before the node with the given key func (sl *SkipList) findPreNode(key []byte) (*SkipListNode, bool) { // Start from the highest level  h := sl.header for i := sl.level - 1; i = 0; i-- { for h.nextPtrs[i] != nil \u0026\u0026 bytes.Compare(h.nextPtrs[i].data.Key, key) != 1 { if bytes.Equal(h.nextPtrs[i].data.Key, key) { return h, true } h = h.nextPtrs[i] } } return nil, false } Insertion First, locate the position to insert, then perform the insertion, and finally add indices as determined by randomization.\nfunc (sl *SkipList) randomLevel() int { ans := 1 rand.Seed(time.Now().Unix()) for rand.Intn(2) == 0 \u0026\u0026 ans  defaultMaxLevel { ans++ } return ans } func (sl *SkipList) Insert(data *codec.Entry) *SkipListNode { sl.rwmtx.Lock() defer sl.rwmtx.Unlock() h := sl.header updateNode := make([]*SkipListNode, defaultMaxLevel) // stores the node before newNode  // Search from the top level  for i := sl.level - 1; i = 0; i-- { // Loop while the current nextPtrs is not empty and data is smaller than the inserted one  for h.nextPtrs[i] != nil \u0026\u0026 h.nextPtrs[i].data.Less(data) { h = h.nextPtrs[i] } updateNode[i] = h } // Choose the level to insert  lvl := sl.randomLevel() if lvl  sl.level { // Insert into higher levels, we need to create header - tail  for i := sl.level; i lvl; i++ { updateNode[i] = sl.header } sl.level = lvl } // Insert after the updated node  n := NewSkipListNode(lvl, data) for i := 0; i lvl; i++ { n.nextPtrs[i] = updateNode[i].nextPtrs[i] updateNode[i].nextPtrs[i] = n } sl.size++ return n } References  Skip List and its implementation in Redis Redis source code: zskiplist Wikipedia: Skip List SpongeCaptain’s blog on Data Structures  ",
+  "wordCount" : "705",
+  "inLanguage": "en",
+  "datePublished": "2021-11-21T15:28:42+08:00",
+  "dateModified": "2021-11-21T15:28:42+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/blog/how-to-implement-skiplist/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"
+    integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"
+    integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR"
+    crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMathInElement(document.body, {
+            
+            
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: "\\begin{equation}", right: "\\end{equation}", display: true },
+                { left: "\\begin{align}", right: "\\end{align}", display: true },
+                { left: "\\begin{alignat}", right: "\\end{alignat}", display: true },
+                { left: "\\begin{gather}", right: "\\end{gather}", display: true },
+                { left: "\\begin{CD}", right: "\\end{CD}", display: true },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            
+            throwOnError: false,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command),
+            macros: {
+                "\\eqref": "\\href{###1}{(\\text{#1})}",
+                "\\ref": "\\href{###1}{\\text{#1}}",
+                "\\label": "\\htmlId{#1}{}"
+            }
+        });
+    });
+</script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/blog">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>How to Implement SkipList</h1>
+  </header>
+
+  <p>
+  <small>
+    November 21, 2021&nbsp;· 705 words&nbsp;· 4 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/datastructure/">DataStructure</a>
+      
+      <a href="https://noneback.github.io/tags/skiplist/">SkipList</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#what-is-skiplist">What is SkipList?</a></li>
+    <li><a href="#implementation">Implementation</a>
+      <ul>
+        <li><a href="#using-randomization">Using Randomization</a></li>
+        <li><a href="#data-structures">Data Structures</a></li>
+        <li><a href="#operations">Operations</a></li>
+      </ul>
+    </li>
+    <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I&rsquo;m thinking about it again, I realize I&rsquo;ve forgotten some of the details, so I&rsquo;m writing it down for future reference.</p>
+<h2 id="what-is-skiplist">What is SkipList?</h2>
+<p><strong>SkipList</strong> is an ordered data structure that can be seen as an alternative to balanced trees. It essentially uses <strong>sparse indexing</strong> to accelerate searches in a linked list structure. It combines both <strong>data and index</strong> into a single structure, allowing efficient insertions and deletions.</p>
+<blockquote>
+<p>Balanced trees, such as BST and Red-Black Trees, solve the problem of tree imbalance but introduce rotation, coloring, and other complexities. In concurrent scenarios, these can lead to larger lock granularity and affect performance. Compared to balanced trees, SkipList avoids these problems.</p>
+</blockquote>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Skip_list.svg/600px-Skip_list.svg.png" alt="SkipList diagram"></p>
+<h2 id="implementation">Implementation</h2>
+<p>SkipLists are usually implemented on top of ordered linked lists. The key challenge with ordered linked lists is figuring out how to insert a new node while maintaining order.</p>
+<p>For arrays, binary search can be used to quickly locate the insert position, and then elements are moved to make room. For linked lists, the overhead of moving elements does not exist, but they do not support jumping directly to a position, making it challenging to locate where to insert.</p>
+<p>The essence of SkipLists is to <strong>maintain a linked list of nodes with multiple layers of sparse indices</strong> that can be used to efficiently locate nodes.</p>
+<blockquote>
+<p>In the base level, all nodes are present. On the next level, approximately every other node is present, and so on. This approach reduces the average time complexity for search, insertion, and deletion.</p>
+</blockquote>
+<h3 id="using-randomization">Using Randomization</h3>
+<p>To efficiently maintain these index nodes, randomization is used to decide whether a newly added node should be part of the index.</p>
+<blockquote>
+<p>For a SkipList of maximum level <code>X</code>, each time a new node is added, we use a random approach to determine whether the node should be indexed at each level, with a probability of <code>1/(2^n)</code> for each level. This results in a roughly equal distribution similar to dividing nodes into even partitions.</p>
+</blockquote>
+<h3 id="data-structures">Data Structures</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SkipListNode</span> <span style="color:#66d9ef">struct</span> {
+    <span style="color:#a6e22e">data</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">codec</span>.<span style="color:#a6e22e">Entry</span>
+    <span style="color:#a6e22e">nextPtrs</span> []<span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span>
+}
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SkipList</span> <span style="color:#66d9ef">struct</span> {
+    <span style="color:#a6e22e">header</span>, <span style="color:#a6e22e">tail</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span>
+    <span style="color:#a6e22e">level</span>        <span style="color:#66d9ef">int</span>
+    <span style="color:#a6e22e">size</span>         <span style="color:#66d9ef">int</span>
+    <span style="color:#a6e22e">rwmtx</span>        <span style="color:#f92672">*</span><span style="color:#a6e22e">sync</span>.<span style="color:#a6e22e">RWMutex</span>
+    <span style="color:#a6e22e">maxSize</span>      <span style="color:#66d9ef">int</span>
+}
+</code></pre></div><h3 id="operations">Operations</h3>
+<p>The two most notable operations are <strong>search</strong> and <strong>insertion</strong>.</p>
+<h4 id="search">Search</h4>
+<p>The key step here is to use the sparse indices in the SkipList, moving from the top level downwards to efficiently locate the required position.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#75715e">// findPreNode finds the node before the node with the given key
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">sl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipList</span>) <span style="color:#a6e22e">findPreNode</span>(<span style="color:#a6e22e">key</span> []<span style="color:#66d9ef">byte</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span>, <span style="color:#66d9ef">bool</span>) {
+    <span style="color:#75715e">// Start from the highest level
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">h</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">header</span>
+    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>; <span style="color:#a6e22e">i</span> <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">--</span> {
+        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>] <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Compare</span>(<span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">data</span>.<span style="color:#a6e22e">Key</span>, <span style="color:#a6e22e">key</span>) <span style="color:#f92672">!=</span> <span style="color:#ae81ff">1</span> {
+            <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Equal</span>(<span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">data</span>.<span style="color:#a6e22e">Key</span>, <span style="color:#a6e22e">key</span>) {
+                <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">h</span>, <span style="color:#66d9ef">true</span>
+            }
+            <span style="color:#a6e22e">h</span> = <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>]
+        }
+    }
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>, <span style="color:#66d9ef">false</span>
+}
+</code></pre></div><h4 id="insertion">Insertion</h4>
+<p>First, locate the position to insert, then perform the insertion, and finally add indices as determined by randomization.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">sl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipList</span>) <span style="color:#a6e22e">randomLevel</span>() <span style="color:#66d9ef">int</span> {
+    <span style="color:#a6e22e">ans</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">1</span>
+    <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Seed</span>(<span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Now</span>().<span style="color:#a6e22e">Unix</span>())
+    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Intn</span>(<span style="color:#ae81ff">2</span>) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">ans</span> <span style="color:#f92672">&lt;=</span> <span style="color:#a6e22e">defaultMaxLevel</span> {
+        <span style="color:#a6e22e">ans</span><span style="color:#f92672">++</span>
+    }
+    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ans</span>
+}
+
+<span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">sl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipList</span>) <span style="color:#a6e22e">Insert</span>(<span style="color:#a6e22e">data</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">codec</span>.<span style="color:#a6e22e">Entry</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span> {
+    <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">rwmtx</span>.<span style="color:#a6e22e">Lock</span>()
+    <span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">rwmtx</span>.<span style="color:#a6e22e">Unlock</span>()
+
+    <span style="color:#a6e22e">h</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">header</span>
+    <span style="color:#a6e22e">updateNode</span> <span style="color:#f92672">:=</span> make([]<span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span>, <span style="color:#a6e22e">defaultMaxLevel</span>) <span style="color:#75715e">// stores the node before newNode
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// Search from the top level
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>; <span style="color:#a6e22e">i</span> <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">--</span> {
+        <span style="color:#75715e">// Loop while the current nextPtrs is not empty and data is smaller than the inserted one
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>] <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">data</span>.<span style="color:#a6e22e">Less</span>(<span style="color:#a6e22e">data</span>) {
+            <span style="color:#a6e22e">h</span> = <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>]
+        }
+        <span style="color:#a6e22e">updateNode</span>[<span style="color:#a6e22e">i</span>] = <span style="color:#a6e22e">h</span>
+    }
+    <span style="color:#75715e">// Choose the level to insert
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">lvl</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">randomLevel</span>()
+    <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">lvl</span> &gt; <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span> {
+        <span style="color:#75715e">// Insert into higher levels, we need to create header -&gt; tail
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#a6e22e">lvl</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+            <span style="color:#a6e22e">updateNode</span>[<span style="color:#a6e22e">i</span>] = <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">header</span>
+        }
+        <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span> = <span style="color:#a6e22e">lvl</span>
+    }
+    <span style="color:#75715e">// Insert after the updated node
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">n</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">NewSkipListNode</span>(<span style="color:#a6e22e">lvl</span>, <span style="color:#a6e22e">data</span>)
+    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#a6e22e">lvl</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+        <span style="color:#a6e22e">n</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>] = <span style="color:#a6e22e">updateNode</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>]
+        <span style="color:#a6e22e">updateNode</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>] = <span style="color:#a6e22e">n</span>
+    }
+    <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">size</span><span style="color:#f92672">++</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">n</span>
+}
+</code></pre></div><h2 id="references">References</h2>
+<ul>
+<li><a href="https://www.jianshu.com/p/09c3b0835ba6#%E4%BB%8Ezset%E5%88%B0zskiplist">Skip List and its implementation in Redis</a></li>
+<li><a href="https://github.com/redis/redis/blob/91e77a0cfb5c7e4bc6473ae04353e48ad9e8697b/src/t_zset.c">Redis source code: zskiplist</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Skip_list">Wikipedia: Skip List</a></li>
+<li><a href="https://spongecaptain.cool/post/datastracture/skiplist/">SpongeCaptain&rsquo;s blog on Data Structures</a></li>
+</ul>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/blog/arch&#43;dwm%E5%A5%97%E9%A4%90/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Arch &#43; DWM Setup Attempt</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/blog/kylin%E6%A6%82%E8%BF%B0/"><span>Kylin Overview</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>

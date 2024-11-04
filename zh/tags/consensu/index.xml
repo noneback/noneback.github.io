@@ -5,8 +5,149 @@
     <link>https://noneback.github.io/zh/tags/consensu/</link>
     <description>Recent content in Consensu on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Fri, 15 Apr 2022 10:49:57 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/consensu/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MIT6.824-RaftKV</title>
+      <link>https://noneback.github.io/zh/blog/zh/mit6.824-raftkv/</link>
+      <pubDate>Fri, 15 Apr 2022 10:49:57 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/mit6.824-raftkv/</guid>
+      <description>&lt;p&gt;之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。&lt;/p&gt;
+&lt;h2 id=&#34;实验相关&#34;&gt;实验相关&lt;/h2&gt;
+&lt;p&gt;Lab03的内容是在Raft基础上构建一个分布式KV服务。我们需要实现此服务的Server和Client。&lt;/p&gt;
+&lt;p&gt;RaftKV的结构和各个模块的交互如图所示：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34; alt=&#34;image-20220429211429808&#34;&gt;&lt;/p&gt;
+&lt;p&gt;相比于上个实验难度低了不少，实现上可以参考这篇大佬的&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;实现&lt;/a&gt;，我就不多写了。&lt;/p&gt;
+&lt;h2 id=&#34;raft-相关&#34;&gt;Raft 相关&lt;/h2&gt;
+&lt;p&gt;接下来说说Raft中有关客户端交互有关的内容。&lt;/p&gt;
+&lt;h3 id=&#34;路由与线性化语义&#34;&gt;路由与线性化语义&lt;/h3&gt;
+&lt;p&gt;想要在Raft之上构建允许客户端访问的服务，首先要解决&lt;strong&gt;路由&lt;/strong&gt;和&lt;strong&gt;线性化语义&lt;/strong&gt;的问题。&lt;/p&gt;
+&lt;h4 id=&#34;路由&#34;&gt;路由&lt;/h4&gt;
+&lt;p&gt;Raft是一个&lt;strong&gt;Strong Leader&lt;/strong&gt;的共识算法，读写请求一般都需要通过Leader执行。客户端反问Raft集群时，一般会随机访问集群中一个节点，如果它不是Leader, 那么它会将保存的leader信息返回给客户端，客户端会将请求重定向到Leader节点重试。&lt;/p&gt;
+&lt;h4 id=&#34;线性化语义&#34;&gt;线性化语义&lt;/h4&gt;
+&lt;p&gt;此为，目前的Raft只支持&lt;strong&gt;At Least Once&lt;/strong&gt;的语义，对于客户端的一次请求，Raft状态机可能会应用多次命令，而这样的语义特别不适用于基于共识的系统。&lt;/p&gt;
+&lt;p&gt;为了实现线性化语义，很显然，我们需要让发出的请求实现幂等。&lt;/p&gt;
+&lt;p&gt;一个基本的思路是客户端给每个请求分配UID, 而服务端利用这个&lt;code&gt;UID&lt;/code&gt;维护一个Session,对成功请求的Response进行缓存。当有重复的请求到达服务端时，它可以直接利用Session缓存的Response相应，这样就实现了请求幂等。&lt;/p&gt;
+&lt;p&gt;当然这带来了Session管理的问题，但这个并非本文重点。&lt;/p&gt;
+&lt;h3 id=&#34;只读优化&#34;&gt;只读优化&lt;/h3&gt;
+&lt;p&gt;解决了上面两个问题之后，我们得到了一个可用的基于Raft的服务。&lt;/p&gt;
+&lt;p&gt;但我们会发现，无论是读或是写请求，我们的应用都需要经过Leader 发起一次&lt;code&gt;AppendEntries&lt;/code&gt;的通信，在收到了Quorum成功的ACK，以及附加的落盘操作，在Log Committed再之后才能将结果返回给客户端。&lt;/p&gt;
+&lt;p&gt;写操作会改变数据状态机，所以对于写请求这些是必要的。但读操作并不会改变状态机，我们可以对只读请求进行一些优化，让只读请求绕过Raft日志，以便减少同步写操作带来的磁盘IO开销。&lt;/p&gt;
+&lt;p&gt;问题在于，如果没有其他的措施，绕过Raft日志的只读查询结果可能是过时的。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;比如，旧集群Leader和一个选出新Leader的集群发生了分区，此时客户端在旧Leader上的查询结果可能会过时。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Raft论文中提到了&lt;strong&gt;Read Index&lt;/strong&gt;和&lt;strong&gt;Lease Read&lt;/strong&gt;两种方法来绕过Raft日志，优化只读请求。&lt;/p&gt;
+&lt;h4 id=&#34;read-index&#34;&gt;Read Index&lt;/h4&gt;
+&lt;p&gt;&lt;strong&gt;Read Index&lt;/strong&gt;方案需要解决几个问题：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;旧任期遗留的已提交的日志&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;如old leader提交Log后，没来的及发送心跳就崩溃了。此时其他节点选中为新Leader，但根据Raft论文，新leader并不会主动提交旧leader时的日志。&lt;/p&gt;
+&lt;p&gt;为了解决这个问题，我们需要在新Leader当选后提交一个no-op日志，将旧Log提交。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;CommitIndex和AppliedIndex的间隔&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;引入&lt;code&gt;readIndex&lt;/code&gt;变量，领导者将当前&lt;code&gt;commitIndex&lt;/code&gt;保存在局部变量&lt;code&gt;readIndx&lt;/code&gt;，以此作为查询时AppliedIndex的界限，当只读请求到来时，需要先将Log应用到&lt;code&gt;readIndex&lt;/code&gt;记录的位置，之后Leader才能查询状态机，提供读服务。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;在提供只读服务时候保证Leader不发生切换&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;为了解决这个问题，我们在收到读请求后，Leader会先进行心跳，并需要收到Quorum数量的Ack，保证在此时不存在其他任期更大的Leader，保证&lt;code&gt;readIndex&lt;/code&gt;是集群中的最大提交索引。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;具体的流程以及Batch和Follower Read的优化可以参考Raft作者的博士论文，在此不再赘述。&lt;/p&gt;
+&lt;h4 id=&#34;lease-read&#34;&gt;Lease Read&lt;/h4&gt;
+&lt;p&gt;&lt;strong&gt;Read Index&lt;/strong&gt;的方案其实只优化了磁盘IO的开销，它依旧需要进行一轮集群的网络通信。但实际上，这部分开销也是可以进行优化的，于是就有了&lt;strong&gt;Lease Read&lt;/strong&gt;的方案。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Lease Read&lt;/strong&gt;方案的&lt;strong&gt;核心思路&lt;/strong&gt;是利用一次Leader Election至少需要经过一轮ElectionTimeout时间。在此期间，系统不会进行重新选举。这样就避免了提供只读服务时Leader切换的问题。所以我们可以利用时钟优化网络IO。&lt;/p&gt;
+&lt;h5 id=&#34;实现&#34;&gt;实现&lt;/h5&gt;
+&lt;p&gt;在实现上，为了让时钟代替网络信息交互，我们需要额外提供一种租约机制。一旦Quorum数量的集群认可了领导者的&lt;code&gt;Heartbeat&lt;/code&gt;，Leader可以认为在&lt;code&gt;ElectionTimeout&lt;/code&gt;期间没有其他人能成为Leader，它可以相应的延长其租约。但Leader持有租约时，它可以直接服务只读查询而不需要额外的网络通信。&lt;/p&gt;
+&lt;p&gt;但其实服务器中间可能会存在&lt;strong&gt;时钟偏移&lt;/strong&gt;，这样Follower就无法保证在Leader持有租约时不会超时。这就引出了&lt;code&gt;Lease Read&lt;/code&gt;的关键设计：&lt;strong&gt;用什么策略延长租期呢？&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;论文中，假设$ClokcDrift$是有界的，每次心跳成功更新租约时，租约延长到$start + \frac{ElectionTimeout}{ClockDriftBound}$ 。&lt;/p&gt;
+&lt;p&gt;$ClokcDriftBound$代表了集群时钟漂移的界限，但是这个界限的发现和维护十分困难，因为导致时钟漂移的原因有很多，并且具有实时性。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;如GC，虚拟机调度，云服务机器扩缩容等&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;实践上，一般会牺牲一定的安全性来换取&lt;code&gt;LeaseRead&lt;/code&gt;的性能。一般使用$StatrTime +ElectionTimeout - \Delta{t}$来延长租期。$\Delta{t}$是一个正数，这就使得每次延长租约的时间小于&lt;code&gt;ElectionTimeout&lt;/code&gt;，在网络IO开销和安全性之间Trade Off。&lt;/p&gt;
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+&lt;p&gt;Raft构建服务时，首先需要设计好访问服务以及路由和幂等机制。&lt;/p&gt;
+&lt;p&gt;对于只读操作，优化手段主要有两种，&lt;strong&gt;Read Index&lt;/strong&gt; 和 &lt;strong&gt;Lease Read&lt;/strong&gt;。其中前者优化了读操作时的磁盘IO，后者利用时钟优化了网络IO。&lt;/p&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;Implimetation doc&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf&#34;&gt;Raft Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Official&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/raft-thesis-zh_cn&#34;&gt;Consensus: Bridging Theory and Practice - zh&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pingcap.com/zh/blog/lease-read&#34;&gt;Tikv lease-read&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MIT6.824-Raft</title>
+      <link>https://noneback.github.io/zh/blog/zh/mit6.824-raft/</link>
+      <pubDate>Mon, 21 Feb 2022 01:26:46 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/mit6.824-raft/</guid>
+      <description>&lt;p&gt;这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内容，于是简单记录一下。&lt;/p&gt;
+&lt;h2 id=&#34;算法简介&#34;&gt;算法简介&lt;/h2&gt;
+&lt;p&gt;共识算法的基础是复制状态机，即&lt;strong&gt;按照相同顺序执行相同的确定性指令最终必然达到一致状态&lt;/strong&gt;。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。&lt;/p&gt;
+&lt;p&gt;Raft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。&lt;/p&gt;
+&lt;p&gt;Raft是一种&lt;strong&gt;强领导人&lt;/strong&gt;的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理&lt;strong&gt;复制提交&lt;/strong&gt;日志。&lt;/p&gt;
+&lt;p&gt;复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。&lt;/p&gt;
+&lt;p&gt;安全性主要有五个部分，与实现相关的最核心的内容我认为有两个。一个是领导人只追加原则，不允许修改已提交的日志；另一个是选举安全性，避免脑裂问题，同时保证新Leader拥有比较新的日志。&lt;/p&gt;
+&lt;p&gt;剩下的其他内容请参考论文原文。&lt;/p&gt;
+&lt;h2 id=&#34;实现思路&#34;&gt;实现思路&lt;/h2&gt;
+&lt;p&gt;实现的思路大体上是参考了一篇大佬的博文（见参考），算法的细节很多也在原Paper的Figure2中，故而以下只讲一下实现各个功能时需要注意的地方。&lt;/p&gt;
+&lt;h3 id=&#34;领导人选举&#34;&gt;领导人选举&lt;/h3&gt;
+&lt;h4 id=&#34;发起选举选举结果处理&#34;&gt;发起选举+选举结果处理&lt;/h4&gt;
+&lt;p&gt;发起选举是会开启多个goroutine后台发送RPC请求到其他结点，所以处理RPC response的时候需要确定当前结点为Candidate，以及请求未过期，即&lt;code&gt;rf.state == Candidate &amp;amp;&amp;amp; req.Term == rf.currentTerm&lt;/code&gt;。选举成功需要立即发送心跳，通知其他结点选举结果。&lt;/p&gt;
+&lt;p&gt;如果发现失败的Response&lt;code&gt;resp.Term &amp;gt; rf.currentTerm&lt;/code&gt;,此时需要切换到Follower状态，更新任期，并&lt;strong&gt;重置投票信息&lt;/strong&gt;。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;实际上一旦更新了任期，就需要重置投票信息。如果不重置votedFor信息，会有一些测试通过不了&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;请求投票rpc&#34;&gt;请求投票RPC&lt;/h4&gt;
+&lt;p&gt;前置逻辑过滤过期&lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt;以及当前任期的重复投票请求。之后再按照算法描述的逻辑处理，注意如果成功投票，需要重置选举计时器。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;在 grant 投票时才重置选举超时时间，这样有助于网络不稳定条件下选主的 liveness 问题&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;状态切换&#34;&gt;状态切换&lt;/h4&gt;
+&lt;p&gt;注意在切换角色时处理不同的计时器状态(stop or reset)，切换到Leader时需要重置matchIndex以及nextIndex的值。&lt;/p&gt;
+&lt;h3 id=&#34;日志复制&#34;&gt;日志复制&lt;/h3&gt;
+&lt;p&gt;Raft算法的核心，需要注意的地方最多。&lt;/p&gt;
+&lt;p&gt;我的实现是使用多个replicator和applier线程异步复制和apply的方式。&lt;/p&gt;
+&lt;h4 id=&#34;日志复制rpc&#34;&gt;日志复制RPC&lt;/h4&gt;
+&lt;p&gt;前置逻辑过滤掉&lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt;过期的请求。之后处理日志不一致以及日志被压缩以及重复日志的情况，之后复制日志再处理&lt;code&gt;commitIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;h4 id=&#34;发起日志复制请求结果处理&#34;&gt;发起日志复制+请求结果处理&lt;/h4&gt;
+&lt;p&gt;发起日志复制需要判断是直接复制日志或者发送快照。&lt;/p&gt;
+&lt;p&gt;请求结果处理重点是如何处理&lt;code&gt;matchIndex&lt;/code&gt;和&lt;code&gt;nextIndex&lt;/code&gt;以及&lt;code&gt;commitIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;matchIndex&lt;/code&gt;用来记录其他节点成功复制的最新日志，&lt;code&gt;nextIndex&lt;/code&gt;是记录发送给其他节点的下一个日志。&lt;code&gt;commitIndex&lt;/code&gt;通过排序&lt;code&gt;matchIndex&lt;/code&gt;来更新。再决定是否需要触发applier更新&lt;code&gt;appliedIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;请求失败则可以回退nextIndex或者切换到Follower状态。&lt;/p&gt;
+&lt;h4 id=&#34;异步apply&#34;&gt;异步Apply&lt;/h4&gt;
+&lt;p&gt;实际上就是一个后台goroutine，通过条件变量控制，使用Channel通信。每次触发会把&lt;code&gt;log[lastApplied:commitIndex]&lt;/code&gt;发送给上层，并更新&lt;code&gt;appliedIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;h3 id=&#34;持久化&#34;&gt;持久化&lt;/h3&gt;
+&lt;p&gt;在需要持久化状态的属性更新时及时的刷盘。&lt;/p&gt;
+&lt;h3 id=&#34;安装快照&#34;&gt;安装快照&lt;/h3&gt;
+&lt;p&gt;主要就是Leader触发的Snapshot以及RPC。应用Snapshot的时候需要先判断其新旧以及更新&lt;code&gt;log[0]&lt;/code&gt;和&lt;code&gt;appliedIndex&lt;/code&gt;以及&lt;code&gt;commitIndex&lt;/code&gt;。&lt;/p&gt;
+&lt;h2 id=&#34;坑&#34;&gt;坑&lt;/h2&gt;
+&lt;h3 id=&#34;defer&#34;&gt;Defer&lt;/h3&gt;
+&lt;p&gt;首先是Golang的&lt;strong&gt;defer&lt;/strong&gt;关键字。我比较喜欢在RPC开头使用defer关键字直接打印出结点的一些数据：&lt;code&gt;defer Dprintf(&amp;quot;%+v&amp;quot;, raft.currentTerm)&lt;/code&gt;，这样在调用结束时能打印出log，但实际上，在运行到defer这一行的代码时，打印的内容已经固定。正确的使用方式应该是&lt;code&gt;defer func(ID int) { Dprintf(&amp;quot;%+v&amp;quot;, id) }()&lt;/code&gt;&lt;/p&gt;
+&lt;h3 id=&#34;log-dummy-header&#34;&gt;Log Dummy Header&lt;/h3&gt;
+&lt;p&gt;Log处最好预留一个位置用于存放快照保存的Index和Term，不然Snapshot那部分的重构很痛苦。&lt;/p&gt;
+&lt;h3 id=&#34;lock&#34;&gt;Lock&lt;/h3&gt;
+&lt;p&gt;参看guidance的用锁建议。使用一个大锁，而不是用多个锁。算法的正确性比性能重要。在发送RPC以及使用Channel时不要加锁，不然可能会超时。&lt;/p&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/Raft&#34;&gt;Raft wikepedia&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://raft.github.io/&#34;&gt;Raft Official Website&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf&#34;&gt;Raft Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Official&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab2.md&#34;&gt;Potato’s Implimentation Doc&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

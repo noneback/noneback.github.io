@@ -5,8 +5,1065 @@
     <link>https://noneback.github.io/tags/distributed-system/</link>
     <description>Recent content in Distributed System on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 28 Sep 2023 10:43:23 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/distributed-system/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications</title>
+      <link>https://noneback.github.io/blog/percolator/</link>
+      <pubDate>Thu, 28 Sep 2023 10:43:23 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/percolator/</guid>
+      <description>&lt;p&gt;It has been a while since I last studied, and I wanted to learn something interesting. This time, I&amp;rsquo;ll be covering Percolator, a distributed transaction system. I won&amp;rsquo;t translate the paper or delve into detailed algorithms; I&amp;rsquo;ll just document my understanding.&lt;/p&gt;
+&lt;h2 id=&#34;percolator-and-2pc&#34;&gt;Percolator and 2PC&lt;/h2&gt;
+&lt;h3 id=&#34;2pc&#34;&gt;2PC&lt;/h3&gt;
+&lt;p&gt;The Two-Phase Commit (2PC) protocol involves two types of roles: &lt;strong&gt;Coordinator and Participant&lt;/strong&gt;. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator&amp;rsquo;s requests, completing prepare operations and commit/abort operations based on those requests.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;The 2PC protocol ensures the atomicity (ACD) of a transaction&lt;/strong&gt; but does not implement &lt;strong&gt;isolation (I)&lt;/strong&gt;, relying instead on single-node transactions for ACD. The coordinator is clearly a critical point, which can become a bottleneck or cause blocking if it fails.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;    Coordinator                                          Participant
+                              QUERY TO COMMIT
+                --------------------------------&amp;gt;
+                              VOTE YES/NO           prepare*/abort*
+                &amp;lt;-------------------------------
+commit*/abort*                COMMIT/ROLLBACK
+                --------------------------------&amp;gt;
+                              ACKNOWLEDGMENT        commit*/abort*
+                &amp;lt;--------------------------------
+end
+&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;percolator&#34;&gt;Percolator&lt;/h3&gt;
+&lt;p&gt;Percolator can be seen as an optimized version of 2PC, with some improvements such as:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Optimizing the use of locks by introducing primary-secondary dual-level locks, which eliminates the reliance on a &lt;strong&gt;coordinator&lt;/strong&gt;.&lt;/li&gt;
+&lt;li&gt;Providing full ACID semantics and supporting MVCC (Multi-Version Concurrency Control) through a timestamp service.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;percolator-protocol-details&#34;&gt;Percolator Protocol Details&lt;/h2&gt;
+&lt;p&gt;The Percolator system consists of three main components:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Client&lt;/strong&gt;: The client initiating a transaction. It acts as the control center for the entire protocol and is the coordinator of the two-phase commit process.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;TO (Time Observer)&lt;/strong&gt;: Responsible for assigning timestamps, providing unique and incrementing timestamps to implement MVCC.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Bigtable&lt;/strong&gt;: Provides single-row transactions, storing data as well as some attributes for transactional control.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;code&gt;lock + write + data&lt;/code&gt;: for transactions, where &lt;code&gt;lock&lt;/code&gt; indicates that a cell is held by a transaction, and &lt;code&gt;write&lt;/code&gt; represents the data visibility.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;notify + ack&lt;/code&gt;: for watcher or notifier mechanisms.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Externally, Percolator is provided to businesses through an SDK, offering transactions and R/W operations. The model is similar to &lt;code&gt;Begin Txn → Sets of RW Operations → Commit or Abort or Rollback&lt;/code&gt;. Bigtable acts as the persistent component, hiding details about Tablet Server data sharding. Each write operation (including read-then-write) in the transaction is treated as a participant in a distributed transaction and may be dispatched to multiple Tablet Server nodes.&lt;/p&gt;
+&lt;h3 id=&#34;algorithm-workflow&#34;&gt;Algorithm Workflow&lt;/h3&gt;
+&lt;p&gt;All writes in a transaction are cached on the client before being written during the commit phase. The commit phase itself is a standard two-phase commit consisting of prewrite and commit stages.&lt;/p&gt;
+&lt;h4 id=&#34;prewrite&#34;&gt;Prewrite&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;Obtain a timestamp from TO as the start time of the transaction.&lt;/li&gt;
+&lt;li&gt;Lock the data, marking it as held by the current transaction. If locking fails, it means the data is held by another transaction, and the current transaction fails.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The locking process utilizes the primary-secondary mechanism, where one write is chosen as the &lt;strong&gt;primary&lt;/strong&gt; and all others as &lt;strong&gt;secondary&lt;/strong&gt;. The secondary locks point to the primary.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Clearly, data in the prewrite phase is invisible to other transactions.&lt;/p&gt;
+&lt;h4 id=&#34;commit&#34;&gt;Commit&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;Attempt to commit the data prewritten. The commit starts by committing the primary record, whose commit time will serve as the commit time for the entire transaction. First, the lock record is checked. If the lock does not exist, it indicates that the lock from the prewrite phase has been cleaned by another transaction, causing the current transaction to fail. If the lock exists, the &lt;code&gt;write&lt;/code&gt; column is updated to indicate that the data is visible to the system.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;In an asynchronous network, single-node failures and network delays are common. The algorithm must detect and clean up these locks to avoid deadlocks. Therefore, in the commit phase, if a lock is found to be missing, it means that an issue occurred with a participant, and the current transaction must be cleaned.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;2&#34;&gt;
+&lt;li&gt;After successfully committing, clean up the lock record. Lock cleanup can be done asynchronously.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;These designs eliminate the dependency on a centralized &lt;strong&gt;coordinator&lt;/strong&gt;. Previously, a centralized service was required to maintain information about all transaction participants. In this algorithm, the primary-secondary lock and the &lt;code&gt;write&lt;/code&gt; column achieve the same goal. The &lt;code&gt;write&lt;/code&gt; column indicates the visibility and version chain of the data, while the &lt;code&gt;lock&lt;/code&gt; column shows which transaction holds the data. The primary-secondary locks record the logical relationship among participants. Thus, committing the primary record becomes the commit point for the entire transaction. Once the primary is committed, all secondary records can be asynchronously committed by checking the corresponding primary record&amp;rsquo;s &lt;code&gt;write&lt;/code&gt; column.&lt;/p&gt;
+&lt;h3 id=&#34;snapshot-isolation&#34;&gt;Snapshot Isolation&lt;/h3&gt;
+&lt;p&gt;Two-phase commit ensures the atomicity of a transaction. On top of that, Percolator also provides &lt;strong&gt;snapshot isolation&lt;/strong&gt;. In simple terms, snapshot isolation requires that committed transactions do not cause data conflicts and that read operations within a transaction satisfy snapshot reads. By leveraging the transaction start time and the primary commit time, a total ordering among transactions can be maintained, solving these issues naturally.&lt;/p&gt;
+&lt;h3 id=&#34;deadlock-issues-in-asynchronous-networks&#34;&gt;Deadlock Issues in Asynchronous Networks&lt;/h3&gt;
+&lt;p&gt;As mentioned earlier, in an asynchronous network, single-node failures and network delays are common. The algorithm must clean up locks to prevent deadlocks when such failures are detected. The failure detection strategy can be as simple as a timeout, causing the current transaction to fail. When a node fails and then recovers, its previous transaction has already failed, and the relevant lock records must be cleaned up. Lock cleanup can be asynchronous; for example, during the prewrite phase, if a record&amp;rsquo;s lock column is found to be non-empty, its primary lock can be checked. If the primary lock is not empty, it means the transaction is incomplete, and the lock can be cleaned up; if empty, the transaction has committed, and the data should be committed and the lock cleaned (RollForward).&lt;/p&gt;
+&lt;h3 id=&#34;notification-mechanism&#34;&gt;Notification Mechanism&lt;/h3&gt;
+&lt;p&gt;A notification mechanism is crucial for state observation and linkage in asynchronous systems, but it is not the focus of this article.&lt;/p&gt;
+&lt;h2 id=&#34;percolator-in-tidb&#34;&gt;Percolator in TiDB&lt;/h2&gt;
+&lt;p&gt;Based on our analysis above, Percolator is an optimized 2PC distributed transaction implementation, relying on a storage engine that supports single-node transactions.&lt;/p&gt;
+&lt;p&gt;Let&amp;rsquo;s briefly look at how TiDB uses Percolator to implement distributed transactions.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The architecture of TiDB and TiKV is shown above. Data from relational tables in TiDB is ultimately mapped to KV pairs in TiKV. TiKV is a distributed KV store based on Raft and RocksDB. RocksDB supports transactional operations on KV pairs.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Thus, the transaction path in TiDB is as follows: a relational table transaction is converted into a set of KV transactions, which are executed based on Percolator to achieve relational table transaction operations.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Of course, it cannot provide the same transactional semantics and performance guarantees as a single-node TP database. However, a shared-nothing architecture has its own advantages, which may make this trade-off acceptable.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/22594180&#34;&gt;Engineering Practice of Two-Phase Commit&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;http://mysql.taobao.org/monthly/2018/11/02/&#34;&gt;PolarDB Database Kernel Monthly Report&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://karellincoln.github.io/2018/04/05/percolator-translate/&#34;&gt;Percolator: Online Incremental Processing System (Chinese Translation)&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.notion.so/percolator-879c8f72f80b4966a2ec1e41edc74560?pvs=21&#34;&gt;Percolator: Online Incremental Processing System (Chinese Translation) | A Small Bird&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://zh.wikipedia.org/zh-hans/%E4%BA%8C%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4&#34;&gt;Two-Phase Commit - Wikipedia&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://cn.pingcap.com/blog/percolator-and-txn&#34;&gt;Percolator and TiDB Transaction Algorithm&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;http://www.oceanbase.wiki/concept/transaction-management/transactions/distributed-transactions/two-phase-commit&#34;&gt;Two-Phase Commit | OceanBase Learning Guide&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://docs.pingcap.com/zh/tidb/stable/tidb-architecture&#34;&gt;TiDB Architecture Overview&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Dynamo: Amazon’s Highly Available Key-value Store</title>
+      <link>https://noneback.github.io/blog/dynamo/</link>
+      <pubDate>Tue, 01 Aug 2023 16:15:29 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/dynamo/</guid>
+      <description>&lt;p&gt;An old paper by AWS, Dynamo has been in the market for a long time, and the architecture has likely evolved since the paper&amp;rsquo;s publication. Despite this, the paper was selected as one of the SIGMOD best papers of the year, and there are still many valuable lessons to learn.&lt;/p&gt;
+&lt;h2 id=&#34;design&#34;&gt;Design&lt;/h2&gt;
+&lt;p&gt;Dynamo is a NoSQL product that provides a key-value storage interface. It emphasizes high availability rather than consistency, which leads to differences in architectural design and technical choices compared to other systems.&lt;/p&gt;
+&lt;h2 id=&#34;technical-details&#34;&gt;Technical Details&lt;/h2&gt;
+&lt;p&gt;Dynamo has many aspects that may be considered problematic from a technical perspective, such as the NWR (N-W-R) approach. However, given Dynamo&amp;rsquo;s long track record in production, these issues may have been resolved over time, though the paper is not explicit about this. For now, let&amp;rsquo;s discuss some of the aspects I found noteworthy:&lt;/p&gt;
+&lt;h3 id=&#34;data-partitioning&#34;&gt;Data Partitioning&lt;/h3&gt;
+&lt;p&gt;Dynamo uses a &lt;strong&gt;consistent hashing algorithm&lt;/strong&gt;. Traditional consistent hashing employs a hash ring to address the problem of extensive rehashing when nodes are added or removed, but it cannot avoid issues like data skew and performance imbalance caused by heterogeneous machines. In practice, Dynamo introduces &lt;strong&gt;virtual nodes&lt;/strong&gt; into the hash ring, which elegantly solves these problems.&lt;/p&gt;
+&lt;h3 id=&#34;data-write-challenges&#34;&gt;Data Write Challenges&lt;/h3&gt;
+&lt;p&gt;Most storage systems ensure a certain level of consistency during writes, trading off lower write performance for reduced read complexity. However, Dynamo takes a different approach.&lt;/p&gt;
+&lt;p&gt;Dynamo&amp;rsquo;s design goal is to provide a highly available key-value store that ensures &lt;strong&gt;always writable&lt;/strong&gt; operations while only guaranteeing &lt;strong&gt;eventual consistency&lt;/strong&gt;. To achieve this, Dynamo pushes data conflict resolution to the read operation, &lt;strong&gt;ensuring that writes are never rejected&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;There are two key issues to consider here:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Data Conflict Resolution&lt;/strong&gt;: Concurrent reads and writes to the same key by multiple clients can easily lead to data conflicts. Since Dynamo only provides eventual consistency, data on different nodes in the Dynamo ring might be inconsistent.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Dynamo uses &lt;strong&gt;vector clocks&lt;/strong&gt; to keep track of data versions and merges them during reads to resolve conflicts.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Replica Data Gaps&lt;/strong&gt;: Since Dynamo employs the NWR gossip protocol, it is theoretically possible that none of the nodes hold the complete data set, requiring synchronization between replicas.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Dynamo uses an &lt;strong&gt;anti-entropy process&lt;/strong&gt; to address this, employing &lt;strong&gt;Merkle Trees&lt;/strong&gt; to efficiently detect inconsistencies between replicas and minimize the amount of data transferred.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png&#34; alt=&#34;Dynamo Design Considerations&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The table in the paper clearly shows the aspects considered during Dynamo&amp;rsquo;s development and the corresponding technical choices. For more information, refer to the original paper.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.raychase.net/2396&#34;&gt;Dynamo&amp;rsquo;s Implementation and Decentralization&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://timyang.net/data/dynamo-flawed-architecture-chinese/&#34;&gt;Dynamo&amp;rsquo;s Flawed Architecture (Translation) by Tim Yang&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://news.ycombinator.com/item?id=915212&#34;&gt;Dynamo: A Flawed Architecture | Hacker News&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MIT6.824 AuroraDB</title>
+      <link>https://noneback.github.io/blog/mit6.824-auroradb/</link>
+      <pubDate>Tue, 01 Aug 2023 16:11:54 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-auroradb/</guid>
+      <description>&lt;p&gt;This article introduces the design considerations of AWS&amp;rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead.&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios.&lt;/p&gt;
+&lt;p&gt;In terms of design, there are several aspects worth noting:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The design premise of Aurora is that with databases moving to the cloud, thanks to advancements in cloud infrastructure, the biggest bottleneck for databases has shifted from compute and storage to the network. This was an important premise for AWS when designing Aurora. Based on this premise, Aurora revisits the concept of &amp;ldquo;Log is Database&amp;rdquo;, pushing only the RedoLog down to the storage layer.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Storage-compute separation&lt;/strong&gt;: The database storage layer interfaces with a distributed storage system, which provides reliability and security guarantees. The compute and storage layers can scale independently. The storage system provides a unified data view to the upper layers, significantly improving the efficiency of core functions and operations (such as backup, data recovery, and high availability).&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Interesting reliability guarantees&lt;/strong&gt;: For example, quorum-based NRW consistency protocol, where read and write operations on storage nodes require majority voting, ensures dual-AZ level fault tolerance. Sharding is used to reduce failure handling time, improving the SLA. Most reads occur during database recovery when the current state needs to be restored.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Single-writer multi-reader&lt;/strong&gt;: Unlike NewSQL products with a shared-nothing architecture, Aurora provides only a single write node. This simplifies data consistency guarantees since the single write node can use the RedoLog LSN as a logical clock to maintain the partial order of data updates. By pushing the RedoLog to all nodes and applying these operations in order, consistency can be achieved.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Transaction implementation&lt;/strong&gt;: Since the storage system provides a unified file view to the upper layer, Aurora&amp;rsquo;s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Background acceleration for foreground processing&lt;/strong&gt;: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34; alt=&#34;Aurora Architecture Overview&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34; alt=&#34;Aurora Write Path&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34; alt=&#34;Aurora Read Path&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Interestingly, although PolarDB&amp;rsquo;s design was inspired by Aurora, its architectural design considers that the network is not the bottleneck but rather that various system calls through the OS slow down overall speed. Given the instability of Alibaba Cloud&amp;rsquo;s storage system at that time, PolarStore was introduced, using hardware and FUSE-based storage technology to bypass or optimize system calls. Now that Pangu has improved significantly in terms of both stability and performance, it makes sense to weaken the role of PolarStore. I think this reasoning makes sense.&lt;/p&gt;
+&lt;p&gt;Additionally, why did they choose to use NRW instead of a consensus protocol like Raft? For now, it seems that NRW has one less round of network communication compared to Raft, which might be the reason.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34; alt=&#34;Aurora Storage-Compute Separation&#34;&gt;&lt;/p&gt;
+&lt;h1 id=&#34;references&#34;&gt;References&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/319806107&#34;&gt;https://zhuanlan.zhihu.com/p/319806107&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt&#34;&gt;http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://keys961.github.io/2020/05/05/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB-Aurora/&#34;&gt;Paper Reading - Amazon Aurora: Design Considerations for High Throughput Cloud-Native Relational Database - keys961 | keys961 Blog&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MIT6.824 Chain Replication</title>
+      <link>https://noneback.github.io/blog/mit6.824-chainreplication/</link>
+      <pubDate>Wed, 08 Feb 2023 23:05:57 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-chainreplication/</guid>
+      <description>&lt;p&gt;This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&amp;rsquo;s best to refer directly to the original paper.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34; alt=&#34;Chain Replication&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The design of the algorithm is both simple and elegant. CR splits the replication workload across all nodes in the chain, with each node responsible for forwarding updates to its successor. Write requests are propagated from the head node to the tail, while read requests are served by the tail node.&lt;/p&gt;
+&lt;p&gt;To maintain relationships between nodes in the chain, Chain Replication introduces a Master service responsible for managing node configurations and handling node failures.&lt;/p&gt;
+&lt;h2 id=&#34;failure-handling&#34;&gt;Failure Handling&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Head Failure&lt;/strong&gt;: If the head node fails, any pending or unprocessed requests are lost, but linearizable consistency remains unaffected. The second node in the chain is promoted to the new head.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Tail Failure&lt;/strong&gt;: If the tail node fails, the second-to-last node becomes the new tail, and pending requests from the original tail are committed.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Middle Node Failure&lt;/strong&gt;: When a middle node fails, the chain is reconnected in a manner similar to linked list operations. The previous node (&lt;code&gt;Node_pre&lt;/code&gt;) is linked directly to the next node (&lt;code&gt;Node_next&lt;/code&gt;). To ensure that no requests are lost during this failure, each CR node maintains a &lt;code&gt;SendReqList&lt;/code&gt; that records all requests forwarded to its successor. Since requests are propagated from head to tail, &lt;code&gt;Node_pre&lt;/code&gt; only needs to send &lt;code&gt;Node_next&lt;/code&gt; any missing data. When the tail node receives a request, it marks it as committed, and an acknowledgment (&lt;code&gt;Ack(req)&lt;/code&gt;) is sent back from the tail to the head, removing the request from each node&amp;rsquo;s &lt;code&gt;SendReqList&lt;/code&gt; as the acknowledgment propagates.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;pros-and-cons&#34;&gt;Pros and Cons&lt;/h2&gt;
+&lt;p&gt;The main advantages of Chain Replication include:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;High Throughput&lt;/strong&gt;: By distributing the workload across all nodes, CR effectively increases the throughput of a single node.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Balanced Load&lt;/strong&gt;: Each node has a similar workload, resulting in balanced utilization.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Simplicity&lt;/strong&gt;: The overall design is clean and straightforward, making it easier to implement.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;However, there are some clear disadvantages:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Bottlenecks&lt;/strong&gt;: If a node in the chain processes requests slowly, it will delay the entire chain&amp;rsquo;s processing.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Read Limitations&lt;/strong&gt;: Only the head and tail nodes can serve requests efficiently. The data in the middle nodes is mostly there for replication purposes and not directly utilized for serving requests. However, the CRAQ (Chain Replication with Asynchronous Queries) variant allows middle nodes to serve read-only requests, similar to Raft&amp;rsquo;s Read Index, which can help alleviate this limitation.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://tanxinyu.work/chain-replication-thesis/&#34;&gt;Chain Replication Paper Summary&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://nil.csail.mit.edu/6.824/2021/papers/cr-osdi04.pdf&#34;&gt;Original CR Paper&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MIT6.824-ZooKeeper</title>
+      <link>https://noneback.github.io/blog/mit6.824-zookeeper/</link>
+      <pubDate>Tue, 03 Jan 2023 23:49:41 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-zookeeper/</guid>
+      <description>&lt;p&gt;This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic decisions. These trade-offs are the most insightful aspects of this article.&lt;/p&gt;
+&lt;h2 id=&#34;positioning&#34;&gt;Positioning&lt;/h2&gt;
+&lt;p&gt;ZooKeeper is a wait-free, high-performance coordination service for distributed applications. It supports the coordination needs of distributed applications by providing coordination primitives (specific APIs and data models).&lt;/p&gt;
+&lt;h2 id=&#34;design&#34;&gt;Design&lt;/h2&gt;
+&lt;h3 id=&#34;keywords&#34;&gt;Keywords&lt;/h3&gt;
+&lt;p&gt;There are two key phrases in ZooKeeper&amp;rsquo;s positioning: &lt;strong&gt;high performance&lt;/strong&gt; and &lt;strong&gt;distributed application coordination service&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;ZooKeeper&amp;rsquo;s high performance is achieved through wait-free design, local reads from multiple replicas, and the watch mechanism:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Wait-free requests are handled asynchronously, which may lead to request reordering, making the state machine different from the real-time sequence. ZooKeeper provides FIFO client order guarantees to manage this. Additionally, asynchronous handling is conducive to batch processing and pipelining, further improving performance.&lt;/li&gt;
+&lt;li&gt;The watch mechanism notifies clients of updates when a znode changes, reducing the overhead of clients querying local caches.&lt;/li&gt;
+&lt;li&gt;Local reads from multiple replicas: ZooKeeper uses the ZAB protocol to achieve data consensus, ensuring that write operations are linearizable. Read requests, however, are served locally from replicas without going through the ZAB consensus protocol, which provides serializability and might return stale data, improving performance.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The distributed application coordination service refers to the data model and API semantics provided by ZooKeeper, allowing distributed applications to freely use them to fulfill coordination needs such as group membership and distributed locking.&lt;/p&gt;
+&lt;h3 id=&#34;data-model-and-api&#34;&gt;Data Model and API&lt;/h3&gt;
+&lt;p&gt;ZooKeeper provides an abstraction of data nodes called znodes, which are organized through a hierarchical namespace. ZooKeeper offers two types of znodes: regular and ephemeral. Each znode stores data and is accessed using standard UNIX filesystem paths.&lt;/p&gt;
+&lt;p&gt;In practice, znodes are not designed for general data storage. Instead, znodes map to abstractions in client applications, often corresponding to &lt;strong&gt;metadata&lt;/strong&gt; used for coordination.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;In other words, when coordinating through ZooKeeper, utilize the metadata associated with znodes instead of treating them as mere data storage. For example, znodes associate metadata with timestamps and version counters, allowing clients to track changes to the znodes and perform conditional updates based on the znode version.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Essentially, this data model is a simplified file system API that supports full data reads and writes. Users implement distributed application coordination using the semantics provided by ZooKeeper.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The difference between regular and ephemeral znodes is that ephemeral nodes are automatically deleted when the session ends.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155342Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Clients interact with ZooKeeper through its API, and ZooKeeper manages client connections through sessions. In a session, clients can observe state changes that reflect their operations.&lt;/p&gt;
+&lt;h2 id=&#34;cap-guarantees&#34;&gt;CAP Guarantees&lt;/h2&gt;
+&lt;p&gt;ZooKeeper provides CP (Consistency and Partition Tolerance) guarantees. For instance, during leader election, ZooKeeper will stop serving requests until a new leader is elected, ensuring consistency.&lt;/p&gt;
+&lt;h2 id=&#34;implementation&#34;&gt;Implementation&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155414Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;ZooKeeper uses multiple replicas to achieve high availability.&lt;/p&gt;
+&lt;p&gt;In simple terms, ZooKeeper&amp;rsquo;s upper layer uses the ZAB protocol to handle write requests, ensuring linearizability across replicas. Reads are processed locally, ensuring sequential consistency. The underlying data state machine is stored in the replicated database (in-memory) and Write-Ahead Log (WAL) on ZooKeeper cluster machines, with periodic snapshots to ensure durability. The entire in-memory database uses fuzzy snapshots and WAL replay to ensure crash safety and fast recovery after a crash.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The advantage of fuzzy snapshots is that they do not block online requests.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;interaction-with-clients&#34;&gt;Interaction with Clients&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Update operations will notify and clear the relevant znode&amp;rsquo;s watch.&lt;/li&gt;
+&lt;li&gt;Read requests are processed locally, and the partial order of write requests is defined by &lt;code&gt;zxid&lt;/code&gt;. Sequential consistency is ensured, but reads may be stale. ZooKeeper provides the &lt;code&gt;sync&lt;/code&gt; operation, which can mitigate this to some extent.&lt;/li&gt;
+&lt;li&gt;When a client connects to a new ZooKeeper server, the maximum &lt;code&gt;zxid&lt;/code&gt; is compared. The outdated ZooKeeper server will not establish a session with the client.&lt;/li&gt;
+&lt;li&gt;Clients maintain sessions through heartbeats, and the server handles requests idempotently.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/zookeeper.pdf&#34;&gt;ZooKeeper Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/zookeeper-faq.txt&#34;&gt;MIT6.824-ZooKeeper FAQ&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MIT6.824-RaftKV</title>
+      <link>https://noneback.github.io/blog/mit6.824-raftkv/</link>
+      <pubDate>Fri, 15 Apr 2022 10:49:57 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-raftkv/</guid>
+      <description>&lt;p&gt;Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.&lt;/p&gt;
+&lt;h2 id=&#34;lab-overview&#34;&gt;Lab Overview&lt;/h2&gt;
+&lt;p&gt;Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.&lt;/p&gt;
+&lt;p&gt;The structure of RaftKV and the interaction between its modules are shown below:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34; alt=&#34;image-20220429211429808&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Compared to the previous lab, the difficulty is significantly lower. For implementation, you can refer to this excellent &lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;implementation&lt;/a&gt;, so I won&amp;rsquo;t elaborate too much.&lt;/p&gt;
+&lt;h2 id=&#34;raft-related-topics&#34;&gt;Raft-Related Topics&lt;/h2&gt;
+&lt;p&gt;Let&amp;rsquo;s talk about Raft and its interactions with clients.&lt;/p&gt;
+&lt;h3 id=&#34;routing-and-linearizability&#34;&gt;Routing and Linearizability&lt;/h3&gt;
+&lt;p&gt;To build a service that allows client access on top of Raft, the issues of &lt;strong&gt;routing&lt;/strong&gt; and &lt;strong&gt;linearizability&lt;/strong&gt; must first be addressed.&lt;/p&gt;
+&lt;h4 id=&#34;routing&#34;&gt;Routing&lt;/h4&gt;
+&lt;p&gt;Raft is a &lt;strong&gt;Strong Leader&lt;/strong&gt; consensus algorithm, and read and write requests usually need to be executed by the Leader. When a client queries the Raft cluster, it typically randomly selects a node. If that node is not the Leader, it returns the Leader information to the client, and the client redirects the request to the Leader.&lt;/p&gt;
+&lt;h4 id=&#34;linearizability&#34;&gt;Linearizability&lt;/h4&gt;
+&lt;p&gt;Currently, Raft only supports &lt;strong&gt;At Least Once&lt;/strong&gt; semantics. For a single client request, the Raft state machine may apply the command multiple times, which is particularly unsuitable for consensus-based systems.&lt;/p&gt;
+&lt;p&gt;To achieve linearizability, it is clear that requests need to be made idempotent.&lt;/p&gt;
+&lt;p&gt;A basic approach is for the client to assign a unique UID to each request, and the server maintains a session using this &lt;code&gt;UID&lt;/code&gt; to cache the response of successful requests. When a duplicate request arrives at the server, it can respond directly using the cached response, thus achieving idempotency.&lt;/p&gt;
+&lt;p&gt;Of course, this introduces the issue of session management, but that is not the focus of this article.&lt;/p&gt;
+&lt;h3 id=&#34;read-only-optimization&#34;&gt;Read-Only Optimization&lt;/h3&gt;
+&lt;p&gt;After solving the above two problems, we have a usable Raft-based service.&lt;/p&gt;
+&lt;p&gt;However, we notice that whether it&amp;rsquo;s a read or write request, our application needs to go through a round of &lt;code&gt;AppendEntries&lt;/code&gt; communication initiated by the Leader. It also requires successful quorum ACKs and additional disk write operations before the log is committed, after which the result can be returned to the client.&lt;/p&gt;
+&lt;p&gt;Write operations change the state machine, so these are necessary steps for write requests. However, read operations do not change the state machine, and we can optimize read requests to bypass the Raft log, reducing the overhead of synchronous write operations on disk IO.&lt;/p&gt;
+&lt;p&gt;The problem is that without additional measures, read-only query results that bypass the Raft log may become stale.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;For example, if the old cluster Leader and a new Leader&amp;rsquo;s cluster are partitioned, queries made to the old Leader could be outdated.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The Raft paper mentions two methods to bypass the Raft log and optimize read-only requests: &lt;strong&gt;Read Index&lt;/strong&gt; and &lt;strong&gt;Lease Read&lt;/strong&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;read-index&#34;&gt;Read Index&lt;/h4&gt;
+&lt;p&gt;The &lt;strong&gt;Read Index&lt;/strong&gt; approach needs to address several issues:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Committed logs from the old term&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;For example, if the old Leader commits a log but crashes before sending heartbeats, other nodes will elect a new Leader. According to the Raft paper, the new Leader does not proactively commit logs from the old Leader.&lt;/p&gt;
+&lt;p&gt;To solve this, a no-op log is committed after a new Leader is elected to commit the old log.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;Gap between &lt;code&gt;commitIndex&lt;/code&gt; and &lt;code&gt;appliedIndex&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Introduce a &lt;code&gt;readIndex&lt;/code&gt; variable, where the Leader saves the current &lt;code&gt;commitIndex&lt;/code&gt; in a local variable called &lt;code&gt;readIndex&lt;/code&gt;. This acts as a boundary for applying the log, and when a read-only request arrives, the log must be applied up to the position recorded by &lt;code&gt;readIndex&lt;/code&gt; before the Leader can query the state machine to provide read services.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;Ensure no Leader change when providing read-only services&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;To achieve this, after receiving a read request, the Leader first sends a heartbeat and needs to receive quorum ACKs to ensure there is no other Leader with a higher term, thus ensuring that &lt;code&gt;readIndex&lt;/code&gt; is the highest committed index in the cluster.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;For the specific process and optimizations like Batch and Follower Read, refer to the author&amp;rsquo;s PhD dissertation on Raft.&lt;/p&gt;
+&lt;h4 id=&#34;lease-read&#34;&gt;Lease Read&lt;/h4&gt;
+&lt;p&gt;The &lt;strong&gt;Read Index&lt;/strong&gt; approach only optimizes the overhead of disk IO, but still requires a round of network communication. However, this overhead can also be optimized, leading to the &lt;strong&gt;Lease Read&lt;/strong&gt; approach.&lt;/p&gt;
+&lt;p&gt;The &lt;strong&gt;core idea&lt;/strong&gt; of &lt;strong&gt;Lease Read&lt;/strong&gt; is to use the fact that a Leader Election requires at least one &lt;code&gt;ElectionTimeout&lt;/code&gt; time period. During this period, the system will not conduct a new election, thereby avoiding Leader changes when providing read-only services. We can use clocks to optimize network IO.&lt;/p&gt;
+&lt;h5 id=&#34;implementation&#34;&gt;Implementation&lt;/h5&gt;
+&lt;p&gt;To let the clock replace network communication, we need an additional lease mechanism. Once the Leader&amp;rsquo;s &lt;code&gt;Heartbeat&lt;/code&gt; is approved by a quorum, the Leader can assume that no other node can become Leader during the &lt;code&gt;ElectionTimeout&lt;/code&gt; period, and it can extend its lease accordingly. While holding the lease, the Leader can directly serve read-only queries without extra network communication.&lt;/p&gt;
+&lt;p&gt;However, there may be &lt;strong&gt;clock drift&lt;/strong&gt; among servers, which means Followers cannot ensure that the Leader will not time out during the lease. This introduces the critical design for &lt;code&gt;Lease Read&lt;/code&gt;: &lt;strong&gt;what strategy should be used to extend the lease?&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The paper assumes that $ClockDrift$ is bounded, and when a heartbeat successfully updates the lease, the lease is extended to $start + rac{ElectionTimeout}{ClockDriftBound}$.&lt;/p&gt;
+&lt;p&gt;$ClockDriftBound$ represents the limit of clock drift in the cluster, but discovering and maintaining this limit is challenging due to many real-time factors that cause clock drift.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;For instance, garbage collection (GC), virtual machine scheduling, cloud machine scaling, etc.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;In practice, some safety is usually sacrificed for &lt;code&gt;Lease Read&lt;/code&gt; performance. Generally, the lease is extended to $StartTime + ElectionTimeout - \Delta{t}$, where $\Delta{t}$ is a positive value. This reduces the lease extension time compared to &lt;code&gt;ElectionTimeout&lt;/code&gt;, trading off between network IO overhead and safety.&lt;/p&gt;
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+&lt;p&gt;When building a Raft-based service, it is crucial to design routing and idempotency mechanisms for accessing the service.&lt;/p&gt;
+&lt;p&gt;For read-only operations, there are two main optimization methods: &lt;strong&gt;Read Index&lt;/strong&gt; and &lt;strong&gt;Lease Read&lt;/strong&gt;. The former optimizes disk IO during read operations, while the latter uses clocks to optimize network IO.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;Implementation Doc&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf&#34;&gt;Raft Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Official&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/raft-thesis-zh_cn&#34;&gt;Consensus: Bridging Theory and Practice - zh&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pingcap.com/zh/blog/lease-read&#34;&gt;Tikv Lease-Read&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MIT6.824-Raft</title>
+      <link>https://noneback.github.io/blog/mit6.824-raft/</link>
+      <pubDate>Mon, 21 Feb 2022 01:26:46 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-raft/</guid>
+      <description>&lt;p&gt;Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.&lt;/p&gt;
+&lt;h2 id=&#34;algorithm-overview&#34;&gt;Algorithm Overview&lt;/h2&gt;
+&lt;p&gt;The basis of consensus algorithms is the replicated state machine, which means that &lt;strong&gt;executing the same deterministic commands in the same order will eventually lead to a consistent state&lt;/strong&gt;. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.&lt;/p&gt;
+&lt;p&gt;The core content of the Raft algorithm can be divided into three parts: $Leader Election + Log Replication + Safety$.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Initially, all nodes in the cluster start as Followers. If a Follower does not receive a heartbeat from the Leader within a certain period, it becomes a Candidate and triggers an election, requesting votes from the other Followers. The Candidate that receives a majority of votes becomes the Leader.&lt;/p&gt;
+&lt;p&gt;Raft is a &lt;strong&gt;strong leader&lt;/strong&gt; and strongly consistent distributed consensus algorithm. It uses Terms as a logical clock, and only one Leader can exist in each term. The Leader needs to send heartbeats periodically to maintain its status and to handle &lt;strong&gt;log replication&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;When replicating logs, the Leader first replicates the log to other Followers. Once a majority of the Followers successfully replicate the log, the Leader commits the log.&lt;/p&gt;
+&lt;p&gt;Safety mainly consists of five parts, with two core elements relevant to the implementation. One is the leader&amp;rsquo;s append-only rule, which means it cannot modify committed logs. The other is election safety, preventing split-brain scenarios and ensuring that the new Leader has the most up-to-date log.&lt;/p&gt;
+&lt;p&gt;For more details, please refer to the original paper.&lt;/p&gt;
+&lt;h2 id=&#34;implementation-ideas&#34;&gt;Implementation Ideas&lt;/h2&gt;
+&lt;p&gt;The implementation largely follows an excellent blog post (see references), and many algorithm details are also provided in Figure 2 of the original paper, so I will only focus on aspects that need attention when implementing each function.&lt;/p&gt;
+&lt;h3 id=&#34;leader-election&#34;&gt;Leader Election&lt;/h3&gt;
+&lt;h4 id=&#34;triggering-election--handling-election-results&#34;&gt;Triggering Election + Handling Election Results&lt;/h4&gt;
+&lt;p&gt;The election is initiated by launching multiple goroutines to send RPC requests to other nodes in the background. Therefore, when handling RPC responses, it is necessary to confirm that the current node is a Candidate and that the request is not outdated, i.e., &lt;code&gt;rf.state == Candidate &amp;amp;&amp;amp; req.Term == rf.currentTerm&lt;/code&gt;. If the election is successful, the node should immediately send heartbeats to notify other nodes of the election result.&lt;/p&gt;
+&lt;p&gt;If a failed response is received with &lt;code&gt;resp.Term &amp;gt; rf.currentTerm&lt;/code&gt;, the node should switch to the Follower state, update the term, and &lt;strong&gt;reset voting information&lt;/strong&gt;.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;In fact, whenever the term is updated, the voting information needs to be reset. If the &lt;code&gt;votedFor&lt;/code&gt; information is not reset, some tests will fail.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;request-vote-rpc&#34;&gt;Request Vote RPC&lt;/h4&gt;
+&lt;p&gt;First, filter outdated requests with &lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt; and ignore duplicate voting requests for the current term. Then, follow the algorithm&amp;rsquo;s logic to process the request. Note that if the node successfully grants the vote, it should reset the election timer.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Resetting the election timeout only when granting a vote helps with liveness in leader elections under unstable network conditions.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;state-transition&#34;&gt;State Transition&lt;/h4&gt;
+&lt;p&gt;When switching roles, be mindful of handling the state of different timers (stop or reset). When switching to Leader, reset the values of &lt;code&gt;matchIndex&lt;/code&gt; and &lt;code&gt;nextIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;log-replication&#34;&gt;Log Replication&lt;/h3&gt;
+&lt;p&gt;Log replication is the core of the Raft algorithm, and it requires careful attention.&lt;/p&gt;
+&lt;p&gt;My implementation uses multiple replicator and applier threads for asynchronous replication and application.&lt;/p&gt;
+&lt;h4 id=&#34;log-replication-rpc&#34;&gt;Log Replication RPC&lt;/h4&gt;
+&lt;p&gt;First, filter outdated requests with &lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt;. Then, handle log inconsistencies, log truncation, and duplicate log entries before replicating logs and processing &lt;code&gt;commitIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;trigger-log-replication--handle-request-results&#34;&gt;Trigger Log Replication + Handle Request Results&lt;/h4&gt;
+&lt;p&gt;Determine whether to replicate logs directly or send a snapshot before initiating replication.&lt;/p&gt;
+&lt;p&gt;The key point in handling request results is how to update &lt;code&gt;matchIndex&lt;/code&gt;, &lt;code&gt;nextIndex&lt;/code&gt;, and &lt;code&gt;commitIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;matchIndex&lt;/code&gt; is used to record the latest log successfully replicated on other nodes, while &lt;code&gt;nextIndex&lt;/code&gt; records the next log to be sent to other nodes. &lt;code&gt;commitIndex&lt;/code&gt; is updated by sorting &lt;code&gt;matchIndex&lt;/code&gt; and determining whether to trigger the applier to update &lt;code&gt;appliedIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;If the request fails, &lt;code&gt;nextIndex&lt;/code&gt; should be decremented, or the node should switch to the Follower state.&lt;/p&gt;
+&lt;h4 id=&#34;asynchronous-apply&#34;&gt;Asynchronous Apply&lt;/h4&gt;
+&lt;p&gt;This is essentially a background goroutine controlled by condition variables and uses channels for communication. Each time it is triggered, it sends &lt;code&gt;log[lastApplied:commitIndex]&lt;/code&gt; to the upper layer and updates &lt;code&gt;appliedIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;persistence&#34;&gt;Persistence&lt;/h3&gt;
+&lt;p&gt;Persist the updated attributes that need to be saved to disk in a timely manner.&lt;/p&gt;
+&lt;h3 id=&#34;install-snapshot&#34;&gt;Install Snapshot&lt;/h3&gt;
+&lt;p&gt;The main components are the Snapshot triggered by the Leader and the corresponding RPC. When applying a Snapshot, determine its freshness and update &lt;code&gt;log[0]&lt;/code&gt;, &lt;code&gt;appliedIndex&lt;/code&gt;, and &lt;code&gt;commitIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;pitfalls&#34;&gt;Pitfalls&lt;/h2&gt;
+&lt;h3 id=&#34;defer&#34;&gt;Defer&lt;/h3&gt;
+&lt;p&gt;The first pitfall is related to the &lt;strong&gt;defer&lt;/strong&gt; keyword in Go. I like to use the &lt;code&gt;defer&lt;/code&gt; keyword at the beginning of an RPC to directly print some data from the node: &lt;code&gt;defer Dprintf(&amp;quot;%+v&amp;quot;, raft.currentTerm)&lt;/code&gt;. This way, the log can be printed at the end of the call. However, the content to be printed is fixed at the time the defer statement is executed. The correct usage should be &lt;code&gt;defer func(ID int) { Dprintf(&amp;quot;%+v&amp;quot;, id) }()&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;log-dummy-header&#34;&gt;Log Dummy Header&lt;/h3&gt;
+&lt;p&gt;It is best to reserve a spot in the log for storing the index and term of the snapshot to avoid a painful refactor of the Snapshot section later.&lt;/p&gt;
+&lt;h3 id=&#34;lock&#34;&gt;Lock&lt;/h3&gt;
+&lt;p&gt;Refer to the guidance on locking suggestions. Use a single coarse-grained lock rather than multiple locks. Correctness of the algorithm is more important than performance. Avoid holding locks while sending RPCs or using channels, as it may lead to timeouts.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/Raft&#34;&gt;Raft Wikipedia&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://raft.github.io/&#34;&gt;Raft Official Website&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf&#34;&gt;Raft Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Official&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab2.md&#34;&gt;Potato’s Implementation Doc&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Kylin Overview</title>
+      <link>https://noneback.github.io/blog/kylin%E6%A6%82%E8%BF%B0/</link>
+      <pubDate>Wed, 10 Nov 2021 23:45:27 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/kylin%E6%A6%82%E8%BF%B0/</guid>
+      <description>&lt;p&gt;Previously, I was hoping to work on an interesting thesis, but I couldn&amp;rsquo;t find a suitable advisor nearby. I initially found a good advisor before the college started the topic selection, but it turned out they couldn&amp;rsquo;t take me on. However, I wasn&amp;rsquo;t that interested in the advisor&amp;rsquo;s field, so I decided to look for something else. Recently, the college&amp;rsquo;s thesis selection process started, and I found an interesting topic in the list. I reached out to the professor and took on the project.&lt;/p&gt;
+&lt;p&gt;The topic I chose is &lt;strong&gt;&amp;ldquo;Design and Implementation of Database Query Algorithms Based on Differential Privacy&amp;rdquo;&lt;/strong&gt;, focusing on Differential Privacy + OLAP. Specifically, it&amp;rsquo;s about adding Differential Privacy as a feature to Kylin.&lt;/p&gt;
+&lt;p&gt;That&amp;rsquo;s the overall gist; as for the details, I might write about them in future blog posts. This is the first in this series of blog posts.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;Kylin is a distributed OLAP data warehouse based on columnar storage systems like HBase and Parquet, and computational frameworks like Hadoop and Spark. It supports multidimensional analysis of massive datasets.&lt;/p&gt;
+&lt;p&gt;Kylin uses a cube pre-computation method, transforming real-time queries into queries against precomputed results, utilizing idle computation resources and storage space to optimize query times. This can significantly reduce query latency.&lt;/p&gt;
+&lt;h2 id=&#34;background&#34;&gt;Background&lt;/h2&gt;
+&lt;p&gt;Before Kylin, Hadoop was commonly used for large-scale data batch processing, with results stored in columnar storage systems like HBase. The related technologies for OLAP included &lt;strong&gt;big data parallel processing&lt;/strong&gt; and &lt;strong&gt;columnar storage&lt;/strong&gt;.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Massive Parallel Processing&lt;/strong&gt;: It leverages multiple machines to process computational tasks in parallel, essentially using linear growth in computing resources to achieve a linear decrease in processing time.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Columnar Storage&lt;/strong&gt;: Stores data in columns instead of rows. This approach is particularly effective for OLAP queries, which typically involve aggregations of specific columns. Columnar storage allows querying only the necessary columns and makes effective use of sequential I/O, thus improving performance.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;These technologies enabled minute-level SQL query performance on platforms like Hadoop. However, even this is insufficient for interactive analysis, as the latency is still too high.&lt;/p&gt;
+&lt;p&gt;The core issue is that &lt;strong&gt;neither parallel computing nor columnar storage changes the fundamental time complexity of querying; they do not break the linear relationship between query time and data volume&lt;/strong&gt;. Therefore, the only optimization comes from increasing computing resources and exploiting locality principles, both of which have scalability and theoretical bottlenecks as data grows.&lt;/p&gt;
+&lt;p&gt;To address this, Kylin introduced a &lt;strong&gt;pre-computation strategy&lt;/strong&gt;, building multidimensional &lt;strong&gt;cubes&lt;/strong&gt; for different dimensions and storing them as data tables. Future queries are made directly against these precomputed results. With pre-computation, the size of the materialized views is determined only by the cardinality of the dimensions and is no longer linearly proportional to the size of the dataset.&lt;/p&gt;
+&lt;p&gt;Essentially, this strategy &lt;strong&gt;uses idle computational resources and additional storage to improve response times during queries, breaking the linear relationship between query time and data size&lt;/strong&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;core-concepts&#34;&gt;Core Concepts&lt;/h2&gt;
+&lt;p&gt;The core working principle of Apache Kylin is &lt;strong&gt;MOLAP (Multidimensional Online Analytical Processing) Cube&lt;/strong&gt; technology.&lt;/p&gt;
+&lt;h3 id=&#34;dimensions-and-measures&#34;&gt;Dimensions and Measures&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Dimensions&lt;/strong&gt; refer to perspectives used for aggregating data, typically attributes of data records. &lt;strong&gt;Measures&lt;/strong&gt; are numerical values calculated based on data. Using dimensions, you can aggregate measures, e.g., $$D_1,D_2,D_3,&amp;hellip; \rightarrow S_1,S_2,&amp;hellip;$$&lt;/p&gt;
+&lt;h3 id=&#34;cube-theory&#34;&gt;Cube Theory&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Data Cube&lt;/strong&gt; involves building and querying precomputed, multidimensional data indices.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Cuboid&lt;/strong&gt;: The data calculated for a particular combination of dimensions.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Cube Segment&lt;/strong&gt;: The smallest building block of a cube. A cube can be split into multiple segments.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Incremental Cube Building&lt;/strong&gt;: Typically triggered based on time attributes.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Cube Cardinality&lt;/strong&gt;: The cardinality of all dimensions in a cube determines the cube&amp;rsquo;s complexity. Higher cardinality often leads to cube expansion (amplified I/O and storage).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
+&lt;p&gt;Kylin consists of two parts: &lt;strong&gt;online querying&lt;/strong&gt; and &lt;strong&gt;offline building&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34; alt=&#34;Kylin Architecture&#34;&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Offline Building&lt;/strong&gt;: Involves three main components: the data source, the build engine, and the storage engine. Data is fetched from the data source, cubes are built, and they are stored in the columnar storage engine.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Online Querying&lt;/strong&gt;: Consists of an interface layer and a query engine, abstracting away concepts like cubes from the user. External applications use the REST API to submit queries, which are processed by the query engine and returned.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+&lt;p&gt;As an OLAP engine, Kylin leverages &lt;strong&gt;parallel computing, columnar storage, and pre-computation&lt;/strong&gt; techniques to improve both online query and offline build performance. This has the following notable pros and cons:&lt;/p&gt;
+&lt;h3 id=&#34;advantages&#34;&gt;Advantages&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Standard SQL Interface&lt;/strong&gt;: Supports BI tools and makes integration easy.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;High Query Speed&lt;/strong&gt;: Queries against precomputed results are very fast.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Scalable Architecture&lt;/strong&gt;: Easily scales to handle increasing data volumes.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;disadvantages&#34;&gt;Disadvantages&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Complex Dependencies&lt;/strong&gt;: Kylin relies on many external systems, which can make operations and maintenance challenging.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;I/O and Storage Overhead&lt;/strong&gt;: Pre-computation and cube building can lead to amplified I/O and storage needs.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Limited by Data Models&lt;/strong&gt;: The complexity of data models and cube cardinality can impose limitations on scalability.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://tech.meituan.com/2020/11/19/apache-kylin-practice-in-meituan.html&#34;&gt;Meituan: Apache Kylin&amp;rsquo;s Practice and Optimization&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://kylin.apache.org/&#34;&gt;Kylin Official Documentation&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>DFS-Haystack</title>
+      <link>https://noneback.github.io/blog/dfs-haystack/</link>
+      <pubDate>Wed, 06 Oct 2021 22:44:01 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/dfs-haystack/</guid>
+      <description>&lt;p&gt;The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle &amp;ldquo;lots of small files&amp;rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.&lt;/p&gt;
+&lt;p&gt;These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;Haystack is a storage system designed by Facebook for small files. In traditional DFS, file addressing typically involves using caches to store metadata, reducing disk interaction and improving lookup efficiency. For each file, a separate set of metadata must be maintained, with the volume of metadata depending on the number of files. In high-concurrency scenarios, metadata is cached in memory to reduce disk I/O.&lt;/p&gt;
+&lt;p&gt;With a large number of small files, the volume of metadata becomes significant. Considering the maintenance overhead of in-memory metadata, this approach becomes impractical. Therefore, Haystack was developed specifically for small files, with the core idea of aggregating multiple small files into a larger one to reduce metadata.&lt;/p&gt;
+&lt;h2 id=&#34;background&#34;&gt;Background&lt;/h2&gt;
+&lt;p&gt;The &amp;ldquo;small files&amp;rdquo; in the paper specifically refer to image data.&lt;/p&gt;
+&lt;p&gt;Facebook, as a social media company, deals heavily with image uploads and retrieval. As the business scaled, it became necessary to have a dedicated service to handle the massive, high-concurrency requests for image reads and writes.&lt;/p&gt;
+&lt;p&gt;In the social networking context, this type of data is characterized as &lt;code&gt;written once, read often, never modified, and rarely deleted&lt;/code&gt;. Based on this, Facebook developed Haystack to support image sharing services.&lt;/p&gt;
+&lt;h2 id=&#34;design&#34;&gt;Design&lt;/h2&gt;
+&lt;h3 id=&#34;traditional-design&#34;&gt;Traditional Design&lt;/h3&gt;
+&lt;p&gt;The paper describes two historical designs: CDN-based and NAS-based solutions.&lt;/p&gt;
+&lt;h4 id=&#34;cdn-based-solution&#34;&gt;CDN-based Solution&lt;/h4&gt;
+&lt;p&gt;The core of this solution is to use CDN (Content Delivery Network) to cache hot image data, reducing network transmission.&lt;/p&gt;
+&lt;p&gt;This approach optimizes access to hot images but also has some issues. Firstly, CDN is expensive and has limited capacity. Secondly, image sharing includes many &lt;code&gt;less popular&lt;/code&gt; images, which leads to the long tail effect, slowing down access.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011455343.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;CDNs are generally used to serve static data and are often pre-warmed before an event, making them unsuitable as an image cache service. Many &lt;code&gt;less popular&lt;/code&gt; images do not enter the CDN, leading to the long tail effect.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;nas-based-solution&#34;&gt;NAS-based Solution&lt;/h4&gt;
+&lt;p&gt;This was Facebook&amp;rsquo;s initial design and is essentially a variation of the CDN-based solution.&lt;/p&gt;
+&lt;p&gt;They introduced NAS (Network Attached Storage) for horizontal storage expansion, incorporating file system semantics, but disk I/O remained an issue. Similar to local files, reading uncached data requires at least three disk I/O operations:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Read directory metadata into memory&lt;/li&gt;
+&lt;li&gt;Load the inode into memory&lt;/li&gt;
+&lt;li&gt;Read the content of the file&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;PhotoStore was used as a caching layer to store some metadata like file handles to speed up the addressing process.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011454979.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The NAS-based design did not solve the fundamental issue of excessive metadata that could not be fully cached. When the number of files reaches a certain threshold, disk I/O becomes inevitable.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The fundamental issue is the &lt;strong&gt;one-to-one relationship between files and addressing metadata&lt;/strong&gt;, causing the volume of metadata to change with the number of files.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Thus, the key to optimization is changing the &lt;strong&gt;one-to-one relationship between files and metadata&lt;/strong&gt;, reducing the frequency of disk I/O during addressing.&lt;/p&gt;
+&lt;h3 id=&#34;haystack-based-solution&#34;&gt;Haystack-based Solution&lt;/h3&gt;
+&lt;p&gt;The core idea of Haystack is to &lt;strong&gt;aggregate multiple small files into a larger one&lt;/strong&gt;, maintaining a single piece of metadata for the large file. This changes the mapping between metadata and files, making it feasible to keep all metadata in memory.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Metadata is maintained only for the aggregated file, and the position of small files within the large file is maintained separately.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011456020.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;implementation&#34;&gt;Implementation&lt;/h2&gt;
+&lt;p&gt;Haystack mainly consists of three components: Haystack Directory, Haystack Cache, and Haystack Store.&lt;/p&gt;
+&lt;h3 id=&#34;file-mapping-and-storage&#34;&gt;File Mapping and Storage&lt;/h3&gt;
+&lt;p&gt;File data is ultimately stored on logical volumes, each of which corresponds to multiple physical volumes across machines.&lt;/p&gt;
+&lt;p&gt;Users first access the Directory to obtain access paths and then use the URL generated by the Directory to access other components to retrieve the required data.&lt;/p&gt;
+&lt;h3 id=&#34;components&#34;&gt;Components&lt;/h3&gt;
+&lt;h4 id=&#34;haystack-directory&#34;&gt;Haystack Directory&lt;/h4&gt;
+&lt;p&gt;This is Haystack&amp;rsquo;s access layer, responsible for &lt;strong&gt;file addressing&lt;/strong&gt; and &lt;strong&gt;access control&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;Read and write requests first go through the Directory. For read requests, the Directory generates an access URL containing the path: &lt;code&gt;http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}&lt;/code&gt;. For write requests, it provides a volume to write into.&lt;/p&gt;
+&lt;p&gt;The Directory has four main functions:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Load balancing for read and write requests.&lt;/li&gt;
+&lt;li&gt;Determine request access paths (e.g., CDN or direct access) and generate access URLs.&lt;/li&gt;
+&lt;li&gt;Metadata and mapping management, e.g., logical attributes to volume mapping.&lt;/li&gt;
+&lt;li&gt;Logical volume read/write management, where volumes can be read-only or write-enabled.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;This design is based on the data characteristics: &amp;ldquo;write once, read more.&amp;rdquo; This setup improves concurrency.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The Directory stores metadata such as file-to-volume mappings, logical-to-physical mappings, and volume attributes (size, owner, etc.). It relies on a distributed key-value store and a cache service to ensure low latency and high availability.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Proxy, Metadata Mapping, Access Control&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;haystack-cache&#34;&gt;Haystack Cache&lt;/h4&gt;
+&lt;p&gt;The Cache layer optimizes addressing and image retrieval. The core design is the &lt;strong&gt;Cache Rule&lt;/strong&gt;, which determines what data should be cached and how to handle &lt;strong&gt;cache misses&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;Images are cached if they meet these criteria:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;The request is directly from a user, not from a CDN.&lt;/li&gt;
+&lt;li&gt;The photo is retrieved from a write-enabled store machine.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;If a cache miss occurs, the Cache fetches the image from the Store and pushes it to both the user and the CDN.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The caching policy is based on typical access patterns.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;haystack-store&#34;&gt;Haystack Store&lt;/h4&gt;
+&lt;p&gt;The Store layer is responsible for data storage operations.&lt;/p&gt;
+&lt;p&gt;The addressing abstraction is: &lt;code&gt;filename + offset =&amp;gt; logical volume id + offset =&amp;gt; data&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Multiple physical volumes constitute a logical volume. In the Store, small files are encapsulated as &lt;strong&gt;Needles&lt;/strong&gt; managed by physical volumes.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg&#34; alt=&#34;Needle Abstraction&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Needles represent a way to encapsulate small files and manage volume blocks.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Store data is accessed at the Needle level. To speed up addressing, a memory map is used: &lt;code&gt;key/alternate key =&amp;gt; needle&#39;s flag/offset/other attributes&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;These maps are persisted in &lt;strong&gt;Index Files&lt;/strong&gt; on disk to provide a checkpoint for quick metadata recovery after a crash.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg&#34; alt=&#34;Index File&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg&#34; alt=&#34;Volume Mapping&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Each volume maintains its own in-memory mapping and index file.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;When updating the in-memory mapping (e.g., adding or modifying a file), the index file is updated asynchronously. Deleted files are only marked as deleted, not removed from the index file.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The index serves as a lookup aid. Needles without an index can still be addressed, making the asynchronous update and index retention strategy feasible.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;workloads&#34;&gt;Workloads&lt;/h3&gt;
+&lt;h4 id=&#34;read&#34;&gt;Read&lt;/h4&gt;
+&lt;p&gt;&lt;code&gt;(Logical Volume ID, key, alternate key, cookies) =&amp;gt; photo&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;For a read request, Store queries the in-memory mapping for the corresponding Needle. If found, it fetches the data from the volume and verifies the cookie and integrity; otherwise, it returns an error.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Cookies are randomly generated strings that prevent malicious attacks.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;write&#34;&gt;Write&lt;/h4&gt;
+&lt;p&gt;&lt;code&gt;(Logical Volume ID, key, alternate key, cookies, data) =&amp;gt; result&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Haystack only supports appending data rather than overwriting. When a write request is received, Store asynchronously appends data to a Needle and updates the in-memory mapping. If it&amp;rsquo;s an existing file, the Directory updates its metadata to point to the latest version.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Older volumes are frozen as read-only, and new writes are appended, so a larger offset indicates a newer version.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;delete&#34;&gt;Delete&lt;/h4&gt;
+&lt;p&gt;Deletion is handled using &lt;strong&gt;Mark Delete + Compact GC&lt;/strong&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;fault-tolerance&#34;&gt;Fault Tolerance&lt;/h3&gt;
+&lt;p&gt;Store ensures fault tolerance through &lt;strong&gt;monitoring + hot backup&lt;/strong&gt;. Directory and Cache use Raft-like consistency algorithms for data replication and availability.&lt;/p&gt;
+&lt;h2 id=&#34;optimization&#34;&gt;Optimization&lt;/h2&gt;
+&lt;p&gt;The main optimizations include: Compaction, Batch Load, and In-Memory processing.&lt;/p&gt;
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Key abstraction optimizations include asynchronous processing, batch operations, and caching.&lt;/li&gt;
+&lt;li&gt;Identifying the core issues, such as metadata management burden for a large number of small files, is crucial.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.usenix.org/legacy/event/osdi10/tech/full_papers/Beaver.pdf&#34;&gt;Finding a needle in Haystack: Facebook’s photo storage&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MIT6.824 Bigtable</title>
+      <link>https://noneback.github.io/blog/mit6.824-bigtable/</link>
+      <pubDate>Thu, 16 Sep 2021 22:54:59 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-bigtable/</guid>
+      <description>&lt;p&gt;I recently found a translated version of the Bigtable paper online and saved it, but hadn&amp;rsquo;t gotten around to reading it. Lately, I&amp;rsquo;ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.&lt;/p&gt;
+&lt;p&gt;This is the last of Google&amp;rsquo;s three foundational distributed system papers, and although it wasn&amp;rsquo;t originally part of the MIT6.824 reading list, I&amp;rsquo;ve categorized it here for consistency.&lt;/p&gt;
+&lt;p&gt;As with previous notes, I won&amp;rsquo;t dive deep into the technical details but will instead focus on the design considerations and thoughts on the problem.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;Bigtable is a distributed &lt;strong&gt;structured data&lt;/strong&gt; storage system built on top of GFS, designed to store large amounts of structured and semi-structured data. It is a NoSQL data store that emphasizes scalability and performance, as well as reliable fault tolerance through GFS.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Design Goal: Wide Applicability, Scalability, High Performance, High Availability&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;data-model&#34;&gt;Data Model&lt;/h2&gt;
+&lt;p&gt;Bigtable&amp;rsquo;s data model is No Schema and provides a simple model. It treats all data as strings, with encoding and decoding handled by the application layer.&lt;/p&gt;
+&lt;p&gt;Bigtable is essentially a &lt;strong&gt;sparse, distributed, persistent multidimensional sorted Map&lt;/strong&gt;. The &lt;strong&gt;index&lt;/strong&gt; of the Map is composed of &lt;strong&gt;Row Key, Column Key, and TimeStamp&lt;/strong&gt;, and the &lt;strong&gt;value&lt;/strong&gt; is an unstructured byte array.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Mapping abstraction
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;row&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;column&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;int64&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&amp;gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;// A Row Key is essentially a multi-dimensional structure composed of {Row, Column, Timestamp}.
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The paper describes the data model as follows:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;A Bigtable is a sparse, distributed, persistent multidimensional sorted map.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Sparse&lt;/strong&gt; means that columns in the same table can be null, which is quite common.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Row&lt;/th&gt;
+&lt;th&gt;Columns&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Row1&lt;/td&gt;
+&lt;td&gt;{ID, Name, Phone}&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Row2&lt;/td&gt;
+&lt;td&gt;{ID, Name, Phone, Address}&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Row3&lt;/td&gt;
+&lt;td&gt;{ID, Name, Phone, Email}&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;Distributed&lt;/strong&gt; refers to scalability and fault tolerance, i.e., &lt;strong&gt;Replication&lt;/strong&gt; and &lt;strong&gt;Sharding&lt;/strong&gt;. Bigtable leverages GFS replicas for fault tolerance and uses &lt;strong&gt;Tablet&lt;/strong&gt; for partitioning data to achieve scalability.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Persistent Multidimensional Sorted&lt;/strong&gt; indicates data is eventually persisted, and Bigtable optimizes write and read latency with WAL and LSM.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The open-source implementation of Bigtable is HBase, a row and column database.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;rows&#34;&gt;Rows&lt;/h3&gt;
+&lt;p&gt;Bigtable organizes data using lexicographic order of row keys. A Row Key can be any string, and read and write operations are atomic at the row level.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Lexicographic ordering helps aggregate related row records.
+MySQL achieves atomic row operations using an undo log.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;column-family&#34;&gt;Column Family&lt;/h3&gt;
+&lt;p&gt;A set of column keys forms a Column Family, where the data often shares the same type.&lt;/p&gt;
+&lt;p&gt;A column key is composed of &lt;code&gt;Column Family : Qualifier&lt;/code&gt;. The column family&amp;rsquo;s name must be a printable string, whereas the qualifier name can be any string.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The paper mentions:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Access control and both disk and memory accounting are performed at the column-family level.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;This is because business users tend to retrieve data by columns, e.g., reading webpage content. In practice, column data is often compressed for storage. Thus, the Column Family level is a more suitable level for access control and resource accounting than rows.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;timestamp&#34;&gt;TimeStamp&lt;/h3&gt;
+&lt;p&gt;The timestamp is used to maintain different versions of the same data, serving as a logical clock. It is also used as an index to query data versions.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Typically, timestamps are sorted in reverse chronological order. When the number of versions is low, a pointer to the previous version is used to maintain data versioning; when the number of versions increases, an index structure is needed.
+TimeStamp indexing inherently requires range queries, so a sortable data structure is appropriate for indexing.
+Extra version management increases maintenance overhead, usually handled by limiting the number of data versions and garbage collecting outdated versions.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;tablet&#34;&gt;Tablet&lt;/h3&gt;
+&lt;p&gt;Bigtable uses a &lt;strong&gt;range-based data sharding&lt;/strong&gt; strategy, and &lt;strong&gt;Tablet&lt;/strong&gt; is the basic unit for data sharding and load balancing.&lt;/p&gt;
+&lt;p&gt;A tablet is a collection of rows, managed by a Tablet Server. Rows in Bigtable are ultimately stored in a tablet, which is split or merged for load balancing among Tablet Servers.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Range-based sharding is beneficial for range queries, compared to hash-based sharding.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;sstable&#34;&gt;SSTable&lt;/h3&gt;
+&lt;p&gt;SSTable is a &lt;strong&gt;persistent, sorted, immutable Map&lt;/strong&gt;. Both keys and values are arbitrary byte arrays.&lt;/p&gt;
+&lt;p&gt;A tablet in Bigtable is stored in the form of SSTable files.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;SSTable is organized into data blocks (typically 64KB each), with an index for fast data lookup. Data is read by first reading the index, searching the index, and then reading the data block.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;api&#34;&gt;API&lt;/h3&gt;
+&lt;p&gt;The paper provides an API that highlights the differences from RDBMS.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Writing to Bigtable
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Open the table 
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Table &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;T &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; OpenOrDie(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/bigtable/web/webtable&amp;#34;&lt;/span&gt;);
+&lt;span style=&#34;color:#75715e&#34;&gt;// Write a new anchor and delete an old anchor 
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;RowMutation &lt;span style=&#34;color:#a6e22e&#34;&gt;r1&lt;/span&gt;(T, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+r1.Set(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.c-span.org&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CNN&amp;#34;&lt;/span&gt;); 
+r1.Delete(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.abc.com&amp;#34;&lt;/span&gt;); 
+Operation op; 
+Apply(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;op, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;r1);
+
+&lt;span style=&#34;color:#75715e&#34;&gt;// Reading from Bigtable
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Scanner &lt;span style=&#34;color:#a6e22e&#34;&gt;scanner&lt;/span&gt;(T); 
+ScanStream &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;stream; 
+stream &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; scanner.FetchColumnFamily(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor&amp;#34;&lt;/span&gt;); 
+stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;SetReturnAllVersions(); 
+scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (; &lt;span style=&#34;color:#f92672&#34;&gt;!&lt;/span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Done(); stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Next()) { 
+  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%s %s %lld %s&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, 
+         scanner.RowName(), 
+         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;ColumnName(), 
+         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;MicroTimestamp(), 
+         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Value());
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
+&lt;h3 id=&#34;external-components&#34;&gt;External Components&lt;/h3&gt;
+&lt;p&gt;Bigtable is built on top of other components in Google&amp;rsquo;s ecosystem, which significantly simplifies Bigtable&amp;rsquo;s design.&lt;/p&gt;
+&lt;h4 id=&#34;gfs&#34;&gt;GFS&lt;/h4&gt;
+&lt;p&gt;GFS is Bigtable&amp;rsquo;s underlying storage, providing replication and fault tolerance.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Refer to the previous notes for details.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;chubby&#34;&gt;Chubby&lt;/h4&gt;
+&lt;p&gt;Chubby is a highly available distributed lock service that provides a namespace, where directories and files can serve as distributed locks.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;High availability means maintaining multiple service replicas, with consistency ensured via Paxos. A lease mechanism prevents defunct Chubby clients from holding onto locks indefinitely.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Why Chubby? What is its role?&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Stores Column Family information&lt;/li&gt;
+&lt;li&gt;Stores ACL (Access Control List)&lt;/li&gt;
+&lt;li&gt;Stores root metadata for the Root Tablet location, which is essential for Bigtable startup.
+&lt;blockquote&gt;
+&lt;p&gt;Bigtable uses a three-layer B+ tree-like structure for metadata. The Root Tablet location is in Chubby, which helps locate other metadata tablets, which in turn store user Tablet locations.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;li&gt;Tablet Server lifecycle monitoring
+&lt;blockquote&gt;
+&lt;p&gt;Each Tablet Server creates a unique file in a designated directory in Chubby and acquires an exclusive lock on it. The server is considered offline if it loses the lock.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In summary, Chubby&amp;rsquo;s functionality can be categorized into two parts. One is to store critical metadata as a highly available node, while the other is to manage the lifecycle of storage nodes (Tablet Servers) using distributed locking.&lt;/p&gt;
+&lt;p&gt;In GFS, these responsibilities are handled by the Master. By offloading them to Chubby, Bigtable simplifies the Master design and reduces its load.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Conceptually, Chubby can be seen as part of the Master node.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;internal-components&#34;&gt;Internal Components&lt;/h3&gt;
+&lt;h4 id=&#34;master&#34;&gt;Master&lt;/h4&gt;
+&lt;p&gt;Bigtable follows a Master-Slave architecture, similar to GFS and MapReduce. However, unlike GFS, Bigtable relies on Chubby and Tablet Servers to store metadata, with the Master only responsible for orchestrating the process and not storing tablet locations.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Responsibilities include Tablet allocation, garbage collection, monitoring Tablet Server health, load balancing, and metadata updates.
+The Master requires:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;All Tablet information to determine allocation and distribution.&lt;/li&gt;
+&lt;li&gt;Tablet Server status information to decide on allocations.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;tablet-server&#34;&gt;Tablet Server&lt;/h4&gt;
+&lt;p&gt;Tablet Servers manage tablets, handling reads and writes, splitting and merging tablets when necessary.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Metadata is not stored by the Master. Clients interact directly with Chubby and Tablet Servers for reading data.
+Tablets are split by Tablet Servers, and Master may not be notified instantly. WAL+retry mechanisms should be employed to ensure operations aren&amp;rsquo;t lost.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;client-sdk&#34;&gt;Client SDK&lt;/h4&gt;
+&lt;p&gt;The client SDK is the entry point for businesses to access Bigtable. To minimize metadata lookup overhead, caching and prefetching are used to reduce the frequency of network interactions, making use of temporal and spatial locality.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Caching may introduce inconsistency issues, which require appropriate solutions, such as retries during inconsistent states.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;storage-design&#34;&gt;Storage Design&lt;/h2&gt;
+&lt;h3 id=&#34;mapping-and-addressing&#34;&gt;Mapping and Addressing&lt;/h3&gt;
+&lt;p&gt;Bigtable data is uniquely determined by a &lt;code&gt;(Table, Row, Column)&lt;/code&gt; tuple, stored in tablets, which in turn are stored in SSTable format on GFS.&lt;/p&gt;
+&lt;p&gt;Tablets are logical representations of Bigtable&amp;rsquo;s on-disk entity, managed by Tablet Servers.&lt;/p&gt;
+&lt;p&gt;Bigtable uses &lt;code&gt;Root Tablet + METADATA Table&lt;/code&gt; for addressing. The Root Tablet location is stored in Chubby, while the METADATA Table is maintained by Tablet Servers.&lt;/p&gt;
+&lt;p&gt;The Root Tablet stores the location of METADATA Tablets, and each METADATA Tablet contains the location of user tablets.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;METADATA Table Row: &lt;code&gt;(TableID, encoding of last row in Tablet) =&amp;gt; Tablet Location&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The system uses a B+ tree-like three-layer structure to maintain tablet location information.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;scheduling-and-monitoring&#34;&gt;Scheduling and Monitoring&lt;/h3&gt;
+&lt;h4 id=&#34;scheduling&#34;&gt;Scheduling&lt;/h4&gt;
+&lt;p&gt;Scheduling involves Tablet allocation and load balancing.&lt;/p&gt;
+&lt;p&gt;A Tablet can only be assigned to one Tablet Server at any given time. The Master maintains Tablet Server states and sends allocation requests as needed.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The Master does not maintain addressing information but holds Tablet Server states (including tablet count, status, and available resources) for scheduling.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;monitoring&#34;&gt;Monitoring&lt;/h4&gt;
+&lt;p&gt;Monitoring is carried out by Chubby and the Master.&lt;/p&gt;
+&lt;p&gt;Each Tablet Server creates a unique file in a Chubby directory and acquires an exclusive lock. When the Tablet Server disconnects and loses its lease, the lock is released.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The unique file determines whether a Tablet Server is active, and the Master may delete the file as needed.
+In cases of network disconnection, the Tablet Server will try to re-acquire the exclusive lock if the file still exists.
+If the file doesn&amp;rsquo;t exist, the disconnected Tablet Server should automatically leave the cluster.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The Master ensures its uniqueness by acquiring an exclusive lock on a unique file in Chubby, and monitors a specific directory for Tablet Server files.&lt;/p&gt;
+&lt;p&gt;Once it detects a failure, it deletes the Tablet Server&amp;rsquo;s Chubby file and reallocates its tablets to other Tablet Servers.&lt;/p&gt;
+&lt;h2 id=&#34;compaction&#34;&gt;Compaction&lt;/h2&gt;
+&lt;p&gt;Bigtable provides read and write services and uses an LSM-like structure to optimize write performance. For each write operation, the ACL information is first retrieved from Chubby to verify permissions. The write is then logged in WAL and stored in Memtable before eventually being persisted in SSTable.&lt;/p&gt;
+&lt;p&gt;When Memtable grows to a certain size, it triggers a &lt;strong&gt;Minor Compaction&lt;/strong&gt; to convert Memtable to SSTable and write it to GFS.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Memtable is first converted into an immutable Memtable before becoming SSTable. This intermediate step ensures that Minor Compaction does not interfere with incoming writes.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Bigtable uses &lt;strong&gt;Compaction&lt;/strong&gt; to accelerate writes, converting random writes into sequential writes and writing data in the background. Compaction occurs in three types:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Minor Compaction&lt;/strong&gt;: Converts Memtable to SSTable, discarding deleted data and retaining only the latest version.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Merge Compaction&lt;/strong&gt;: Combines Memtable and SSTable into a new SSTable.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Major Compaction&lt;/strong&gt;: Combines multiple SSTables into one.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;For reads, data aggregation is required across Memtable and multiple SSTables, as data may be distributed across these structures. &lt;strong&gt;Second-level caching&lt;/strong&gt; and &lt;strong&gt;Bloom filters&lt;/strong&gt; are used to speed up reads.&lt;/p&gt;
+&lt;p&gt;Tablet Servers have two levels of caching:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Scan Cache&lt;/strong&gt;: Caches frequently read key-value pairs.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Block Cache&lt;/strong&gt;: Caches SSTable blocks.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Bloom filters are also employed to reduce the number of SSTable lookups by indicating whether a key is not present.&lt;/p&gt;
+&lt;h2 id=&#34;optimization&#34;&gt;Optimization&lt;/h2&gt;
+&lt;h3 id=&#34;locality&#34;&gt;Locality&lt;/h3&gt;
+&lt;p&gt;High-frequency columns can be grouped together into one SSTable, reducing the time to fetch related data.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Space is traded for time, leveraging locality principles.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;compression&#34;&gt;Compression&lt;/h3&gt;
+&lt;p&gt;SSTable blocks are compressed to reduce network bandwidth and latency during transfers.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Compression is performed in blocks to reduce encoding/decoding time and improve parallelism.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;commitlog-design&#34;&gt;CommitLog Design&lt;/h3&gt;
+&lt;p&gt;Tablet Servers maintain one &lt;strong&gt;Commit Log&lt;/strong&gt; each, instead of one per Tablet, to minimize disk seeks and enable batch operations. During recovery, log entries must be sorted by &lt;code&gt;(Table, Row, Log Seq Num)&lt;/code&gt; to facilitate recovery.&lt;/p&gt;
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Keep it simple: Simple is better than complex.&lt;/li&gt;
+&lt;li&gt;Cluster monitoring is crucial for distributed services. Google&amp;rsquo;s three papers emphasize cluster monitoring and scheduling.&lt;/li&gt;
+&lt;li&gt;Do not make assumptions about other systems in your design. Issues may range from common network issues to unexpected operational problems.&lt;/li&gt;
+&lt;li&gt;Leverage background operations to accelerate user-facing actions, such as making writes fast and using background processes for cleanups.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/Bigtable&#34;&gt;Wikipedia - Bigtable&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/bigtable-osdi06.pdf&#34;&gt;Bigtable Paper&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.cnblogs.com/xybaby/p/9096748.html&#34;&gt;Bigtable Analysis&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/181498475&#34;&gt;LSM Tree Explained&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MIT6.824-MapReduce</title>
+      <link>https://noneback.github.io/blog/mit6.824-mapreduce/</link>
+      <pubDate>Fri, 22 Jan 2021 17:02:44 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-mapreduce/</guid>
+      <description>&lt;p&gt;The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.&lt;/p&gt;
+&lt;p&gt;This is the first chapter of my Distributed System study notes.&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;about-the-paper&#34;&gt;About the Paper&lt;/h2&gt;
+&lt;p&gt;The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the &lt;strong&gt;Distributed&lt;/strong&gt; MapReduce System, including the Master data structure, fault tolerance, and some refinements.&lt;/p&gt;
+&lt;h3 id=&#34;mapreduce-computing-model&#34;&gt;MapReduce Computing Model&lt;/h3&gt;
+&lt;p&gt;The model takes a series of key-value pairs as input and outputs a series of key-value pairs as a result. Users can use the MapReduce System by designing Map and Reduce functions.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Map: Takes input data and generates a set of intermediate key-value pairs&lt;/li&gt;
+&lt;li&gt;Reduce: Takes intermediate key-value pairs as input, combines all data with the same key, and outputs the result.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;map(String key, String value)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
+  &lt;span style=&#34;color:#75715e&#34;&gt;// key: document name
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// value: document contents
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each word w in value:
+    EmitIntermediate(w, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;1&amp;#34;&lt;/span&gt;);
+
+
+reduce(String key, Iterator values)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
+  &lt;span style=&#34;color:#75715e&#34;&gt;// key: a word
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// values: a list of counts
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each v in values:
+    result &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; ParseInt(v);
+  Emit(AsString(result));
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;mapreduce-execution-process&#34;&gt;MapReduce Execution Process&lt;/h3&gt;
+&lt;p&gt;The Distributed MapReduce System adopts a master-slave design. During the MapReduce computation, there is generally one Master and several Workers.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Master: Responsible for creating, assigning, and scheduling Map and Reduce tasks&lt;/li&gt;
+&lt;li&gt;Worker: Responsible for executing Map and Reduce tasks&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png&#34; alt=&#34;Screenshot_20210112_125637&#34;&gt;&lt;/p&gt;
+&lt;p&gt;A more detailed description is as follows:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;The entire MapReduce execution process includes M Map Tasks and R Reduce Tasks, divided into two phases: Map Phase and Reduce Phase.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The input file is split into M splits, and the computation enters the Map Phase. The Master assigns Map Tasks to idle Workers. The assigned Worker reads the corresponding split data and executes the Task. When all Map Tasks are completed, the Map Phase ends. The Partition function (generally &lt;code&gt;hash(key) mod R&lt;/code&gt;) is used to generate R sets of intermediate key-value pairs, which are stored in files and reported to the Master for subsequent Reduce Task operations.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The computation enters the Reduce Phase. The Master assigns Reduce Tasks, and each Worker reads the corresponding intermediate key-value file and executes the Task. Once all Reduce tasks are completed, the computation is finished, and the results are stored in result files.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;mapreduce-fault-tolerance-mechanism&#34;&gt;MapReduce Fault Tolerance Mechanism&lt;/h3&gt;
+&lt;p&gt;Since Google MapReduce heavily relies on the distributed atomic file read/write operations provided by Google File System, the fault tolerance mechanism of the MapReduce cluster is much simpler and primarily focuses on recovering from unexpected task interruptions.&lt;/p&gt;
+&lt;h4 id=&#34;worker-fault-tolerance&#34;&gt;Worker Fault Tolerance&lt;/h4&gt;
+&lt;p&gt;In the cluster, the Master periodically sends Ping signals to each Worker. If a Worker does not respond for a period of time, the Master considers the Worker unavailable.&lt;/p&gt;
+&lt;p&gt;Any Map task assigned to that Worker, whether running or completed, must be reassigned by the Master to another Worker, as the Worker being unavailable also means the intermediate results stored on that Worker&amp;rsquo;s local disk are no longer available. The Master will also notify all Reducers about the retry, and Reducers that fail to obtain complete intermediate results from the original Mapper will start fetching data from the new Mapper.&lt;/p&gt;
+&lt;p&gt;If a Reduce task is assigned to that Worker, the Master will select any unfinished Reduce tasks and reassign them to other Workers. Since the results of completed Reduce tasks are stored in Google File System, the availability of these results is ensured by Google File System, and the MapReduce Master only needs to handle unfinished Reduce tasks.&lt;/p&gt;
+&lt;p&gt;If there is a Worker in the cluster that takes an unusually long time to complete the last few Map or Reduce tasks, the entire MapReduce computation time will be prolonged, and such a Worker becomes a straggler.&lt;/p&gt;
+&lt;p&gt;Once the MapReduce computation reaches a certain completion level, any remaining tasks are backed up and assigned to other idle Workers, and the task is considered completed once one of the Workers finishes it.&lt;/p&gt;
+&lt;h4 id=&#34;master-fault-tolerance&#34;&gt;Master Fault Tolerance&lt;/h4&gt;
+&lt;p&gt;There is only one Master node in the entire MapReduce cluster, so Master failures are relatively rare.&lt;/p&gt;
+&lt;p&gt;During operation, the Master node periodically saves the current state of the cluster as a checkpoint to disk. After the Master process terminates, a restarted Master process can use the data stored on disk to recover to the state of the last checkpoint.&lt;/p&gt;
+&lt;h3 id=&#34;refinement&#34;&gt;Refinement&lt;/h3&gt;
+&lt;h4 id=&#34;partition-function&#34;&gt;Partition Function&lt;/h4&gt;
+&lt;p&gt;Used during the Map Phase to assign intermediate key-value pairs to R files according to certain rules.&lt;/p&gt;
+&lt;h4 id=&#34;combiner&#34;&gt;Combiner&lt;/h4&gt;
+&lt;p&gt;In some situations, the user-defined Map task may generate a large number of duplicate intermediate keys. The Combiner function performs a partial merge of the intermediate results to reduce the amount of data that needs to be transmitted between Mapper and Reducer.&lt;/p&gt;
+&lt;h2 id=&#34;experiment&#34;&gt;Experiment&lt;/h2&gt;
+&lt;p&gt;The experiment involves designing and implementing the Master and Worker to complete the main functionality of a Simple MapReduce System.&lt;/p&gt;
+&lt;p&gt;In the experiment, the single Master and multiple Worker model was implemented through RPC calls, and different applications were formed by running Map and Reduce functions via Go Plugins.&lt;/p&gt;
+&lt;h3 id=&#34;master--worker-functionality&#34;&gt;Master &amp;amp; Worker Functionality&lt;/h3&gt;
+&lt;h4 id=&#34;master&#34;&gt;Master&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Task creation and scheduling&lt;/li&gt;
+&lt;li&gt;Worker registration and task assignment&lt;/li&gt;
+&lt;li&gt;Receiving the current state of the Worker&lt;/li&gt;
+&lt;li&gt;Monitoring task status&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;worker&#34;&gt;Worker&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Registering with the Master&lt;/li&gt;
+&lt;li&gt;Getting tasks and processing them&lt;/li&gt;
+&lt;li&gt;Reporting status&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Note: The Master provides corresponding functions to Workers via RPC calls&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;main-data-structures&#34;&gt;Main Data Structures&lt;/h3&gt;
+&lt;p&gt;The design of data structures is the main task, and good design helps in implementing functionality. The relevant code is shown here; for the specific implementation, see &lt;a href=&#34;https://github.com/noneback/Toys/tree/master/6.824-Lab1-MapReduce&#34;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;master-1&#34;&gt;Master&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Master&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+ &lt;span style=&#34;color:#75715e&#34;&gt;// Your definitions here.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;taskQueue&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;chan&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;tasksContext&lt;/span&gt; []&lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;lock&lt;/span&gt;         &lt;span style=&#34;color:#a6e22e&#34;&gt;sync&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Mutex&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;files&lt;/span&gt;        []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;phase&lt;/span&gt;        &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;done&lt;/span&gt;         &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;     &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;worker-1&#34;&gt;Worker&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;worker&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;mapf&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) []&lt;span style=&#34;color:#a6e22e&#34;&gt;KeyValue&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;reducef&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;nMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;task--taskcontext&#34;&gt;Task &amp;amp; TaskContext&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;       &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;Filename&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;Phase&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;t&lt;/span&gt;         &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;state&lt;/span&gt;     &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;startTime&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Time&lt;/span&gt;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;rpc-args--reply&#34;&gt;Rpc Args &amp;amp; Reply&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;T&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;HasT&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskID&lt;/span&gt;   &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;State&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
+}
+&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;NReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;NMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;constant--type&#34;&gt;Constant &amp;amp; Type&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;RUNNING&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;FAILED&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;READY&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;IDEL&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;COMPLETE&lt;/span&gt;
+)
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;MAX_PROCESSING_TIME&lt;/span&gt; = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;SCHEDULE_INTERVAL&lt;/span&gt;   = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt;
+)
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;MAP&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
+ &lt;span style=&#34;color:#a6e22e&#34;&gt;REDUCE&lt;/span&gt;
+)
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;running-and-testing&#34;&gt;Running and Testing&lt;/h3&gt;
+&lt;h4 id=&#34;running&#34;&gt;Running&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# In main directory&lt;/span&gt;
+cd ./src/main
+&lt;span style=&#34;color:#75715e&#34;&gt;# Master&lt;/span&gt;
+go run ./mrmaster.go pg*.txt                                                
+&lt;span style=&#34;color:#75715e&#34;&gt;# Worker&lt;/span&gt;
+go build -buildmode&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;plugin ../mrapps/wc.go &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; go run ./mrworker.go ./wc.so
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;testing&#34;&gt;Testing&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;cd ./src/main
+
+sh  ./test-mr.sh
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;optimization&#34;&gt;Optimization&lt;/h2&gt;
+&lt;p&gt;These optimizations are some designs I thought of that could be improved when reviewing my code after completing the experiment.&lt;/p&gt;
+&lt;h3 id=&#34;hotspot-issue&#34;&gt;Hotspot Issue&lt;/h3&gt;
+&lt;p&gt;The hotspot issue here refers to a scenario where a particular data item appears frequently in the dataset. The intermediate key-value pairs generated during the Map phase can lead to a situation where one key appears frequently, resulting in excessive disk IO and network IO for a few machines during the shuffle step.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The essence of this issue is that the Shuffle step in MapReduce is highly dependent on the data.&lt;/p&gt;
+&lt;p&gt;The &lt;strong&gt;design purpose&lt;/strong&gt; of Shuffle is to aggregate intermediate results to facilitate processing during the Reduce phase. Consequently, if the data is extremely unbalanced, hotspot issues will naturally arise.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;In fact, the core problem is that a large number of keys are assigned to a single disk file after being hashed, serving as input for the subsequent Reduce phase.&lt;/p&gt;
+&lt;p&gt;The hash value for the same key should be identical, so the question becomes: &lt;em&gt;How can we assign the same key&amp;rsquo;s hash value to different machines?&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;The solution I came up with is to add a random salt to the key in the Shuffle&amp;rsquo;s hash calculation so that the hash values are different, thereby reducing the probability of keys being assigned to the same machine and solving the hotspot issue.&lt;/p&gt;
+&lt;h3 id=&#34;fault-tolerance&#34;&gt;Fault Tolerance&lt;/h3&gt;
+&lt;p&gt;The paper already proposes some solutions for fault tolerance. The scenario in question is: a Worker node crashes unexpectedly and reconnects after a reboot. The Master observes the crash and reassigns its tasks to other nodes, but the reconnected Worker continues executing its original tasks, resulting in duplicate result files.&lt;/p&gt;
+&lt;p&gt;The potential issue here is that these two files may cause incorrect results. Furthermore, the reconnected Worker continuing to execute its original tasks wastes CPU and IO resources.&lt;/p&gt;
+&lt;p&gt;Based on this, we need to mark the newly generated result files, ensuring only the latest files are used as results, thus resolving the file conflict. Additionally, we should add an RPC interface for Worker nodes so that when they reconnect, the Master can call it to clear out any original tasks.&lt;/p&gt;
+&lt;h3 id=&#34;straggler-issue&#34;&gt;Straggler Issue&lt;/h3&gt;
+&lt;p&gt;The straggler issue refers to a Task taking a long time to complete, delaying the overall MapReduce computation. Essentially, it is a hotspot issue and Worker crash handling problem, which can be addressed by referring to the above sections.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Distributed System&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/labs/lab-mr.html&#34;&gt;Lab Official Site&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;http://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf&#34;&gt;MapReduce: Simplified Data Processing on Large Clusters&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/34849261&#34;&gt;Detailed Explanation of Google MapReduce Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;​&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

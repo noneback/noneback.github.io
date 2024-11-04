@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications </title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@好久没学习了，学点想学的。本次内容是分布式事务Percolator, 不翻译论文，没有算法细节，只记录自己的理解。 Percolator 和 2PC 2PC 两阶段提交协议中包含">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/percolator/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications " />
+<meta property="og:description" content="好久没学习了，学点想学的。本次内容是分布式事务Percolator, 不翻译论文，没有算法细节，只记录自己的理解。 Percolator 和 2PC 2PC 两阶段提交协议中包含" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/blog/zh/percolator/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2023-09-28T10:43:23+08:00" />
+<meta property="article:modified_time" content="2023-09-28T10:43:23+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications "/>
+<meta name="twitter:description" content="好久没学习了，学点想学的。本次内容是分布式事务Percolator, 不翻译论文，没有算法细节，只记录自己的理解。 Percolator 和 2PC 2PC 两阶段提交协议中包含"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  4 ,
+      "name": "Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications ",
+      "item": "https://noneback.github.io/zh/blog/zh/percolator/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications ",
+  "name": "Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications ",
+  "description": "好久没学习了，学点想学的。本次内容是分布式事务Percolator, 不翻译论文，没有算法细节，只记录自己的理解。 Percolator 和 2PC 2PC 两阶段提交协议中包含",
+  "keywords": [
+    "Percolator", "Distributed System", "Transaction"
+  ],
+  "articleBody": "好久没学习了，学点想学的。本次内容是分布式事务Percolator, 不翻译论文，没有算法细节，只记录自己的理解。\nPercolator 和 2PC 2PC 两阶段提交协议中包含两种角色，Coordinator和Participant。协调者负责整个协议的推进，使得多个参与者最终达到一致的决议。参与者响应协调者的请求，根据协调者的请求完成 prepare 操作及 commit/abort 操作。\n 2PC协议保证事务的原子性(ACD)，并未对隔离性(I)做任何实现，依赖单机事务(ACD)。Coordinator，显然是关键路径，可能成为单点瓶颈，或者宕机问题阻塞事务流程。\n  协调者 参与者 QUERY TO COMMIT -------------------------------- VOTE YES/NO prepare*/abort* ACKNOWLEDGMENT commit*/abort* Percolator 本身其实算一种经过优化的二阶段提交的实现，比如：\n 对锁的使用进行优化，引入Primary-Secondary二级锁，去除了对Coordinator的依赖。 提供了完整的ACID事务语义实现，并且支持MVCC（依赖时间戳服务）  Percolator协议细节 Percolator系统主要有三部分组成：\n  Client，发起事务的客户端，Client 是整个协议的控制中心，是两阶段提交的协调者（Coordinator）。\n  TO，Time Observer，分配时间戳，提供全局唯一且递增的时间戳，实现MVCC\n  Bigtable，提供单机单行事务，数据存储在Bigtable中，包含数据本身以及附带的一些属性。\n lock + write + data: for transaction，lock表示cell被事务持有，write表示数据的可见性\nnotify + ack: for watcher or notifier\n   从外部看，Percolator以SDK的提供给业务方使用。提供事务以及R/W。模型类似于 Begin Txn → Sets of RW Operations → Commit or About or Rollback其中Bigtable最为持久化组件屏蔽了底层Tablet Server Data Sharding的细节，事务中的每一个写操作或者读后写（统称为Write）操作都视为分布式事务的参与者，而这些操作最后可能会分派到多个Tablet Server节点上。\n算法流程 一个事务的所有 Write 在提交之前都会先缓存在 Client，然后在提交阶段一次性写入；Percolator 的事务提交是标准的两阶段提交，分为 Prewrite 和 Commit 。\nPrewrite  从TO获取一个时间戳，作为事务的开始时间。 给数据上锁，标记数据被当前事务占有。上锁失败则表示数据被其他事物占有，当前事物失败。   上锁过程利用了Primary-Secondary机制，选择一个 Write 作为 primary，其它 Write 则是 secondary。Secondary的锁记录指向Primary。\n 显然，Prewrite阶段的数据对其他事务均不可见。\nCommit  尝试对Prewrite中的数据进行Commit。Commit的时候先对Primary记录进行Commit，Primary记录的提交时间将作为整个事务的提交时间。首先对记录的锁记录进行检测，如果锁不存在，则表示Prewrite阶段的锁被其他事物清理，则事物执行失败。如果存在，则写记录中的write列，表示数据对系统可见。   异步网络之中，单节点故障，网络延迟很常见。算法需要在发现这些故障的时候，清理掉这些锁记录，避免死锁。所以，在Commit阶段，如果锁不存在，则表示事务的参与者发生了问题当前事务需要被清理。\n  提交成功之后对锁记录进行清理。显然，锁清理也是可以异步的。  这些设计使得算法去除了中心化Coordinator的依赖。因为过去需要依赖这个中心服务来维护事务各个参与者的信息。而在本算法中，利用Primary-Secondary二级锁以及Write列就可以实现。Write列表示数据对外的可见性以及数据版本链条。Lock列表示数据被事务持有。Primary-Secondary记录了参与者的逻辑从属关系。这样的设计使得Primary记录的提交变成了整个事务的提交点。一但Primary被提交，所有的Secondary记录可以通过检查对应Primary记录的Write列来进行异步提交。\nSnapshot Isolation 两阶段提交解决的是事务的原子性。在此基础上，Percolator还提供了Snapshot Isolation的隔离性。简而言之，Snapshot Isolation要求提交的事务不能导致数据冲突，事务的读操作满足Snapshot Read。利用事务开始时间以及Primary记录的提交时间，可以维护一个事务之间的全序关系，这些问题自然就可以解决了。\n异步网络的死锁问题 之前提到，异步网络之中，单节点故障，网络延迟很常见。算法需要在发现这些故障的时候，清理掉这些锁记录，避免死锁。故障检测的策略可以很简单，比如超时，故障会导致当前事务失败；节点故障又恢复正常，当时的事务已经失败，则此时需要对节点上相关锁记录进行清理。锁的清理可以异步化，比如在Prewrite上锁时，当发现记录Lock列非空，则去检测其Primary锁是否为空，Primary非空，则表示这个事务为完成，可以清理；为空则表示事务提交，则去找到事务提交时间，并把数据提交，再清理锁记录（RollForward）。\n通知机制 通知机制对于异步系统的状态观测和联动很重要。但不是本文重点。\nPercolator在TiDB上的使用 基于我们上文的分析，我们可以得出这样的结论：Percolator是一种优化过的2PC分布式事务实现，实现的基础是支持单机事务的存储引擎。\n让我们来简单看看TiDB的的基于Percolator算法实现分布式事务。\nTiDB和TiKV架构如上。TiDB关系表里的数据最终都被映射到了TiKV中的KV中。TiKV是一个基于Raft+RocksDB的分布式KV。RocksDB是一个支持事务操作的KV。\n所以TiDB的事务的执行路径可以是这样：对关系表的事务操作转为对一组KV的事务操作，再基于Percolator去执行，以此实现关系表的事务操作。\n 当然不可能提供和单机TP数据库一样的事务语义和性能保证。但Share Nothing架构也有自己的优点，所以这个也许并不重要。\n 参考 两阶段提交的工程实践\nPolarDB 数据库内核月报\npercolator：在线增量处理系统 中文翻译\npercolator：在线增量处理系统 中文翻译 | 一只小小鸟\n二阶段提交 - 维基百科，自由的百科全书\nPercolator 和 TiDB 事务算法\n两阶段提交 | OceanBase 学习指南\nTiDB 整体架构\n",
+  "wordCount" : "2513",
+  "inLanguage": "zh",
+  "datePublished": "2023-09-28T10:43:23+08:00",
+  "dateModified": "2023-09-28T10:43:23+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/blog/zh/percolator/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"
+    integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"
+    integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR"
+    crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMathInElement(document.body, {
+            
+            
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: "\\begin{equation}", right: "\\end{equation}", display: true },
+                { left: "\\begin{align}", right: "\\end{align}", display: true },
+                { left: "\\begin{alignat}", right: "\\end{alignat}", display: true },
+                { left: "\\begin{gather}", right: "\\end{gather}", display: true },
+                { left: "\\begin{CD}", right: "\\end{CD}", display: true },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            
+            throwOnError: false,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command),
+            macros: {
+                "\\eqref": "\\href{###1}{(\\text{#1})}",
+                "\\ref": "\\href{###1}{\\text{#1}}",
+                "\\label": "\\htmlId{#1}{}"
+            }
+        });
+    });
+</script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/blog">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications </h1>
+  </header>
+
+  <p>
+  <small>
+    2023年9月28日&nbsp;· 2513 字&nbsp;· 6 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
+      
+      <a href="https://noneback.github.io/zh/tags/transaction/">Transaction</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#percolator-和-2pc">Percolator 和 2PC</a>
+      <ul>
+        <li><a href="#2pc">2PC</a></li>
+        <li><a href="#percolator">Percolator</a></li>
+      </ul>
+    </li>
+    <li><a href="#percolator协议细节">Percolator协议细节</a>
+      <ul>
+        <li><a href="#算法流程">算法流程</a></li>
+        <li><a href="#snapshot-isolation">Snapshot Isolation</a></li>
+        <li><a href="#异步网络的死锁问题">异步网络的死锁问题</a></li>
+        <li><a href="#通知机制">通知机制</a></li>
+      </ul>
+    </li>
+    <li><a href="#percolator在tidb上的使用">Percolator在TiDB上的使用</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>好久没学习了，学点想学的。本次内容是分布式事务Percolator, 不翻译论文，没有算法细节，只记录自己的理解。</p>
+<h2 id="percolator-和-2pc">Percolator 和 2PC</h2>
+<h3 id="2pc">2PC</h3>
+<p>两阶段提交协议中包含两种角色，<strong>Coordinator和Participant</strong>。协调者负责整个协议的推进，使得多个参与者最终达到一致的决议。参与者响应协调者的请求，根据协调者的请求完成 prepare 操作及 commit/abort 操作。</p>
+<blockquote>
+<p><strong>2PC协议保证事务的原子性(ACD)</strong>，并<strong>未对隔离性(I)做任何实现</strong>，依赖单机事务(ACD)。Coordinator，显然是关键路径，可能成为单点瓶颈，或者宕机问题阻塞事务流程。</p>
+</blockquote>
+<pre tabindex="0"><code>    协调者                                              参与者
+                              QUERY TO COMMIT
+                --------------------------------&gt;
+                              VOTE YES/NO           prepare*/abort*
+                &lt;-------------------------------
+commit*/abort*                COMMIT/ROLLBACK
+                --------------------------------&gt;
+                              ACKNOWLEDGMENT        commit*/abort*
+                &lt;--------------------------------
+end
+
+</code></pre><h3 id="percolator">Percolator</h3>
+<p>本身其实算一种经过优化的二阶段提交的实现，比如：</p>
+<ul>
+<li>对锁的使用进行优化，引入Primary-Secondary二级锁，去除了对<strong>Coordinator</strong>的依赖。</li>
+<li>提供了完整的ACID事务语义实现，并且支持MVCC（依赖时间戳服务）</li>
+</ul>
+<h2 id="percolator协议细节">Percolator协议细节</h2>
+<p>Percolator系统主要有三部分组成：</p>
+<ul>
+<li>
+<p>Client，发起事务的客户端，Client 是整个协议的控制中心，是两阶段提交的协调者（Coordinator）。</p>
+</li>
+<li>
+<p>TO，Time Observer，分配时间戳，提供全局唯一且递增的时间戳，实现MVCC</p>
+</li>
+<li>
+<p>Bigtable，提供单机单行事务，数据存储在Bigtable中，包含数据本身以及附带的一些属性。</p>
+<blockquote>
+<p><code>lock + write + data</code>: for transaction，lock表示cell被事务持有，write表示数据的可见性</p>
+<p><code>notify + ack</code>: for watcher or notifier</p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png"></p>
+</blockquote>
+</li>
+</ul>
+<p>从外部看，Percolator以SDK的提供给业务方使用。提供事务以及R/W。模型类似于 <code>Begin Txn → Sets of RW Operations → Commit or About or Rollback</code>其中Bigtable最为持久化组件屏蔽了底层Tablet Server Data Sharding的细节，事务中的每一个写操作或者读后写（统称为Write）操作都视为分布式事务的参与者，而这些操作最后可能会分派到多个Tablet Server节点上。</p>
+<h3 id="算法流程">算法流程</h3>
+<p>一个事务的所有 Write 在提交之前都会先缓存在 Client，然后在提交阶段一次性写入；Percolator 的事务提交是标准的两阶段提交，分为 Prewrite 和 Commit 。</p>
+<h4 id="prewrite">Prewrite</h4>
+<ol>
+<li>从TO获取一个时间戳，作为事务的开始时间。</li>
+<li>给数据上锁，标记数据被当前事务占有。上锁失败则表示数据被其他事物占有，当前事物失败。</li>
+</ol>
+<blockquote>
+<p>上锁过程利用了Primary-Secondary机制，选择一个 Write 作为 primary，其它 Write 则是 secondary。Secondary的锁记录指向Primary。</p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png"></p>
+</blockquote>
+<p>显然，Prewrite阶段的数据对其他事务均不可见。</p>
+<h4 id="commit">Commit</h4>
+<ol>
+<li>尝试对Prewrite中的数据进行Commit。Commit的时候先对Primary记录进行Commit，Primary记录的提交时间将作为整个事务的提交时间。首先对记录的锁记录进行检测，如果锁不存在，则表示Prewrite阶段的锁被其他事物清理，则事物执行失败。如果存在，则写记录中的write列，表示数据对系统可见。</li>
+</ol>
+<blockquote>
+<p>异步网络之中，单节点故障，网络延迟很常见。算法需要在发现这些故障的时候，清理掉这些锁记录，避免死锁。所以，在Commit阶段，如果锁不存在，则表示事务的参与者发生了问题当前事务需要被清理。</p>
+</blockquote>
+<ol>
+<li>提交成功之后对锁记录进行清理。显然，锁清理也是可以异步的。</li>
+</ol>
+<p>这些设计使得算法去除了中心化<strong>Coordinator</strong>的<strong><strong>依赖</strong></strong>。因为过去需要依赖这个中心服务来维护事务各个参与者的信息。而在本算法中，利用Primary-Secondary二级锁以及Write列就可以实现。Write列表示数据对外的可见性以及数据版本链条。Lock列表示数据被事务持有。Primary-Secondary记录了参与者的逻辑从属关系。这样的设计使得Primary记录的提交变成了整个事务的提交点。一但Primary被提交，所有的Secondary记录可以通过检查对应Primary记录的Write列来进行异步提交。</p>
+<h3 id="snapshot-isolation">Snapshot Isolation</h3>
+<p>两阶段提交解决的是事务的原子性。在此基础上，Percolator还提供了<strong><strong>Snapshot Isolation</strong></strong>的隔离性。简而言之，Snapshot Isolation要求提交的事务不能导致数据冲突，事务的读操作满足Snapshot Read。利用事务开始时间以及Primary记录的提交时间，可以维护一个事务之间的全序关系，这些问题自然就可以解决了。</p>
+<h3 id="异步网络的死锁问题">异步网络的死锁问题</h3>
+<p>之前提到，异步网络之中，单节点故障，网络延迟很常见。算法需要在发现这些故障的时候，清理掉这些锁记录，避免死锁。故障检测的策略可以很简单，比如超时，故障会导致当前事务失败；节点故障又恢复正常，当时的事务已经失败，则此时需要对节点上相关锁记录进行清理。锁的清理可以异步化，比如在Prewrite上锁时，当发现记录Lock列非空，则去检测其Primary锁是否为空，Primary非空，则表示这个事务为完成，可以清理；为空则表示事务提交，则去找到事务提交时间，并把数据提交，再清理锁记录（RollForward）。</p>
+<h3 id="通知机制">通知机制</h3>
+<p>通知机制对于异步系统的状态观测和联动很重要。但不是本文重点。</p>
+<h2 id="percolator在tidb上的使用">Percolator在TiDB上的使用</h2>
+<p>基于我们上文的分析，我们可以得出这样的结论：Percolator是一种优化过的2PC分布式事务实现，实现的基础是支持单机事务的存储引擎。</p>
+<p>让我们来简单看看TiDB的的基于Percolator算法实现分布式事务。</p>
+<p><img src="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png" alt="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png"></p>
+<p>TiDB和TiKV架构如上。TiDB关系表里的数据最终都被映射到了TiKV中的KV中。TiKV是一个基于Raft+RocksDB的分布式KV。RocksDB是一个支持事务操作的KV。</p>
+<p><img src="https://download.pingcap.com/images/docs/tikv-rocksdb.png" alt="https://download.pingcap.com/images/docs/tikv-rocksdb.png"></p>
+<p>所以TiDB的事务的执行路径可以是这样：对关系表的事务操作转为对一组KV的事务操作，再基于Percolator去执行，以此实现关系表的事务操作。</p>
+<blockquote>
+<p>当然不可能提供和单机TP数据库一样的事务语义和性能保证。但Share Nothing架构也有自己的优点，所以这个也许并不重要。</p>
+</blockquote>
+<h2 id="参考">参考</h2>
+<p><a href="https://zhuanlan.zhihu.com/p/22594180">两阶段提交的工程实践</a></p>
+<p><a href="http://mysql.taobao.org/monthly/2018/11/02/">PolarDB 数据库内核月报</a></p>
+<p><a href="https://karellincoln.github.io/2018/04/05/percolator-translate/">percolator：在线增量处理系统 中文翻译</a></p>
+<p><a href="https://www.notion.so/percolator-879c8f72f80b4966a2ec1e41edc74560?pvs=21">percolator：在线增量处理系统 中文翻译 | 一只小小鸟</a></p>
+<p><a href="https://zh.wikipedia.org/zh-hans/%E4%BA%8C%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4">二阶段提交 - 维基百科，自由的百科全书</a></p>
+<p><a href="https://cn.pingcap.com/blog/percolator-and-txn">Percolator 和 TiDB 事务算法</a></p>
+<p><a href="http://www.oceanbase.wiki/concept/transaction-management/transactions/distributed-transactions/two-phase-commit">两阶段提交 | OceanBase 学习指南</a></p>
+<p><a href="https://docs.pingcap.com/zh/tidb/stable/tidb-architecture">TiDB 整体架构</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/blog/zh/borg/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Borg: Large-scale cluster management at Google with Borg</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/blog/zh/dynamo/"><span>Dynamo: Amazon’s Highly Available Key-value Store</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>

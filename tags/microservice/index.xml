@@ -1,12 +1,234 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Microservice on NoneBack</title>
+    <title>microservice on NoneBack</title>
     <link>https://noneback.github.io/tags/microservice/</link>
-    <description>Recent content in Microservice on NoneBack created by </description>
+    <description>Recent content in microservice on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 20 May 2021 23:55:11 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/microservice/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Distributed Transactions</title>
+      <link>https://noneback.github.io/blog/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/</link>
+      <pubDate>Thu, 20 May 2021 23:55:11 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/</guid>
+      <description>&lt;h1 id=&#34;transactions-and-distributed-transactions&#34;&gt;Transactions and Distributed Transactions&lt;/h1&gt;
+&lt;h2 id=&#34;transactions&#34;&gt;Transactions&lt;/h2&gt;
+&lt;p&gt;A &lt;strong&gt;transaction&lt;/strong&gt; is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the &lt;strong&gt;atomicity&lt;/strong&gt; of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.&lt;/p&gt;
+&lt;p&gt;A single-node database transaction has four main properties:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Atomicity&lt;/strong&gt;: The transaction is executed as a whole. Either all operations within the transaction are executed, or none are executed.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Consistency&lt;/strong&gt;: The transaction must ensure that the database moves from one consistent state to another. Consistent states mean that the data in the database must satisfy all integrity constraints.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Isolation&lt;/strong&gt;: When multiple transactions are executed concurrently, the execution of one transaction should not affect the execution of others.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Durability&lt;/strong&gt;: Changes made by a committed transaction should be permanently stored in the database.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;distributed-transactions&#34;&gt;Distributed Transactions&lt;/h2&gt;
+&lt;p&gt;A &lt;strong&gt;distributed transaction&lt;/strong&gt; is a transaction where the &lt;strong&gt;participants&lt;/strong&gt;, &lt;strong&gt;transaction-supporting servers&lt;/strong&gt;, &lt;strong&gt;resource servers&lt;/strong&gt;, and &lt;strong&gt;transaction manager&lt;/strong&gt; are located on different nodes of a distributed system.&lt;/p&gt;
+&lt;p&gt;With the adoption of microservice architectures, large business domains often involve multiple services, and a business process requires participation from multiple services. In specific business scenarios, data consistency among multiple services must be ensured.&lt;/p&gt;
+&lt;p&gt;For example, in a large e-commerce system, the order interface typically deducts inventory, reduces discounts, and generates an order ID. The order service, inventory, discount, and order ID are all separate services. The success of the order interface depends not only on local database operations but also on third-party system results. In this case, distributed transactions ensure that all these operations either succeed together or fail together.&lt;/p&gt;
+&lt;p&gt;In essence, &lt;strong&gt;distributed transactions are used to ensure data consistency across different databases&lt;/strong&gt;.&lt;/p&gt;
+&lt;h1 id=&#34;use-cases&#34;&gt;Use Cases&lt;/h1&gt;
+&lt;p&gt;Typical use cases in e-commerce systems include:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Order Inventory Deduction&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;When placing an order, operations include generating an order record and reducing product inventory. These are handled by separate microservices, so distributed transactions are required to ensure the atomicity of the order operation.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Third-Party Payments&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;In a microservice architecture, payment and orders are independent services. The order payment status depends on a notification from the financial service, which, in turn, depends on notifications from a third-party payment service.&lt;/p&gt;
+&lt;p&gt;A classic scenario is illustrated below:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;From the diagram, there are two calls: the third-party payment service calling the payment service, and the payment service calling the order service. Both calls can encounter &lt;strong&gt;timeouts&lt;/strong&gt;. Without distributed transactions, the actual payment status and the final payment status visible to the user may become &lt;strong&gt;inconsistent&lt;/strong&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;implementation-approaches&#34;&gt;Implementation Approaches&lt;/h1&gt;
+&lt;h2 id=&#34;two-phase-commit-2pc&#34;&gt;Two-Phase Commit (2PC)&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;A transaction commit is divided into two phases:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Preparation Phase&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The transaction manager (TM) initiates the transaction, logs the start of the transaction, and asks the participating resource managers (RMs) whether they can execute the commit operation, then waits for their responses.&lt;/li&gt;
+&lt;li&gt;RMs execute local transactions, log redo/undo data, and return results to TM, but do not commit.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Commit/Rollback Phase&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;If all participating RMs execute successfully, the transaction proceeds to the &lt;strong&gt;commit phase&lt;/strong&gt;:
+&lt;ul&gt;
+&lt;li&gt;TM logs the commit, sends a commit instruction to all RMs.&lt;/li&gt;
+&lt;li&gt;RMs commit the local transaction and respond to TM.&lt;/li&gt;
+&lt;li&gt;TM logs the end of the transaction.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;If any RM fails or times out during preparation or commit:
+&lt;ul&gt;
+&lt;li&gt;TM logs the rollback, sends rollback instructions to all RMs.&lt;/li&gt;
+&lt;li&gt;RMs rollback the local transaction and respond to TM.&lt;/li&gt;
+&lt;li&gt;TM logs the end of the transaction.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;characteristics&#34;&gt;Characteristics&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Atomicity&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Consistency&lt;/strong&gt;: Strong consistency&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Isolation&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Durability&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;disadvantages&#34;&gt;Disadvantages&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Synchronous Blocking&lt;/strong&gt;: When participants occupy shared resources, others can only wait for resource release, leading to blocking.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Single Point of Failure&lt;/strong&gt;: If the transaction manager fails, the entire system becomes unavailable.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Data Inconsistency&lt;/strong&gt;: If the transaction manager only sends some commit messages, and a network issue occurs, only some participants receive the commit message, leading to inconsistency.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Uncertainty&lt;/strong&gt;: If both the transaction manager and a participant fail after sending a commit message, it is uncertain whether the message was successfully committed.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;local-message-table&#34;&gt;Local Message Table&lt;/h2&gt;
+&lt;p&gt;The transaction initiator maintains a &lt;strong&gt;local message table&lt;/strong&gt;, and operations on the business table and the message table are within the same local transaction. Asynchronously, a &lt;strong&gt;scheduled task&lt;/strong&gt; scans the message table and delivers the message downstream.&lt;/p&gt;
+&lt;p&gt;The broad concept of the local message table also allows downstream notification through methods other than message delivery, such as RPC calls.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34; alt=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34;&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;The initiator executes a local transaction, operating both the business table and the local message table.&lt;/li&gt;
+&lt;li&gt;A scheduled task scans pending local messages (in the message table) and sends them to the message queue:
+&lt;ul&gt;
+&lt;li&gt;If successful, mark the local message as sent.&lt;/li&gt;
+&lt;li&gt;If failed, retry until successful.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;The message queue delivers the message downstream.&lt;/li&gt;
+&lt;li&gt;The downstream transaction participant receives the message and executes a local transaction:
+&lt;ul&gt;
+&lt;li&gt;If failed, no ACK is returned, and the message queue retries.&lt;/li&gt;
+&lt;li&gt;If successful, an ACK is returned, marking the end of the global transaction.&lt;/li&gt;
+&lt;li&gt;If the message or ACK is lost, the message queue retries.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;exceptional-scenarios&#34;&gt;Exceptional Scenarios&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Message Loss&lt;/strong&gt;: Handled by repeating the scheduled task.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Delivery Failure&lt;/strong&gt;: Handled by retries, downstream must ensure idempotency.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ACK Loss&lt;/strong&gt;: Handled by retries, downstream must ensure idempotency.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;advantages-and-challenges&#34;&gt;Advantages and Challenges&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Advantages&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;High system throughput, asynchronous downstream transactions via middleware decoupling.&lt;/li&gt;
+&lt;li&gt;Moderate business intrusion, requiring local message tables and scheduled tasks.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Challenges&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Incomplete transaction support, downstream transactions cannot be rolled back, only retried.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;characteristics-1&#34;&gt;Characteristics&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Atomicity&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Consistency&lt;/strong&gt;: Eventual consistency&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Isolation&lt;/strong&gt;: Not supported (committed branch transactions are visible to other transactions)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Durability&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;best-effort-notification&#34;&gt;Best-Effort Notification&lt;/h2&gt;
+&lt;p&gt;The best-effort notification is a simple approach to flexible transactions, suitable for business with low time sensitivity to eventual consistency, where the result of the passive party does not affect the initiator&amp;rsquo;s result.&lt;/p&gt;
+&lt;p&gt;This approach roughly works as follows:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;System A completes its local transaction and sends a message to the MQ.&lt;/li&gt;
+&lt;li&gt;A service consumes the MQ and calls System B&amp;rsquo;s interface.&lt;/li&gt;
+&lt;li&gt;If System B succeeds, everything is fine; if it fails, the notification service periodically retries calling System B up to N times. If it still fails, it gives up.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;advantages-and-challenges-1&#34;&gt;Advantages and Challenges&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Advantages&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Simple implementation.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Challenges&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;No compensation mechanism, no guarantee of delivery.&lt;/li&gt;
+&lt;li&gt;Requires idempotency, with interfaces ensuring consistency and atomicity.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;characteristics-2&#34;&gt;Characteristics&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Atomicity&lt;/strong&gt;: Not supported (requires additional interfaces)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Consistency&lt;/strong&gt;: Not supported (requires additional interfaces)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Isolation&lt;/strong&gt;: Not supported (committed branch transactions are visible to other transactions)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Durability&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;classic-scenario&#34;&gt;Classic Scenario&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Payment Callback&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;The payment service receives a successful payment notification from a third-party service, updates the payment status of the order, and synchronously notifies the order service. If this synchronous notification fails, an asynchronous script will keep retrying the order service interface.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/&#34;&gt;Distributed Transactions: All You Need to Know&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>服务发现基本原理</title>
+      <link>https://noneback.github.io/blog/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</link>
+      <pubDate>Wed, 12 May 2021 22:37:30 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</guid>
+      <description>&lt;p&gt;服务发现是什么？基本的实现思路？&lt;/p&gt;
+&lt;h2 id=&#34;总览&#34;&gt;总览&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg&#34; alt=&#34;https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;服务发现的角色组成&#34;&gt;服务发现的角色组成&lt;/h2&gt;
+&lt;p&gt;服务发现由三种角色组成：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;服务提供者：服务的实际提供者，提供对应的微服务&lt;/li&gt;
+&lt;li&gt;服务消费者：使用服务提供者提供的微服务，一般是其他上游微服务&lt;/li&gt;
+&lt;li&gt;服务中介：用于联系服务的提供者与消费者的一个服务，一般为KV存储，以服务名作为Key，以服务提供者IP作为Value，在&lt;strong&gt;有服务提供者状态变化的时候需要及时的更新与通知&lt;/strong&gt;。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;基本的流程是：首先创建一个服务提供者(微服务)，服务提供者将自身的服务地址(一般为IP:PORT)和服务名称注册到服务中介；服务消费者在调用其他微服务时，去服务中介查找服务地址，进行调用。&lt;/p&gt;
+&lt;h2 id=&#34;服务中介&#34;&gt;服务中介&lt;/h2&gt;
+&lt;p&gt;服务中介是服务发现的核心，除了支持服务注册与查找等基本功能，它还需要解决几个核心的问题：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;服务提供者Crash后，无法主动通知中介，怎么处理？如何保证服务列表的有效性。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;客户端心跳：服务提供者每隔一定时间主动发送“心跳”的方式来向服务端表明自己的服务状态正常，或者维护一个长连接&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;只说明了链路的正常，不代表服务的正常&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;服务端主动探测：服务中介主动调用服务节点的某个接口进行健康检查&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;服务注册中心主动调用服务的某个接口无法做到通用性。在很多场景下服务注册中心到服务发布者的网络是不通的，服务端无法主动发起健康检查，那么往往需要在宿主机器上部署一个 agent 来代替服务端的接口探测&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;服务列表更改之后，如何及时通知服务消费者&lt;/p&gt;
+&lt;p&gt;有一下集中机制处理：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;消费者轮询中介 + 服务列表版本号&lt;/li&gt;
+&lt;li&gt;消费中介推送：TCP长连接推送 or Http Polling&lt;/li&gt;
+&lt;li&gt;推拉结合：消费者主动拉取，中介主动推送&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;服务发现分布式，避免单点问题&lt;/p&gt;
+&lt;p&gt;采用分布式KV存储，如etcd等&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;常见服务发现工具&#34;&gt;&lt;strong&gt;常见服务发现工具&lt;/strong&gt;&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;ECTD&lt;/li&gt;
+&lt;li&gt;ZooKeeper&lt;/li&gt;
+&lt;li&gt;Consul&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;参考&#34;&gt;&lt;strong&gt;参考&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/34332329&#34;&gt;知乎:服务发现基本原理&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.infoq.cn/article/lknumimtzy08qxqckqma&#34;&gt;InfoQ:聊一聊微服务架构中的服务发现系统&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

@@ -5,8 +5,60 @@
     <link>https://noneback.github.io/tags/zookeeper/</link>
     <description>Recent content in ZooKeeper on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Tue, 03 Jan 2023 23:49:41 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/zookeeper/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MIT6.824-ZooKeeper</title>
+      <link>https://noneback.github.io/blog/mit6.824-zookeeper/</link>
+      <pubDate>Tue, 03 Jan 2023 23:49:41 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-zookeeper/</guid>
+      <description>&lt;p&gt;This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic decisions. These trade-offs are the most insightful aspects of this article.&lt;/p&gt;
+&lt;h2 id=&#34;positioning&#34;&gt;Positioning&lt;/h2&gt;
+&lt;p&gt;ZooKeeper is a wait-free, high-performance coordination service for distributed applications. It supports the coordination needs of distributed applications by providing coordination primitives (specific APIs and data models).&lt;/p&gt;
+&lt;h2 id=&#34;design&#34;&gt;Design&lt;/h2&gt;
+&lt;h3 id=&#34;keywords&#34;&gt;Keywords&lt;/h3&gt;
+&lt;p&gt;There are two key phrases in ZooKeeper&amp;rsquo;s positioning: &lt;strong&gt;high performance&lt;/strong&gt; and &lt;strong&gt;distributed application coordination service&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;ZooKeeper&amp;rsquo;s high performance is achieved through wait-free design, local reads from multiple replicas, and the watch mechanism:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Wait-free requests are handled asynchronously, which may lead to request reordering, making the state machine different from the real-time sequence. ZooKeeper provides FIFO client order guarantees to manage this. Additionally, asynchronous handling is conducive to batch processing and pipelining, further improving performance.&lt;/li&gt;
+&lt;li&gt;The watch mechanism notifies clients of updates when a znode changes, reducing the overhead of clients querying local caches.&lt;/li&gt;
+&lt;li&gt;Local reads from multiple replicas: ZooKeeper uses the ZAB protocol to achieve data consensus, ensuring that write operations are linearizable. Read requests, however, are served locally from replicas without going through the ZAB consensus protocol, which provides serializability and might return stale data, improving performance.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The distributed application coordination service refers to the data model and API semantics provided by ZooKeeper, allowing distributed applications to freely use them to fulfill coordination needs such as group membership and distributed locking.&lt;/p&gt;
+&lt;h3 id=&#34;data-model-and-api&#34;&gt;Data Model and API&lt;/h3&gt;
+&lt;p&gt;ZooKeeper provides an abstraction of data nodes called znodes, which are organized through a hierarchical namespace. ZooKeeper offers two types of znodes: regular and ephemeral. Each znode stores data and is accessed using standard UNIX filesystem paths.&lt;/p&gt;
+&lt;p&gt;In practice, znodes are not designed for general data storage. Instead, znodes map to abstractions in client applications, often corresponding to &lt;strong&gt;metadata&lt;/strong&gt; used for coordination.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;In other words, when coordinating through ZooKeeper, utilize the metadata associated with znodes instead of treating them as mere data storage. For example, znodes associate metadata with timestamps and version counters, allowing clients to track changes to the znodes and perform conditional updates based on the znode version.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Essentially, this data model is a simplified file system API that supports full data reads and writes. Users implement distributed application coordination using the semantics provided by ZooKeeper.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The difference between regular and ephemeral znodes is that ephemeral nodes are automatically deleted when the session ends.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155342Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Clients interact with ZooKeeper through its API, and ZooKeeper manages client connections through sessions. In a session, clients can observe state changes that reflect their operations.&lt;/p&gt;
+&lt;h2 id=&#34;cap-guarantees&#34;&gt;CAP Guarantees&lt;/h2&gt;
+&lt;p&gt;ZooKeeper provides CP (Consistency and Partition Tolerance) guarantees. For instance, during leader election, ZooKeeper will stop serving requests until a new leader is elected, ensuring consistency.&lt;/p&gt;
+&lt;h2 id=&#34;implementation&#34;&gt;Implementation&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155414Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;ZooKeeper uses multiple replicas to achieve high availability.&lt;/p&gt;
+&lt;p&gt;In simple terms, ZooKeeper&amp;rsquo;s upper layer uses the ZAB protocol to handle write requests, ensuring linearizability across replicas. Reads are processed locally, ensuring sequential consistency. The underlying data state machine is stored in the replicated database (in-memory) and Write-Ahead Log (WAL) on ZooKeeper cluster machines, with periodic snapshots to ensure durability. The entire in-memory database uses fuzzy snapshots and WAL replay to ensure crash safety and fast recovery after a crash.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The advantage of fuzzy snapshots is that they do not block online requests.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;interaction-with-clients&#34;&gt;Interaction with Clients&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Update operations will notify and clear the relevant znode&amp;rsquo;s watch.&lt;/li&gt;
+&lt;li&gt;Read requests are processed locally, and the partial order of write requests is defined by &lt;code&gt;zxid&lt;/code&gt;. Sequential consistency is ensured, but reads may be stale. ZooKeeper provides the &lt;code&gt;sync&lt;/code&gt; operation, which can mitigate this to some extent.&lt;/li&gt;
+&lt;li&gt;When a client connects to a new ZooKeeper server, the maximum &lt;code&gt;zxid&lt;/code&gt; is compared. The outdated ZooKeeper server will not establish a session with the client.&lt;/li&gt;
+&lt;li&gt;Clients maintain sessions through heartbeats, and the server handles requests idempotently.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/zookeeper.pdf&#34;&gt;ZooKeeper Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/zookeeper-faq.txt&#34;&gt;MIT6.824-ZooKeeper FAQ&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

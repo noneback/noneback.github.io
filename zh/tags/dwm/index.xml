@@ -1,12 +1,201 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Dwm on NoneBack</title>
+    <title>dwm on NoneBack</title>
     <link>https://noneback.github.io/zh/tags/dwm/</link>
-    <description>Recent content in Dwm on NoneBack created by </description>
+    <description>Recent content in dwm on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Sat, 15 Jan 2022 23:13:16 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/dwm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Arch&#43;DWM生产力套餐尝试</title>
+      <link>https://noneback.github.io/zh/blog/zh/arch&#43;dwm%E5%A5%97%E9%A4%90/</link>
+      <pubDate>Sat, 15 Jan 2022 23:13:16 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/arch&#43;dwm%E5%A5%97%E9%A4%90/</guid>
+      <description>&lt;p&gt;本来想把原来的Manjaro的KDE换DWM试一试，最后卡在开机界面外加修复的时候把引导搞坏了，于是破罐子破摔，打算全部格式化磁盘，尝试一下Arch + DWM的开发环境。写个博客记录一下，以便之后修复以及换设备使用。&lt;/p&gt;
+&lt;p&gt;本文不是&lt;strong&gt;step by step&lt;/strong&gt;的教程，只是我对这次折腾的一个精简记录。&lt;/p&gt;
+&lt;h2 id=&#34;安装arch-linux&#34;&gt;安装Arch Linux&lt;/h2&gt;
+&lt;h3 id=&#34;前期准备&#34;&gt;前期准备&lt;/h3&gt;
+&lt;h4 id=&#34;安装arch需要的环境&#34;&gt;安装Arch需要的环境&lt;/h4&gt;
+&lt;p&gt;&lt;strong&gt;16g以上U盘 + rufus + windows + arch linux iso&lt;/strong&gt;制作启动盘。之后从启动盘启动Arch Liunx。&lt;/p&gt;
+&lt;h4 id=&#34;联网镜像&#34;&gt;联网+镜像&lt;/h4&gt;
+&lt;p&gt;使用iwctl连接wifi，之后更新系统时间以及修改pacman的镜像&lt;/p&gt;
+&lt;h3 id=&#34;安装archlinux&#34;&gt;安装ArchLinux&lt;/h3&gt;
+&lt;h4 id=&#34;配置硬盘分区&#34;&gt;配置硬盘分区&lt;/h4&gt;
+&lt;p&gt;分区需要分出三个主要部分：引导区+交换分区+主分区&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;挂载点&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;分区&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;&lt;a href=&#34;https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs&#34;&gt;分区类型&lt;/a&gt;&lt;/th&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;建议大小&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;&lt;code&gt;/mnt/boot&lt;/code&gt; 或 &lt;code&gt;/mnt/efi&lt;/code&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;&lt;code&gt;/dev/*efi_system_partition（efi 系统分区）*&lt;/code&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/EFI_system_partition_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)&#34;&gt;EFI 系统分区&lt;/a&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;至少 260 MiB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;&lt;code&gt;[SWAP]&lt;/code&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;&lt;code&gt;/dev/*swap_partition（交换空间分区）*&lt;/code&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Linux swap (交换空间)&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;大于 512 MiB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;&lt;code&gt;/mnt&lt;/code&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;&lt;code&gt;/dev/*root_partition（根分区）*&lt;/code&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Linux x86-64 根目录 (/)&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;剩余空间&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;fdisk -l 查看硬盘信息
+利用cfdisk /dev/nvme 对硬盘分区
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;分区格式化&#34;&gt;分区格式化&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;mkfs.ext4 &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+mkswap &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;swap&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+mkfs.fat -F &lt;span style=&#34;color:#ae81ff&#34;&gt;32&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;efi&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;分区配置和安装系统&#34;&gt;分区配置和安装系统&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;挂载Root &lt;code&gt;mount /dev/${root_partition} /mnt&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;挂载EFI &lt;code&gt;mount /dev/${efi_partiton} /mnt/boot/efi&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;开启交换分区 &lt;code&gt;swapon /dev/${swap_partition}&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;安装内核以及必要软件包&lt;code&gt;pacstrap /mnt base linux linux-firmware&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;生成fstab配置 &lt;code&gt;genfstab -U /mnt &amp;gt;&amp;gt; /mnt/etc/fstab&lt;/code&gt; + 检查fstab配置文件正确性&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;至此系统应该已经安装完毕，但没有引导程序，所以无法启动。我们需要安装grub引导工具。&lt;/p&gt;
+&lt;h4 id=&#34;启动前的其他配置&#34;&gt;启动前的其他配置&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Change Root到新安装的系统&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;mount /dev/&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root_partition&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt; /mnt
+arch-chroot /mnt
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;设置时区，同步时间&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;配置语言需要配置&lt;strong&gt;locale.gen和locale.conf&lt;/strong&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;网络配置，配置&lt;strong&gt;hostname 和 hosts&lt;/strong&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;设置Root用户密码&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;安装引导程序grub + efibootmgr 并配置&lt;code&gt;grub-install --target=x86_64-efi --efi-directory=esp --bootloader-id=GRUB&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;安装并启动iwd,以便连接wifi&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;启动ArchLinux&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;启动之后的配置&#34;&gt;启动之后的配置&lt;/h3&gt;
+&lt;h4 id=&#34;安装必要软件&#34;&gt;安装必要软件&lt;/h4&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;用途&lt;/th&gt;
+&lt;th&gt;软件&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;蓝牙&lt;/td&gt;
+&lt;td&gt;bluetoothctl&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;网络&lt;/td&gt;
+&lt;td&gt;iwd&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;日常&lt;/td&gt;
+&lt;td&gt;nvim + ranger + zsh&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;声音&lt;/td&gt;
+&lt;td&gt;alsamixer&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;输入法&lt;/td&gt;
+&lt;td&gt;fcitx5-im + fcitx5-chinese-addons&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;代理&lt;/td&gt;
+&lt;td&gt;clash&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;安装桌面环境&#34;&gt;安装桌面环境&lt;/h3&gt;
+&lt;h4 id=&#34;安装xorg软件&#34;&gt;安装xorg软件&lt;/h4&gt;
+&lt;p&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Xorg_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)&#34;&gt;Xorg&lt;/a&gt; 项目提供了一个 X 窗口系统(图形化用户界面的基础)的开源实现。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;xorg-server + xorg-apps + xrandr + xinit&lt;/strong&gt;&lt;/p&gt;
+&lt;h4 id=&#34;安装桌面配套软件&#34;&gt;安装桌面配套软件&lt;/h4&gt;
+&lt;p&gt;使用suckless全套的平铺式桌面环境&lt;strong&gt;dwm + slock + st + dmenu + slim + slstatus&lt;/strong&gt;&lt;/p&gt;
+&lt;h4 id=&#34;编写xinitc配置以及xprofile&#34;&gt;编写xinitc配置以及xprofile&lt;/h4&gt;
+&lt;p&gt;在xinitc中添加&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# .xinitc&lt;/span&gt;
+fcitx5 &amp;amp;
+xautolock -time &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt; -locker slock &amp;amp;
+
+autorandr -l home
+picom -b
+feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
+exec slstatus &amp;amp;
+exec dwm
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# .xprofile&lt;/span&gt;
+export INPUT_METHOD&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+export GTK_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+export QT_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+export XMODIFIERS&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;@im&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;美化以及易用&#34;&gt;美化以及易用&lt;/h4&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;用途&lt;/th&gt;
+&lt;th&gt;软件名&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;壁纸&lt;/td&gt;
+&lt;td&gt;feh&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;窗口特效&lt;/td&gt;
+&lt;td&gt;picom&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;锁屏&lt;/td&gt;
+&lt;td&gt;xautolock&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;多屏幕配置&lt;/td&gt;
+&lt;td&gt;autorandr&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;电池优化&lt;/td&gt;
+&lt;td&gt;tlp&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&#34;其他&#34;&gt;其他&lt;/h2&gt;
+&lt;p&gt;很多省略的细节请参考官方安装文档&lt;/p&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Installation_guide_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)#%E5%BB%BA%E7%AB%8B%E7%A1%AC%E7%9B%98%E5%88%86%E5%8C%BA&#34;&gt;arch linux install wiki&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Category:X_server_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)&#34;&gt;x server wiki&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/noneback/dwm-releated&#34;&gt;personal dwm desktop&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

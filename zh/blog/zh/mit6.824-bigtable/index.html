@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIT6.824-Bigtable</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mit6.824-bigtable/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="MIT6.824-Bigtable" />
+<meta property="og:description" content="之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/blog/zh/mit6.824-bigtable/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2021-09-16T22:54:59+08:00" />
+<meta property="article:modified_time" content="2021-09-16T22:54:59+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MIT6.824-Bigtable"/>
+<meta name="twitter:description" content="之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  4 ,
+      "name": "MIT6.824-Bigtable",
+      "item": "https://noneback.github.io/zh/blog/zh/mit6.824-bigtable/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "MIT6.824-Bigtable",
+  "name": "MIT6.824-Bigtable",
+  "description": "之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似",
+  "keywords": [
+    "Bigtable", "DFS", "Distributed System", "Paper Reading"
+  ],
+  "articleBody": "之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似的地方，于是用周末的时间快速的阅读了一遍。\n这是Google分布式三大论文的最后一篇，本不属于MIT6.824课程的阅读材料的。但姑且先如此分类。\n笔记依旧不深究具体细节，仅仅记录对问题的思考以及设计的思路。\n介绍 Bigtable 是一个分布式的结构化数据存储系统，构建于GFS之上，用于存储大量的结构化，半结构化数据。它属于NoSql数据存储，优势在于可拓展性和性能，以及基于GFS上的可靠容错。\n Design Goal：Wide Applicability、Scalability、High Performance、High Availability\n 数据模型 Bigtable的数据模型属于No Scheme的设计，仅提供了一个简单的数据模型，它将所有的数据视为字符串，数据的编解码交由上层业务方决定。\n实际上，Bigtable 是一个稀疏的、分布式的、持久化存储的多维度排序 Map。Map的索引是Row Key，Column Key以及TimeStamp。Map中的每一个Value就是一个无结构的Byte数组。\n// 映射抽象 (row:string, column:string,time:int64)-string // 一个Row Key实际上是 {Row , Column, Timestamp} 组成的多维结构。 论文对数据模型原文阐述如下：\n A Bigtable is a sparse, distributed, persistent multidimensional sorted map.\n Sparse，实际上是说同个Table中的Column属性是可以置空的，并且置空比较常见。\n   Row Columns     Row1 {ID，Name，Phone}   Row2 {ID，Name，Phone，Address}   Row3 {ID，Name，Phone，Email}    Distributed，此处分布式关键在于拓展性和容错性，也就是Replication和Sharding。Bigtable通过GFS的Replica实现副本容错，使用Tablet对数据分区，以实现拓展性。\nPersistent Multidimentsional Sorted，持久化说明最终需要数据落盘，Bittable相关的设计有WAL，LSM优化前台读写时延，优化落盘速度。\n BigTable的开源实现就是HBase，是一种行列数据库\n Rows Bigtable通过行关键字的字典序来组织数据，Row Key可以是任意的字符串。对于单行的读写操作是原子的。\n 字典序的好处在于可以将相关的行记录聚合\n可以参考Mysql的实现，利用undo log的方式实现行操作的原子性\n Column Family Column Keys 组成的集合叫做 Column Family，一个Column Family下的数据往往属于同一种类型。\n一个Column Key由 Column Family : Qualifier组， 列族的名字必须是可打印的字符串,而限定词的名字可以是任意的字符串。\n 论文中有提到：\n Access control and both disk and memory accounting are performed at the column-family level.\n 原因在于，业务方取得数据实际上更多的是以Column为单位取得相关的数据，比如读取网页content等操作。实践上，往往也将列数据压缩存储。基于此，Column Family显然是一个比Row更合适的Level。\n如我们允许一些应用可以添加新的基本数据、一些应用可以读取基本数据并创建继承的列族、一些应用则只允许浏览数据(甚至可能因为隐私的原因不能浏览所有数据) 。\n Time Stamp TimeStamp主要是为了维护不同时间的不同数据版本，属于一种逻辑时钟。同时它也作为索引，不同版本的数据可以通过时间戳索引查询。\n 设计上，一般按时间新旧排序，推测在数据版本少的时候可以利用一个指向上一个时间版本的指针来维护数据时间视图，在数据版本多的时候需要进化为索引结构。\n显然基于时间戳必然有范围查询的需求，选择可排序数据结构作为索引比较合\n但TimeStamp需要Table额外维护一个数据版本视图，带来一定的管理负担。一般的解决方法是限制数据版本的数量，将过期的数据进行GC处理。\n Tablet Bigtable在存储设计上，采用的是range-based的数据分片方式，而Tablet是Bigtable中data sharding 和 load balance的基本单位。\nTablet其实就是有若干个Row组成的一块数据，并由一个Tablet Server进行管理。行数据在Bigtable系统内最终保存在一个Tablet上，并在适当的时候进行Tablet拆分合并，在Tablet Server之间负载均衡。\n Range Base的分片方式的好处是有利于范围查询，与之相对的是Hash分片的方式。\n SSTable SSTable 是一个持久化的、排序的、不可更改的Map 结构,而 Map 是一个 key-value 映射的数据结构,key 和 value 的值都是任意的 Byte 串。\nTablet实际上是Bigtable系统中对外的存储单位，实际上，内部的存储文件是Google SSTable格式的。\n 从内部看，SSTable 是一系列的数据块(通常每个块的大小是 64KB)，通过索引加速定位数据。读取时先读索引，二分查索引，在读取数据块。\n API 原文中的API如下，主要是为了体现和RDB不同的地方。\n// Writing to Bigtable // Open the table Table *T = OpenOrDie(\"/bigtable/web/webtable\"); // Write a new anchor and delete an old anchor RowMutation r1(T, \"com.cnn.www\"); r1.Set(\"anchor:www.c-span.org\", \"CNN\"); r1.Delete(\"anchor:www.abc.com\"); Operation op; Apply(\u0026op, \u0026r1) // Reading from Bigtable Scanner scanner(T); ScanStream *stream; stream = scanner.FetchColumnFamily(\"anchor\"); stream-SetReturnAllVersions(); scanner.Lookup(\"com.cnn.www\"); for (; !stream-Done(); stream-Next()) { printf(\"%s %s %lld %s\\n\", scanner.RowName(), stream-ColumnName(), stream-MicroTimestamp(), stream-Value()); } 架构设计 外部组件 Bigtable是基于Google内部其他组件之上构建的，这极大的简化了Bigtable的设计。\nGFS GFS是Bigtable底层的GFS，可以提供Replication，提供一定的数据容错性。\n 可以参考上一篇笔记内容\n Chubby Chubby是一个高可用的分布式锁组件，它提供了一个NameSpace，其中的目录和文件均可作为一个分布式锁来使用。\n 高可用是指维护了多个可提供服务副本，并使用paxos算法保证副本间的一致性。同时使用租约机制，防止失效的Chubby客户端一直持有锁。\n 为什么需要Chubby？它的作用是什么？\n原文中提到的功能有：\n  存储Bigtable的Column Family信息\n  存储ACL。ACL 是一种机制，用于定义用户访问存储对象的权限\n  存储了 元数据的起始位置，也就是Root Tablet的位置信息\n Bigtable使用了一个三层的类B+树的存储数据结构，Chubby中保存了Root Tablet的位置信息，Root Tablet保存了其他MetaData的Tablet信息，其他MetaData的Tablet则保存着其他用户的Tablet集合信息。\n在Bigtable启动时，会先从Chubby中获取Root tablet，然后再获取其他映射信息。\n   Tablet Server的生命周期监控\n Tablet Server在启动时，会在Chubby指定目录下生成一个唯一名称的文件，并获取此文件的排它锁。当Tablet Server失效时，会释放锁。\nMaster通过监控这个目录中的文件以及持有锁的状态，来监控集群中的Tablet的状态以及配置变更\n   总结一下，Chubby的功能其实主要分为两类。一是利用Chubby作为高可用高可靠的存储节点来存储关键元信息；二是利用其提供的分布式锁服务来管理维护存储节点（Tablet Server）。\n在GFS中，这些功能其实是由Master去负责管理维护的。在Bigtable中，由Chubby接管，这样简化了Master的设计，并减轻了Master的负载。\n 抽象意义上，Chubby也能视为Master节点的一部分。\n 内部组件 Master Bigtable也属于Master-Slave的架构，这点个GFS以及MR的设计很像。不同之处在于，Bigtable将元数据交给了Chubby + Tablet Server去存储与管理，Master只负责调度需要的信息，不存储Tablet位置信息。\n Tablet分配，GC；Tablet Server监控，负载均衡；表的元数据修改等\n所以调度需要的信息包含：\n 所有Tablet的信息，用于分析分配和分布情况 Tablet Server的状态信息，判断是否满足分配条件   Tablet Server Tablet Server 管理一系列的Tablet，负责处理Tablet的数据读写，以及Tablet的拆分合并等操作。\n Master不保存元信息，Client读取信息直接与Chubby和Tablet Server交互。\nTablet的拆分由Tablet Server主动发起，并及时通知Master。这一步可能会消息丢失，所以最好使用WAL+重试的方式保证操作不丢失\n Client SDK 作为Bigtable的接入层，业务方使用ClientSDK接入Bigtable。Client SDK作为Bigtable的入口，优化的关键在于怎么样可以减少获取元数据的次数。一般使用cache以及prefetch的思路去减少网络的交互，充分利用时间和空间局部性。\n 缓存的使用势必会带来不一致问题，需要设计合适的方案解决此问题。如不一致时重新寻址。\n 存储相关 映射关系 、寻址 Bigtable的数据实际上是由(Table, Row, Column)三元组唯一确定的，保存在Tablet中，Tablet最终保存在GFS SSTable中。\nTablet逻辑上可以理解为Bigtable的落盘实体，实际上是交由Tablet Server去管理维护，那么这样就需要Bigtable去维护一定的映射关系。\n 基于原文描述，可能需要维护的映射：\nMapping { Table = list of Tablets //  Tablet = Tablet handle struct Tablet handle { list of Rows // Tablet contains  Tablet Server // where Tablet shores  ... list of SSTable // where the tablet stores in GFS  } // Indexes  Row or Column Key = Tablet Location = SSTable }  Bigtable通过Root Tablet + METADATA Table进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。\nRoot Tablet中保存了其他METADATA Tablet的位置信息。而METADATA Table的每一个Tablet包含了一系列的User Tablets的位置信息（可以理解为UserTable handle）, 每个Tablet的位置信息保存在METADATA的Row中。\n METADATA Table 中的Row :\n(TableID,encoding of last row in Tablet) = Tablet Location\n  系统采用了类似B+树的三层结构来维护tablet location信息\n 调度和监控 调度 其实主要就是对Tablet的调度，包括分配和负载均衡。\n其实两种归根到底都是分配问题。在任何一个时刻, 一个 Tablet 只能分配给一个 Tablet 服务器。Master保存了Tablet Server 相关的状态信息，当有Tablet需要分配时，就发送请求将Tablet分配出去。\n Master不维护寻址相关的状态信息，但需要维护Tablet Server的状态信息（持有的Tablets数量、状态、剩余资源等），可以通过心跳周期上报到Master。所以说，Master其实是无状态的，负载也比较轻。\n 监控 监控是由Chubby + Master来完成的。\nTablet Server在启动时，会在Chubby指定目录下生成一个唯一名称的文件，并获取此文件的排它锁。当Tablet Server断开连接，lease失效后会自动释放文件锁。\n Tablet Server通过唯一文件决定是否对外提供服务。此文件可能被Master删除\nTablet Server可能由于网络因素重新连接，此时只要文件存在，Tablet重连时又会重新尝试去获取这个文件的排他锁。\n如果不存在，当原Tablet Server重连是，应当自动退出集群。\n Master首先要在Chubby获取一个唯一文件排他锁保证Master节点的唯一性，并指定一个Tablet Server文件目录。\n然后Master通过不断监控这个目录中的文件以及持有锁的状态，来监控集群中的Tablet的状态以及配置变更，并获取正在运行的Tablet Server列表。\n一但发现有Tablet Server失效，Master就会把Chubby属于原Tablet Server的唯一文件删除，并把原来这个Tablet Server维护的Tablet集合重新分配给其他Tablet Server。\n Tablet Server失效有两种情况，一种是无法与Chubby连接，二是成为孤岛或者宕机。前者可以通过文件锁状态判断，后者通过Master发送心跳。其余情况，可能是Chubby无法提供服务。\n 之后在和所有Active的Tablet Server进行通信，获取Tablet Server的状态信息；扫描METADATA表获取未分配的Tablet信息。\n 监控的目的其实就是为了调度。\n Compaction Bigtable对外提供读写服务，并且使用了LSM的结构对写性能进行优化。对于一个写操作，首先通过Chubby中保存的ACL信息，判断用户的权限；通过之后再以WAL的方式顺序写记录操作再CommitLog和Memtable中，并且最后会被持久化到SSTable中；\n由图中可以看出，memtable是保存在内存中的，无法无限的增加。所以Bigtable在memtable增长到一定大小的时候会进行一次Minor Compaction，将memtable的数据写入一个SSTable中，并写入GFS。\n 实际上，memtable在转为SSTable之前会先转换成immutable memtable，并生成新的memtable支持前台写入。这样的中间状态其实是为了Minor Compaction不影响前台写。\n Bigtable在处理写入数据时提出了Compaction概念，加速前台写。所有的前台随机写被转换为顺序写。并在后台的Compact进程中再次对数据进行写入。以读写放大为代价，优化前台感知到的写性能。\n所谓Compaction，本质上就是对数据的一次再次扫描，在扫描写入过程中，对数据进行合并压缩和GC。\n一般Compaction以多个不可变数据作为输入，Compact之后会将数据重新写入另一个新的只读有序结构(如SSTable)或者随机写落盘。\n前台写对Compaction的参与数据不影响，这使得Compaction步骤原生支持并行。\n 原文中提到了三种Compaction：\nMinor Compaction：将memtable转化成SSTable的过程就是Minor Compaction，写入过程中会丢弃被删除的数据，并只保留数据的终态。\n Minor Compaction的目的在于减少Tablet Server的内存使用，以及CommitLog的大小。\n Merge Compaction：Memtable和SSTable一起Compact得到一个新的SSTable\nMajor Compaction：多个SSTable也可能需要Compact成一个SSTable 但对于读请求，我们可能需要聚合Memtable以及一定的SSTable来做读查询，因为查询的数据可能存在于memtable或者SSTable中。\n 原文中引入了二级缓存和Bloom Filter来加速读查询。\nTablet Server有两级缓存。第一层是扫描缓存，主要缓存从SSTable读取过的的KV pair；第二级是Block缓存，缓存读取的SSTable Block。\n对于经常要重复读取相同数据的应用程序来说,扫描缓存非常有效；对于经常要读取刚刚读过的数据附近的数据的应用程序来说，Block 缓存更有用。\nBloom Filter简单来说就是可以判断某个Key是否不存在。\n可以为全局或者每个Tablet Server，以及SSTable分别维护一个Bloom Filter，用于加速读查询，减少到SSTable的查询；对于可能存在的Key，利用二分法查询\n优化 除了上文中说的到优化方式，原文还提到了几种优化手段。\n局部性 通过配置或者自动等方式，把高频使用的列数据组合生成一个SSTable存储，减少分开Fetch的时间。\n 空间换时间，充分利用局部性原理\n 压缩 将SSTable中的分块进行二级压缩处理。本质其实是为了减少网络传输的带宽和时延，但需要额外的压缩和解压计算。\n 分块压缩是为了减少编解码的时间以及提高并行效率\n CommitLog 设计 关键其实是Log的粒度问题。Tablet粒度下，会有大量的Log文件。在并行写入GFS中会有大量的磁盘Seek操作，并且不利于Batch化。集群单独一个CommitLog会带来恢复上的高复杂度。\nBigtable中是每个Tablet Server一个Commit Log。但由于Tablet Server维护了多个Tablet，这就使得Bigtable必须维护LogEntry到TabletID的映射以及顺序，以便在恢复时使用。对一个Tablet的数据恢复可能会导致扫描整个CommitLog，\n此处Bigtable的优化是将Log按照(Table, row, log seq num)并行分块排序，使得同一个Tablet的LogEntry聚合。\n总结 不要过渡设计，Simple is Better Than Complex。\n对于分布式服务，集群监控非常重要。Google三篇论文中对集群状态的监控都是不可缺少的一环。监控的意义也在于支持集群的调度。\n设计时不要对其他系统做出任何假设，出现的不仅仅是常见的网络问题，现实中可能会遇到各类问题。\n利用后台处理加速前台感知。利用简单的机制处理前台请求，再开启后台进程善后。\n参考 wikipedia\nBigtable\n典型分布式系统分析：Bigtable\nLSM树详解\n",
+  "wordCount" : "6733",
+  "inLanguage": "zh",
+  "datePublished": "2021-09-16T22:54:59+08:00",
+  "dateModified": "2021-09-16T22:54:59+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/blog/zh/mit6.824-bigtable/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"
+    integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"
+    integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR"
+    crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMathInElement(document.body, {
+            
+            
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: "\\begin{equation}", right: "\\end{equation}", display: true },
+                { left: "\\begin{align}", right: "\\end{align}", display: true },
+                { left: "\\begin{alignat}", right: "\\end{alignat}", display: true },
+                { left: "\\begin{gather}", right: "\\end{gather}", display: true },
+                { left: "\\begin{CD}", right: "\\end{CD}", display: true },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            
+            throwOnError: false,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command),
+            macros: {
+                "\\eqref": "\\href{###1}{(\\text{#1})}",
+                "\\ref": "\\href{###1}{\\text{#1}}",
+                "\\label": "\\htmlId{#1}{}"
+            }
+        });
+    });
+</script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/blog">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>MIT6.824-Bigtable</h1>
+  </header>
+
+  <p>
+  <small>
+    2021年9月16日&nbsp;· 6733 字&nbsp;· 14 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/paper-reading/">Paper Reading</a>
+      
+      <a href="https://noneback.github.io/zh/tags/mit6.824/">MIT6.824</a>
+      
+      <a href="https://noneback.github.io/zh/tags/dfs/">DFS</a>
+      
+      <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#介绍">介绍</a></li>
+    <li><a href="#数据模型">数据模型</a>
+      <ul>
+        <li><a href="#rows">Rows</a></li>
+        <li><a href="#column-family">Column Family</a></li>
+        <li><a href="#time-stamp">Time Stamp</a></li>
+        <li><a href="#tablet">Tablet</a></li>
+        <li><a href="#sstable">SSTable</a></li>
+        <li><a href="#api">API</a></li>
+      </ul>
+    </li>
+    <li><a href="#架构设计">架构设计</a>
+      <ul>
+        <li><a href="#外部组件">外部组件</a></li>
+        <li><a href="#内部组件">内部组件</a></li>
+      </ul>
+    </li>
+    <li><a href="#存储相关">存储相关</a>
+      <ul>
+        <li><a href="#映射关系-寻址">映射关系 、寻址</a></li>
+        <li><a href="#调度和监控">调度和监控</a></li>
+      </ul>
+    </li>
+    <li><a href="#compaction">Compaction</a></li>
+    <li><a href="#优化">优化</a>
+      <ul>
+        <li><a href="#局部性">局部性</a></li>
+        <li><a href="#压缩">压缩</a></li>
+        <li><a href="#commitlog-设计">CommitLog 设计</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>之前在网上找到了别人翻译的BigTable论文，就顺手保存了下来，但一直没开始看。最近发现BigTable和目前组内做的项目有很多设计上相似的地方，于是用周末的时间快速的阅读了一遍。</p>
+<p>这是Google分布式三大论文的最后一篇，本不属于MIT6.824课程的阅读材料的。但姑且先如此分类。</p>
+<p>笔记依旧不深究具体细节，仅仅记录对问题的思考以及设计的思路。</p>
+<h2 id="介绍">介绍</h2>
+<p>Bigtable 是一个分布式的<strong>结构化数据</strong>存储系统，构建于GFS之上，用于存储大量的结构化，半结构化数据。它属于NoSql数据存储，优势在于可拓展性和性能，以及基于GFS上的可靠容错。</p>
+<blockquote>
+<p>Design Goal：Wide Applicability、Scalability、High Performance、High Availability</p>
+</blockquote>
+<h2 id="数据模型">数据模型</h2>
+<p>Bigtable的数据模型属于No Scheme的设计，仅提供了一个简单的数据模型，它将所有的数据视为字符串，数据的编解码交由上层业务方决定。</p>
+<p>实际上，Bigtable 是一个<strong>稀疏的、分布式的、持久化存储的多维度排序 Map</strong>。Map的<strong>索引</strong>是<strong>Row Key，Column Key以及TimeStamp</strong>。Map中的<strong>每一个Value就是一个无结构的Byte数组</strong>。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#75715e">// 映射抽象
+</span><span style="color:#75715e"></span>(<span style="color:#a6e22e">row</span>:<span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">column</span>:<span style="color:#66d9ef">string</span>,<span style="color:#a6e22e">time</span>:<span style="color:#66d9ef">int64</span>)<span style="color:#f92672">-</span>&gt;<span style="color:#66d9ef">string</span>
+<span style="color:#75715e">// 一个Row Key实际上是 {Row , Column, Timestamp} 组成的多维结构。
+</span></code></pre></div><p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gufarm0ykaj615k0d0jts02.jpg" alt="image-20210913205832997"></p>
+<p>论文对数据模型原文阐述如下：</p>
+<blockquote>
+<p>A Bigtable is a sparse, distributed, persistent multidimensional sorted map.</p>
+</blockquote>
+<p>Sparse，实际上是说同个Table中的Column属性是可以置空的，并且置空比较常见。</p>
+<table>
+<thead>
+<tr>
+<th>Row</th>
+<th>Columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Row1</td>
+<td>{ID，Name，Phone}</td>
+</tr>
+<tr>
+<td>Row2</td>
+<td>{ID，Name，Phone，Address}</td>
+</tr>
+<tr>
+<td>Row3</td>
+<td>{ID，Name，Phone，Email}</td>
+</tr>
+</tbody>
+</table>
+<p>Distributed，此处分布式关键在于拓展性和容错性，也就是<strong>Replication</strong>和<strong>Sharding</strong>。Bigtable通过GFS的Replica实现副本容错，使用<strong>Tablet</strong>对数据分区，以实现拓展性。</p>
+<p>Persistent Multidimentsional Sorted，持久化说明最终需要数据落盘，Bittable相关的设计有WAL，LSM优化前台读写时延，优化落盘速度。</p>
+<blockquote>
+<p>BigTable的开源实现就是HBase，是一种行列数据库</p>
+</blockquote>
+<h3 id="rows">Rows</h3>
+<p>Bigtable通过行关键字的字典序来组织数据，Row Key可以是任意的字符串。对于单行的读写操作是原子的。</p>
+<blockquote>
+<p>字典序的好处在于可以将相关的行记录聚合</p>
+<p>可以参考Mysql的实现，利用undo log的方式实现行操作的原子性</p>
+</blockquote>
+<h3 id="column-family">Column Family</h3>
+<p>Column Keys 组成的集合叫做 Column Family，一个Column Family下的数据往往属于同一种类型。</p>
+<p>一个Column Key由 Column Family : Qualifier组， 列族的名字必须是可打印的字符串,而限定词的名字可以是任意的字符串。</p>
+<blockquote>
+<p>论文中有提到：</p>
+<blockquote>
+<p>Access control and both disk and memory accounting are performed at the column-family level.</p>
+</blockquote>
+<p>原因在于，业务方取得数据实际上更多的是以Column为单位取得相关的数据，比如读取网页content等操作。实践上，往往也将列数据压缩存储。基于此，Column Family显然是一个比Row更合适的Level。</p>
+<p>如我们允许一些应用可以添加新的基本数据、一些应用可以读取基本数据并创建继承的列族、一些应用则只允许浏览数据(甚至可能因为隐私的原因不能浏览所有数据) 。</p>
+</blockquote>
+<h3 id="time-stamp">Time Stamp</h3>
+<p>TimeStamp主要是为了维护不同时间的不同数据版本，属于一种逻辑时钟。同时它也作为索引，不同版本的数据可以通过时间戳索引查询。</p>
+<blockquote>
+<p>设计上，一般按时间新旧排序，推测在数据版本少的时候可以利用一个指向上一个时间版本的指针来维护数据时间视图，在数据版本多的时候需要进化为索引结构。</p>
+<p>显然基于时间戳必然有范围查询的需求，选择可排序数据结构作为索引比较合</p>
+<p>但TimeStamp需要Table额外维护一个数据版本视图，带来一定的管理负担。一般的解决方法是限制数据版本的数量，将过期的数据进行GC处理。</p>
+</blockquote>
+<h3 id="tablet">Tablet</h3>
+<p>Bigtable在存储设计上，采用的是<strong>range-based</strong>的<strong>数据分片方式</strong>，而Tablet是Bigtable中data sharding 和 load balance的基本单位。</p>
+<p>Tablet其实就是有若干个Row组成的一块数据，并由一个Tablet Server进行管理。行数据在Bigtable系统内最终保存在一个Tablet上，并在适当的时候进行Tablet拆分合并，在Tablet Server之间负载均衡。</p>
+<blockquote>
+<p>Range Base的分片方式的好处是有利于范围查询，与之相对的是Hash分片的方式。</p>
+</blockquote>
+<h3 id="sstable">SSTable</h3>
+<p>SSTable 是一个<strong>持久化的、排序的、不可更改</strong>的Map 结构,而 Map 是一个 key-value 映射的数据结构,key 和 value 的值都是任意的 Byte 串。</p>
+<p>Tablet实际上是Bigtable系统中对外的存储单位，实际上，内部的存储文件是Google SSTable格式的。</p>
+<blockquote>
+<p>从内部看，SSTable 是一系列的数据块(通常每个块的大小是 64KB)，通过索引加速定位数据。读取时先读索引，二分查索引，在读取数据块。</p>
+</blockquote>
+<h3 id="api">API</h3>
+<p>原文中的API如下，主要是为了体现和RDB不同的地方。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">// Writing to Bigtable
+</span><span style="color:#75715e">// Open the table Table *T = OpenOrDie(&#34;/bigtable/web/webtable&#34;); // Write a new anchor and delete an old anchor 
+</span><span style="color:#75715e"></span>RowMutation <span style="color:#a6e22e">r1</span>(T,   <span style="color:#e6db74">&#34;com.cnn.www&#34;</span>); 
+r1.Set(<span style="color:#e6db74">&#34;anchor:www.c-span.org&#34;</span>, <span style="color:#e6db74">&#34;CNN&#34;</span>); r1.Delete(<span style="color:#e6db74">&#34;anchor:www.abc.com&#34;</span>); 
+Operation op; Apply(<span style="color:#f92672">&amp;</span>op, <span style="color:#f92672">&amp;</span>r1)
+
+
+ <span style="color:#75715e">// Reading from Bigtable
+</span><span style="color:#75715e"></span>Scanner scanner(T); ScanStream <span style="color:#f92672">*</span>stream; 
+stream <span style="color:#f92672">=</span> scanner.FetchColumnFamily(<span style="color:#e6db74">&#34;anchor&#34;</span>); 
+stream<span style="color:#f92672">-&gt;</span>SetReturnAllVersions(); 
+scanner.Lookup(<span style="color:#e6db74">&#34;com.cnn.www&#34;</span>); 
+<span style="color:#66d9ef">for</span> (; <span style="color:#f92672">!</span>stream<span style="color:#f92672">-&gt;</span>Done(); stream<span style="color:#f92672">-&gt;</span>Next()) { 
+  printf(<span style="color:#e6db74">&#34;%s %s %lld %s</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, 
+         scanner.RowName(), 
+         stream<span style="color:#f92672">-&gt;</span>ColumnName(), 
+         stream<span style="color:#f92672">-&gt;</span>MicroTimestamp(), 
+         stream<span style="color:#f92672">-&gt;</span>Value());
+}
+</code></pre></div><h2 id="架构设计">架构设计</h2>
+<h3 id="外部组件">外部组件</h3>
+<p>Bigtable是基于Google内部其他组件之上构建的，这极大的简化了Bigtable的设计。</p>
+<h4 id="gfs">GFS</h4>
+<p>GFS是Bigtable底层的GFS，可以提供Replication，提供一定的数据容错性。</p>
+<blockquote>
+<p>可以参考上一篇笔记内容</p>
+</blockquote>
+<h4 id="chubby">Chubby</h4>
+<p>Chubby是一个高可用的分布式锁组件，它提供了一个NameSpace，其中的目录和文件均可作为一个分布式锁来使用。</p>
+<blockquote>
+<p>高可用是指维护了多个可提供服务副本，并使用paxos算法保证副本间的一致性。同时使用租约机制，防止失效的Chubby客户端一直持有锁。</p>
+</blockquote>
+<p>为什么需要Chubby？它的作用是什么？</p>
+<p>原文中提到的功能有：</p>
+<ul>
+<li>
+<p>存储Bigtable的Column Family信息</p>
+</li>
+<li>
+<p>存储ACL。ACL 是一种机制，用于定义用户访问存储对象的权限</p>
+</li>
+<li>
+<p>存储了 元数据的起始位置，也就是Root Tablet的位置信息</p>
+<blockquote>
+<p>Bigtable使用了一个三层的类B+树的存储数据结构，Chubby中保存了Root Tablet的位置信息，Root Tablet保存了其他MetaData的Tablet信息，其他MetaData的Tablet则保存着其他用户的Tablet集合信息。</p>
+<p>在Bigtable启动时，会先从Chubby中获取Root tablet，然后再获取其他映射信息。</p>
+</blockquote>
+</li>
+<li>
+<p>Tablet Server的生命周期监控</p>
+<blockquote>
+<p>Tablet Server在启动时，会在Chubby<strong>指定目录</strong>下生成一个唯一名称的文件，并获取此文件的排它锁。当Tablet Server失效时，会释放锁。</p>
+<p>Master通过监控这个目录中的文件以及持有锁的状态，来监控集群中的Tablet的状态以及配置变更</p>
+</blockquote>
+</li>
+</ul>
+<p>总结一下，Chubby的功能其实主要分为两类。一是利用Chubby作为高可用高可靠的存储节点来存储关键元信息；二是利用其提供的分布式锁服务来管理维护存储节点（Tablet Server）。</p>
+<p>在GFS中，这些功能其实是由Master去负责管理维护的。在Bigtable中，由Chubby接管，这样简化了Master的设计，并减轻了Master的负载。</p>
+<blockquote>
+<p>抽象意义上，Chubby也能视为Master节点的一部分。</p>
+</blockquote>
+<h3 id="内部组件">内部组件</h3>
+<h4 id="master">Master</h4>
+<p>Bigtable也属于Master-Slave的架构，这点个GFS以及MR的设计很像。不同之处在于，Bigtable将元数据交给了Chubby + Tablet Server去存储与管理，Master只负责调度需要的信息，不存储Tablet位置信息。</p>
+<blockquote>
+<p>Tablet分配，GC；Tablet Server监控，负载均衡；表的元数据修改等</p>
+<p>所以调度需要的信息包含：</p>
+<ol>
+<li>所有Tablet的信息，用于分析分配和分布情况</li>
+<li>Tablet Server的状态信息，判断是否满足分配条件</li>
+</ol>
+</blockquote>
+<h4 id="tablet-server">Tablet Server</h4>
+<p>Tablet Server 管理一系列的Tablet，负责处理Tablet的数据读写，以及Tablet的拆分合并等操作。</p>
+<blockquote>
+<p>Master不保存元信息，Client读取信息直接与Chubby和Tablet Server交互。</p>
+<p>Tablet的拆分由Tablet Server主动发起，并及时通知Master。这一步可能会消息丢失，所以最好使用WAL+重试的方式保证操作不丢失</p>
+</blockquote>
+<h4 id="client-sdk">Client SDK</h4>
+<p>作为Bigtable的接入层，业务方使用ClientSDK接入Bigtable。Client SDK作为Bigtable的入口，优化的关键在于怎么样可以减少获取元数据的次数。一般使用cache以及prefetch的思路去减少网络的交互，充分利用时间和空间局部性。</p>
+<blockquote>
+<p>缓存的使用势必会带来不一致问题，需要设计合适的方案解决此问题。如不一致时重新寻址。</p>
+</blockquote>
+<h2 id="存储相关">存储相关</h2>
+<h3 id="映射关系-寻址">映射关系 、寻址</h3>
+<p>Bigtable的数据实际上是由(Table, Row, Column)三元组唯一确定的，保存在Tablet中，Tablet最终保存在GFS SSTable中。</p>
+<p>Tablet逻辑上可以理解为Bigtable的落盘实体，实际上是交由Tablet Server去管理维护，那么这样就需要Bigtable去维护一定的映射关系。</p>
+<blockquote>
+<p>基于原文描述，可能需要维护的映射：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"> Mapping {
+   Table <span style="color:#f92672">=&gt;</span> list of Tablets <span style="color:#75715e">// 
+</span><span style="color:#75715e"></span>   Tablet <span style="color:#f92672">=&gt;</span> Tablet handle
+    
+   <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">Tablet</span> handle {
+     list of Rows <span style="color:#75715e">// Tablet contains
+</span><span style="color:#75715e"></span>     Tablet Server <span style="color:#75715e">// where Tablet shores
+</span><span style="color:#75715e"></span>     ...
+   list of SSTable <span style="color:#75715e">// where the tablet stores in GFS
+</span><span style="color:#75715e"></span>   }
+   
+   <span style="color:#75715e">// Indexes
+</span><span style="color:#75715e"></span>   Row or Column Key <span style="color:#f92672">=&gt;</span> Tablet Location <span style="color:#f92672">=&gt;</span> SSTable 
+ }
+</code></pre></div></blockquote>
+<p>Bigtable通过<code>Root Tablet + METADATA Table</code>进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。</p>
+<p>Root Tablet中保存了其他METADATA Tablet的位置信息。而METADATA Table的每一个Tablet包含了一系列的User Tablets的位置信息（可以理解为UserTable handle）,  每个Tablet的位置信息保存在METADATA的Row中。</p>
+<blockquote>
+<p>METADATA Table 中的Row :</p>
+<p><code>(TableID,encoding of last row in Tablet) =&gt; Tablet Location</code></p>
+</blockquote>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1guhk1wuu1pj60q80ge75k02.jpg" alt="image-20210915142508074"></p>
+<blockquote>
+<p>系统采用了类似B+树的三层结构来维护tablet location信息</p>
+</blockquote>
+<h3 id="调度和监控">调度和监控</h3>
+<h4 id="调度">调度</h4>
+<p>其实主要就是对Tablet的调度，包括分配和负载均衡。</p>
+<p>其实两种归根到底都是分配问题。在任何一个时刻, 一个 Tablet 只能分配给一个 Tablet 服务器。Master保存了Tablet Server 相关的状态信息，当有Tablet需要分配时，就发送请求将Tablet分配出去。</p>
+<blockquote>
+<p>Master不维护寻址相关的状态信息，但需要维护Tablet Server的状态信息（持有的Tablets数量、状态、剩余资源等），可以通过心跳周期上报到Master。所以说，Master其实是无状态的，负载也比较轻。</p>
+</blockquote>
+<h4 id="监控">监控</h4>
+<p>监控是由Chubby + Master来完成的。</p>
+<p>Tablet Server在启动时，会在Chubby<strong>指定目录</strong>下生成一个<strong>唯一名称的文件</strong>，并获取此文件的排它锁。当Tablet Server断开连接，lease失效后会自动释放文件锁。</p>
+<blockquote>
+<p>Tablet Server通过唯一文件决定是否对外提供服务。此文件可能被Master删除</p>
+<p>Tablet Server可能由于网络因素重新连接，此时只要文件存在，Tablet重连时又会重新尝试去获取这个文件的排他锁。</p>
+<p>如果不存在，当原Tablet Server重连是，应当自动退出集群。</p>
+</blockquote>
+<p>Master首先要在Chubby获取一个唯一文件排他锁保证Master节点的唯一性，并指定一个Tablet Server文件目录。</p>
+<p>然后Master通过不断监控这个目录中的文件以及持有锁的状态，来监控集群中的Tablet的状态以及配置变更，并获取正在运行的Tablet Server列表。</p>
+<p>一但发现有Tablet Server失效，Master就会把Chubby属于原Tablet Server的唯一文件删除，并把原来这个Tablet Server维护的Tablet集合重新分配给其他Tablet Server。</p>
+<blockquote>
+<p>Tablet Server失效有两种情况，一种是无法与Chubby连接，二是成为孤岛或者宕机。前者可以通过文件锁状态判断，后者通过Master发送心跳。其余情况，可能是Chubby无法提供服务。</p>
+</blockquote>
+<p>之后在和所有Active的Tablet Server进行通信，获取Tablet Server的状态信息；扫描METADATA表获取未分配的Tablet信息。</p>
+<blockquote>
+<p>监控的目的其实就是为了调度。</p>
+</blockquote>
+<h2 id="compaction">Compaction</h2>
+<p>Bigtable对外提供读写服务，并且使用了LSM的结构对写性能进行优化。对于一个写操作，首先通过Chubby中保存的ACL信息，判断用户的权限；通过之后再以WAL的方式顺序写记录操作再CommitLog和Memtable中，并且最后会被持久化到SSTable中；</p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1guhk6llq76j60uk0lsq4402.jpg" alt="image-20210915195135522"></p>
+<p>由图中可以看出，memtable是保存在内存中的，无法无限的增加。所以Bigtable在memtable增长到一定大小的时候会进行一次Minor Compaction，将memtable的数据写入一个SSTable中，并写入GFS。</p>
+<blockquote>
+<p>实际上，memtable在转为SSTable之前会先转换成immutable memtable，并生成新的memtable支持前台写入。这样的中间状态其实是为了Minor Compaction不影响前台写。</p>
+</blockquote>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1guill1zltrj615g0p8adp02.jpg" alt="image-20210916172932210"></p>
+<p>Bigtable在处理写入数据时提出了<strong>Compaction</strong>概念，加速前台写。所有的前台随机写被转换为顺序写。并在后台的Compact进程中再次对数据进行写入。以读写放大为代价，优化前台感知到的写性能。</p>
+<p>所谓Compaction，本质上就是对数据的一次再次扫描，在扫描写入过程中，对数据进行合并压缩和GC。</p>
+<p>一般Compaction以多个不可变数据作为输入，Compact之后会将数据重新写入另一个新的只读有序结构(如SSTable)或者随机写落盘。</p>
+<p>前台写对Compaction的参与数据不影响，这使得Compaction步骤原生支持并行。</p>
+<blockquote>
+<p>原文中提到了三种Compaction：</p>
+<p><strong>Minor Compaction</strong>：将memtable转化成SSTable的过程就是Minor Compaction，写入过程中会丢弃被删除的数据，并只保留数据的终态。</p>
+<blockquote>
+<p>Minor Compaction的目的在于减少Tablet Server的内存使用，以及CommitLog的大小。</p>
+</blockquote>
+<p><strong>Merge Compaction</strong>：Memtable和SSTable一起Compact得到一个新的SSTable</p>
+<p><strong>Major Compaction</strong>：多个SSTable也可能需要Compact成一个SSTable
+但对于读请求，我们可能需要聚合Memtable以及一定的SSTable来做读查询，因为查询的数据可能存在于memtable或者SSTable中。</p>
+</blockquote>
+<p>原文中引入了<strong>二级缓存</strong>和<strong>Bloom Filter</strong>来加速读查询。</p>
+<p>Tablet Server有两级缓存。第一层是<strong>扫描缓存</strong>，主要缓存从SSTable读取过的的KV pair；第二级是<strong>Block缓存</strong>，缓存读取的SSTable Block。</p>
+<p>对于经常要重复读取相同数据的应用程序来说,扫描缓存非常有效；对于经常要读取刚刚读过的数据附近的数据的应用程序来说，Block 缓存更有用。</p>
+<p><strong>Bloom Filter</strong>简单来说就是可以判断某个Key是否不存在。</p>
+<p>可以为全局或者每个Tablet Server，以及SSTable分别维护一个Bloom Filter，用于加速读查询，减少到SSTable的查询；对于可能存在的Key，利用二分法查询</p>
+<h2 id="优化">优化</h2>
+<p>除了上文中说的到优化方式，原文还提到了几种优化手段。</p>
+<h3 id="局部性">局部性</h3>
+<p>通过配置或者自动等方式，把高频使用的列数据组合生成一个SSTable存储，减少分开Fetch的时间。</p>
+<blockquote>
+<p>空间换时间，充分利用局部性原理</p>
+</blockquote>
+<h3 id="压缩">压缩</h3>
+<p>将SSTable中的分块进行二级压缩处理。本质其实是为了减少网络传输的带宽和时延，但需要额外的压缩和解压计算。</p>
+<blockquote>
+<p>分块压缩是为了减少编解码的时间以及提高并行效率</p>
+</blockquote>
+<h3 id="commitlog-设计">CommitLog 设计</h3>
+<p>关键其实是Log的粒度问题。Tablet粒度下，会有大量的Log文件。在并行写入GFS中会有大量的磁盘Seek操作，并且不利于Batch化。集群单独一个CommitLog会带来恢复上的高复杂度。</p>
+<p>Bigtable中是每个Tablet Server一个Commit Log。但由于Tablet Server维护了多个Tablet，这就使得Bigtable必须维护LogEntry到TabletID的映射以及顺序，以便在恢复时使用。对一个Tablet的数据恢复可能会导致扫描整个CommitLog，</p>
+<p>此处Bigtable的优化是将Log按照(Table, row, log seq num)并行分块排序，使得同一个Tablet的LogEntry聚合。</p>
+<h2 id="总结">总结</h2>
+<p>不要过渡设计，Simple is Better Than Complex。</p>
+<p>对于分布式服务，集群监控非常重要。Google三篇论文中对集群状态的监控都是不可缺少的一环。监控的意义也在于支持集群的调度。</p>
+<p>设计时不要对其他系统做出任何假设，出现的不仅仅是常见的网络问题，现实中可能会遇到各类问题。</p>
+<p>利用后台处理加速前台感知。利用简单的机制处理前台请求，再开启后台进程善后。</p>
+<h2 id="参考">参考</h2>
+<p><a href="https://zh.wikipedia.org/wiki/Bigtable">wikipedia</a></p>
+<p><a href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/bigtable-osdi06.pdf">Bigtable</a></p>
+<p><a href="https://www.cnblogs.com/xybaby/p/9096748.html">典型分布式系统分析：Bigtable</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/181498475">LSM树详解</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/blog/zh/dfs-haystack/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>DFS-Haystack</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/blog/zh/mit6.824-gfs/"><span>MIT6.824-GFS</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>

@@ -5,8 +5,38 @@
     <link>https://noneback.github.io/zh/tags/chainreplication/</link>
     <description>Recent content in ChainReplication on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 08 Feb 2023 23:05:57 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/chainreplication/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MIT6.824-ChainReplication</title>
+      <link>https://noneback.github.io/zh/blog/zh/mit6.824-chainreplication/</link>
+      <pubDate>Wed, 08 Feb 2023 23:05:57 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/mit6.824-chainreplication/</guid>
+      <description>&lt;p&gt;只是简单写写，有一些具体一点的设计建议去读一下原文。&lt;/p&gt;
+&lt;h1 id=&#34;简介&#34;&gt;简介&lt;/h1&gt;
+&lt;p&gt;简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来保证服务的可用性。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34; alt=&#34;image-20230208232032286&#34;&gt;&lt;/p&gt;
+&lt;p&gt;算法的设计很简单巧妙。算法通过链式复制将复制的吞吐均分到所有的CR节点上，每个节点只负责对后续节点的复制。写入请求从头部节向后传播，查询请求交由尾部节点响应。&lt;/p&gt;
+&lt;p&gt;为了维护Chain上节点之前的前后关系，CR还引入了一个Master服务，用于管理节点之间的关系，以及处理Node Failure的情况。&lt;/p&gt;
+&lt;h2 id=&#34;故障处理&#34;&gt;故障处理&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;Head Fail：头节点Pending or 没处理完 的请求将被丢失，不影响线性一致性，之后将第二个节点设置为头结点&lt;/li&gt;
+&lt;li&gt;Tail Fail：倒数第二个节点将成为尾节点，此时原来Tail Pending的请求将被提交&lt;/li&gt;
+&lt;li&gt;Middle Fail：中间节点故障的处理，类比链表的操作。Node_pre 将指向 Node_next，此时我们需要保证故障Node传递的请求被完整的传递下去。每个CR节点会维护一个SendReqList，记录已传递给后续节点的请求，由于请求是从头到尾传播，所以Node_pre只需要Node_next所缺失的数据即可。当Tail接收到请求时，标识数据被提交，此时会从尾至头传递Ack(req)信息，经过的节点都会把req从SendReqList从去除。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;优缺点&#34;&gt;优缺点&lt;/h2&gt;
+&lt;p&gt;最大的优点是，可以单节点提高吞吐量，节点的负载比较均衡，同时相对易于实现。整体设计很简洁有效。&lt;/p&gt;
+&lt;p&gt;但很明显也会有以下缺点。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;如果传播链条上有一个节点处理慢，将会拖慢整个处理流程。&lt;/li&gt;
+&lt;li&gt;除了首尾两个节点，其他节点的数据基本只作为副本存在，而无法提供服务。当然CRAQ里有让中间节点提供只读服务的方法，类似Raft的Read Index，暂不细说。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1 id=&#34;参考&#34;&gt;参考&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&#34;https://tanxinyu.work/chain-replication-thesis/&#34;&gt;Chain Replication 论文阅读&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;http://nil.csail.mit.edu/6.824/2021/papers/cr-osdi04.pdf&#34;&gt;CR Paper&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

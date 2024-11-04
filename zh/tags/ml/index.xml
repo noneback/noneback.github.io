@@ -5,8 +5,278 @@
     <link>https://noneback.github.io/zh/tags/ml/</link>
     <description>Recent content in ML on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 06 May 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/ml/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>基于朴素贝叶斯的中文垃圾电子邮件分类</title>
+      <link>https://noneback.github.io/zh/blog/zh/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/</link>
+      <pubDate>Wed, 06 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/</guid>
+      <description>&lt;h1 id=&#34;基于朴素贝叶斯的中文垃圾电子邮件分类&#34;&gt;基于朴素贝叶斯的中文垃圾电子邮件分类&lt;/h1&gt;
+&lt;h2 id=&#34;训练数据和测试数据&#34;&gt;训练数据和测试数据&lt;/h2&gt;
+&lt;p&gt;本次主要使用了&lt;a href=&#34;https://github.com/shijing888/BayesSpam&#34;&gt;github上的开源数据&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;数据处理&#34;&gt;数据处理&lt;/h2&gt;
+&lt;p&gt;首先使用正则表达式对训练集中的中文邮件的内容进行过滤，去除其中中文之外的其他字符，再将剩下的内容使用&lt;a href=&#34;https://github.com/fxsjy/jieba&#34;&gt;jieba&lt;/a&gt;进行分词，过滤掉中文停用字表中的内容。将垃圾邮件以及正常邮件的处理结果分别存放。&lt;/p&gt;
+&lt;p&gt;用两个字典spam_voca和normal_voca用于保存不同邮件中不同词语的词频，数据处理完成。&lt;/p&gt;
+&lt;h2 id=&#34;训练与预测&#34;&gt;训练与预测&lt;/h2&gt;
+&lt;p&gt;训练和预测的过程主要使计算$ P(Spam|word_1,word_2,&amp;hellip;,word_n) $的概率，当这个概率大于某个阈值的时候，这个邮件被分类为垃圾邮件。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;根据朴素贝叶斯的条件独立假设，并设先验概率$P(s)=P(s^{&#39;})=0.5$,则有：  P(s|w_1,w_2,&amp;hellip;,w_n)=$\frac {P(s,w_1,w_2,&amp;hellip;,w_n)}{P(w_1,w_2,&amp;hellip;,w_n)}$&lt;/p&gt;
+&lt;p&gt;=$\frac {P(w_1,w_2,&amp;hellip;,w_n|s)P(s)}{P(w_1,w_2,&amp;hellip;,w_n)}$=$\frac {P(w_1,w_2,&amp;hellip;,w_n|s)P(s)}{P(w_1,w_2,&amp;hellip;,w_n|s)\cdot p(s)+P(w_1,w_2,&amp;hellip;,w_n|s^{&#39;})\cdot p(s^{&#39;})}\qquad\qquad$&lt;/p&gt;
+&lt;p&gt;因为P(spam)=P(not spam),则有&lt;/p&gt;
+&lt;p&gt;$\frac {\prod\limits_{j=1}^nP(w_j|s)}{\prod\limits_{j=1}^nP(w_j|s)+\prod\limits_{j=1}^nP(w_j|s^{&#39;})}$
+再利用贝叶斯$P(w_j|s)=\frac{P(s|w_j)\cdot P(w_j)}{P(s)}$,式子化为
+$\frac {\prod\limits_{j=1}^nP(s|w_j)}{\prod\limits_{j=1}^nP(s|w_j)+\prod\limits_{j=1}^nP(s^{&#39;}|w_j)}$&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;具体流程&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;对测试集中的每一封邮件做同样的处理，并计算得到$P(s|w)$最高的n个词，在计算过程中，若该词只出现在垃圾邮件的词典中，则令$P(w|s^{&#39;})=0.01$，反之亦然；若都未出现，则令$P(s|w)=0.4$。PS.这里做的几个假设基于前人做的一些研究工作得出的。&lt;/li&gt;
+&lt;li&gt;对得到的每封邮件中重要的15个词利用式2计算概率，若概率$&amp;gt;$阈值$\alpha(一般设为0.9)$，则判为垃圾邮件，否则判为正常邮件。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;具体的代码细节可以参见附加的代码。&lt;/p&gt;
+&lt;h2 id=&#34;结果&#34;&gt;结果&lt;/h2&gt;
+&lt;p&gt;通过调整预测是使用的词汇的数量，针对本次数据集，最佳的结果是&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;选择29个词汇 : &lt;span style=&#34;color:#ae81ff&#34;&gt;0.9642857142857143&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;附加&#34;&gt;附加&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;项目结构
+├── data
+│   ├── 中文停用词表.txt
+│   ├── normal
+│   ├── spam
+│   └── test
+├── main.py
+├── normal_voca.json
+├── &lt;strong&gt;pycache&lt;/strong&gt;
+│   └── utils.cpython-36.pyc
+├── spam_voca.json
+└── utils.py&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;具体代码&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# utils.py&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; jieba
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; numpy
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; re
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; os
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; collections &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; defaultdict
+
+spam_file_num&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;7775&lt;/span&gt; 
+normal_file_num&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;7063&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#todo 原始邮件数据的预处理&lt;/span&gt;
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;获取中文的停用词表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;【停用词】（https://zh.wikipedia.org/wiki/&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%E&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;5&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%81%&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;9C&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%E&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;7&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%94%&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;A8&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%E&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;8%AF%8D）
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_stopwords&lt;/span&gt;():
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; [
+        i&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;strip() &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; open(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./data/中文停用词表.txt&amp;#39;&lt;/span&gt;, encoding&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gbk&amp;#39;&lt;/span&gt;)
+    ]
+
+
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    读取原始文件，进行简单的处理和分词，返回分词列表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_raw_str_list&lt;/span&gt;(path):
+    stop_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_stopwords()
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path, encoding&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gbk&amp;#39;&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
+        raw_str &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; f&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;read()
+    pattern &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;[^&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\u4E00&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\u9FA5&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;]&amp;#39;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;#中文的unicode编码的范围&lt;/span&gt;
+    regex &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; re&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;compile(pattern)
+    ret &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; regex&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;findall(raw_str)
+    handled_str &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; re&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sub(pattern, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;, raw_str)
+    str_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+        word &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; jieba&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;cut(handled_str) &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; stop_list
+    ]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; str_list
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#分词以及统计词频，得到词汇表&lt;/span&gt;
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;返回一个字典，记录了分词后的词汇表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;path:k可以使dir或者file路径，默认为存放文本的dir
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;is_file_path:表示输入路径是不是文件
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_voca&lt;/span&gt;(path, is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; is_file_path:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; read_voca_from_file(path)
+
+    voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; defaultdict(int)
+    &lt;span style=&#34;color:#75715e&#34;&gt;# 获取垃圾邮件列表&lt;/span&gt;
+    file_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [file &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; os&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listdir(path)]
+    &lt;span style=&#34;color:#75715e&#34;&gt;#获得词汇表&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; file_list:  &lt;span style=&#34;color:#75715e&#34;&gt;#测试用&lt;/span&gt;
+        raw_str_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_raw_str_list(path &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; str(file))
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; raw_str &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; raw_str_list:
+            voca[raw_str] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; voca[raw_str] &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; voca
+
+
+
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    将得到的词汇表保存到json文件中，以便下次读取
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    voca:词汇表字典
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    path:文件的保存路径
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    sort_by_value:是否按value值排序
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;save_voca2json&lt;/span&gt;(voca, path, sort_by_value&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;,indent_&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; sort_by_value:
+        sorted_by_value(voca)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;w+&amp;#39;&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
+        f&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;write(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(voca, ensure_ascii&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;indent_))
+
+
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;从json文件中读取voca
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;read_voca_from_file&lt;/span&gt;(path):
+    voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;None&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
+        voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;load(f)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; voca
+
+
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;将字典基于value排序
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;sorted_by_value&lt;/span&gt;(_dict):
+    _dict &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; dict(sorted(spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;items(), key&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;lambda&lt;/span&gt; x: x[&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;], reverse&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;))
+
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#计算 P(Spam|word)&lt;/span&gt;
+
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    计算邮件和邮件分类最相关词语及其 P(spam|word)
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    words_size:最终使用词语的数量，用于最后的预测
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_top_words_prob&lt;/span&gt;(path,spam_voca,normal_voca,words_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):
+    critical_words&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;[]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; get_raw_str_list(path):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+            &lt;span style=&#34;color:#75715e&#34;&gt;# 如果word在两边都出现&lt;/span&gt;
+            p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;spam_voca[word]&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;spam_file_num
+            p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;normal_voca[word]&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;normal_file_num
+            p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;(p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;p_w_s)
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;elif&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+            &lt;span style=&#34;color:#75715e&#34;&gt;# 如果word只在spam出现&lt;/span&gt;
+            p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;spam_voca[word]&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;spam_file_num
+            p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.01&lt;/span&gt;
+            p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;(p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;p_w_s)
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;elif&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+            &lt;span style=&#34;color:#75715e&#34;&gt;# 如果word只在normal出现&lt;/span&gt;
+            p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.01&lt;/span&gt;
+            p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;normal_voca[word]&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;normal_file_num
+            p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;p_w_s&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;(p_w_n&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;p_w_s)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
+            &lt;span style=&#34;color:#75715e&#34;&gt;#如果都不出现&lt;/span&gt;
+            p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.4&lt;/span&gt;
+        &lt;span style=&#34;color:#75715e&#34;&gt;#以上设定的数值均是基于前人的研究得到的数据&lt;/span&gt;
+        critical_words&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append([word,p_s_w])
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; dict(sorted(critical_words[:words_size],key&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;lambda&lt;/span&gt; x:x[&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;],reverse&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;))
+
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    计算贝叶斯概率
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    words_prob：包含词汇以及其P(spam|word)概率的一个字典
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    spam_voca:垃圾邮件词汇表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    normal_voca:正常邮件词汇表
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;caculate_bayes&lt;/span&gt;(words_prob,spam_voca,normal_voca):
+    p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+    p_s_nw&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word,prob &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; words_prob&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;items():
+        p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;*=&lt;/span&gt;prob
+        p_s_nw&lt;span style=&#34;color:#f92672&#34;&gt;*=&lt;/span&gt;(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;prob)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;(p_s_w&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;p_s_nw)
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;predict&lt;/span&gt;(bayes,threshold&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.9&lt;/span&gt;):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; bayes&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;=&lt;/span&gt;threshold    
+
+
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    返回文件名和label
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_files_labels&lt;/span&gt;(dir_path,is_spam&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;):
+    raw_files_list&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;os&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listdir(dir_path)
+    files_list&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [dir_path&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;file &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; raw_files_list]
+    labels&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;[is_spam &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(len(files_list))]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; files_list,labels
+
+
+&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    预测测试集结果并打印
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    file_list：测试集文件路径集合
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    y:测试集结果标签
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    word_size：预测的指标
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;predict_result&lt;/span&gt;(file_list,y,spam_voca,normal_voca,word_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):
+    ret&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;[]
+    right&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; file_list:
+&lt;span style=&#34;color:#75715e&#34;&gt;#         raw_strs=get_raw_str_list(str(file))&lt;/span&gt;
+        words_prob&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_top_words_prob(file,spam_voca,normal_voca,words_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;word_size)
+        bayes&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;caculate_bayes(words_prob,spam_voca,normal_voca)
+        ret&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(predict(bayes))
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(len(ret)):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; ret[i]&lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt;y[i]:
+            right&lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+
+    print(right&lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt;len(y))
+
+
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#main.py&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; utils &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__&lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;__main__&amp;#39;&lt;/span&gt;:
+    &lt;span style=&#34;color:#75715e&#34;&gt;#获取词典并保存，一遍下次读取&lt;/span&gt;
+    spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_voca(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./spam_voca.json&amp;#39;&lt;/span&gt;,is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;)
+    normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_voca(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./normal_voca.json&amp;#39;&lt;/span&gt;,is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;)
+    &lt;span style=&#34;color:#75715e&#34;&gt;#保存方便下次读取&lt;/span&gt;
+    save_voca2json(spam_voca,&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./spam_voca.json&amp;#39;&lt;/span&gt;)
+    save_voca2json(normal_voca,&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./snormal_voca.json&amp;#39;&lt;/span&gt;)
+    &lt;span style=&#34;color:#75715e&#34;&gt;#预处理测试数据&lt;/span&gt;
+    s_x,s_y&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_files_labels(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./data/test/spam/&amp;#39;&lt;/span&gt;)
+    n_x,n_y&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;get_files_labels(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./data/test/normal/&amp;#39;&lt;/span&gt;,is_spam&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;)
+    x,y&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;list(s_x&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;n_x),s_y&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;n_y
+    &lt;span style=&#34;color:#75715e&#34;&gt;#预测结果&lt;/span&gt;
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;,&lt;span style=&#34;color:#ae81ff&#34;&gt;40&lt;/span&gt;):
+        print(str(i)&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39; : &amp;#39;&lt;/span&gt;,end&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
+        predict_result(x,y,spam_voca,normal_voca,word_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;i)
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;源码&#34;&gt;源码&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/noneback/Toys/tree/master/Bayes&#34;&gt;github&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

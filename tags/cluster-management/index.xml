@@ -1,12 +1,57 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Cluster Management on NoneBack</title>
+    <title>cluster management on NoneBack</title>
     <link>https://noneback.github.io/tags/cluster-management/</link>
-    <description>Recent content in Cluster Management on NoneBack created by </description>
+    <description>Recent content in cluster management on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Mon, 19 Feb 2024 11:12:16 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/cluster-management/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Borg: Large-scale Cluster Management at Google with Borg</title>
+      <link>https://noneback.github.io/blog/borg/</link>
+      <pubDate>Mon, 19 Feb 2024 11:12:16 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/borg/</guid>
+      <description>&lt;p&gt;Borg is a cluster management system, similar to the closed-source version of Kubernetes (k8s).&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;It achieves high utilization through admission control, efficient task packing, overcommitment, machine sharing, and process-level performance isolation.&lt;/li&gt;
+&lt;li&gt;It provides runtime features to reduce failure recovery time for high-availability applications and scheduling policies that reduce the probability of correlated failures.&lt;/li&gt;
+&lt;li&gt;It offers a declarative job description language, DNS integration, real-time job monitoring, and tools for analyzing and simulating system behavior, simplifying usage for end-users.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The paper aims to introduce the system design and share the experiences Google has gained behind it. This blog mainly focuses on system design, specifically the services Borg offers in terms of SLA, its abstraction of workloads, resources, and scheduling.&lt;/p&gt;
+&lt;h2 id=&#34;system-abstraction&#34;&gt;System Abstraction&lt;/h2&gt;
+&lt;p&gt;Borg manages two primary workloads: long-running services and batch jobs, corresponding to two types of jobs (prod/non-prod). A job consists of several tasks, and different jobs have different priorities.&lt;/p&gt;
+&lt;p&gt;In terms of deployment architecture, a Borg cluster consists of several cells, each containing multiple machines.&lt;/p&gt;
+&lt;p&gt;For task scheduling, all physical or logical units on machines are treated as resources, including CPU, memory, IO, etc.&lt;/p&gt;
+&lt;h2 id=&#34;system-architecture&#34;&gt;System Architecture&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png&#34; alt=&#34;System Architecture&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Borg uses a master-slave architecture, consisting of a BorgMaster and several Borglet nodes. The scheduler is an independent service.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;BorgMaster&lt;/strong&gt; is a logical node responsible for interacting with both external components and Borglets, as well as maintaining the internal state of the cluster. It uses Paxos to achieve multi-replication and high availability.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Borglet&lt;/strong&gt; is the Borg proxy on each machine in the cell. It is responsible for starting/stopping tasks, managing node physical resources, and reporting status.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Scheduler&lt;/strong&gt; is the service responsible for task scheduling. It uses the state recorded by the master to asynchronously handle task scheduling and informs the master for a secondary check.&lt;/p&gt;
+&lt;h2 id=&#34;resource-scheduling&#34;&gt;Resource Scheduling&lt;/h2&gt;
+&lt;p&gt;The scheduler is a key service in Borg. The quality of the scheduling algorithm directly affects resource utilization and is closely related to cost efficiency.&lt;/p&gt;
+&lt;h3 id=&#34;basic-process&#34;&gt;Basic Process&lt;/h3&gt;
+&lt;p&gt;The scheduling algorithm has two parts:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Feasibility Check&lt;/strong&gt;: Finds a set of machines capable of running the task.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Scoring&lt;/strong&gt;: Selects the most suitable machine from that set.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;During the feasibility check, the scheduler finds a set of machines that meet task constraints and have enough available resources. Available resources include those already allocated to lower-priority tasks that can be preempted.&lt;/p&gt;
+&lt;p&gt;During the scoring phase, the scheduler determines the suitability of each feasible machine. Scoring considers user-specific preferences but primarily depends on built-in criteria, such as minimizing the number and priority of preempted tasks, selecting machines that already have the task package, distributing tasks across different power and failure domains, and optimizing packing quality (mixing high- and low-priority tasks on a single machine to allow high-priority tasks to expand during load spikes).&lt;/p&gt;
+&lt;p&gt;The scheduler uses a cached copy of the cell state and performs the following steps repeatedly:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Retrieves state changes (including assigned and pending jobs) from the elected master and updates its local copy.&lt;/li&gt;
+&lt;li&gt;Runs a round of scheduling to assign tasks and sends assignment information to the master.&lt;/li&gt;
+&lt;li&gt;The master accepts and applies the assignments, but if they are unsuitable (e.g., based on outdated state), it waits for the scheduler&amp;rsquo;s next round.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;additional-aspects&#34;&gt;Additional Aspects&lt;/h3&gt;
+&lt;p&gt;The paper also discusses how to provide oversubscription and handle performance contention, though these are not the focus of this blog. Readers can refer to the original paper for more details.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.cnblogs.com/hellojamest/p/16526159.html&#34;&gt;https://www.cnblogs.com/hellojamest/p/16526159.html&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

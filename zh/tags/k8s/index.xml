@@ -1,12 +1,57 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>K8s on NoneBack</title>
+    <title>k8s on NoneBack</title>
     <link>https://noneback.github.io/zh/tags/k8s/</link>
-    <description>Recent content in K8s on NoneBack created by </description>
+    <description>Recent content in k8s on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Mon, 19 Feb 2024 11:12:16 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/k8s/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Borg: Large-scale cluster management at Google with Borg</title>
+      <link>https://noneback.github.io/zh/blog/zh/borg/</link>
+      <pubDate>Mon, 19 Feb 2024 11:12:16 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/borg/</guid>
+      <description>&lt;p&gt;Borg 是一个集群管理系统，类似闭源的k8s。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。&lt;/li&gt;
+&lt;li&gt;为高可用应用提供了可以减少故障恢复时间的运行时特性，以及降低关联故障概率的调度策略。&lt;/li&gt;
+&lt;li&gt;提供声明式的作业描述语言、域名服务集成、实时作业监控、分析和模拟系统行为的工具。简化用户的使用。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;文章本意在介绍系统设计的同时，讲述Google在背后的经验总结。但本文主要关心系统的设计，关注Borg对外提供的服务SLA，关注Borg对负载，资源，调度等方面的抽象。&lt;/p&gt;
+&lt;h2 id=&#34;系统抽象&#34;&gt;系统抽象&lt;/h2&gt;
+&lt;p&gt;工作负载上，主要有两种：一是长期运行的服务，二是批处理任务。分别对应两种类型的Job (prod / non-prod)。Job由若干Task组成，不同的Job拥有不同的优先级。&lt;/p&gt;
+&lt;p&gt;部署架构上，一个Borg Cluster由若干Cell组成，一个Cell由若干机器组成。&lt;/p&gt;
+&lt;p&gt;任务调度上，一切机器上有限的物理或者逻辑单元都需要被视为资源，如cpu，mem，io等资源。&lt;/p&gt;
+&lt;h2 id=&#34;系统架构&#34;&gt;系统架构&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Master-Slave架构，由一个BorgMaster和若干Borglet节点组成，调度器是一个独立的服务。&lt;/p&gt;
+&lt;p&gt;BorgMaster是一个逻辑节点，负责与外部以及Borglet的交互，以及集群内状态的维护。利用Paxos实现多副本以及ha容错。&lt;/p&gt;
+&lt;p&gt;Borglet是Cell内没台机器的Borg Proxy。负责启停Task，管理Node的物理资源，上报状态。&lt;/p&gt;
+&lt;p&gt;Scheduler是负责进行Task调度的服务。使用Master中记录的状态，并基于此异步的去处理Task的调度，并告知Master二次判断。&lt;/p&gt;
+&lt;h2 id=&#34;资源调度&#34;&gt;资源调度&lt;/h2&gt;
+&lt;p&gt;Scheduler是其中的很重要的核心服务。调度算法的好坏决定了资源的利用率，直接与使用成本关联。&lt;/p&gt;
+&lt;h3 id=&#34;基本流程&#34;&gt;基本流程&lt;/h3&gt;
+&lt;p&gt;调度算法有两个部分:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;可行性检查&lt;/strong&gt;，找到一组可以运行任务的机器&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;评分&lt;/strong&gt;，从中选择一个合适的机器。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;在可行性检查阶段，调度器会找到一组满足任务约束且有足够可用资源的机器，其中可用资源包括已经 分配给低优先级任务但可以抢占的资源。&lt;/p&gt;
+&lt;p&gt;在评分阶段，调度器确定每台可行机器的适宜性。评分考虑了用户特定的偏好，但主要取决于内建的标准：例如最小化被抢占任务的个数和优先级，选择已经有该任务安 装包的机器，尽可能使任务分散在不同的供电和故障域，以及装箱(Packing)质量(在单台机器上混合 高、低优先级的任务，以允许高优先级任务在负载尖峰扩容)等。&lt;/p&gt;
+&lt;p&gt;调度器使用一份缓存的 Cell 状态拷贝，重复执行下面的操作:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;从选举出来的 Master 获取状态变更(包括已分配的和等待中的工作);更新自己的本地拷贝。&lt;/li&gt;
+&lt;li&gt;执行一轮调度来分配任务;将分配信息发送给 Master。&lt;/li&gt;
+&lt;li&gt;Master 会接受并应用这些分配，但如果分配不适合(例如，是基于过时的状态做出的)，就会等待调度器的下一轮调度。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;其他&#34;&gt;其他&lt;/h3&gt;
+&lt;p&gt;文中还提到了如何提供售卖率以及性能争抢的问题，不过不是本文重点，可以参考一下原文。&lt;/p&gt;
+&lt;h2 id=&#34;reference&#34;&gt;Reference&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.cnblogs.com/hellojamest/p/16526159.html&#34;&gt;https://www.cnblogs.com/hellojamest/p/16526159.html&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

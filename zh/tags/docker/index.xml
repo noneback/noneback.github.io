@@ -5,8 +5,112 @@
     <link>https://noneback.github.io/zh/tags/docker/</link>
     <description>Recent content in Docker on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Tue, 08 Jun 2021 22:26:17 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/docker/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Linux Cgroups简介</title>
+      <link>https://noneback.github.io/zh/blog/zh/linux-cgroups%E7%AE%80%E4%BB%8B/</link>
+      <pubDate>Tue, 08 Jun 2021 22:26:17 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/linux-cgroups%E7%AE%80%E4%BB%8B/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Linux Cgroups&lt;/strong&gt;(Control Groups)供了对一组进程及将来子讲程的资源限制、控制和统计的能力。这些资源包括CPU、内存、存储、网络等。通过 Cgroups,可以方便地限制某个进程的资源占用,并且可以实时地监控进程的监控和统计信息。&lt;/p&gt;
+&lt;h2 id=&#34;cgroups中的三个组件&#34;&gt;Cgroups中的三个组件&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;cgroup&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;对进程分组管理的一种机制,一个 cgroup包含一组进程,并可以在这个 cgroup 上增加 Linux subsystem的各种参数配置,将一组进程和一组 subsystem的系统参数关联起来&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;subsystem&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;一组资源控制的模块&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png&#34; alt=&#34;image.png&#34;&gt;
+每个 subsystem会关联到定义了相应限制的 cgroup上,并对这个cgroup中的进程做相应的限制和控制。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;hierarchy&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;hierarchy的功能是把一组 cgroup串成一个树状结构,一个这样的树便是一个hierarchy&lt;/p&gt;
+&lt;p&gt;通过这种树状结构, Groups可以做到继承。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;场景：
+系统对一组定时的任条进程通过 cgroup1限制了CPU的使用率,然后其中有一个定时dump日志的进程还需要限制磁盘IO&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;为了避免限制了磁盘IO之后影响到其他进程,就可以创建 cgroup2,但其继承于 cgroup1并制磁盘的1O,这样 cgroup2便继承了 cgroup1中对CPU使用率的限制,并且增加了磁盘IO的限制而不影响到 Cgroup1中的其他进程。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;三者的相互关系&#34;&gt;三者的相互关系&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;系统在创建了新的 hierarchy之后,系统中所有的进程&lt;strong&gt;都会加入&lt;/strong&gt;个 hierarchy的 &lt;strong&gt;Cgroup 根节点&lt;/strong&gt;,这个 Cgroup节点是 hierarchy默认创建的&lt;/li&gt;
+&lt;li&gt;一个subsystem只能附加到一个hierarchy上面&lt;/li&gt;
+&lt;li&gt;一个hierarchy可以附加多个subsystem&lt;/li&gt;
+&lt;li&gt;一个进程可以位于多个从属与不同的hierarchy的cgroup中&lt;/li&gt;
+&lt;li&gt;fork出的子进程是和父进程在同一个cgroup中的。也可以之后移动到其他cgroup中&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;内核接口&#34;&gt;内核接口&lt;/h2&gt;
+&lt;p&gt;Groups中的hierarchy是一种&lt;strong&gt;树状&lt;/strong&gt;的组织结构, Kernel为了使对Cgroups的配置更直观,是通过一个&lt;strong&gt;虚拟的树状文件系统配置 Cgroups&lt;/strong&gt;的,通过层级的目录拟出 Cgroups&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;创建挂载hierarchy，新建子cgroup&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;mkdir cgroup &lt;span style=&#34;color:#75715e&#34;&gt;# 创建挂载点&lt;/span&gt;
+sudo mount -t cgroup -o none,name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;cgroup-test cgroup-test ./cgroup-test &lt;span style=&#34;color:#75715e&#34;&gt;# 挂载hierarchy&lt;/span&gt;
+sudo mkdir cgroup-1
+sudo mkdir cgroup-2
+tree
+
+.
+├── cgroup-1
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup-2
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup.clone_children
+├── cgroup.procs
+├── cgroup.sane_behavior
+├── notify_on_release
+├── release_agent
+└── tasks
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;不同文件的含义&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png&#34; alt=&#34;image.png&#34;&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在cgroup中添加和移动进程（将进程pid移入对应tasks文件中）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &lt;/span&gt;$$&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;gt;&amp;gt; ./cgroup-1/tasks&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 将终端进程移入cgroup-1中&lt;/span&gt;
+cat /proc/$$/cgroup
+
+&amp;gt;&amp;gt; 
+13:name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;cgroup-test:/cgroup-1
+12:memory:/user.slice/user-1002.slice/session-12331.scope
+11:perf_event:/
+10:cpuset:/
+9:freezer:/
+8:blkio:/user.slice
+7:rdma:/
+6:hugetlb:/
+5:pids:/user.slice/user-1002.slice/session-12331.scope
+4:cpu,cpuacct:/user.slice
+3:net_cls,net_prio:/
+2:devices:/user.slice
+1:name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;systemd:/user.slice/user-1002.slice/session-12331.scope
+0::/user.slice/user-1002.slice/session-12331.scope
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;通过subsystem限制cgroup中进程的资源&lt;/p&gt;
+&lt;p&gt;首先将hierarchy关联到subsystem，系统默认将hierarchy关联到memory hierarchy&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 首先,在不做限制的情况下,启动一个占用内存的stress进程&lt;/span&gt;
+stress --vm-bytes 200m --vm-keep -m &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+sudo mkdir test-limit-memory &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; cd test-limit-memory &lt;span style=&#34;color:#75715e&#34;&gt;# 创建一个cgroup&lt;/span&gt;
+sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &amp;#34;&lt;/span&gt;100m&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34; &amp;gt; memory.limit&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 设置最大cgroup占用为100m&lt;/span&gt;
+sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &lt;/span&gt;$$&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;gt; tasks&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 将当前进程移入cgroup&lt;/span&gt;
+stress --vm-bytes 200m --vm-keep -m &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;最后可以观测到进程占用的内存被限制了&#34;&gt;最后可以观测到进程占用的内存被限制了&lt;/h4&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

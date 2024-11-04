@@ -1,12 +1,240 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Cpp on NoneBack</title>
+    <title>cpp on NoneBack</title>
     <link>https://noneback.github.io/zh/tags/cpp/</link>
-    <description>Recent content in Cpp on NoneBack created by </description>
+    <description>Recent content in cpp on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Sun, 22 Nov 2020 20:53:19 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/cpp/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>算术表达式语法分析</title>
+      <link>https://noneback.github.io/zh/blog/zh/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/</link>
+      <pubDate>Sun, 22 Nov 2020 20:53:19 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/%E7%AE%97%E6%9C%AF%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95%E5%88%86%E6%9E%90/</guid>
+      <description>&lt;p&gt;编译原理的第二次实验，使用 LR 方法实现对算术表达式的语法分析&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;文法：
+E-&amp;gt;E+T|E-T|T
+T-&amp;gt;T*F|T/F|F
+F-&amp;gt;(E)|num
+&lt;/code&gt;&lt;/pre&gt;&lt;h2 id=&#34;dfa&#34;&gt;DFA&lt;/h2&gt;
+&lt;p&gt;首先要根据文法构建一个 DFA&lt;/p&gt;
+&lt;h3 id=&#34;构造拓广文法-gs&#34;&gt;构造拓广文法 G(s)&lt;/h3&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;拓广文法G：
+S-&amp;gt;E
+E-&amp;gt;E+T|E-T|T
+T-&amp;gt;T*F|T/F|F
+F-&amp;gt;(E)|num
+&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;构造有效项目集和相应-dfa&#34;&gt;构造有效项目集和相应 DFA&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2020/11/22/Hz5lLiGA9P2woWq.png&#34; alt=&#34;DFA.png&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;slr&#34;&gt;SLR&lt;/h2&gt;
+&lt;p&gt;从 DFA 中可以观察到使用 LR(0)将会有 Shift-Reduce 冲突，所以最终使用 SLR 分析。&lt;/p&gt;
+&lt;p&gt;构造 SLR 需要在 LR(0)的基础上计算出 First 和 Follow 集合&lt;/p&gt;
+&lt;h3 id=&#34;构造-first-和-follow-集合&#34;&gt;构造 FIRST 和 FOLLOW 集合&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;&lt;/th&gt;
+&lt;th&gt;E&lt;/th&gt;
+&lt;th&gt;T&lt;/th&gt;
+&lt;th&gt;F&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;First&lt;/td&gt;
+&lt;td&gt;(,num&lt;/td&gt;
+&lt;td&gt;(,num&lt;/td&gt;
+&lt;td&gt;(,num&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;Follow&lt;/td&gt;
+&lt;td&gt;+,-,#,)&lt;/td&gt;
+&lt;td&gt;+,-,#,*,/,)&lt;/td&gt;
+&lt;td&gt;+,-,#,*,/,)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&#34;构造-slr-分析表&#34;&gt;构造 SLR 分析表&lt;/h2&gt;
+&lt;p&gt;规约时，需要判断下一个的符号是否属于被规约状态的 Follow 集合中。在 Follow 集合中才允许被规约&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2020/11/22/VdNI8BqwePEaOjF.png&#34; alt=&#34;image.png&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;编写代码&#34;&gt;编写代码&lt;/h2&gt;
+&lt;p&gt;相对于之前构造 DFA 和分析表，代码的实现显得则更为简单。但要注意代码的质量。&lt;/p&gt;
+&lt;h3 id=&#34;算法&#34;&gt;算法&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2020/11/22/IHnOyeqZY9EJ4rt.png&#34; alt=&#34;image.png&#34;&gt;&lt;/p&gt;
+&lt;h3 id=&#34;实现&#34;&gt;实现&lt;/h3&gt;
+&lt;p&gt;实现的关键在于：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Action,ActionKind&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Action&lt;/span&gt; {  ActionKind kind;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; id;};&lt;span style=&#34;color:#75715e&#34;&gt;// id is for reduce and shift
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;enum&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ActionKind&lt;/span&gt; { Error, Shift, Reduce, Accpet };
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;保存 ActionMap 和 GotoMap,产生式&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;typedef&lt;/span&gt; unordered_map&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string, Action&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; ActionMap;&lt;span style=&#34;color:#75715e&#34;&gt;//需要16个，与状态数对应
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;typedef&lt;/span&gt; unordered_map&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string, State&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; GotoMap;&lt;span style=&#34;color:#75715e&#34;&gt;//需要16个，与状态数对应
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string, string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; producers[] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+    {&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;T&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;T*F&amp;#34;&lt;/span&gt;},
+    &lt;span style=&#34;color:#75715e&#34;&gt;//...
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;//将产生式填入
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;};
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;initialMaps&lt;/span&gt;(vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;ActionMap&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;am, vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;GotoMap&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;gm) {
+&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; string actions[&lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;11&lt;/span&gt;]{
+      {&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;s4&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;s5&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;},
+      {&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;s7&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;s6&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;a11&amp;#34;&lt;/span&gt;},
+      &lt;span style=&#34;color:#75715e&#34;&gt;//...
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;};
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; gotos[&lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+     {&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;},
+     &lt;span style=&#34;color:#75715e&#34;&gt;//...
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;};
+
+  &lt;span style=&#34;color:#75715e&#34;&gt;//  （ ） - + * / num $
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// E    T    F
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;; i &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt;; i&lt;span style=&#34;color:#f92672&#34;&gt;++&lt;/span&gt;) {
+    ActionMap a;
+    GotoMap g;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; j &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;; j &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;8&lt;/span&gt;; j&lt;span style=&#34;color:#f92672&#34;&gt;++&lt;/span&gt;) {
+      a[T[j]] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; parse2Action(actions[i][j]);
+    }
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; k &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;; k &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;; k&lt;span style=&#34;color:#f92672&#34;&gt;++&lt;/span&gt;) {
+      g[V[k]] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; gotos[i][k];
+    }
+    am.push_back(a);
+    gm.push_back(g);
+  }
+}
+
+
+&lt;span style=&#34;color:#75715e&#34;&gt;//从表中解析出Action
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// string s format:a char+digits,like s1,r2,a1
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Action &lt;span style=&#34;color:#a6e22e&#34;&gt;parse2Action&lt;/span&gt;(string s) {
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (s.length() &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;||&lt;/span&gt; s.length() &lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;) {
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; Action{Error, Error};
+  }
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;char&lt;/span&gt; kind &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; tolower(s[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]);
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; stoi(s.substr(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;, s.length() &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;));
+
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;switch&lt;/span&gt; (kind) {
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;r&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; Action{Reduce, id};
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;s&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; Action{Shift, id};
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;a&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; Action{Accpet, Accpet};
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;default&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; Action{Error, Error};
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Lexer&lt;/p&gt;
+&lt;p&gt;由于是语法分析实验，所以词法分析写的比较简单&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// simple lex,suppose that there is no error in token while lexing
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// return like{&amp;#34;(&amp;#34;,&amp;#34;num&amp;#34;,&amp;#34;)&amp;#34;}
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; lex2Str(string sourceStr) {
+    vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; ans;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;; i &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; sourceStr.length(); i&lt;span style=&#34;color:#f92672&#34;&gt;++&lt;/span&gt;) {
+      string cur &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; string{sourceStr[i]};
+      &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (T.find(cur) &lt;span style=&#34;color:#f92672&#34;&gt;!=&lt;/span&gt; T.end()) {
+        ans.push_back(cur);
+      } &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt; {
+        &lt;span style=&#34;color:#75715e&#34;&gt;// parse num
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;        ans.push_back(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;num&amp;#34;&lt;/span&gt;);
+        i &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;;
+      }
+    }
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; ans;
+  }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;StatesStack,EnteredStack,CharacterQueue 三个关键数据结构的维护与 Parse 函数的编写&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;DigitExpressionParser&lt;/span&gt; {
+ &lt;span style=&#34;color:#66d9ef&#34;&gt;private&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
+  stack&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; entered;
+  queue&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; characters;
+  unordered_set&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; T{&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;(&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;)&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;-&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;+&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;*&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;num&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;$&amp;#34;&lt;/span&gt;};
+  unordered_set&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; V{&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;E&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;T&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;F&amp;#34;&lt;/span&gt;};
+  stack&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;State&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; states;
+  vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;ActionMap&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; am;
+  vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;GotoMap&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; gm;
+
+  vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; lex2Str(string sourceStr)
+  &lt;span style=&#34;color:#75715e&#34;&gt;//  function overload for different container to pop numofEle
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; pop(queue&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;q, &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; num)
+
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; pop(stack&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;string&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;s, &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; num)
+
+  &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; pop(stack&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;State&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;s, &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; num)
+
+  &lt;span style=&#34;color:#75715e&#34;&gt;// initial parser
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; _init(string sourceString)
+
+ &lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
+  DigitExpressionParser() { initialMaps(am, gm); }
+
+  &lt;span style=&#34;color:#75715e&#34;&gt;// parse
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;parse&lt;/span&gt;(string sourseStr) {
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (&lt;span style=&#34;color:#f92672&#34;&gt;!&lt;/span&gt;_init(sourseStr)) {
+      cerr &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Error:source string empty or wrong token&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&amp;lt;&lt;/span&gt; endl;
+      &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; false;
+    }
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt; (true) {
+      State curState &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; states.top();
+      string curCharacter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; characters.front();
+
+      &lt;span style=&#34;color:#66d9ef&#34;&gt;auto&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;action &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; am[curState][curCharacter];
+
+      &lt;span style=&#34;color:#66d9ef&#34;&gt;switch&lt;/span&gt; (action.kind) {
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; Shift:states.push(action.id);
+          entered.push(curCharacter);
+          characters.pop();
+          &lt;span style=&#34;color:#66d9ef&#34;&gt;break&lt;/span&gt;;
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; Reduce: {
+          &lt;span style=&#34;color:#75715e&#34;&gt;// use producer[id] to reduce
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;          printProducer(action.id);
+          &lt;span style=&#34;color:#66d9ef&#34;&gt;auto&lt;/span&gt; producer &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; producers[action.id];
+          &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; popNum &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; producer.second &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;num&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;?&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; producer.second.size();
+          pop(states, popNum);
+          pop(entered, popNum);
+          entered.push(producer.first);
+
+          states.push(gm[states.top()][producer.first]);
+        }
+          &lt;span style=&#34;color:#66d9ef&#34;&gt;break&lt;/span&gt;;
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; Error:cerr &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Error while parsing&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&amp;lt;&lt;/span&gt; endl;
+          &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; false;
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; Accpet:cout &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Accepted&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&amp;lt;&lt;/span&gt; endl;
+          &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; true;
+      }
+    }
+  }
+};
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;优化&#34;&gt;优化&lt;/h3&gt;
+&lt;p&gt;实验上有一些是可以优化(卷)的&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;First 和 Follow 集合，有效项目集，分析表能够使用代码自动生成&lt;/li&gt;
+&lt;li&gt;num 的可以使用数字代替，解析为 token&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;如果觉得不够卷还可以&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;可视化(呸)&lt;/li&gt;
+&lt;li&gt;写一个计算器&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java 多线程编程</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。 Java 多线程编程 Java 给多线程编程提供了内置">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="Java 多线程编程" />
+<meta property="og:description" content="昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。 Java 多线程编程 Java 给多线程编程提供了内置" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/blog/zh/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2019-11-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2019-11-01T00:00:00+00:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Java 多线程编程"/>
+<meta name="twitter:description" content="昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。 Java 多线程编程 Java 给多线程编程提供了内置"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  4 ,
+      "name": "Java 多线程编程",
+      "item": "https://noneback.github.io/zh/blog/zh/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Java 多线程编程",
+  "name": "Java 多线程编程",
+  "description": "昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。 Java 多线程编程 Java 给多线程编程提供了内置",
+  "keywords": [
+    "JAVA"
+  ],
+  "articleBody": "昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。\nJava 多线程编程 Java 给多线程编程提供了内置的支持。\n 一条线程指的是进程中一个单一顺序的控制流，一个进程中可以并发多个线程，每条线程并行执行不同的任务。 多线程是多任务的一种特别的形式，但多线程使用了更小的资源开销。 进程：一个进程包括由操作系统分配的内存空间，包含一个或多个线程。一个线程不能独立的存在，它必须是进程的一部分。一个进程一直运行，直到所有的非守护线程都结束运行后才能结束。 多线程能满足程序员编写高效率的程序来达到充分利用 CPU 的目的。  线程的状态 线程是一个动态执行的过程，它也有一个从产生到死亡的过程（状态）。 1.新建状态: 使用 new 关键字和 Thread 类或其子类建立一个线程对象后，该线程对象就处于新建状态。它保持这个状态直到程序 start() 这个线程。\n2.就绪状态: 当线程对象调用了start()方法之后，该线程就进入就绪状态。就绪状态的线程处于就绪队列中，要等待JVM里线程调度器的调度。\n3.运行状态: 如果就绪状态的线程获取 CPU 资源，就可以执行 run()，此时线程便处于运行状态。处于运行状态的线程最为复杂，它可以变为阻塞状态、就绪状态和死亡状态。\n4.阻塞状态: 如果一个线程执行了sleep（睡眠）、suspend（挂起）等方法，失去所占用资源之后，该线程就从运行状态进入阻塞状态。在睡眠时间已到或获得设备资源后可以重新进入就绪状态。可以分为三种：\n5.等待阻塞：运行状态中的线程执行 wait() 方法，使线程进入到等待阻塞状态。\n6.同步阻塞：线程在获取 synchronized 同步锁失败(因为同步锁被其他线程占用)。\n7.其他阻塞：通过调用线程的 sleep() 或 join() 发出了 I/O 请求时，线程就会进入到阻塞状态。当sleep() 状态超时，join() 等待线程终止或超时，或者 I/O 处理完毕，线程重新转入就绪状态。\n8.死亡状态: 一个运行状态的线程完成任务或者其他终止条件发生时，该线程就切换到终止状态。\n创建任务类与线程  任务就是一种对象，其必须实现Runable接口（Runable接口中只有run()函数），并且需要重写run()，以便线程创建时调用。 线程的创建是通过Thread类来构造的，Thread类中还包含了控制线程的方法。   一个线程的创建必须基于某个任务，即：\n Thread thread=new Thread（new TaskClass） /** *调用thread.start()时立即调用TaskClass中的run（） */ Thread中的其他方法  yield()：为其他线程临时让出cpu时间 sleep()：为线程设定休眠时间，以便其他线程的执行   sleep()可能抛出一个InterruptException异常，这是一个必检异常，java强制捕获，故而sleep函数必须在try代码块中。\n 线程的优先级 线程是有优先级的。java虚拟机总是优先执行优先级高的线程。若所有的优先级相同，则系统依照循环队列分配相同的cpu资源，即循环调度。\n Thread类中的setPriority()可设定线优先级\n 线程池 对于大型任务数,如果必须为每个任务创建一个线程，那么启动新线程每个任务都可能限制吞吐量并导致性能不佳。 而使用线程池是理想的管理并发执行的任务数的方法。 Java 提供Exexutor接口来执行线程池中任务，用ExecutorService接口来管理和控制任务。执行器服务是执行器的子接口。 通过静态方法获得Executor对象，newFixedThreadPool(int)用于创建固定数目的线程池，newCachedThreadPool()则是自动创建线程。\n demo:\n import java.util.concurrent.*; public class ExecutorDemo {public static void main(String[] args) { // Create a fixed thread pool with maximum three threads ExecutorService executor = Executors.newFixedThreadPool(3); // Submit runnable tasks to the executor executor.execute(new PrintChar('a', 100)); executor.execute(new PrintChar('b', 100)); executor.execute(new PrintNum(100)); // Shut down the executor executor.shutdown(); } } 线程池提供了一种更好的管理线程的方法。 线程池主要用来解决线程生命周期开销问题和资源不足问题。\n  线程池减少了在创建和销毁线程上所花的时间以及系统资源的开销。通过对多个任务重用线程，线程创建的开销就被分摊到了多个任务上了，而且由于在请求到达时线程已经存在，所以消除了线程创建所带来的延迟。这样，就可以立即为请求服务，使应用程序响应更快。另外，通过适当地调整线程池中的线程数目可以防止出现资源不足的情况。 线程池能够对线程进行方便的管理。比如使用ScheduledThreadPool来设置延迟N秒后执行任务，并且每隔M秒循环执行一次。 能控制线程池中的并发数。避免了因为大量的线程争夺CPU资源造成阻塞。   线程同步（Thread Synchronization） 如果同一个资源被多个线程同时访问，很可能会被破坏。如果两个任务以一种会引起冲突的方式访问一个公共资源，则称两者为竞争状态。若其没有竞争状态，则称其为线程安全的。\n为避免竞争状态，应防止多个线程同事进入程序的某一特定部分，程序中这样的部分成为临界区。\n解决竞争状态的方法便是使线程同步。\n实现线程同步的方法 一个同步方法在执行前需要加锁。锁是一种实现资源排他的机制。对于实例方法，要给调用的对象加锁，对于静态对象，要给类加锁。\n synchronized关键字   此关键字可用与方法，也可用于表达式。\n synchronized ( expr ) { //do something } public sychronized func () {}  利用锁同步 可显式的使用锁和状态来同步线程。   一个锁是Lock接口的实例，其提供了加锁和释放锁的方法。 ReentrantLock是lock的具体体现，用于创建相互排斥的锁。\n demo:\npublic void deposit(int amount) { lock.lock(); // Acquire the lock try { int newBalance = balance + amount; // This delay is deliberately added to magnify the // data-corruption problem and make it easy to see. Thread.sleep(5); balance = newBalance; } catch (InterruptedException ex) { } finally { lock.unlock(); // Release the lock } }  避免死锁 多个线程需要从几个共享对象上获取锁时，可能会导致死锁。\n 利用资源排序避免死锁  线程间的协作 可使用条件(Condition)实现线程的通信，指定其在某种条件下做什么。\n **条件(Condition)**是通过Lock对象的newCondition()方法创建的对象。通过其await(),signal(),signall()实现线程的相互通信。\n  await()：让当前线程进入等待，直到条件发生（发出条件信号） signal()/signalAll()：唤醒一个和所有线程   条件必须依赖与锁才可使用。无锁儿直接使用其方法会抛出IllegalMonitorStateExecption异常。\n 阻塞队列 java中为多线程提供了阻塞对列，同步可在对列中实现，所以不用在使用锁和条件。 它提供了两个附加操作：当队列中为空时，从队列中获取元素的操作将被阻塞；当队列满时，向队列中添加元素的操作将被阻塞。\n 阻塞队列常用于生产者和消费者的场景，生产者线程可以把生产结果存到阻塞队列中，而消费者线程把中间结果取出并在将来修改它们。\n队列会自动平衡负载，如果生产者线程集运行的比消费者线程集慢，则消费者线程集在等待结果时就会阻塞；如果生产者线程集运行的快，那么它将等待消费者线程集赶上来。\n作为BlockingQueue的使用者，我们再也不需要关心什么时候需要阻塞线程，什么时候需要唤醒线程，因为这一切BlockingQueue都给你一手包办了。\nBlockingQueue的核心方法 1、放入数据\n （1）put(E e):put方法用来向队尾存入元素，如果队列满，则等待。　 （2）offer(E o, long timeout, TimeUnit unit)：offer方法用来向队尾存入元素，如果队列满，则等待一定的时间，当时间期限达到时，如果还没有插入成功，则返回false；否则返回true；\n2、获取数据\n （1）take()：take方法用来从队首取元素，如果队列为空，则等待；\n （2）drainTo():一次性从BlockingQueue获取所有可用的数据对象（还可以指定获取数据的个数），通过该方法，可以提升获取数据效率；不需要多次分批加锁或释放锁。\n （3）poll(time):取走BlockingQueue里排在首位的对象,若不能立即取出,则可以等time参数规定的时间,取不到时返回null;\n （4）poll(long timeout, TimeUnit unit)：poll方法用来从队首取元素，如果队列空，则等待一定的时间，当时间期限达到时，如果取到，则返回null；否则返回取得的元素；\n一些状态  抛出异常：当队列满时，再向队列中插入元素，则会抛出IllegalStateException异常。当队列空时，再向队列中获取元素，则会抛出NoSuchElementException异常。 返回特殊值：当队列满时，向队列中添加元素，则返回false，否则返回true。当队列为空时，向队列中获取元素，则返回null，否则返回元素。 一直阻塞：当阻塞队列满时，如果生产者向队列中插入元素，则队列会一直阻塞当前线程，直到队列可用或响应中断退出。当阻塞队列为空时，如果消费者线程向阻塞队列中获取数据，则队列会一直阻塞当前线程，直到队列空闲或响应中断退出。 超时退出：当队列满时，如果生产线程向队列中添加元素，则队列会阻塞生产线程一段时间，超过指定的时间则退出返回false。当队列为空时，消费线程从队列中移除元素，则队列会阻塞一段时间，如果超过指定时间退出返回null。  并行编程 java可用Fork/Join框架实现并行编程 在此框架中，一个分解（Fork)可视为运行在一个线程上的独立任务。\n 将一个问题分解为多个不重叠的子问题（可独立解决），再合并子问题的解答以获得整体的解答。 框架使用ForkJoinTask类定义一个任务，在一个ForkJoinPool实例中执行任务。 ForkJoinTask是用于任务的基类，它是一个类似线程的实体，但比普通的线程要轻量级的多，因为巨量的任务可以被ForkJoinPool中的少数线程所执行。\n demo:\nimport java.util.concurrent.RecursiveAction; import java.util.concurrent.ForkJoinPool; public class ParallelMergeSort { public static void main(String[] args) { final int SIZE = 7000000; int[] list1 = new int[SIZE]; int[] list2 = new int[SIZE]; for (int i = 0; i  ",
+  "wordCount" : "4118",
+  "inLanguage": "zh",
+  "datePublished": "2019-11-01T00:00:00Z",
+  "dateModified": "2019-11-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/blog/zh/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/blog">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>Java 多线程编程</h1>
+  </header>
+
+  <p>
+  <small>
+    2019年11月1日&nbsp;· 4118 字&nbsp;· 9 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/java/">JAVA</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#java-多线程编程">Java 多线程编程</a>
+      <ul>
+        <li><a href="#线程的状态">线程的状态</a></li>
+        <li><a href="#创建任务类与线程">创建任务类与线程</a></li>
+        <li><a href="#线程池">线程池</a></li>
+        <li><a href="#线程同步thread-synchronization">线程同步（Thread Synchronization）</a></li>
+        <li><a href="#线程间的协作">线程间的协作</a></li>
+        <li><a href="#阻塞队列">阻塞队列</a></li>
+        <li><a href="#并行编程">并行编程</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。</p>
+<h2 id="java-多线程编程">Java 多线程编程</h2>
+<p>Java 给多线程编程提供了内置的支持。</p>
+<ul>
+<li>一条线程指的是进程中一个单一顺序的控制流，一个进程中可以并发多个线程，每条线程并行执行不同的任务。</li>
+<li><strong>多线程</strong>是多任务的一种特别的形式，但多线程使用了更小的资源开销。</li>
+<li><strong>进程</strong>：一个进程包括由操作系统分配的内存空间，包含一个或多个线程。一个线程不能独立的存在，它必须是进程的一部分。一个进程一直运行，直到所有的非守护线程都结束运行后才能结束。</li>
+<li>多线程能满足程序员编写高效率的程序来达到充分利用 CPU 的目的。</li>
+</ul>
+<h3 id="线程的状态">线程的状态</h3>
+<p>线程是一个动态执行的过程，它也有一个从产生到死亡的过程（状态）。
+<img src="https://www.runoob.com/wp-content/uploads/2014/01/java-thread.jpg" alt="线程的状态"></p>
+<p>1.<strong>新建状态</strong>:
+使用 new 关键字和 Thread 类或其子类建立一个线程对象后，该线程对象就处于新建状态。它保持这个状态直到程序 start() 这个线程。</p>
+<p>2.<strong>就绪状态</strong>:
+当线程对象调用了start()方法之后，该线程就进入就绪状态。就绪状态的线程处于就绪队列中，要等待JVM里线程调度器的调度。</p>
+<p>3.<strong>运行状态</strong>:
+如果就绪状态的线程获取 CPU 资源，就可以执行 run()，此时线程便处于运行状态。处于运行状态的线程最为复杂，它可以变为阻塞状态、就绪状态和死亡状态。</p>
+<p>4.<strong>阻塞状态</strong>:
+如果一个线程执行了sleep（睡眠）、suspend（挂起）等方法，失去所占用资源之后，该线程就从运行状态进入阻塞状态。在睡眠时间已到或获得设备资源后可以重新进入就绪状态。可以分为三种：</p>
+<p>5.<strong>等待阻塞</strong>：运行状态中的线程执行 wait() 方法，使线程进入到等待阻塞状态。</p>
+<p>6.<strong>同步阻塞</strong>：线程在获取 synchronized 同步锁失败(因为同步锁被其他线程占用)。</p>
+<p>7.<strong>其他阻塞</strong>：通过调用线程的 sleep() 或 join() 发出了 I/O 请求时，线程就会进入到阻塞状态。当sleep() 状态超时，join() 等待线程终止或超时，或者 I/O 处理完毕，线程重新转入就绪状态。</p>
+<p>8.<strong>死亡状态</strong>:
+一个运行状态的线程完成任务或者其他终止条件发生时，该线程就切换到终止状态。</p>
+<h3 id="创建任务类与线程">创建任务类与线程</h3>
+<ul>
+<li><strong>任务就是一种对象</strong>，其必须实现Runable接口（Runable接口中只有run()函数），并且需要重写run()，以便线程创建时调用。</li>
+<li>线程的创建是通过<strong>Thread类</strong>来构造的，Thread类中还包含了控制线程的方法。</li>
+</ul>
+<blockquote>
+<p>一个线程的创建必须基于某个任务，即：</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">	Thread thread<span style="color:#f92672">=</span><span style="color:#66d9ef">new</span> Thread<span style="color:#960050;background-color:#1e0010">（</span><span style="color:#66d9ef">new</span> TaskClass<span style="color:#960050;background-color:#1e0010">）</span>
+ <span style="color:#75715e">/**
+</span><span style="color:#75715e"> *调用thread.start()时立即调用TaskClass中的run（）
+</span><span style="color:#75715e"> */</span>
+</code></pre></div><h4 id="thread中的其他方法">Thread中的其他方法</h4>
+<ul>
+<li>yield()：为其他线程临时让出cpu时间</li>
+<li>sleep()：为线程设定休眠时间，以便其他线程的执行</li>
+</ul>
+<blockquote>
+<p>sleep()可能抛出一个InterruptException异常，这是一个必检异常，java强制捕获，故而sleep函数必须在try代码块中。</p>
+</blockquote>
+<h4 id="线程的优先级">线程的优先级</h4>
+<p>线程是有优先级的。java虚拟机总是优先执行优先级高的线程。若所有的优先级相同，则系统依照循环队列分配相同的cpu资源，即<strong>循环调度</strong>。</p>
+<blockquote>
+<p>Thread类中的setPriority()可设定线优先级</p>
+</blockquote>
+<h3 id="线程池">线程池</h3>
+<p>对于大型任务数,如果必须为每个任务创建一个线程，那么启动新线程每个任务都可能限制吞吐量并导致性能不佳。
+而使用线程池是理想的管理并发执行的任务数的方法。
+Java 提供Exexutor接口来执行线程池中任务，用ExecutorService接口来管理和控制任务。执行器服务是执行器的子接口。
+通过静态方法获得Executor对象，newFixedThreadPool(int)用于创建固定数目的线程池，newCachedThreadPool()则是自动创建线程。</p>
+<blockquote>
+<p>demo:</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">import</span> java.util.concurrent.*<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ExecutorDemo</span> <span style="color:#f92672">{</span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<span style="color:#75715e">// Create a fixed thread pool with maximum three threads
+</span><span style="color:#75715e"></span>ExecutorService executor <span style="color:#f92672">=</span> Executors<span style="color:#f92672">.</span><span style="color:#a6e22e">newFixedThreadPool</span><span style="color:#f92672">(</span>3<span style="color:#f92672">);</span>
+<span style="color:#75715e">// Submit runnable tasks to the executor
+</span><span style="color:#75715e"></span>executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PrintChar<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;a&#39;</span><span style="color:#f92672">,</span> 100<span style="color:#f92672">));</span>
+executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PrintChar<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;b&#39;</span><span style="color:#f92672">,</span> 100<span style="color:#f92672">));</span>
+executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PrintNum<span style="color:#f92672">(</span>100<span style="color:#f92672">));</span>
+<span style="color:#75715e">// Shut down the executor
+</span><span style="color:#75715e"></span>executor<span style="color:#f92672">.</span><span style="color:#a6e22e">shutdown</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>线程池提供了一种<strong>更好的管理线程的方法</strong>。 线程池主要用来解决线程生命周期开销问题和资源不足问题。</p>
+<blockquote>
+<ul>
+<li><strong>线程池减少了在创建和销毁线程上所花的时间以及系统资源的开销</strong>。通过对多个任务重用线程，线程创建的开销就被分摊到了多个任务上了，而且由于在请求到达时线程已经存在，所以消除了线程创建所带来的延迟。这样，就可以立即为请求服务，使应用程序响应更快。另外，通过适当地调整线程池中的线程数目可以防止出现资源不足的情况。</li>
+<li><strong>线程池能够对线程进行方便的管理</strong>。比如使用ScheduledThreadPool来设置延迟N秒后执行任务，并且每隔M秒循环执行一次。</li>
+<li><strong>能控制线程池中的并发数</strong>。避免了因为大量的线程争夺CPU资源造成阻塞。</li>
+</ul>
+</blockquote>
+<h3 id="线程同步thread-synchronization">线程同步（Thread Synchronization）</h3>
+<p>如果同一个资源被多个线程同时访问，很可能会被破坏。如果两个任务以一种会引起冲突的方式访问一个公共资源，则称两者为竞争状态。若其没有竞争状态，则称其为线程安全的。</p>
+<p>为避免竞争状态，应防止多个线程同事进入程序的某一特定部分，程序中这样的部分成为临界区。</p>
+<p>解决竞争状态的方法便是使线程同步。</p>
+<h4 id="实现线程同步的方法">实现线程同步的方法</h4>
+<p>一个同步方法在执行前需要加锁。锁是一种实现资源排他的机制。对于实例方法，要给调用的对象加锁，对于静态对象，要给类加锁。</p>
+<ul>
+<li>synchronized关键字</li>
+</ul>
+<blockquote>
+<p>此关键字可用与方法，也可用于表达式。</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span> expr <span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+  <span style="color:#75715e">//do something
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">public</span> sychronized <span style="color:#a6e22e">func</span> <span style="color:#f92672">()</span> <span style="color:#f92672">{}</span>
+</code></pre></div><ul>
+<li>利用锁同步
+可显式的使用锁和状态来同步线程。</li>
+</ul>
+<blockquote>
+<p>一个锁是Lock接口的实例，其提供了加锁和释放锁的方法。
+ReentrantLock是lock的具体体现，用于创建相互排斥的锁。</p>
+</blockquote>
+<p>demo:</p>
+<pre><code>public void deposit(int amount) {
+  lock.lock(); // Acquire the lock
+  try {
+  int newBalance = balance + amount;
+  // This delay is deliberately added to magnify the
+  // data-corruption problem and make it easy to see.
+  Thread.sleep(5);
+  balance = newBalance;
+  }
+  catch (InterruptedException ex) {
+  }
+  finally {
+  lock.unlock(); // Release the lock
+  }
+}
+</code></pre>
+<h4 id="避免死锁">避免死锁</h4>
+<p>多个线程需要从几个共享对象上获取锁时，可能会导致死锁。</p>
+<ul>
+<li>利用资源排序避免死锁</li>
+</ul>
+<h3 id="线程间的协作">线程间的协作</h3>
+<p>可使用条件(Condition)实现线程的通信，指定其在某种条件下做什么。</p>
+<blockquote>
+<p>**条件(Condition)**是通过Lock对象的newCondition()方法创建的对象。通过其await(),signal(),signall()实现线程的相互通信。</p>
+</blockquote>
+<ul>
+<li>await()：让当前线程进入等待，直到条件发生（发出条件信号）</li>
+<li>signal()/signalAll()：唤醒一个和所有线程</li>
+</ul>
+<blockquote>
+<p>条件必须依赖与锁才可使用。无锁儿直接使用其方法会抛出IllegalMonitorStateExecption异常。</p>
+</blockquote>
+<h3 id="阻塞队列">阻塞队列</h3>
+<p>java中为多线程提供了阻塞对列，同步可在对列中实现，所以不用在使用锁和条件。
+它提供了两个附加操作：当队列中为空时，从队列中获取元素的操作将被阻塞；当队列满时，向队列中添加元素的操作将被阻塞。</p>
+<p> 阻塞队列常用于生产者和消费者的场景，生产者线程可以把生产结果存到阻塞队列中，而消费者线程把中间结果取出并在将来修改它们。</p>
+<p>队列会自动平衡负载，如果生产者线程集运行的比消费者线程集慢，则消费者线程集在等待结果时就会阻塞；如果生产者线程集运行的快，那么它将等待消费者线程集赶上来。</p>
+<p>作为BlockingQueue的使用者，我们再也不需要关心什么时候需要阻塞线程，什么时候需要唤醒线程，因为这一切BlockingQueue都给你一手包办了。</p>
+<h4 id="blockingqueue的核心方法">BlockingQueue的核心方法</h4>
+<p>1、放入数据</p>
+<p>  （1）put(E e):put方法用来向队尾存入元素，如果队列满，则等待。　　　 </p>
+<p>  （2）offer(E o, long timeout, TimeUnit unit)：offer方法用来向队尾存入元素，如果队列满，则等待一定的时间，当时间期限达到时，如果还没有插入成功，则返回false；否则返回true；</p>
+<p>2、获取数据</p>
+<p> （1）take()：take方法用来从队首取元素，如果队列为空，则等待；</p>
+<p> （2）drainTo():一次性从BlockingQueue获取所有可用的数据对象（还可以指定获取数据的个数），通过该方法，可以提升获取数据效率；不需要多次分批加锁或释放锁。</p>
+<p> （3）poll(time):取走BlockingQueue里排在首位的对象,若不能立即取出,则可以等time参数规定的时间,取不到时返回null;</p>
+<p> （4）poll(long timeout, TimeUnit unit)：poll方法用来从队首取元素，如果队列空，则等待一定的时间，当时间期限达到时，如果取到，则返回null；否则返回取得的元素；</p>
+<h4 id="一些状态">一些状态</h4>
+<ul>
+<li><strong>抛出异常</strong>：当队列满时，再向队列中插入元素，则会抛出IllegalStateException异常。当队列空时，再向队列中获取元素，则会抛出NoSuchElementException异常。</li>
+<li><strong>返回特殊值</strong>：当队列满时，向队列中添加元素，则返回false，否则返回true。当队列为空时，向队列中获取元素，则返回null，否则返回元素。</li>
+<li><strong>一直阻塞</strong>：当阻塞队列满时，如果生产者向队列中插入元素，则队列会一直阻塞当前线程，直到队列可用或响应中断退出。当阻塞队列为空时，如果消费者线程向阻塞队列中获取数据，则队列会一直阻塞当前线程，直到队列空闲或响应中断退出。</li>
+<li><strong>超时退出</strong>：当队列满时，如果生产线程向队列中添加元素，则队列会阻塞生产线程一段时间，超过指定的时间则退出返回false。当队列为空时，消费线程从队列中移除元素，则队列会阻塞一段时间，如果超过指定时间退出返回null。</li>
+</ul>
+<h3 id="并行编程">并行编程</h3>
+<p>java可用Fork/Join框架实现并行编程
+在此框架中，一个分解（Fork)可视为运行在一个线程上的独立任务。</p>
+<blockquote>
+<p>将一个问题分解为多个不重叠的子问题（可独立解决），再合并子问题的解答以获得整体的解答。
+框架使用ForkJoinTask类定义一个任务，在一个ForkJoinPool实例中执行任务。
+ForkJoinTask是用于任务的基类，它是一个类似线程的实体，但比普通的线程要轻量级的多，因为巨量的任务可以被ForkJoinPool中的少数线程所执行。</p>
+</blockquote>
+<p>demo:</p>
+<pre><code>import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.ForkJoinPool;
+public class ParallelMergeSort {
+public static void main(String[] args) {
+final int SIZE = 7000000;
+int[] list1 = new int[SIZE];
+int[] list2 = new int[SIZE];
+for (int i = 0; i &lt; list1.length; i++)
+list1[i] = list2[i] = (int)(Math.random() * 10000000);
+long startTime = System.currentTimeMillis();
+parallelMergeSort(list1); // Invoke parallel merge sort
+long endTime = System.currentTimeMillis();
+System.out.println(&quot;\nParallel time with &quot;
++ Runtime.getRuntime().availableProcessors() +
+&quot; processors is &quot; + (endTime - startTime) + &quot; milliseconds&quot;);
+startTime = System.currentTimeMillis();
+MergeSort.mergeSort(list2); // MergeSort is in Listing 23.5
+endTime = System.currentTimeMillis();
+System.out.println(&quot;\nSequential time is &quot; +
+(endTime - startTime) + &quot; milliseconds&quot;);
+}
+public static void parallelMergeSort(int[] list) {
+RecursiveAction mainTask = new SortTask(list);
+ForkJoinPool pool = new ForkJoinPool();
+pool.invoke(mainTask);
+}
+private static class SortTask extends RecursiveAction {
+private final int THRESHOLD = 500;
+private int[] list;
+SortTask(int[] list) {
+this.list = list;
+}
+@Override
+protected void compute() {
+if (list.length &lt; THRESHOLD)
+java.util.Arrays.sort(list);
+else {
+// Obtain the first half
+int[] firstHalf = new int[list.length / 2];
+System.arraycopy(list, 0, firstHalf, 0, list.length / 2);
+perform the task
+sort a small list
+split into two parts
+// Obtain the second half
+int secondHalfLength = list.length - list.length / 2;
+int[] secondHalf = new int[secondHalfLength];
+System.arraycopy(list, list.length / 2,
+secondHalf, 0, secondHalfLength);
+// Recursively sort the two halves
+invokeAll(new SortTask(firstHalf),
+new SortTask(secondHalf));
+// Merge firstHalf with secondHalf into list
+MergeSort.merge(firstHalf, secondHalf, list);
+}
+}
+}
+}
+</code></pre>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/blog/zh/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>C&#43;&#43;中左值和右值的区别</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/blog/zh/java%E4%B8%AD%E7%9A%84lambda/"><span>Java中的lambda表达式</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>

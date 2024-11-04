@@ -5,8 +5,266 @@
     <link>https://noneback.github.io/tags/transaction/</link>
     <description>Recent content in Transaction on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 28 Sep 2023 10:43:23 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/transaction/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications</title>
+      <link>https://noneback.github.io/blog/percolator/</link>
+      <pubDate>Thu, 28 Sep 2023 10:43:23 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/percolator/</guid>
+      <description>&lt;p&gt;It has been a while since I last studied, and I wanted to learn something interesting. This time, I&amp;rsquo;ll be covering Percolator, a distributed transaction system. I won&amp;rsquo;t translate the paper or delve into detailed algorithms; I&amp;rsquo;ll just document my understanding.&lt;/p&gt;
+&lt;h2 id=&#34;percolator-and-2pc&#34;&gt;Percolator and 2PC&lt;/h2&gt;
+&lt;h3 id=&#34;2pc&#34;&gt;2PC&lt;/h3&gt;
+&lt;p&gt;The Two-Phase Commit (2PC) protocol involves two types of roles: &lt;strong&gt;Coordinator and Participant&lt;/strong&gt;. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator&amp;rsquo;s requests, completing prepare operations and commit/abort operations based on those requests.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;The 2PC protocol ensures the atomicity (ACD) of a transaction&lt;/strong&gt; but does not implement &lt;strong&gt;isolation (I)&lt;/strong&gt;, relying instead on single-node transactions for ACD. The coordinator is clearly a critical point, which can become a bottleneck or cause blocking if it fails.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;    Coordinator                                          Participant
+                              QUERY TO COMMIT
+                --------------------------------&amp;gt;
+                              VOTE YES/NO           prepare*/abort*
+                &amp;lt;-------------------------------
+commit*/abort*                COMMIT/ROLLBACK
+                --------------------------------&amp;gt;
+                              ACKNOWLEDGMENT        commit*/abort*
+                &amp;lt;--------------------------------
+end
+&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;percolator&#34;&gt;Percolator&lt;/h3&gt;
+&lt;p&gt;Percolator can be seen as an optimized version of 2PC, with some improvements such as:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Optimizing the use of locks by introducing primary-secondary dual-level locks, which eliminates the reliance on a &lt;strong&gt;coordinator&lt;/strong&gt;.&lt;/li&gt;
+&lt;li&gt;Providing full ACID semantics and supporting MVCC (Multi-Version Concurrency Control) through a timestamp service.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;percolator-protocol-details&#34;&gt;Percolator Protocol Details&lt;/h2&gt;
+&lt;p&gt;The Percolator system consists of three main components:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Client&lt;/strong&gt;: The client initiating a transaction. It acts as the control center for the entire protocol and is the coordinator of the two-phase commit process.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;TO (Time Observer)&lt;/strong&gt;: Responsible for assigning timestamps, providing unique and incrementing timestamps to implement MVCC.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Bigtable&lt;/strong&gt;: Provides single-row transactions, storing data as well as some attributes for transactional control.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;code&gt;lock + write + data&lt;/code&gt;: for transactions, where &lt;code&gt;lock&lt;/code&gt; indicates that a cell is held by a transaction, and &lt;code&gt;write&lt;/code&gt; represents the data visibility.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;notify + ack&lt;/code&gt;: for watcher or notifier mechanisms.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Externally, Percolator is provided to businesses through an SDK, offering transactions and R/W operations. The model is similar to &lt;code&gt;Begin Txn → Sets of RW Operations → Commit or Abort or Rollback&lt;/code&gt;. Bigtable acts as the persistent component, hiding details about Tablet Server data sharding. Each write operation (including read-then-write) in the transaction is treated as a participant in a distributed transaction and may be dispatched to multiple Tablet Server nodes.&lt;/p&gt;
+&lt;h3 id=&#34;algorithm-workflow&#34;&gt;Algorithm Workflow&lt;/h3&gt;
+&lt;p&gt;All writes in a transaction are cached on the client before being written during the commit phase. The commit phase itself is a standard two-phase commit consisting of prewrite and commit stages.&lt;/p&gt;
+&lt;h4 id=&#34;prewrite&#34;&gt;Prewrite&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;Obtain a timestamp from TO as the start time of the transaction.&lt;/li&gt;
+&lt;li&gt;Lock the data, marking it as held by the current transaction. If locking fails, it means the data is held by another transaction, and the current transaction fails.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The locking process utilizes the primary-secondary mechanism, where one write is chosen as the &lt;strong&gt;primary&lt;/strong&gt; and all others as &lt;strong&gt;secondary&lt;/strong&gt;. The secondary locks point to the primary.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Clearly, data in the prewrite phase is invisible to other transactions.&lt;/p&gt;
+&lt;h4 id=&#34;commit&#34;&gt;Commit&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;Attempt to commit the data prewritten. The commit starts by committing the primary record, whose commit time will serve as the commit time for the entire transaction. First, the lock record is checked. If the lock does not exist, it indicates that the lock from the prewrite phase has been cleaned by another transaction, causing the current transaction to fail. If the lock exists, the &lt;code&gt;write&lt;/code&gt; column is updated to indicate that the data is visible to the system.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;In an asynchronous network, single-node failures and network delays are common. The algorithm must detect and clean up these locks to avoid deadlocks. Therefore, in the commit phase, if a lock is found to be missing, it means that an issue occurred with a participant, and the current transaction must be cleaned.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;2&#34;&gt;
+&lt;li&gt;After successfully committing, clean up the lock record. Lock cleanup can be done asynchronously.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;These designs eliminate the dependency on a centralized &lt;strong&gt;coordinator&lt;/strong&gt;. Previously, a centralized service was required to maintain information about all transaction participants. In this algorithm, the primary-secondary lock and the &lt;code&gt;write&lt;/code&gt; column achieve the same goal. The &lt;code&gt;write&lt;/code&gt; column indicates the visibility and version chain of the data, while the &lt;code&gt;lock&lt;/code&gt; column shows which transaction holds the data. The primary-secondary locks record the logical relationship among participants. Thus, committing the primary record becomes the commit point for the entire transaction. Once the primary is committed, all secondary records can be asynchronously committed by checking the corresponding primary record&amp;rsquo;s &lt;code&gt;write&lt;/code&gt; column.&lt;/p&gt;
+&lt;h3 id=&#34;snapshot-isolation&#34;&gt;Snapshot Isolation&lt;/h3&gt;
+&lt;p&gt;Two-phase commit ensures the atomicity of a transaction. On top of that, Percolator also provides &lt;strong&gt;snapshot isolation&lt;/strong&gt;. In simple terms, snapshot isolation requires that committed transactions do not cause data conflicts and that read operations within a transaction satisfy snapshot reads. By leveraging the transaction start time and the primary commit time, a total ordering among transactions can be maintained, solving these issues naturally.&lt;/p&gt;
+&lt;h3 id=&#34;deadlock-issues-in-asynchronous-networks&#34;&gt;Deadlock Issues in Asynchronous Networks&lt;/h3&gt;
+&lt;p&gt;As mentioned earlier, in an asynchronous network, single-node failures and network delays are common. The algorithm must clean up locks to prevent deadlocks when such failures are detected. The failure detection strategy can be as simple as a timeout, causing the current transaction to fail. When a node fails and then recovers, its previous transaction has already failed, and the relevant lock records must be cleaned up. Lock cleanup can be asynchronous; for example, during the prewrite phase, if a record&amp;rsquo;s lock column is found to be non-empty, its primary lock can be checked. If the primary lock is not empty, it means the transaction is incomplete, and the lock can be cleaned up; if empty, the transaction has committed, and the data should be committed and the lock cleaned (RollForward).&lt;/p&gt;
+&lt;h3 id=&#34;notification-mechanism&#34;&gt;Notification Mechanism&lt;/h3&gt;
+&lt;p&gt;A notification mechanism is crucial for state observation and linkage in asynchronous systems, but it is not the focus of this article.&lt;/p&gt;
+&lt;h2 id=&#34;percolator-in-tidb&#34;&gt;Percolator in TiDB&lt;/h2&gt;
+&lt;p&gt;Based on our analysis above, Percolator is an optimized 2PC distributed transaction implementation, relying on a storage engine that supports single-node transactions.&lt;/p&gt;
+&lt;p&gt;Let&amp;rsquo;s briefly look at how TiDB uses Percolator to implement distributed transactions.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The architecture of TiDB and TiKV is shown above. Data from relational tables in TiDB is ultimately mapped to KV pairs in TiKV. TiKV is a distributed KV store based on Raft and RocksDB. RocksDB supports transactional operations on KV pairs.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Thus, the transaction path in TiDB is as follows: a relational table transaction is converted into a set of KV transactions, which are executed based on Percolator to achieve relational table transaction operations.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Of course, it cannot provide the same transactional semantics and performance guarantees as a single-node TP database. However, a shared-nothing architecture has its own advantages, which may make this trade-off acceptable.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/22594180&#34;&gt;Engineering Practice of Two-Phase Commit&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;http://mysql.taobao.org/monthly/2018/11/02/&#34;&gt;PolarDB Database Kernel Monthly Report&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://karellincoln.github.io/2018/04/05/percolator-translate/&#34;&gt;Percolator: Online Incremental Processing System (Chinese Translation)&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.notion.so/percolator-879c8f72f80b4966a2ec1e41edc74560?pvs=21&#34;&gt;Percolator: Online Incremental Processing System (Chinese Translation) | A Small Bird&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://zh.wikipedia.org/zh-hans/%E4%BA%8C%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4&#34;&gt;Two-Phase Commit - Wikipedia&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://cn.pingcap.com/blog/percolator-and-txn&#34;&gt;Percolator and TiDB Transaction Algorithm&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;http://www.oceanbase.wiki/concept/transaction-management/transactions/distributed-transactions/two-phase-commit&#34;&gt;Two-Phase Commit | OceanBase Learning Guide&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://docs.pingcap.com/zh/tidb/stable/tidb-architecture&#34;&gt;TiDB Architecture Overview&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Distributed Transactions</title>
+      <link>https://noneback.github.io/blog/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/</link>
+      <pubDate>Thu, 20 May 2021 23:55:11 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/</guid>
+      <description>&lt;h1 id=&#34;transactions-and-distributed-transactions&#34;&gt;Transactions and Distributed Transactions&lt;/h1&gt;
+&lt;h2 id=&#34;transactions&#34;&gt;Transactions&lt;/h2&gt;
+&lt;p&gt;A &lt;strong&gt;transaction&lt;/strong&gt; is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the &lt;strong&gt;atomicity&lt;/strong&gt; of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.&lt;/p&gt;
+&lt;p&gt;A single-node database transaction has four main properties:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Atomicity&lt;/strong&gt;: The transaction is executed as a whole. Either all operations within the transaction are executed, or none are executed.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Consistency&lt;/strong&gt;: The transaction must ensure that the database moves from one consistent state to another. Consistent states mean that the data in the database must satisfy all integrity constraints.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Isolation&lt;/strong&gt;: When multiple transactions are executed concurrently, the execution of one transaction should not affect the execution of others.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Durability&lt;/strong&gt;: Changes made by a committed transaction should be permanently stored in the database.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;distributed-transactions&#34;&gt;Distributed Transactions&lt;/h2&gt;
+&lt;p&gt;A &lt;strong&gt;distributed transaction&lt;/strong&gt; is a transaction where the &lt;strong&gt;participants&lt;/strong&gt;, &lt;strong&gt;transaction-supporting servers&lt;/strong&gt;, &lt;strong&gt;resource servers&lt;/strong&gt;, and &lt;strong&gt;transaction manager&lt;/strong&gt; are located on different nodes of a distributed system.&lt;/p&gt;
+&lt;p&gt;With the adoption of microservice architectures, large business domains often involve multiple services, and a business process requires participation from multiple services. In specific business scenarios, data consistency among multiple services must be ensured.&lt;/p&gt;
+&lt;p&gt;For example, in a large e-commerce system, the order interface typically deducts inventory, reduces discounts, and generates an order ID. The order service, inventory, discount, and order ID are all separate services. The success of the order interface depends not only on local database operations but also on third-party system results. In this case, distributed transactions ensure that all these operations either succeed together or fail together.&lt;/p&gt;
+&lt;p&gt;In essence, &lt;strong&gt;distributed transactions are used to ensure data consistency across different databases&lt;/strong&gt;.&lt;/p&gt;
+&lt;h1 id=&#34;use-cases&#34;&gt;Use Cases&lt;/h1&gt;
+&lt;p&gt;Typical use cases in e-commerce systems include:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Order Inventory Deduction&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;When placing an order, operations include generating an order record and reducing product inventory. These are handled by separate microservices, so distributed transactions are required to ensure the atomicity of the order operation.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Third-Party Payments&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;In a microservice architecture, payment and orders are independent services. The order payment status depends on a notification from the financial service, which, in turn, depends on notifications from a third-party payment service.&lt;/p&gt;
+&lt;p&gt;A classic scenario is illustrated below:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;From the diagram, there are two calls: the third-party payment service calling the payment service, and the payment service calling the order service. Both calls can encounter &lt;strong&gt;timeouts&lt;/strong&gt;. Without distributed transactions, the actual payment status and the final payment status visible to the user may become &lt;strong&gt;inconsistent&lt;/strong&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;implementation-approaches&#34;&gt;Implementation Approaches&lt;/h1&gt;
+&lt;h2 id=&#34;two-phase-commit-2pc&#34;&gt;Two-Phase Commit (2PC)&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;A transaction commit is divided into two phases:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Preparation Phase&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The transaction manager (TM) initiates the transaction, logs the start of the transaction, and asks the participating resource managers (RMs) whether they can execute the commit operation, then waits for their responses.&lt;/li&gt;
+&lt;li&gt;RMs execute local transactions, log redo/undo data, and return results to TM, but do not commit.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Commit/Rollback Phase&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;If all participating RMs execute successfully, the transaction proceeds to the &lt;strong&gt;commit phase&lt;/strong&gt;:
+&lt;ul&gt;
+&lt;li&gt;TM logs the commit, sends a commit instruction to all RMs.&lt;/li&gt;
+&lt;li&gt;RMs commit the local transaction and respond to TM.&lt;/li&gt;
+&lt;li&gt;TM logs the end of the transaction.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;If any RM fails or times out during preparation or commit:
+&lt;ul&gt;
+&lt;li&gt;TM logs the rollback, sends rollback instructions to all RMs.&lt;/li&gt;
+&lt;li&gt;RMs rollback the local transaction and respond to TM.&lt;/li&gt;
+&lt;li&gt;TM logs the end of the transaction.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;characteristics&#34;&gt;Characteristics&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Atomicity&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Consistency&lt;/strong&gt;: Strong consistency&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Isolation&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Durability&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;disadvantages&#34;&gt;Disadvantages&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Synchronous Blocking&lt;/strong&gt;: When participants occupy shared resources, others can only wait for resource release, leading to blocking.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Single Point of Failure&lt;/strong&gt;: If the transaction manager fails, the entire system becomes unavailable.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Data Inconsistency&lt;/strong&gt;: If the transaction manager only sends some commit messages, and a network issue occurs, only some participants receive the commit message, leading to inconsistency.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Uncertainty&lt;/strong&gt;: If both the transaction manager and a participant fail after sending a commit message, it is uncertain whether the message was successfully committed.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;local-message-table&#34;&gt;Local Message Table&lt;/h2&gt;
+&lt;p&gt;The transaction initiator maintains a &lt;strong&gt;local message table&lt;/strong&gt;, and operations on the business table and the message table are within the same local transaction. Asynchronously, a &lt;strong&gt;scheduled task&lt;/strong&gt; scans the message table and delivers the message downstream.&lt;/p&gt;
+&lt;p&gt;The broad concept of the local message table also allows downstream notification through methods other than message delivery, such as RPC calls.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34; alt=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34;&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;The initiator executes a local transaction, operating both the business table and the local message table.&lt;/li&gt;
+&lt;li&gt;A scheduled task scans pending local messages (in the message table) and sends them to the message queue:
+&lt;ul&gt;
+&lt;li&gt;If successful, mark the local message as sent.&lt;/li&gt;
+&lt;li&gt;If failed, retry until successful.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;The message queue delivers the message downstream.&lt;/li&gt;
+&lt;li&gt;The downstream transaction participant receives the message and executes a local transaction:
+&lt;ul&gt;
+&lt;li&gt;If failed, no ACK is returned, and the message queue retries.&lt;/li&gt;
+&lt;li&gt;If successful, an ACK is returned, marking the end of the global transaction.&lt;/li&gt;
+&lt;li&gt;If the message or ACK is lost, the message queue retries.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;exceptional-scenarios&#34;&gt;Exceptional Scenarios&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Message Loss&lt;/strong&gt;: Handled by repeating the scheduled task.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Delivery Failure&lt;/strong&gt;: Handled by retries, downstream must ensure idempotency.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ACK Loss&lt;/strong&gt;: Handled by retries, downstream must ensure idempotency.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;advantages-and-challenges&#34;&gt;Advantages and Challenges&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Advantages&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;High system throughput, asynchronous downstream transactions via middleware decoupling.&lt;/li&gt;
+&lt;li&gt;Moderate business intrusion, requiring local message tables and scheduled tasks.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Challenges&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Incomplete transaction support, downstream transactions cannot be rolled back, only retried.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;characteristics-1&#34;&gt;Characteristics&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Atomicity&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Consistency&lt;/strong&gt;: Eventual consistency&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Isolation&lt;/strong&gt;: Not supported (committed branch transactions are visible to other transactions)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Durability&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;best-effort-notification&#34;&gt;Best-Effort Notification&lt;/h2&gt;
+&lt;p&gt;The best-effort notification is a simple approach to flexible transactions, suitable for business with low time sensitivity to eventual consistency, where the result of the passive party does not affect the initiator&amp;rsquo;s result.&lt;/p&gt;
+&lt;p&gt;This approach roughly works as follows:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;System A completes its local transaction and sends a message to the MQ.&lt;/li&gt;
+&lt;li&gt;A service consumes the MQ and calls System B&amp;rsquo;s interface.&lt;/li&gt;
+&lt;li&gt;If System B succeeds, everything is fine; if it fails, the notification service periodically retries calling System B up to N times. If it still fails, it gives up.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;advantages-and-challenges-1&#34;&gt;Advantages and Challenges&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Advantages&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Simple implementation.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Challenges&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;No compensation mechanism, no guarantee of delivery.&lt;/li&gt;
+&lt;li&gt;Requires idempotency, with interfaces ensuring consistency and atomicity.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;characteristics-2&#34;&gt;Characteristics&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Atomicity&lt;/strong&gt;: Not supported (requires additional interfaces)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Consistency&lt;/strong&gt;: Not supported (requires additional interfaces)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Isolation&lt;/strong&gt;: Not supported (committed branch transactions are visible to other transactions)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Durability&lt;/strong&gt;: Supported&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;classic-scenario&#34;&gt;Classic Scenario&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Payment Callback&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;The payment service receives a successful payment notification from a third-party service, updates the payment status of the order, and synchronously notifies the order service. If this synchronous notification fails, an asynchronous script will keep retrying the order service interface.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/&#34;&gt;Distributed Transactions: All You Need to Know&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

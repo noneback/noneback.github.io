@@ -5,8 +5,60 @@
     <link>https://noneback.github.io/zh/tags/zookeeper/</link>
     <description>Recent content in ZooKeeper on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Tue, 03 Jan 2023 23:49:41 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/zookeeper/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MIT6.824-ZooKeeper</title>
+      <link>https://noneback.github.io/zh/blog/zh/mit6.824-zookeeper/</link>
+      <pubDate>Tue, 03 Jan 2023 23:49:41 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/mit6.824-zookeeper/</guid>
+      <description>&lt;p&gt;本文主要讲了ZooKeeper系统在设计和实践上的考量，如wait-free和lock，一致性的选择，系统提供的API以及特定语义上的抉择，这样的trade-off是本文的最大启发。&lt;/p&gt;
+&lt;h2 id=&#34;定位&#34;&gt;定位&lt;/h2&gt;
+&lt;p&gt;wait-free,high-performance 的协调分布式应用的系统。通过提供协调原语（特定语义的API与数据模型）支持分布式应用的协调需求。&lt;/p&gt;
+&lt;h2 id=&#34;设计&#34;&gt;设计&lt;/h2&gt;
+&lt;h3 id=&#34;关键词&#34;&gt;关键词&lt;/h3&gt;
+&lt;p&gt;ZK定位中的关键词有两个：&lt;strong&gt;高性能，分布式应用协调服务&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;ZK的高性能通过WaitFree设计、多副本本地读、Watch机制实现。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;WaitFree应该是将请求异步处理来实现的，这样异步处理可能会导致请求重排序，导致状态机和现实的时序不同，所以ZK提供了FIFO Client Order 顺序保证。同时，这样的异步处理有益于数据的batch pipeline处理，进一步提升性能。&lt;/li&gt;
+&lt;li&gt;Watch机制，当znode变化是通知Client更新，避免Client操作本地缓存的开销。&lt;/li&gt;
+&lt;li&gt;多副本本地读，ZK使用ZAB协议实现数据共识，保证写操作满足linearizability。读请求副本本地读，不走ZAB共识协议，但读请求只满足Serializaility，可能会读到之前的结果，但提升了性能。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;分布式应用协调服务指的是，ZK提供的数据模型以及API语义，分布式应用可以自由使用来满足诸如Group Membership，Distributed Lock等协调需求。&lt;/p&gt;
+&lt;h3 id=&#34;数据模型与api&#34;&gt;数据模型与API&lt;/h3&gt;
+&lt;p&gt;ZK为使用者提供znode数据节点的抽象，数据节点通过分层的命名空间组织。ZK提供了Regular + Ephemeral两种znode的节点的创建，每个节点都存储数据，并通过标准的UNIX文件系统路径访问。&lt;/p&gt;
+&lt;p&gt;实际上，znodes 不是为通用数据存储设计的。 相反，znodes 映射到客户端应用程序的抽象，通常与用于协调的&lt;strong&gt;元数据&lt;/strong&gt;相对应。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;也就是说，使用ZK进行协调时，利用好znode关联的元数据，而不是只将znode当做数据存储。比如，znode 将元数据与时间戳(timestamp)和版本计数器( version counter )关联，客户端可以跟踪对 znode 的更改并根据 znode 的版本执行条件更新。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;这套数据模型本质上是一个简化API的文件系统，只支持完整数据的读写。使用者将在ZK提供的语义下实现分布式应用的协调。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Regular 和 Ephemeral 的区别在于Ephemeral可以在Session结束时自动删除。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155342Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Client通过API与ZK交互，ZK通过Session管理Clinet连接，在Session中Clinet可以观测到反应其操作的状态变化。&lt;/p&gt;
+&lt;h2 id=&#34;cap&#34;&gt;CAP&lt;/h2&gt;
+&lt;p&gt;ZK保证CP，比如在选举leader时，会停止服务，直到选举成功之后才会再次对外提供服务。&lt;/p&gt;
+&lt;h2 id=&#34;实现&#34;&gt;实现&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155414Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;ZK使用多副本实现高可用。&lt;/p&gt;
+&lt;p&gt;简单来说，ZK上层使用ZAB协议处理写请求，保证多副本更新的线性一致性，本地处理读请求，读请求保证顺序一致性。下层数据状态机保存到ZK集群机器上的Replicated Database（内存）+ WAL上，并定期snapshot。整个内存数据库通过 Fuzzy Snapshot + WAL Replay的方式保证单机Crash Safe以及重启恢复的速度。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Fuzzy Snapshot 的优势在于不阻塞在线请求。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;与client的交互&#34;&gt;与Client的交互&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;更新操作会通知并清除相关znode的Watch。&lt;/li&gt;
+&lt;li&gt;读请求本地进行，通过zxid定义与写请求的偏序关系，只保证顺序一致性，可能会Read Stale。ZK提供了sync操作，通过 sync + read 一定程度上解决了这个问题。&lt;/li&gt;
+&lt;li&gt;当Client连接新ZK Server时，会对比两者的最大zxid，落后的ZK Server将不会为Client建立Session。&lt;/li&gt;
+&lt;li&gt;Client通过心跳维持Session，Server对请求进行幂等处理。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/zookeeper.pdf&#34;&gt;ZooKeeper Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/zookeeper-faq.txt&#34;&gt;MIT6.824-ZooKeeper FAQ&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

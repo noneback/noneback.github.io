@@ -5,8 +5,111 @@
     <link>https://noneback.github.io/tags/container/</link>
     <description>Recent content in Container on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Tue, 08 Jun 2021 22:26:17 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/container/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Linux Cgroups Overview</title>
+      <link>https://noneback.github.io/blog/linux-cgroups%E7%AE%80%E4%BB%8B/</link>
+      <pubDate>Tue, 08 Jun 2021 22:26:17 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/linux-cgroups%E7%AE%80%E4%BB%8B/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Linux Cgroups&lt;/strong&gt; (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it&amp;rsquo;s easy to limit a process&amp;rsquo;s resource usage and monitor its metrics in real time.&lt;/p&gt;
+&lt;h2 id=&#34;three-components-of-cgroups&#34;&gt;Three Components of Cgroups&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;cgroup&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;A mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;subsystem&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;A module that controls a set of resources.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png&#34; alt=&#34;Subsystem&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Each subsystem is linked to a cgroup that defines the respective limits, and the subsystem imposes these limits on the processes in the cgroup.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;hierarchy&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;A hierarchy is a tree structure that links multiple cgroups. With this tree structure, cgroups can inherit attributes from their parent cgroups.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Example Scenario:
+Suppose there is a group of periodic tasks limited by &lt;code&gt;cgroup1&lt;/code&gt; in terms of CPU usage. If one of these tasks is a logging process that also needs to be limited by disk I/O, a new &lt;code&gt;cgroup2&lt;/code&gt; can be created that inherits from &lt;code&gt;cgroup1&lt;/code&gt;. &lt;code&gt;cgroup2&lt;/code&gt; will inherit the CPU limit from &lt;code&gt;cgroup1&lt;/code&gt; and add its own disk I/O limitation, without affecting other processes in &lt;code&gt;cgroup1&lt;/code&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;relationships-between-the-three&#34;&gt;Relationships Between the Three&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;When a new hierarchy is created, all processes in the system &lt;strong&gt;join&lt;/strong&gt; the &lt;strong&gt;root cgroup&lt;/strong&gt; of that hierarchy by default. This root cgroup is created automatically with the hierarchy.&lt;/li&gt;
+&lt;li&gt;A subsystem can only be attached to one hierarchy.&lt;/li&gt;
+&lt;li&gt;A hierarchy can have multiple subsystems attached.&lt;/li&gt;
+&lt;li&gt;A process can belong to multiple cgroups in different hierarchies.&lt;/li&gt;
+&lt;li&gt;A child process is in the same cgroup as its parent process but can be moved to a different cgroup later.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;kernel-interface&#34;&gt;Kernel Interface&lt;/h2&gt;
+&lt;p&gt;Hierarchies in cgroups are organized in a &lt;strong&gt;tree&lt;/strong&gt; structure. The kernel provides a &lt;strong&gt;virtual tree-like file system&lt;/strong&gt; to configure cgroups, making it intuitive to work with them through a hierarchical directory structure.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Create a hierarchy and add sub-cgroups:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;mkdir cgroup &lt;span style=&#34;color:#75715e&#34;&gt;# Create mount point&lt;/span&gt;
+sudo mount -t cgroup -o none,name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;cgroup-test cgroup-test ./cgroup-test &lt;span style=&#34;color:#75715e&#34;&gt;# Mount hierarchy&lt;/span&gt;
+sudo mkdir cgroup-1
+sudo mkdir cgroup-2
+tree
+
+.
+├── cgroup-1
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup-2
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup.clone_children
+├── cgroup.procs
+├── cgroup.sane_behavior
+├── notify_on_release
+├── release_agent
+└── tasks
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;Meaning of Different Files&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png&#34; alt=&#34;File Descriptions&#34;&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Add and move processes to a cgroup (move process PID into the corresponding &lt;code&gt;tasks&lt;/code&gt; file):&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &lt;/span&gt;$$&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;gt;&amp;gt; ./cgroup-1/tasks&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# Move terminal process to cgroup-1&lt;/span&gt;
+cat /proc/$$/cgroup
+
+&amp;gt;&amp;gt; 
+13:name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;cgroup-test:/cgroup-1
+12:memory:/user.slice/user-1002.slice/session-12331.scope
+11:perf_event:/
+10:cpuset:/
+9:freezer:/
+8:blkio:/user.slice
+7:rdma:/
+6:hugetlb:/
+5:pids:/user.slice/user-1002.slice/session-12331.scope
+4:cpu,cpuacct:/user.slice
+3:net_cls,net_prio:/
+2:devices:/user.slice
+1:name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;systemd:/user.slice/user-1002.slice/session-12331.scope
+0::/user.slice/user-1002.slice/session-12331.scope
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Limit cgroup resource usage via subsystems:&lt;/p&gt;
+&lt;p&gt;First, link the hierarchy to a subsystem. By default, the system links the hierarchy to a memory subsystem.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Start a memory-intensive stress process without any limitations&lt;/span&gt;
+stress --vm-bytes 200m --vm-keep -m &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+sudo mkdir test-limit-memory &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; cd test-limit-memory &lt;span style=&#34;color:#75715e&#34;&gt;# Create a cgroup&lt;/span&gt;
+sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &amp;#34;&lt;/span&gt;100m&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34; &amp;gt; memory.limit&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# Set max memory usage to 100m&lt;/span&gt;
+sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &lt;/span&gt;$$&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;gt; tasks&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# Move current process to cgroup&lt;/span&gt;
+stress --vm-bytes 200m --vm-keep -m &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;observation&#34;&gt;Observation&lt;/h4&gt;
+&lt;p&gt;The memory usage of the process is limited by the specified setting.&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

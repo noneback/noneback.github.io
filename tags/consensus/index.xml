@@ -5,8 +5,85 @@
     <link>https://noneback.github.io/tags/consensus/</link>
     <description>Recent content in Consensus on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Fri, 15 Apr 2022 10:49:57 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/consensus/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MIT6.824-RaftKV</title>
+      <link>https://noneback.github.io/blog/mit6.824-raftkv/</link>
+      <pubDate>Fri, 15 Apr 2022 10:49:57 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-raftkv/</guid>
+      <description>&lt;p&gt;Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.&lt;/p&gt;
+&lt;h2 id=&#34;lab-overview&#34;&gt;Lab Overview&lt;/h2&gt;
+&lt;p&gt;Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.&lt;/p&gt;
+&lt;p&gt;The structure of RaftKV and the interaction between its modules are shown below:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34; alt=&#34;image-20220429211429808&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Compared to the previous lab, the difficulty is significantly lower. For implementation, you can refer to this excellent &lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;implementation&lt;/a&gt;, so I won&amp;rsquo;t elaborate too much.&lt;/p&gt;
+&lt;h2 id=&#34;raft-related-topics&#34;&gt;Raft-Related Topics&lt;/h2&gt;
+&lt;p&gt;Let&amp;rsquo;s talk about Raft and its interactions with clients.&lt;/p&gt;
+&lt;h3 id=&#34;routing-and-linearizability&#34;&gt;Routing and Linearizability&lt;/h3&gt;
+&lt;p&gt;To build a service that allows client access on top of Raft, the issues of &lt;strong&gt;routing&lt;/strong&gt; and &lt;strong&gt;linearizability&lt;/strong&gt; must first be addressed.&lt;/p&gt;
+&lt;h4 id=&#34;routing&#34;&gt;Routing&lt;/h4&gt;
+&lt;p&gt;Raft is a &lt;strong&gt;Strong Leader&lt;/strong&gt; consensus algorithm, and read and write requests usually need to be executed by the Leader. When a client queries the Raft cluster, it typically randomly selects a node. If that node is not the Leader, it returns the Leader information to the client, and the client redirects the request to the Leader.&lt;/p&gt;
+&lt;h4 id=&#34;linearizability&#34;&gt;Linearizability&lt;/h4&gt;
+&lt;p&gt;Currently, Raft only supports &lt;strong&gt;At Least Once&lt;/strong&gt; semantics. For a single client request, the Raft state machine may apply the command multiple times, which is particularly unsuitable for consensus-based systems.&lt;/p&gt;
+&lt;p&gt;To achieve linearizability, it is clear that requests need to be made idempotent.&lt;/p&gt;
+&lt;p&gt;A basic approach is for the client to assign a unique UID to each request, and the server maintains a session using this &lt;code&gt;UID&lt;/code&gt; to cache the response of successful requests. When a duplicate request arrives at the server, it can respond directly using the cached response, thus achieving idempotency.&lt;/p&gt;
+&lt;p&gt;Of course, this introduces the issue of session management, but that is not the focus of this article.&lt;/p&gt;
+&lt;h3 id=&#34;read-only-optimization&#34;&gt;Read-Only Optimization&lt;/h3&gt;
+&lt;p&gt;After solving the above two problems, we have a usable Raft-based service.&lt;/p&gt;
+&lt;p&gt;However, we notice that whether it&amp;rsquo;s a read or write request, our application needs to go through a round of &lt;code&gt;AppendEntries&lt;/code&gt; communication initiated by the Leader. It also requires successful quorum ACKs and additional disk write operations before the log is committed, after which the result can be returned to the client.&lt;/p&gt;
+&lt;p&gt;Write operations change the state machine, so these are necessary steps for write requests. However, read operations do not change the state machine, and we can optimize read requests to bypass the Raft log, reducing the overhead of synchronous write operations on disk IO.&lt;/p&gt;
+&lt;p&gt;The problem is that without additional measures, read-only query results that bypass the Raft log may become stale.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;For example, if the old cluster Leader and a new Leader&amp;rsquo;s cluster are partitioned, queries made to the old Leader could be outdated.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The Raft paper mentions two methods to bypass the Raft log and optimize read-only requests: &lt;strong&gt;Read Index&lt;/strong&gt; and &lt;strong&gt;Lease Read&lt;/strong&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;read-index&#34;&gt;Read Index&lt;/h4&gt;
+&lt;p&gt;The &lt;strong&gt;Read Index&lt;/strong&gt; approach needs to address several issues:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Committed logs from the old term&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;For example, if the old Leader commits a log but crashes before sending heartbeats, other nodes will elect a new Leader. According to the Raft paper, the new Leader does not proactively commit logs from the old Leader.&lt;/p&gt;
+&lt;p&gt;To solve this, a no-op log is committed after a new Leader is elected to commit the old log.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;Gap between &lt;code&gt;commitIndex&lt;/code&gt; and &lt;code&gt;appliedIndex&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Introduce a &lt;code&gt;readIndex&lt;/code&gt; variable, where the Leader saves the current &lt;code&gt;commitIndex&lt;/code&gt; in a local variable called &lt;code&gt;readIndex&lt;/code&gt;. This acts as a boundary for applying the log, and when a read-only request arrives, the log must be applied up to the position recorded by &lt;code&gt;readIndex&lt;/code&gt; before the Leader can query the state machine to provide read services.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;Ensure no Leader change when providing read-only services&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;To achieve this, after receiving a read request, the Leader first sends a heartbeat and needs to receive quorum ACKs to ensure there is no other Leader with a higher term, thus ensuring that &lt;code&gt;readIndex&lt;/code&gt; is the highest committed index in the cluster.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;For the specific process and optimizations like Batch and Follower Read, refer to the author&amp;rsquo;s PhD dissertation on Raft.&lt;/p&gt;
+&lt;h4 id=&#34;lease-read&#34;&gt;Lease Read&lt;/h4&gt;
+&lt;p&gt;The &lt;strong&gt;Read Index&lt;/strong&gt; approach only optimizes the overhead of disk IO, but still requires a round of network communication. However, this overhead can also be optimized, leading to the &lt;strong&gt;Lease Read&lt;/strong&gt; approach.&lt;/p&gt;
+&lt;p&gt;The &lt;strong&gt;core idea&lt;/strong&gt; of &lt;strong&gt;Lease Read&lt;/strong&gt; is to use the fact that a Leader Election requires at least one &lt;code&gt;ElectionTimeout&lt;/code&gt; time period. During this period, the system will not conduct a new election, thereby avoiding Leader changes when providing read-only services. We can use clocks to optimize network IO.&lt;/p&gt;
+&lt;h5 id=&#34;implementation&#34;&gt;Implementation&lt;/h5&gt;
+&lt;p&gt;To let the clock replace network communication, we need an additional lease mechanism. Once the Leader&amp;rsquo;s &lt;code&gt;Heartbeat&lt;/code&gt; is approved by a quorum, the Leader can assume that no other node can become Leader during the &lt;code&gt;ElectionTimeout&lt;/code&gt; period, and it can extend its lease accordingly. While holding the lease, the Leader can directly serve read-only queries without extra network communication.&lt;/p&gt;
+&lt;p&gt;However, there may be &lt;strong&gt;clock drift&lt;/strong&gt; among servers, which means Followers cannot ensure that the Leader will not time out during the lease. This introduces the critical design for &lt;code&gt;Lease Read&lt;/code&gt;: &lt;strong&gt;what strategy should be used to extend the lease?&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The paper assumes that $ClockDrift$ is bounded, and when a heartbeat successfully updates the lease, the lease is extended to $start + rac{ElectionTimeout}{ClockDriftBound}$.&lt;/p&gt;
+&lt;p&gt;$ClockDriftBound$ represents the limit of clock drift in the cluster, but discovering and maintaining this limit is challenging due to many real-time factors that cause clock drift.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;For instance, garbage collection (GC), virtual machine scheduling, cloud machine scaling, etc.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;In practice, some safety is usually sacrificed for &lt;code&gt;Lease Read&lt;/code&gt; performance. Generally, the lease is extended to $StartTime + ElectionTimeout - \Delta{t}$, where $\Delta{t}$ is a positive value. This reduces the lease extension time compared to &lt;code&gt;ElectionTimeout&lt;/code&gt;, trading off between network IO overhead and safety.&lt;/p&gt;
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+&lt;p&gt;When building a Raft-based service, it is crucial to design routing and idempotency mechanisms for accessing the service.&lt;/p&gt;
+&lt;p&gt;For read-only operations, there are two main optimization methods: &lt;strong&gt;Read Index&lt;/strong&gt; and &lt;strong&gt;Lease Read&lt;/strong&gt;. The former optimizes disk IO during read operations, while the latter uses clocks to optimize network IO.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;Implementation Doc&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf&#34;&gt;Raft Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Official&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/raft-thesis-zh_cn&#34;&gt;Consensus: Bridging Theory and Practice - zh&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pingcap.com/zh/blog/lease-read&#34;&gt;Tikv Lease-Read&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

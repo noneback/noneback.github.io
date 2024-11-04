@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java Multithreading Programming</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@Yesterday evening, while revisiting the book &ldquo;Advanced Java: Multithreading and Parallel Programming&rdquo; by Liang Yung, I thought it would be a good idea to take the opportunity to document my understanding.
+Java Multithreading Programming Java provides built-in support for multithreading.
+ A thread is a single sequential flow of control within a process, and multiple threads can run concurrently within a process, each performing different tasks. Multithreading is a specialized form of multitasking that consumes fewer resources.">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/blog/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="Java Multithreading Programming" />
+<meta property="og:description" content="Yesterday evening, while revisiting the book &ldquo;Advanced Java: Multithreading and Parallel Programming&rdquo; by Liang Yung, I thought it would be a good idea to take the opportunity to document my understanding.
+Java Multithreading Programming Java provides built-in support for multithreading.
+ A thread is a single sequential flow of control within a process, and multiple threads can run concurrently within a process, each performing different tasks. Multithreading is a specialized form of multitasking that consumes fewer resources." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/blog/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2019-11-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2019-11-01T00:00:00+00:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Java Multithreading Programming"/>
+<meta name="twitter:description" content="Yesterday evening, while revisiting the book &ldquo;Advanced Java: Multithreading and Parallel Programming&rdquo; by Liang Yung, I thought it would be a good idea to take the opportunity to document my understanding.
+Java Multithreading Programming Java provides built-in support for multithreading.
+ A thread is a single sequential flow of control within a process, and multiple threads can run concurrently within a process, each performing different tasks. Multithreading is a specialized form of multitasking that consumes fewer resources."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "Java Multithreading Programming",
+      "item": "https://noneback.github.io/blog/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Java Multithreading Programming",
+  "name": "Java Multithreading Programming",
+  "description": "Yesterday evening, while revisiting the book \u0026ldquo;Advanced Java: Multithreading and Parallel Programming\u0026rdquo; by Liang Yung, I thought it would be a good idea to take the opportunity to document my understanding.\nJava Multithreading Programming Java provides built-in support for multithreading.\n A thread is a single sequential flow of control within a process, and multiple threads can run concurrently within a process, each performing different tasks. Multithreading is a specialized form of multitasking that consumes fewer resources.",
+  "keywords": [
+    "JAVA"
+  ],
+  "articleBody": "Yesterday evening, while revisiting the book “Advanced Java: Multithreading and Parallel Programming” by Liang Yung, I thought it would be a good idea to take the opportunity to document my understanding.\nJava Multithreading Programming Java provides built-in support for multithreading.\n A thread is a single sequential flow of control within a process, and multiple threads can run concurrently within a process, each performing different tasks. Multithreading is a specialized form of multitasking that consumes fewer resources. A process contains the memory space allocated by the operating system and includes one or more threads. Threads cannot exist independently but must be part of a process. A process continues running until all non-daemon threads complete execution. Multithreading allows developers to write efficient programs that fully utilize CPU resources.  Thread States A thread is a dynamic execution entity that has different states throughout its lifecycle.\n  New:\n A thread is in a new state when it is created using the new keyword with the Thread class or its subclass. It remains in this state until the program starts the thread using the start() method.    Runnable:\n After invoking the start() method, the thread enters the runnable state and waits in the ready queue to be allocated CPU resources by the JVM thread scheduler.    Running:\n Once the thread gets CPU resources, it enters the running state and executes the run() method. In the running state, a thread can transition to blocked, runnable, or terminated states.    Blocked:\n When a thread executes methods like sleep() or suspend() and loses resources, it transitions to the blocked state. After resuming resources or the sleep time is over, it can reenter the runnable state.    Waiting Blocked:\n A running thread calling the wait() method enters the waiting blocked state.    Synchronized Blocked:\n A thread trying to acquire a synchronized lock but failing due to another thread owning the lock transitions to the synchronized blocked state.    Other Blocked:\n Through methods like sleep(), join(), or I/O requests, a thread can enter the other blocked state. Once these operations are complete, it can reenter the runnable state.    Terminated:\n A thread enters the terminated state once it has completed its execution or met some terminating conditions.    Creating Task Classes and Threads  A task in Java is an object that implements the Runnable interface (containing the run() method). You need to override the run() method to define the task’s behavior. Threads are created through the Thread class, which also contains methods for controlling the thread.   Creating a thread is always based on a task:\n Thread thread = new Thread(new TaskClass()); // Calling thread.start() will invoke TaskClass's run() method immediately. Other Methods in the Thread Class  yield(): Temporarily releases the CPU to let other threads execute. sleep(): Makes the thread sleep for a specified period to allow other threads to run.  Note: sleep() may throw an InterruptedException, which is a checked exception, meaning Java requires you to catch it in a try block.\n   Thread Priorities Threads have priorities. The Java Virtual Machine always gives preference to higher-priority threads. If all threads have the same priority, they follow round-robin scheduling.\n Use Thread.setPriority() to set a thread’s priority.\n Thread Pool If you need to create a thread for each of many tasks, starting new threads for each task can limit throughput and degrade performance. Using a thread pool is an ideal solution for managing the concurrent execution of tasks.\nJava provides the Executor interface to execute tasks in a thread pool, and the ExecutorService interface is used to manage and control those tasks. Executors are created through static methods like newFixedThreadPool(int) (to create a pool with a fixed number of threads) or newCachedThreadPool() (to create a pool with a dynamically managed number of threads).\n Example:\n import java.util.concurrent.*; public class ExecutorDemo { public static void main(String[] args) { // Create a fixed thread pool with a maximum of three threads  ExecutorService executor = Executors.newFixedThreadPool(3); // Submit runnable tasks to the executor  executor.execute(new PrintChar('a', 100)); executor.execute(new PrintChar('b', 100)); executor.execute(new PrintNum(100)); // Shut down the executor  executor.shutdown(); } } Thread pools provide a better way to manage threads. They primarily address issues related to the overhead of thread lifecycle and resource limitations:\n Thread pools reduce the time and system resources spent on creating and destroying threads. By reusing threads across multiple tasks, the cost of creating threads is amortized. Since threads already exist when new requests come in, they eliminate the latency caused by thread creation, allowing the application to respond faster. Thread pools allow easy thread management, e.g., using a ScheduledThreadPool to execute tasks after a delay or on a repeating schedule. They control concurrency levels, preventing resource contention when many threads compete for CPU resources.  Thread Synchronization If multiple threads simultaneously access the same resource, it may lead to data corruption. If two tasks interact with a shared resource in a conflicting manner, they are said to be in a race condition. Without race conditions, a program is considered thread-safe.\nTo prevent race conditions, threads must be synchronized to prevent multiple threads from accessing a particular section of the program simultaneously.\nMethods for Synchronizing Threads Before executing a synchronized method, a lock must be obtained. Locks provide exclusive access to a shared resource. For instance methods, the object is locked; for static methods, the class is locked.\n synchronized keyword:   You can apply this keyword to methods or blocks of code.\n synchronized (expr) { // do something } public synchronized void func() {}  Lock-based synchronization: Locks and conditions can be used explicitly for thread synchronization.  A lock is an instance of the Lock interface, which provides methods to acquire and release locks. ReentrantLock is an implementation of the lock mechanism for mutual exclusion.\n   Example:\npublic void deposit(int amount) { lock.lock(); // Acquire the lock  try { int newBalance = balance + amount; // This delay is deliberately added to magnify the  // data corruption problem and make it easy to see.  Thread.sleep(5); balance = newBalance; } catch (InterruptedException ex) { // Handle the exception  } finally { lock.unlock(); // Release the lock  } } Avoiding Deadlocks A deadlock may occur when multiple threads need to acquire locks on several shared objects simultaneously. Deadlocks can be avoided by ordering resource acquisition.\nThread Collaboration Threads can communicate by using conditions to specify what actions they should take under certain circumstances.\n A condition is an object created through the Lock object’s newCondition() method. Threads can use await(), signal(), or signalAll() to communicate.\n  await(): Causes the current thread to wait until the condition is signaled. signal()/signalAll(): Wakes one or all threads waiting on the condition.   Conditions must be used with locks; invoking their methods without a lock will result in an IllegalMonitorStateException.\n Blocking Queues Java provides blocking queues for multithreading, which allow synchronization without needing locks or conditions explicitly. They provide two additional operations:\n When the queue is empty, a retrieval operation will block the thread until elements become available. When the queue is full, an insert operation will block the thread until space becomes available.  Blocking queues are commonly used in producer-consumer scenarios. Producer threads place results in the queue, while consumer threads retrieve and process those results. Blocking queues automatically balance the workload between producers and consumers.\nCore Methods of BlockingQueue   Adding Data:\n put(E e): Inserts an element at the end of the queue, waiting if the queue is full. offer(E e, long timeout, TimeUnit unit): Attempts to add an element, waiting up to the specified time if the queue is full. If successful, returns true; otherwise, returns false.    Retrieving Data:\n take(): Retrieves and removes the head of the queue, waiting if necessary until an element becomes available. drainTo(): Retrieves and removes all available elements from the queue, improving efficiency by reducing the number of lock/unlock operations. poll(long timeout, TimeUnit unit): Retrieves and removes the head of the queue, waiting up to the specified time if the queue is empty. If no element is found within the time limit, returns null.    Parallel Programming Java uses the Fork/Join framework to implement parallel programming. In this framework, a Fork can be considered a separate task executed by a thread.\n Decompose a problem into multiple non-overlapping subproblems that can be solved independently, then combine their solutions to get the overall answer.\n Tasks are defined using the ForkJoinTask class and executed in a ForkJoinPool instance.\n ForkJoinTask is the base class for tasks. It’s a lightweight entity, meaning many tasks can be executed by a small number of threads in the ForkJoinPool.\n Example:\nimport java.util.concurrent.RecursiveAction; import java.util.concurrent.ForkJoinPool; public class ParallelMergeSort { public static void main(String[] args) { final int SIZE = 7000000; int[] list1 = new int[SIZE]; int[] list2 = new int[SIZE]; for (int i = 0; i  list1.length; i++) list1[i] = list2[i] = (int)(Math.random() * 10000000); long startTime = System.currentTimeMillis(); parallelMergeSort(list1); // Invoke parallel merge sort  long endTime = System.currentTimeMillis(); System.out.println(\"\\nParallel time with \" + Runtime.getRuntime().availableProcessors() + \" processors is \" + (endTime - startTime) + \" milliseconds\"); startTime = System.currentTimeMillis(); MergeSort.mergeSort(list2); // MergeSort is in Listing 23.5  endTime = System.currentTimeMillis(); System.out.println(\"\\nSequential time is \" + (endTime - startTime) + \" milliseconds\"); } public static void parallelMergeSort(int[] list) { RecursiveAction mainTask = new SortTask(list); ForkJoinPool pool = new ForkJoinPool(); pool.invoke(mainTask); } private static class SortTask extends RecursiveAction { private final int THRESHOLD = 500; private int[] list; SortTask(int[] list) { this.list = list; } @Override protected void compute() { if (list.length  THRESHOLD) java.util.Arrays.sort(list); else { // Obtain the first half  int[] firstHalf = new int[list.length / 2]; System.arraycopy(list, 0, firstHalf, 0, list.length / 2); // Obtain the second half  int secondHalfLength = list.length - list.length / 2; int[] secondHalf = new int[secondHalfLength]; System.arraycopy(list, list.length / 2, secondHalf, 0, secondHalfLength); // Recursively sort the two halves  invokeAll(new SortTask(firstHalf), new SortTask(secondHalf)); // Merge firstHalf with secondHalf into list  MergeSort.merge(firstHalf, secondHalf, list); } } } } ",
+  "wordCount" : "1626",
+  "inLanguage": "en",
+  "datePublished": "2019-11-01T00:00:00Z",
+  "dateModified": "2019-11-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/blog/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/blog">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>Java Multithreading Programming</h1>
+  </header>
+
+  <p>
+  <small>
+    November 1, 2019&nbsp;· 1626 words&nbsp;· 8 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/java/">JAVA</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#java-multithreading-programming">Java Multithreading Programming</a>
+      <ul>
+        <li><a href="#thread-states">Thread States</a></li>
+        <li><a href="#creating-task-classes-and-threads">Creating Task Classes and Threads</a></li>
+        <li><a href="#thread-pool">Thread Pool</a></li>
+        <li><a href="#thread-synchronization">Thread Synchronization</a></li>
+        <li><a href="#thread-collaboration">Thread Collaboration</a></li>
+        <li><a href="#blocking-queues">Blocking Queues</a></li>
+        <li><a href="#parallel-programming">Parallel Programming</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>Yesterday evening, while revisiting the book &ldquo;Advanced Java: Multithreading and Parallel Programming&rdquo; by Liang Yung, I thought it would be a good idea to take the opportunity to document my understanding.</p>
+<h2 id="java-multithreading-programming">Java Multithreading Programming</h2>
+<p>Java provides built-in support for multithreading.</p>
+<ul>
+<li>A <strong>thread</strong> is a single sequential flow of control within a process, and multiple threads can run concurrently within a process, each performing different tasks.</li>
+<li><strong>Multithreading</strong> is a specialized form of multitasking that consumes fewer resources.</li>
+<li>A <strong>process</strong> contains the memory space allocated by the operating system and includes one or more threads. Threads cannot exist independently but must be part of a process. A process continues running until all non-daemon threads complete execution.</li>
+<li>Multithreading allows developers to write efficient programs that fully utilize CPU resources.</li>
+</ul>
+<h3 id="thread-states">Thread States</h3>
+<p>A thread is a dynamic execution entity that has different states throughout its lifecycle.</p>
+<p><img src="https://www.runoob.com/wp-content/uploads/2014/01/java-thread.jpg" alt="Thread States"></p>
+<ol>
+<li>
+<p><strong>New</strong>:</p>
+<ul>
+<li>A thread is in a new state when it is created using the <code>new</code> keyword with the <code>Thread</code> class or its subclass. It remains in this state until the program starts the thread using the <code>start()</code> method.</li>
+</ul>
+</li>
+<li>
+<p><strong>Runnable</strong>:</p>
+<ul>
+<li>After invoking the <code>start()</code> method, the thread enters the runnable state and waits in the ready queue to be allocated CPU resources by the JVM thread scheduler.</li>
+</ul>
+</li>
+<li>
+<p><strong>Running</strong>:</p>
+<ul>
+<li>Once the thread gets CPU resources, it enters the running state and executes the <code>run()</code> method. In the running state, a thread can transition to blocked, runnable, or terminated states.</li>
+</ul>
+</li>
+<li>
+<p><strong>Blocked</strong>:</p>
+<ul>
+<li>When a thread executes methods like <code>sleep()</code> or <code>suspend()</code> and loses resources, it transitions to the blocked state. After resuming resources or the sleep time is over, it can reenter the runnable state.</li>
+</ul>
+</li>
+<li>
+<p><strong>Waiting Blocked</strong>:</p>
+<ul>
+<li>A running thread calling the <code>wait()</code> method enters the waiting blocked state.</li>
+</ul>
+</li>
+<li>
+<p><strong>Synchronized Blocked</strong>:</p>
+<ul>
+<li>A thread trying to acquire a synchronized lock but failing due to another thread owning the lock transitions to the synchronized blocked state.</li>
+</ul>
+</li>
+<li>
+<p><strong>Other Blocked</strong>:</p>
+<ul>
+<li>Through methods like <code>sleep()</code>, <code>join()</code>, or I/O requests, a thread can enter the other blocked state. Once these operations are complete, it can reenter the runnable state.</li>
+</ul>
+</li>
+<li>
+<p><strong>Terminated</strong>:</p>
+<ul>
+<li>A thread enters the terminated state once it has completed its execution or met some terminating conditions.</li>
+</ul>
+</li>
+</ol>
+<h3 id="creating-task-classes-and-threads">Creating Task Classes and Threads</h3>
+<ul>
+<li>A <strong>task</strong> in Java is an object that implements the <code>Runnable</code> interface (containing the <code>run()</code> method). You need to override the <code>run()</code> method to define the task&rsquo;s behavior.</li>
+<li><strong>Threads</strong> are created through the <code>Thread</code> class, which also contains methods for controlling the thread.</li>
+</ul>
+<blockquote>
+<p>Creating a thread is always based on a task:</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Thread thread <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> TaskClass<span style="color:#f92672">());</span>
+<span style="color:#75715e">// Calling thread.start() will invoke TaskClass&#39;s run() method immediately.
+</span></code></pre></div><h4 id="other-methods-in-the-thread-class">Other Methods in the Thread Class</h4>
+<ul>
+<li><code>yield()</code>: Temporarily releases the CPU to let other threads execute.</li>
+<li><code>sleep()</code>: Makes the thread sleep for a specified period to allow other threads to run.
+<blockquote>
+<p>Note: <code>sleep()</code> may throw an <code>InterruptedException</code>, which is a checked exception, meaning Java requires you to catch it in a <code>try</code> block.</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="thread-priorities">Thread Priorities</h4>
+<p>Threads have priorities. The Java Virtual Machine always gives preference to higher-priority threads. If all threads have the same priority, they follow round-robin scheduling.</p>
+<blockquote>
+<p>Use <code>Thread.setPriority()</code> to set a thread&rsquo;s priority.</p>
+</blockquote>
+<h3 id="thread-pool">Thread Pool</h3>
+<p>If you need to create a thread for each of many tasks, starting new threads for each task can limit throughput and degrade performance. Using a <strong>thread pool</strong> is an ideal solution for managing the concurrent execution of tasks.</p>
+<p>Java provides the <code>Executor</code> interface to execute tasks in a thread pool, and the <code>ExecutorService</code> interface is used to manage and control those tasks. Executors are created through static methods like <code>newFixedThreadPool(int)</code> (to create a pool with a fixed number of threads) or <code>newCachedThreadPool()</code> (to create a pool with a dynamically managed number of threads).</p>
+<blockquote>
+<p>Example:</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">import</span> java.util.concurrent.*<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ExecutorDemo</span> <span style="color:#f92672">{</span>
+  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// Create a fixed thread pool with a maximum of three threads
+</span><span style="color:#75715e"></span>    ExecutorService executor <span style="color:#f92672">=</span> Executors<span style="color:#f92672">.</span><span style="color:#a6e22e">newFixedThreadPool</span><span style="color:#f92672">(</span>3<span style="color:#f92672">);</span>
+    <span style="color:#75715e">// Submit runnable tasks to the executor
+</span><span style="color:#75715e"></span>    executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PrintChar<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;a&#39;</span><span style="color:#f92672">,</span> 100<span style="color:#f92672">));</span>
+    executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PrintChar<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;b&#39;</span><span style="color:#f92672">,</span> 100<span style="color:#f92672">));</span>
+    executor<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PrintNum<span style="color:#f92672">(</span>100<span style="color:#f92672">));</span>
+    <span style="color:#75715e">// Shut down the executor
+</span><span style="color:#75715e"></span>    executor<span style="color:#f92672">.</span><span style="color:#a6e22e">shutdown</span><span style="color:#f92672">();</span>
+  <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>Thread pools provide <strong>a better way to manage threads</strong>. They primarily address issues related to the overhead of thread lifecycle and resource limitations:</p>
+<ul>
+<li><strong>Thread pools reduce the time and system resources spent on creating and destroying threads</strong>. By reusing threads across multiple tasks, the cost of creating threads is amortized. Since threads already exist when new requests come in, they eliminate the latency caused by thread creation, allowing the application to respond faster.</li>
+<li><strong>Thread pools allow easy thread management</strong>, e.g., using a <code>ScheduledThreadPool</code> to execute tasks after a delay or on a repeating schedule.</li>
+<li><strong>They control concurrency levels</strong>, preventing resource contention when many threads compete for CPU resources.</li>
+</ul>
+<h3 id="thread-synchronization">Thread Synchronization</h3>
+<p>If multiple threads simultaneously access the same resource, it may lead to data corruption. If two tasks interact with a shared resource in a conflicting manner, they are said to be in a <strong>race condition</strong>. Without race conditions, a program is considered <strong>thread-safe</strong>.</p>
+<p>To prevent race conditions, threads must be synchronized to prevent multiple threads from accessing a particular section of the program simultaneously.</p>
+<h4 id="methods-for-synchronizing-threads">Methods for Synchronizing Threads</h4>
+<p>Before executing a synchronized method, a lock must be obtained. Locks provide exclusive access to a shared resource. For instance methods, the object is locked; for static methods, the class is locked.</p>
+<ul>
+<li><code>synchronized</code> keyword:</li>
+</ul>
+<blockquote>
+<p>You can apply this keyword to methods or blocks of code.</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>expr<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+  <span style="color:#75715e">// do something
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">func</span><span style="color:#f92672">()</span> <span style="color:#f92672">{}</span>
+</code></pre></div><ul>
+<li>Lock-based synchronization:
+Locks and conditions can be used explicitly for thread synchronization.
+<blockquote>
+<p>A lock is an instance of the <code>Lock</code> interface, which provides methods to acquire and release locks.
+<code>ReentrantLock</code> is an implementation of the lock mechanism for mutual exclusion.</p>
+</blockquote>
+</li>
+</ul>
+<p>Example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">deposit</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> amount<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+  lock<span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">();</span> <span style="color:#75715e">// Acquire the lock
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">int</span> newBalance <span style="color:#f92672">=</span> balance <span style="color:#f92672">+</span> amount<span style="color:#f92672">;</span>
+    <span style="color:#75715e">// This delay is deliberately added to magnify the
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// data corruption problem and make it easy to see.
+</span><span style="color:#75715e"></span>    Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">sleep</span><span style="color:#f92672">(</span>5<span style="color:#f92672">);</span>
+    balance <span style="color:#f92672">=</span> newBalance<span style="color:#f92672">;</span>
+  <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException ex<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// Handle the exception
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+    lock<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span> <span style="color:#75715e">// Release the lock
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h4 id="avoiding-deadlocks">Avoiding Deadlocks</h4>
+<p>A deadlock may occur when multiple threads need to acquire locks on several shared objects simultaneously. Deadlocks can be avoided by <strong>ordering resource acquisition</strong>.</p>
+<h3 id="thread-collaboration">Thread Collaboration</h3>
+<p>Threads can communicate by using <strong>conditions</strong> to specify what actions they should take under certain circumstances.</p>
+<blockquote>
+<p>A <strong>condition</strong> is an object created through the <code>Lock</code> object&rsquo;s <code>newCondition()</code> method. Threads can use <code>await()</code>, <code>signal()</code>, or <code>signalAll()</code> to communicate.</p>
+</blockquote>
+<ul>
+<li><code>await()</code>: Causes the current thread to wait until the condition is signaled.</li>
+<li><code>signal()</code>/<code>signalAll()</code>: Wakes one or all threads waiting on the condition.</li>
+</ul>
+<blockquote>
+<p>Conditions must be used with locks; invoking their methods without a lock will result in an <code>IllegalMonitorStateException</code>.</p>
+</blockquote>
+<h3 id="blocking-queues">Blocking Queues</h3>
+<p>Java provides <strong>blocking queues</strong> for multithreading, which allow synchronization without needing locks or conditions explicitly. They provide two additional operations:</p>
+<ul>
+<li>When the queue is empty, a retrieval operation will <strong>block</strong> the thread until elements become available.</li>
+<li>When the queue is full, an insert operation will <strong>block</strong> the thread until space becomes available.</li>
+</ul>
+<p>Blocking queues are commonly used in <strong>producer-consumer</strong> scenarios. Producer threads place results in the queue, while consumer threads retrieve and process those results. Blocking queues <strong>automatically balance the workload</strong> between producers and consumers.</p>
+<h4 id="core-methods-of-blockingqueue">Core Methods of BlockingQueue</h4>
+<ol>
+<li>
+<p><strong>Adding Data</strong>:</p>
+<ul>
+<li><code>put(E e)</code>: Inserts an element at the end of the queue, waiting if the queue is full.</li>
+<li><code>offer(E e, long timeout, TimeUnit unit)</code>: Attempts to add an element, waiting up to the specified time if the queue is full. If successful, returns <code>true</code>; otherwise, returns <code>false</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Retrieving Data</strong>:</p>
+<ul>
+<li><code>take()</code>: Retrieves and removes the head of the queue, waiting if necessary until an element becomes available.</li>
+<li><code>drainTo()</code>: Retrieves and removes all available elements from the queue, improving efficiency by reducing the number of lock/unlock operations.</li>
+<li><code>poll(long timeout, TimeUnit unit)</code>: Retrieves and removes the head of the queue, waiting up to the specified time if the queue is empty. If no element is found within the time limit, returns <code>null</code>.</li>
+</ul>
+</li>
+</ol>
+<h3 id="parallel-programming">Parallel Programming</h3>
+<p>Java uses the <strong>Fork/Join framework</strong> to implement parallel programming. In this framework, a <strong>Fork</strong> can be considered a separate task executed by a thread.</p>
+<blockquote>
+<p>Decompose a problem into multiple non-overlapping subproblems that can be solved independently, then combine their solutions to get the overall answer.</p>
+</blockquote>
+<p>Tasks are defined using the <code>ForkJoinTask</code> class and executed in a <code>ForkJoinPool</code> instance.</p>
+<blockquote>
+<p><code>ForkJoinTask</code> is the base class for tasks. It&rsquo;s a lightweight entity, meaning many tasks can be executed by a small number of threads in the <code>ForkJoinPool</code>.</p>
+</blockquote>
+<p>Example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">import</span> java.util.concurrent.RecursiveAction<span style="color:#f92672">;</span>
+<span style="color:#f92672">import</span> java.util.concurrent.ForkJoinPool<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ParallelMergeSort</span> <span style="color:#f92672">{</span>
+  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> SIZE <span style="color:#f92672">=</span> 7000000<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> list1 <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">[</span>SIZE<span style="color:#f92672">];</span>
+    <span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> list2 <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">[</span>SIZE<span style="color:#f92672">];</span>
+    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> list1<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span>
+      list1<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> list2<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">)(</span>Math<span style="color:#f92672">.</span><span style="color:#a6e22e">random</span><span style="color:#f92672">()</span> <span style="color:#f92672">*</span> 10000000<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">long</span> startTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+    parallelMergeSort<span style="color:#f92672">(</span>list1<span style="color:#f92672">);</span> <span style="color:#75715e">// Invoke parallel merge sort
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">long</span> endTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+    System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;\nParallel time with &#34;</span> <span style="color:#f92672">+</span>
+      Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">().</span><span style="color:#a6e22e">availableProcessors</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span>
+      <span style="color:#e6db74">&#34; processors is &#34;</span> <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>endTime <span style="color:#f92672">-</span> startTime<span style="color:#f92672">)</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; milliseconds&#34;</span><span style="color:#f92672">);</span>
+    startTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+    MergeSort<span style="color:#f92672">.</span><span style="color:#a6e22e">mergeSort</span><span style="color:#f92672">(</span>list2<span style="color:#f92672">);</span> <span style="color:#75715e">// MergeSort is in Listing 23.5
+</span><span style="color:#75715e"></span>    endTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+    System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;\nSequential time is &#34;</span> <span style="color:#f92672">+</span>
+      <span style="color:#f92672">(</span>endTime <span style="color:#f92672">-</span> startTime<span style="color:#f92672">)</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; milliseconds&#34;</span><span style="color:#f92672">);</span>
+  <span style="color:#f92672">}</span>
+
+  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">parallelMergeSort</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> list<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    RecursiveAction mainTask <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> SortTask<span style="color:#f92672">(</span>list<span style="color:#f92672">);</span>
+    ForkJoinPool pool <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ForkJoinPool<span style="color:#f92672">();</span>
+    pool<span style="color:#f92672">.</span><span style="color:#a6e22e">invoke</span><span style="color:#f92672">(</span>mainTask<span style="color:#f92672">);</span>
+  <span style="color:#f92672">}</span>
+
+  <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SortTask</span> <span style="color:#66d9ef">extends</span> RecursiveAction <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> THRESHOLD <span style="color:#f92672">=</span> 500<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> list<span style="color:#f92672">;</span>
+
+    SortTask<span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> list<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+      <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">list</span> <span style="color:#f92672">=</span> list<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">compute</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>list<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">&lt;</span> THRESHOLD<span style="color:#f92672">)</span>
+        java<span style="color:#f92672">.</span><span style="color:#a6e22e">util</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Arrays</span><span style="color:#f92672">.</span><span style="color:#a6e22e">sort</span><span style="color:#f92672">(</span>list<span style="color:#f92672">);</span>
+      <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// Obtain the first half
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> firstHalf <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">[</span>list<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">/</span> 2<span style="color:#f92672">];</span>
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">arraycopy</span><span style="color:#f92672">(</span>list<span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> firstHalf<span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> list<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">/</span> 2<span style="color:#f92672">);</span>
+
+        <span style="color:#75715e">// Obtain the second half
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">int</span> secondHalfLength <span style="color:#f92672">=</span> list<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">-</span> list<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">/</span> 2<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> secondHalf <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">[</span>secondHalfLength<span style="color:#f92672">];</span>
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">arraycopy</span><span style="color:#f92672">(</span>list<span style="color:#f92672">,</span> list<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">/</span> 2<span style="color:#f92672">,</span> secondHalf<span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> secondHalfLength<span style="color:#f92672">);</span>
+
+        <span style="color:#75715e">// Recursively sort the two halves
+</span><span style="color:#75715e"></span>        invokeAll<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> SortTask<span style="color:#f92672">(</span>firstHalf<span style="color:#f92672">),</span> <span style="color:#66d9ef">new</span> SortTask<span style="color:#f92672">(</span>secondHalf<span style="color:#f92672">));</span>
+
+        <span style="color:#75715e">// Merge firstHalf with secondHalf into list
+</span><span style="color:#75715e"></span>        MergeSort<span style="color:#f92672">.</span><span style="color:#a6e22e">merge</span><span style="color:#f92672">(</span>firstHalf<span style="color:#f92672">,</span> secondHalf<span style="color:#f92672">,</span> list<span style="color:#f92672">);</span>
+      <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+  <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div></section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/blog/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Chinese Spam Email Classification Based on Naive Bayes</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/blog/gsoc/"><span></span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>

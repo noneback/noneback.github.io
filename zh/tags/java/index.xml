@@ -5,8 +5,318 @@
     <link>https://noneback.github.io/zh/tags/java/</link>
     <description>Recent content in JAVA on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Fri, 01 Nov 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/java/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Java 多线程编程</title>
+      <link>https://noneback.github.io/zh/blog/zh/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/</link>
+      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/</guid>
+      <description>&lt;p&gt;昨天晚上再看梁勇的java进阶中的《多线程与并行程序设计》，今天想趁着写博客的机会，把我了解的记录下来。&lt;/p&gt;
+&lt;h2 id=&#34;java-多线程编程&#34;&gt;Java 多线程编程&lt;/h2&gt;
+&lt;p&gt;Java 给多线程编程提供了内置的支持。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;一条线程指的是进程中一个单一顺序的控制流，一个进程中可以并发多个线程，每条线程并行执行不同的任务。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;多线程&lt;/strong&gt;是多任务的一种特别的形式，但多线程使用了更小的资源开销。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;进程&lt;/strong&gt;：一个进程包括由操作系统分配的内存空间，包含一个或多个线程。一个线程不能独立的存在，它必须是进程的一部分。一个进程一直运行，直到所有的非守护线程都结束运行后才能结束。&lt;/li&gt;
+&lt;li&gt;多线程能满足程序员编写高效率的程序来达到充分利用 CPU 的目的。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;线程的状态&#34;&gt;线程的状态&lt;/h3&gt;
+&lt;p&gt;线程是一个动态执行的过程，它也有一个从产生到死亡的过程（状态）。
+&lt;img src=&#34;https://www.runoob.com/wp-content/uploads/2014/01/java-thread.jpg&#34; alt=&#34;线程的状态&#34;&gt;&lt;/p&gt;
+&lt;p&gt;1.&lt;strong&gt;新建状态&lt;/strong&gt;:
+使用 new 关键字和 Thread 类或其子类建立一个线程对象后，该线程对象就处于新建状态。它保持这个状态直到程序 start() 这个线程。&lt;/p&gt;
+&lt;p&gt;2.&lt;strong&gt;就绪状态&lt;/strong&gt;:
+当线程对象调用了start()方法之后，该线程就进入就绪状态。就绪状态的线程处于就绪队列中，要等待JVM里线程调度器的调度。&lt;/p&gt;
+&lt;p&gt;3.&lt;strong&gt;运行状态&lt;/strong&gt;:
+如果就绪状态的线程获取 CPU 资源，就可以执行 run()，此时线程便处于运行状态。处于运行状态的线程最为复杂，它可以变为阻塞状态、就绪状态和死亡状态。&lt;/p&gt;
+&lt;p&gt;4.&lt;strong&gt;阻塞状态&lt;/strong&gt;:
+如果一个线程执行了sleep（睡眠）、suspend（挂起）等方法，失去所占用资源之后，该线程就从运行状态进入阻塞状态。在睡眠时间已到或获得设备资源后可以重新进入就绪状态。可以分为三种：&lt;/p&gt;
+&lt;p&gt;5.&lt;strong&gt;等待阻塞&lt;/strong&gt;：运行状态中的线程执行 wait() 方法，使线程进入到等待阻塞状态。&lt;/p&gt;
+&lt;p&gt;6.&lt;strong&gt;同步阻塞&lt;/strong&gt;：线程在获取 synchronized 同步锁失败(因为同步锁被其他线程占用)。&lt;/p&gt;
+&lt;p&gt;7.&lt;strong&gt;其他阻塞&lt;/strong&gt;：通过调用线程的 sleep() 或 join() 发出了 I/O 请求时，线程就会进入到阻塞状态。当sleep() 状态超时，join() 等待线程终止或超时，或者 I/O 处理完毕，线程重新转入就绪状态。&lt;/p&gt;
+&lt;p&gt;8.&lt;strong&gt;死亡状态&lt;/strong&gt;:
+一个运行状态的线程完成任务或者其他终止条件发生时，该线程就切换到终止状态。&lt;/p&gt;
+&lt;h3 id=&#34;创建任务类与线程&#34;&gt;创建任务类与线程&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;任务就是一种对象&lt;/strong&gt;，其必须实现Runable接口（Runable接口中只有run()函数），并且需要重写run()，以便线程创建时调用。&lt;/li&gt;
+&lt;li&gt;线程的创建是通过&lt;strong&gt;Thread类&lt;/strong&gt;来构造的，Thread类中还包含了控制线程的方法。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;一个线程的创建必须基于某个任务，即：&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;	Thread thread&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; Thread&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;（&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; TaskClass&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;）&lt;/span&gt;
+ &lt;span style=&#34;color:#75715e&#34;&gt;/**
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; *调用thread.start()时立即调用TaskClass中的run（）
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt; */&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;thread中的其他方法&#34;&gt;Thread中的其他方法&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;yield()：为其他线程临时让出cpu时间&lt;/li&gt;
+&lt;li&gt;sleep()：为线程设定休眠时间，以便其他线程的执行&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;sleep()可能抛出一个InterruptException异常，这是一个必检异常，java强制捕获，故而sleep函数必须在try代码块中。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;线程的优先级&#34;&gt;线程的优先级&lt;/h4&gt;
+&lt;p&gt;线程是有优先级的。java虚拟机总是优先执行优先级高的线程。若所有的优先级相同，则系统依照循环队列分配相同的cpu资源，即&lt;strong&gt;循环调度&lt;/strong&gt;。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Thread类中的setPriority()可设定线优先级&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;线程池&#34;&gt;线程池&lt;/h3&gt;
+&lt;p&gt;对于大型任务数,如果必须为每个任务创建一个线程，那么启动新线程每个任务都可能限制吞吐量并导致性能不佳。
+而使用线程池是理想的管理并发执行的任务数的方法。
+Java 提供Exexutor接口来执行线程池中任务，用ExecutorService接口来管理和控制任务。执行器服务是执行器的子接口。
+通过静态方法获得Executor对象，newFixedThreadPool(int)用于创建固定数目的线程池，newCachedThreadPool()则是自动创建线程。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;demo:&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; java.util.concurrent.*&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ExecutorDemo&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;static&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;String&lt;span style=&#34;color:#f92672&#34;&gt;[]&lt;/span&gt; args&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;// Create a fixed thread pool with maximum three threads
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;ExecutorService executor &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Executors&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;newFixedThreadPool&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;3&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;// Submit runnable tasks to the executor
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;executor&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;execute&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; PrintChar&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;a&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; 100&lt;span style=&#34;color:#f92672&#34;&gt;));&lt;/span&gt;
+executor&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;execute&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; PrintChar&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;b&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; 100&lt;span style=&#34;color:#f92672&#34;&gt;));&lt;/span&gt;
+executor&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;execute&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; PrintNum&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;100&lt;span style=&#34;color:#f92672&#34;&gt;));&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;// Shut down the executor
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;executor&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;shutdown&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;();&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;线程池提供了一种&lt;strong&gt;更好的管理线程的方法&lt;/strong&gt;。 线程池主要用来解决线程生命周期开销问题和资源不足问题。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;线程池减少了在创建和销毁线程上所花的时间以及系统资源的开销&lt;/strong&gt;。通过对多个任务重用线程，线程创建的开销就被分摊到了多个任务上了，而且由于在请求到达时线程已经存在，所以消除了线程创建所带来的延迟。这样，就可以立即为请求服务，使应用程序响应更快。另外，通过适当地调整线程池中的线程数目可以防止出现资源不足的情况。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;线程池能够对线程进行方便的管理&lt;/strong&gt;。比如使用ScheduledThreadPool来设置延迟N秒后执行任务，并且每隔M秒循环执行一次。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;能控制线程池中的并发数&lt;/strong&gt;。避免了因为大量的线程争夺CPU资源造成阻塞。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;线程同步thread-synchronization&#34;&gt;线程同步（Thread Synchronization）&lt;/h3&gt;
+&lt;p&gt;如果同一个资源被多个线程同时访问，很可能会被破坏。如果两个任务以一种会引起冲突的方式访问一个公共资源，则称两者为竞争状态。若其没有竞争状态，则称其为线程安全的。&lt;/p&gt;
+&lt;p&gt;为避免竞争状态，应防止多个线程同事进入程序的某一特定部分，程序中这样的部分成为临界区。&lt;/p&gt;
+&lt;p&gt;解决竞争状态的方法便是使线程同步。&lt;/p&gt;
+&lt;h4 id=&#34;实现线程同步的方法&#34;&gt;实现线程同步的方法&lt;/h4&gt;
+&lt;p&gt;一个同步方法在执行前需要加锁。锁是一种实现资源排他的机制。对于实例方法，要给调用的对象加锁，对于静态对象，要给类加锁。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;synchronized关键字&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;此关键字可用与方法，也可用于表达式。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;synchronized&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt; expr &lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+  &lt;span style=&#34;color:#75715e&#34;&gt;//do something
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; sychronized &lt;span style=&#34;color:#a6e22e&#34;&gt;func&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;()&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;利用锁同步
+可显式的使用锁和状态来同步线程。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;一个锁是Lock接口的实例，其提供了加锁和释放锁的方法。
+ReentrantLock是lock的具体体现，用于创建相互排斥的锁。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;demo:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public void deposit(int amount) {
+  lock.lock(); // Acquire the lock
+  try {
+  int newBalance = balance + amount;
+  // This delay is deliberately added to magnify the
+  // data-corruption problem and make it easy to see.
+  Thread.sleep(5);
+  balance = newBalance;
+  }
+  catch (InterruptedException ex) {
+  }
+  finally {
+  lock.unlock(); // Release the lock
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4 id=&#34;避免死锁&#34;&gt;避免死锁&lt;/h4&gt;
+&lt;p&gt;多个线程需要从几个共享对象上获取锁时，可能会导致死锁。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;利用资源排序避免死锁&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;线程间的协作&#34;&gt;线程间的协作&lt;/h3&gt;
+&lt;p&gt;可使用条件(Condition)实现线程的通信，指定其在某种条件下做什么。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;**条件(Condition)**是通过Lock对象的newCondition()方法创建的对象。通过其await(),signal(),signall()实现线程的相互通信。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;await()：让当前线程进入等待，直到条件发生（发出条件信号）&lt;/li&gt;
+&lt;li&gt;signal()/signalAll()：唤醒一个和所有线程&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;条件必须依赖与锁才可使用。无锁儿直接使用其方法会抛出IllegalMonitorStateExecption异常。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;阻塞队列&#34;&gt;阻塞队列&lt;/h3&gt;
+&lt;p&gt;java中为多线程提供了阻塞对列，同步可在对列中实现，所以不用在使用锁和条件。
+它提供了两个附加操作：当队列中为空时，从队列中获取元素的操作将被阻塞；当队列满时，向队列中添加元素的操作将被阻塞。&lt;/p&gt;
+&lt;p&gt; 阻塞队列常用于生产者和消费者的场景，生产者线程可以把生产结果存到阻塞队列中，而消费者线程把中间结果取出并在将来修改它们。&lt;/p&gt;
+&lt;p&gt;队列会自动平衡负载，如果生产者线程集运行的比消费者线程集慢，则消费者线程集在等待结果时就会阻塞；如果生产者线程集运行的快，那么它将等待消费者线程集赶上来。&lt;/p&gt;
+&lt;p&gt;作为BlockingQueue的使用者，我们再也不需要关心什么时候需要阻塞线程，什么时候需要唤醒线程，因为这一切BlockingQueue都给你一手包办了。&lt;/p&gt;
+&lt;h4 id=&#34;blockingqueue的核心方法&#34;&gt;BlockingQueue的核心方法&lt;/h4&gt;
+&lt;p&gt;1、放入数据&lt;/p&gt;
+&lt;p&gt;  （1）put(E e):put方法用来向队尾存入元素，如果队列满，则等待。　　　 &lt;/p&gt;
+&lt;p&gt;  （2）offer(E o, long timeout, TimeUnit unit)：offer方法用来向队尾存入元素，如果队列满，则等待一定的时间，当时间期限达到时，如果还没有插入成功，则返回false；否则返回true；&lt;/p&gt;
+&lt;p&gt;2、获取数据&lt;/p&gt;
+&lt;p&gt; （1）take()：take方法用来从队首取元素，如果队列为空，则等待；&lt;/p&gt;
+&lt;p&gt; （2）drainTo():一次性从BlockingQueue获取所有可用的数据对象（还可以指定获取数据的个数），通过该方法，可以提升获取数据效率；不需要多次分批加锁或释放锁。&lt;/p&gt;
+&lt;p&gt; （3）poll(time):取走BlockingQueue里排在首位的对象,若不能立即取出,则可以等time参数规定的时间,取不到时返回null;&lt;/p&gt;
+&lt;p&gt; （4）poll(long timeout, TimeUnit unit)：poll方法用来从队首取元素，如果队列空，则等待一定的时间，当时间期限达到时，如果取到，则返回null；否则返回取得的元素；&lt;/p&gt;
+&lt;h4 id=&#34;一些状态&#34;&gt;一些状态&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;抛出异常&lt;/strong&gt;：当队列满时，再向队列中插入元素，则会抛出IllegalStateException异常。当队列空时，再向队列中获取元素，则会抛出NoSuchElementException异常。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;返回特殊值&lt;/strong&gt;：当队列满时，向队列中添加元素，则返回false，否则返回true。当队列为空时，向队列中获取元素，则返回null，否则返回元素。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;一直阻塞&lt;/strong&gt;：当阻塞队列满时，如果生产者向队列中插入元素，则队列会一直阻塞当前线程，直到队列可用或响应中断退出。当阻塞队列为空时，如果消费者线程向阻塞队列中获取数据，则队列会一直阻塞当前线程，直到队列空闲或响应中断退出。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;超时退出&lt;/strong&gt;：当队列满时，如果生产线程向队列中添加元素，则队列会阻塞生产线程一段时间，超过指定的时间则退出返回false。当队列为空时，消费线程从队列中移除元素，则队列会阻塞一段时间，如果超过指定时间退出返回null。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;并行编程&#34;&gt;并行编程&lt;/h3&gt;
+&lt;p&gt;java可用Fork/Join框架实现并行编程
+在此框架中，一个分解（Fork)可视为运行在一个线程上的独立任务。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;将一个问题分解为多个不重叠的子问题（可独立解决），再合并子问题的解答以获得整体的解答。
+框架使用ForkJoinTask类定义一个任务，在一个ForkJoinPool实例中执行任务。
+ForkJoinTask是用于任务的基类，它是一个类似线程的实体，但比普通的线程要轻量级的多，因为巨量的任务可以被ForkJoinPool中的少数线程所执行。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;demo:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.ForkJoinPool;
+public class ParallelMergeSort {
+public static void main(String[] args) {
+final int SIZE = 7000000;
+int[] list1 = new int[SIZE];
+int[] list2 = new int[SIZE];
+for (int i = 0; i &amp;lt; list1.length; i++)
+list1[i] = list2[i] = (int)(Math.random() * 10000000);
+long startTime = System.currentTimeMillis();
+parallelMergeSort(list1); // Invoke parallel merge sort
+long endTime = System.currentTimeMillis();
+System.out.println(&amp;quot;\nParallel time with &amp;quot;
++ Runtime.getRuntime().availableProcessors() +
+&amp;quot; processors is &amp;quot; + (endTime - startTime) + &amp;quot; milliseconds&amp;quot;);
+startTime = System.currentTimeMillis();
+MergeSort.mergeSort(list2); // MergeSort is in Listing 23.5
+endTime = System.currentTimeMillis();
+System.out.println(&amp;quot;\nSequential time is &amp;quot; +
+(endTime - startTime) + &amp;quot; milliseconds&amp;quot;);
+}
+public static void parallelMergeSort(int[] list) {
+RecursiveAction mainTask = new SortTask(list);
+ForkJoinPool pool = new ForkJoinPool();
+pool.invoke(mainTask);
+}
+private static class SortTask extends RecursiveAction {
+private final int THRESHOLD = 500;
+private int[] list;
+SortTask(int[] list) {
+this.list = list;
+}
+@Override
+protected void compute() {
+if (list.length &amp;lt; THRESHOLD)
+java.util.Arrays.sort(list);
+else {
+// Obtain the first half
+int[] firstHalf = new int[list.length / 2];
+System.arraycopy(list, 0, firstHalf, 0, list.length / 2);
+perform the task
+sort a small list
+split into two parts
+// Obtain the second half
+int secondHalfLength = list.length - list.length / 2;
+int[] secondHalf = new int[secondHalfLength];
+System.arraycopy(list, list.length / 2,
+secondHalf, 0, secondHalfLength);
+// Recursively sort the two halves
+invokeAll(new SortTask(firstHalf),
+new SortTask(secondHalf));
+// Merge firstHalf with secondHalf into list
+MergeSort.merge(firstHalf, secondHalf, list);
+}
+}
+}
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Java中的lambda表达式</title>
+      <link>https://noneback.github.io/zh/blog/zh/java%E4%B8%AD%E7%9A%84lambda/</link>
+      <pubDate>Fri, 01 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/java%E4%B8%AD%E7%9A%84lambda/</guid>
+      <description>&lt;h2 id=&#34;lambda表达式&#34;&gt;lambda表达式&lt;/h2&gt;
+&lt;p&gt;Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中）。使用 Lambda 表达式可以使代码变的更加简洁紧凑。&lt;/p&gt;
+&lt;h2 id=&#34;语法&#34;&gt;语法&lt;/h2&gt;
+&lt;p&gt;lambda 表达式的语法格式如下：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;parameters&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; expression &lt;span style=&#34;color:#a6e22e&#34;&gt;或&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;parameters&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;{&lt;/span&gt; statements&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;以下是lambda表达式的重要特征:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;**可选类型声明：**不需要声明参数类型，编译器可以统一识别参数值。&lt;/li&gt;
+&lt;li&gt;**可选的参数圆括号：**一个参数无需定义圆括号，但多个参数需要定义圆括号。&lt;/li&gt;
+&lt;li&gt;**可选的大括号：**如果主体包含了一个语句，就不需要使用大括号。&lt;/li&gt;
+&lt;li&gt;**可选的返回关键字：**如果主体只有一个表达式返回值则编译器会自动返回值，大括号需要指定明表达式返回了一个数值。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;lambda-表达式的结构&#34;&gt;Lambda 表达式的结构&lt;/h2&gt;
+&lt;p&gt;让我们了解一下 Lambda 表达式的结构。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;一个 Lambda 表达式可以有零个或多个参数&lt;/li&gt;
+&lt;li&gt;参数的类型既可以明确声明，也可以根据上下文来推断。例如：&lt;code&gt;(int a)&lt;/code&gt;与&lt;code&gt;(a)&lt;/code&gt;效果相同&lt;/li&gt;
+&lt;li&gt;所有参数需包含在圆括号内，参数之间用逗号相隔。例如：&lt;code&gt;(a, b)&lt;/code&gt; 或 &lt;code&gt;(int a, int b)&lt;/code&gt; 或 &lt;code&gt;(String a, int b, float c)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;空圆括号代表参数集为空。例如：&lt;code&gt;() -&amp;gt; 42&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;当只有一个参数，且其类型可推导时，圆括号（）可省略。例如：&lt;code&gt;a -&amp;gt; return a*a&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Lambda 表达式的主体可包含零条或多条语句&lt;/li&gt;
+&lt;li&gt;如果 Lambda 表达式的主体只有一条语句，花括号{}可省略。匿名函数的返回类型与该主体表达式一致&lt;/li&gt;
+&lt;li&gt;如果 Lambda 表达式的主体包含一条以上语句，则表达式必须包含在花括号{}中（形成代码块）。匿名函数的返回类型与代码块的返回类型一致，若没有返回则为空&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;lambda实例&#34;&gt;lambda实例&lt;/h3&gt;
+&lt;p&gt;Lambda 表达式的简单例子:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// 1. 不需要参数,返回值为 5  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;()&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; 5  
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;// 2. 接收一个参数(数字类型),返回其2倍的值  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;x &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; 2 &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; x  
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;// 3. 接受2个参数(数字),并返回他们的差值  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;x&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; y&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; x &lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;–&lt;/span&gt; y  
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;// 4. 接收2个int型整数,返回他们的和  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; x&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; y&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; x &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; y  
+  
+&lt;span style=&#34;color:#75715e&#34;&gt;// 5. 接受一个 string 对象,并在控制台打印,不返回任何值(看起来像是返回void)  
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;String s&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; System&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;out&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;s&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;lambda表达式的实现原理&#34;&gt;lambda表达式的实现原理&lt;/h2&gt;
+&lt;p&gt;在 Java 中，Lambda 表达式是对象，他们必须依附于一类特别的对象类型——&lt;a href=&#34;https://www.runoob.com/java/java8-functional-interfaces.html&#34;&gt;函数式接口(functional interface)&lt;/a&gt;。函数式接口是只包含一个抽象方法声明的接口。当你试图传入lambda表达式的时候，实际上它是将你传入的表达式隐式的转换并赋值给一个函数式接口，再通过其调用函数。&lt;/p&gt;
+&lt;p&gt;如：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;@FunctionalInterface&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;interface&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Inner&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; num&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;static&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;wapper&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; num&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; Inner func&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+        func&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;num&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+    &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;wapper&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;10&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; e &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; 0&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; e&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; i&lt;span style=&#34;color:#f92672&#34;&gt;++)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+                System&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;out&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;HelloWorld\t&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+            &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+        &lt;span style=&#34;color:#f92672&#34;&gt;});&lt;/span&gt;
+
+和下面的写法等价
+    
+ Inner innerFunc &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; e&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; 0&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; e&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; i&lt;span style=&#34;color:#f92672&#34;&gt;++)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+                System&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;out&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;HelloWorld\t&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+            &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;
+        &lt;span style=&#34;color:#f92672&#34;&gt;};&lt;/span&gt;
+        wapper&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;10&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; innerFunc&lt;span style=&#34;color:#f92672&#34;&gt;);&lt;/span&gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
+    
   </channel>
 </rss>

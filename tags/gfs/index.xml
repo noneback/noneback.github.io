@@ -5,8 +5,141 @@
     <link>https://noneback.github.io/tags/gfs/</link>
     <description>Recent content in GFS on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 09 Sep 2021 00:44:24 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/gfs/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MIT6.824 GFS</title>
+      <link>https://noneback.github.io/blog/mit6.824-gfs/</link>
+      <pubDate>Thu, 09 Sep 2021 00:44:24 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-gfs/</guid>
+      <description>&lt;p&gt;This article introduces the Google File System (GFS) paper published in 2003, which proposed a distributed file system designed to store large volumes of data reliably, meeting Google&amp;rsquo;s data storage needs. This write-up reflects on the design goals, trade-offs, and architectural choices of GFS.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;GFS is a distributed file system developed by Google to meet the needs of data-intensive applications, using commodity hardware to provide a scalable and fault-tolerant solution.&lt;/p&gt;
+&lt;h3 id=&#34;background&#34;&gt;Background&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Component Failures as the Norm&lt;/strong&gt;: In GFS, component failures are treated as normal events rather than exceptions.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;GFS uses inexpensive hardware to build a reliable service. Each machine has a certain probability of failure, resulting in a binomial distribution of overall system failures. The key challenge is to ensure the system remains available through redundancy and rapid failover.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;2&#34;&gt;
+&lt;li&gt;&lt;strong&gt;Massive Files&lt;/strong&gt;: Files in GFS can be extremely large, ranging from several hundred megabytes to tens of gigabytes.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;GFS favors large files rather than many small files. Managing a large number of small files in a distributed system can lead to increased metadata overhead, inefficient caching, and greater inode usage.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;3&#34;&gt;
+&lt;li&gt;&lt;strong&gt;Sequential Access&lt;/strong&gt;: Most file modifications append data to the end of files rather than random modifications, and reads are generally sequential.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;GFS is optimized for sequential writes, especially for appending data. Random writes are not well-supported and do not guarantee consistency.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;4&#34;&gt;
+&lt;li&gt;&lt;strong&gt;Collaborative Design&lt;/strong&gt;: The API and file system are designed collaboratively to improve efficiency and flexibility.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;GFS provides an API similar to POSIX but includes additional optimizations to better match Google&amp;rsquo;s workload.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;design-goals&#34;&gt;Design Goals&lt;/h2&gt;
+&lt;h3 id=&#34;storage-capacity&#34;&gt;Storage Capacity&lt;/h3&gt;
+&lt;p&gt;GFS is designed to manage millions of files, most of which are at least 100 MB in size. Files of several gigabytes are common, but GFS also supports smaller files without specific optimization.&lt;/p&gt;
+&lt;h3 id=&#34;workload&#34;&gt;Workload&lt;/h3&gt;
+&lt;h4 id=&#34;read-workload&#34;&gt;Read Workload&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Large-Scale Sequential Reads&lt;/strong&gt;: Large-scale sequential data retrieval using disk I/O.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Small-Scale Random Reads&lt;/strong&gt;: Small-scale random data retrieval, optimized through techniques such as request batching.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h4 id=&#34;write-workload&#34;&gt;Write Workload&lt;/h4&gt;
+&lt;p&gt;Primarily large-scale sequential writes, typically appending data to the end of files. GFS supports &lt;strong&gt;concurrent data appends&lt;/strong&gt; from multiple clients, with atomic guarantees and synchronization.&lt;/p&gt;
+&lt;h3 id=&#34;bandwidth-vs-latency&#34;&gt;Bandwidth vs. Latency&lt;/h3&gt;
+&lt;p&gt;High &lt;strong&gt;sustained bandwidth&lt;/strong&gt; is prioritized over low latency, given the typical workloads of GFS.&lt;/p&gt;
+&lt;h3 id=&#34;fault-tolerance&#34;&gt;Fault Tolerance&lt;/h3&gt;
+&lt;p&gt;GFS continuously monitors its state to detect and recover from component failures, which are treated as common occurrences.&lt;/p&gt;
+&lt;h3 id=&#34;operations-and-interfaces&#34;&gt;Operations and Interfaces&lt;/h3&gt;
+&lt;p&gt;GFS provides traditional file system operations such as file creation, deletion, and reading, along with features like &lt;strong&gt;snapshots&lt;/strong&gt; and &lt;strong&gt;atomic record append&lt;/strong&gt;.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Snapshots create file or directory copies, while atomic record append guarantees that data is appended atomically.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;architecture&#34;&gt;Architecture&lt;/h2&gt;
+&lt;p&gt;The architecture of GFS follows a Master-Slave design, consisting of a single Master node and multiple Chunk Servers.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The Master and Chunk Servers are logical concepts and do not necessarily refer to specific physical machines.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gu6y6qm5t0j61i40nojuk02.jpg&#34; alt=&#34;GFS Architecture&#34;&gt;&lt;/p&gt;
+&lt;p&gt;GFS provides a client library (SDK) that allows clients to access the system, abstracting the underlying complexity. File data is divided into chunks and stored across multiple Chunk Servers, with replication for reliability. The Master manages metadata such as namespace, chunk locations, and more.&lt;/p&gt;
+&lt;h3 id=&#34;component-overview&#34;&gt;Component Overview&lt;/h3&gt;
+&lt;h4 id=&#34;client&#34;&gt;Client&lt;/h4&gt;
+&lt;p&gt;Clients in GFS are application processes that use the GFS SDK for seamless integration. Key functionalities of the client include:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Caching&lt;/strong&gt;: Cache metadata obtained from the Master to reduce communication overhead.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Encapsulation&lt;/strong&gt;: Encapsulate retries, request splitting, and checksum validation.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Optimization&lt;/strong&gt;: Perform request batching, load balancing, and caching to enhance efficiency.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Mapping&lt;/strong&gt;: Map file operations to chunk-based ones, such as converting &lt;code&gt;(filename, offset)&lt;/code&gt; into &lt;code&gt;(chunk index, offset)&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;master&#34;&gt;Master&lt;/h4&gt;
+&lt;p&gt;The Master maintains all metadata, including the namespace, file-to-chunk mappings, and chunk versioning. Key functionalities include:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Monitoring&lt;/strong&gt;: Track Chunk Server status and data locations using heartbeats.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Directory Tree Management&lt;/strong&gt;: Manage the hierarchical file system structure with efficient locking mechanisms.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Mapping Management&lt;/strong&gt;: Maintain mappings between files and chunks for fast lookups.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Fault Tolerance&lt;/strong&gt;: Utilize checkpointing and Raft-style multi-replica backups to recover from Master failures.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;System Scheduling&lt;/strong&gt;: Manage chunk replication, garbage collection, lease distribution, and primary Chunk Server selection.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Metadata is stored in memory for performance reasons, resulting in a simplified design, but making checkpointing and logging crucial to ensure recovery.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;chunk-server&#34;&gt;Chunk Server&lt;/h4&gt;
+&lt;p&gt;Chunk Servers are responsible for storing data, with each file chunk being saved as a Linux file. Chunk Servers also perform data integrity checks and report health information to the Master regularly.&lt;/p&gt;
+&lt;h2 id=&#34;key-concepts-and-mechanisms&#34;&gt;Key Concepts and Mechanisms&lt;/h2&gt;
+&lt;h3 id=&#34;chunk-size&#34;&gt;Chunk Size&lt;/h3&gt;
+&lt;p&gt;Chunks are the logical units for storing data in GFS, with each chunk typically sized at 64 MB. The chunk size balances metadata overhead, caching efficiency, data locality, and fault tolerance.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Small chunks increase metadata load on the Master, whereas larger chunks can create data hot spots and fragmentation.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;lease-mechanism&#34;&gt;Lease Mechanism&lt;/h3&gt;
+&lt;p&gt;GFS uses a &lt;strong&gt;lease mechanism&lt;/strong&gt; to ensure consistency between chunk replicas. When concurrent write requests occur, the Master selects a Chunk Server to be the &lt;strong&gt;primary&lt;/strong&gt;. The primary node assigns an order to client operations, ensuring concurrent operations are executed consistently.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;This mechanism reduces the coordination load on the Master and allows data to be appended atomically.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;chunk-versioning&#34;&gt;Chunk Versioning&lt;/h3&gt;
+&lt;p&gt;The versioning system is used to ensure that only the latest chunk version is valid. The Master increments the version whenever a lease is granted, and a new version number is committed after acknowledgment from the primary.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Versioning helps determine the freshness of data during recoveries.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;control-flow-vs-data-flow&#34;&gt;Control Flow vs. Data Flow&lt;/h3&gt;
+&lt;p&gt;GFS separates &lt;strong&gt;control flow&lt;/strong&gt; and &lt;strong&gt;data flow&lt;/strong&gt; to optimize data transfers. Control commands are issued separately from data transfers, enabling efficient utilization of network topology.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Data is sent using a &lt;strong&gt;pipeline&lt;/strong&gt; approach between Chunk Servers, which minimizes network overhead and uses cache effectively.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;data-integrity&#34;&gt;Data Integrity&lt;/h3&gt;
+&lt;p&gt;Chunks are split into 64 KB blocks, each with a corresponding checksum for data integrity. These checksums are used to verify data during read operations.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Checksums are stored separately from the data, providing an additional layer of reliability.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;fault-tolerance-and-replication&#34;&gt;Fault Tolerance and Replication&lt;/h3&gt;
+&lt;p&gt;Chunks are stored in multiple replicas across different Chunk Servers for reliability. The Master detects Chunk Server failures via heartbeats and manages replication to meet desired redundancy levels.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Data integrity failures or Chunk Server disconnections trigger replication to maintain availability.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;consistency&#34;&gt;Consistency&lt;/h3&gt;
+&lt;p&gt;GFS has a relaxed consistency model. It provides &lt;strong&gt;eventual consistency&lt;/strong&gt; and does not guarantee strong consistency.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;In practice, operations such as &lt;strong&gt;atomic record append&lt;/strong&gt; ensure data integrity during appends but may not eliminate duplicate writes. Random writes are not consistently managed.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+&lt;p&gt;GFS demonstrates how practical design trade-offs, driven by specific business needs, can lead to an efficient and scalable distributed file system. It focuses on resilience, fault tolerance, and high throughput, making it ideal for Google&amp;rsquo;s data processing needs.&lt;/p&gt;
+&lt;p&gt;In distributed systems, scalability is often more important than single-node performance. GFS embraces this principle through large file management, redundancy, and workload distribution.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://spongecaptain.cool/post/paper/googlefilesystem/&#34;&gt;Google File System - GFS Paper Reading&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://tanxinyu.work/gfs-thesis/&#34;&gt;GFS Paper Summary&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://nxwz51a5wp.feishu.cn/docs/doccnNYeo3oXj6cWohseo6yB4id&#34;&gt;GFS Paper Overview&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf&#34;&gt;GFS Original Paper&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/schedule.html&#34;&gt;MIT6.824 Course&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

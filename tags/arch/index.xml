@@ -1,12 +1,210 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Arch on NoneBack</title>
+    <title>arch on NoneBack</title>
     <link>https://noneback.github.io/tags/arch/</link>
-    <description>Recent content in Arch on NoneBack created by </description>
+    <description>Recent content in arch on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Sat, 15 Jan 2022 23:13:16 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/arch/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Arch &#43; DWM Setup Attempt</title>
+      <link>https://noneback.github.io/blog/arch&#43;dwm%E5%A5%97%E9%A4%90/</link>
+      <pubDate>Sat, 15 Jan 2022 23:13:16 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/arch&#43;dwm%E5%A5%97%E9%A4%90/</guid>
+      <description>&lt;p&gt;Originally, I wanted to replace Manjaro KDE with DWM, but I got stuck at the boot screen, and while trying to fix it, I ended up corrupting the bootloader. So, I decided to go all in, format the entire disk, and try setting up an Arch + DWM development environment. Here, I&amp;rsquo;m documenting the process to assist with future repairs and device migrations.&lt;/p&gt;
+&lt;p&gt;This is not a step-by-step guide, but rather a concise record of my journey.&lt;/p&gt;
+&lt;h2 id=&#34;installing-arch-linux&#34;&gt;Installing Arch Linux&lt;/h2&gt;
+&lt;h3 id=&#34;preparation&#34;&gt;Preparation&lt;/h3&gt;
+&lt;h4 id=&#34;environment-for-installing-arch&#34;&gt;Environment for Installing Arch&lt;/h4&gt;
+&lt;p&gt;To create the installation USB, you&amp;rsquo;ll need:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;16GB+ USB drive&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Rufus&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Windows machine&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Arch Linux ISO&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;After creating the bootable USB, boot from it to start Arch Linux.&lt;/p&gt;
+&lt;h4 id=&#34;network-and-mirrors&#34;&gt;Network and Mirrors&lt;/h4&gt;
+&lt;p&gt;Connect to WiFi using &lt;code&gt;iwctl&lt;/code&gt;, then update the system clock and modify the Pacman mirror list.&lt;/p&gt;
+&lt;h3 id=&#34;installing-arch-linux-1&#34;&gt;Installing Arch Linux&lt;/h3&gt;
+&lt;h4 id=&#34;disk-partitioning&#34;&gt;Disk Partitioning&lt;/h4&gt;
+&lt;p&gt;The disk should be divided into three main parts: Boot, Swap, and Root partitions.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Mount Point&lt;/th&gt;
+&lt;th&gt;Partition&lt;/th&gt;
+&lt;th&gt;&lt;a href=&#34;https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs&#34;&gt;Partition Type&lt;/a&gt;&lt;/th&gt;
+&lt;th&gt;Suggested Size&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;/mnt/boot&lt;/code&gt; or &lt;code&gt;/mnt/efi&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;/dev/*efi_system_partition*&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/EFI_system_partition_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)&#34;&gt;EFI System Partition&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;At least 260 MiB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;[SWAP]&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;/dev/*swap_partition*&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Linux swap&lt;/td&gt;
+&lt;td&gt;More than 512 MiB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;/mnt&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;/dev/*root_partition*&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Linux x86-64 Root (/)&lt;/td&gt;
+&lt;td&gt;Remaining Space&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;fdisk -l &lt;span style=&#34;color:#75715e&#34;&gt;# View disk information&lt;/span&gt;
+cfdisk /dev/nvme &lt;span style=&#34;color:#75715e&#34;&gt;# Partition the disk&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;formatting-partitions&#34;&gt;Formatting Partitions&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;mkfs.ext4 &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+mkswap &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;swap&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+mkfs.fat -F &lt;span style=&#34;color:#ae81ff&#34;&gt;32&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;efi&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;configuring-partitions-and-installing-the-system&#34;&gt;Configuring Partitions and Installing the System&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Mount Root: &lt;code&gt;mount /dev/${root_partition} /mnt&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Mount EFI: &lt;code&gt;mount /dev/${efi_partition} /mnt/boot/efi&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Activate Swap: &lt;code&gt;swapon /dev/${swap_partition}&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Install Kernel and Essential Packages: &lt;code&gt;pacstrap /mnt base linux linux-firmware&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Generate &lt;code&gt;fstab&lt;/code&gt; Config: &lt;code&gt;genfstab -U /mnt &amp;gt;&amp;gt; /mnt/etc/fstab&lt;/code&gt; (check for correctness)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The system should now be installed, but there is no bootloader, so we need to install GRUB.&lt;/p&gt;
+&lt;h4 id=&#34;other-configurations-before-booting&#34;&gt;Other Configurations Before Booting&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Change root to the new system:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;mount /dev/&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root_partition&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt; /mnt
+arch-chroot /mnt
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Set timezone and sync time.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Configure language by editing &lt;strong&gt;locale.gen&lt;/strong&gt; and &lt;strong&gt;locale.conf&lt;/strong&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Network configuration: set &lt;strong&gt;hostname&lt;/strong&gt; and &lt;strong&gt;hosts&lt;/strong&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Set the root password.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Install the GRUB bootloader and EFI tools: &lt;code&gt;grub-install --target=x86_64-efi --efi-directory=esp --bootloader-id=GRUB&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Install and start &lt;strong&gt;iwd&lt;/strong&gt; to connect to WiFi.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Boot into Arch Linux.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;post-boot-configuration&#34;&gt;Post-Boot Configuration&lt;/h3&gt;
+&lt;h4 id=&#34;install-essential-software&#34;&gt;Install Essential Software&lt;/h4&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Purpose&lt;/th&gt;
+&lt;th&gt;Software&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Bluetooth&lt;/td&gt;
+&lt;td&gt;bluetoothctl&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Network&lt;/td&gt;
+&lt;td&gt;iwd&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Daily Use&lt;/td&gt;
+&lt;td&gt;nvim, ranger, zsh&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Sound&lt;/td&gt;
+&lt;td&gt;alsamixer&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Input Method&lt;/td&gt;
+&lt;td&gt;fcitx5-im, fcitx5-chinese-addons&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Proxy&lt;/td&gt;
+&lt;td&gt;clash&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;installing-the-desktop-environment&#34;&gt;Installing the Desktop Environment&lt;/h3&gt;
+&lt;h4 id=&#34;install-xorg&#34;&gt;Install Xorg&lt;/h4&gt;
+&lt;p&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Xorg_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)&#34;&gt;Xorg&lt;/a&gt; provides an open-source implementation of the X window system, which is the basis for graphical user interfaces.&lt;/p&gt;
+&lt;p&gt;Install: &lt;strong&gt;xorg-server&lt;/strong&gt;, &lt;strong&gt;xorg-apps&lt;/strong&gt;, &lt;strong&gt;xrandr&lt;/strong&gt;, &lt;strong&gt;xinit&lt;/strong&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;install-desktop-companion-software&#34;&gt;Install Desktop Companion Software&lt;/h4&gt;
+&lt;p&gt;I used the Suckless tiling window management suite: &lt;strong&gt;dwm&lt;/strong&gt;, &lt;strong&gt;slock&lt;/strong&gt;, &lt;strong&gt;st&lt;/strong&gt;, &lt;strong&gt;dmenu&lt;/strong&gt;, &lt;strong&gt;slim&lt;/strong&gt;, &lt;strong&gt;slstatus&lt;/strong&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;configure-xinitc-and-xprofile&#34;&gt;Configure &lt;code&gt;.xinitc&lt;/code&gt; and &lt;code&gt;.xprofile&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;Add to &lt;code&gt;.xinitc&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# .xinitc&lt;/span&gt;
+fcitx5 &amp;amp;
+xautolock -time &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt; -locker slock &amp;amp;
+
+autorandr -l home
+picom -b
+feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
+exec slstatus &amp;amp;
+exec dwm
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# .xprofile&lt;/span&gt;
+export INPUT_METHOD&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+export GTK_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+export QT_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+export XMODIFIERS&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;@im&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;customization-and-usability&#34;&gt;Customization and Usability&lt;/h4&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Purpose&lt;/th&gt;
+&lt;th&gt;Software&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Wallpaper&lt;/td&gt;
+&lt;td&gt;feh&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Window Effects&lt;/td&gt;
+&lt;td&gt;picom&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Screen Lock&lt;/td&gt;
+&lt;td&gt;xautolock&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Multi-Screen&lt;/td&gt;
+&lt;td&gt;autorandr&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Power Saving&lt;/td&gt;
+&lt;td&gt;tlp&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&#34;additional-notes&#34;&gt;Additional Notes&lt;/h2&gt;
+&lt;p&gt;For more detailed instructions, please refer to the official installation documentation.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Installation_guide_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)#%E5%BB%BA%E7%AB%8B%E7%A1%AC%E7%9B%98%E5%88%86%E5%8C%BA&#34;&gt;Arch Linux Install Wiki&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Category:X_server_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)&#34;&gt;X Server Wiki&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/noneback/dwm-releated&#34;&gt;Personal DWM Desktop&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

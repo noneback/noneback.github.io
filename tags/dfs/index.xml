@@ -5,8 +5,380 @@
     <link>https://noneback.github.io/tags/dfs/</link>
     <description>Recent content in DFS on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 06 Oct 2021 22:44:01 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/dfs/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>DFS-Haystack</title>
+      <link>https://noneback.github.io/blog/dfs-haystack/</link>
+      <pubDate>Wed, 06 Oct 2021 22:44:01 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/dfs-haystack/</guid>
+      <description>&lt;p&gt;The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle &amp;ldquo;lots of small files&amp;rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.&lt;/p&gt;
+&lt;p&gt;These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;Haystack is a storage system designed by Facebook for small files. In traditional DFS, file addressing typically involves using caches to store metadata, reducing disk interaction and improving lookup efficiency. For each file, a separate set of metadata must be maintained, with the volume of metadata depending on the number of files. In high-concurrency scenarios, metadata is cached in memory to reduce disk I/O.&lt;/p&gt;
+&lt;p&gt;With a large number of small files, the volume of metadata becomes significant. Considering the maintenance overhead of in-memory metadata, this approach becomes impractical. Therefore, Haystack was developed specifically for small files, with the core idea of aggregating multiple small files into a larger one to reduce metadata.&lt;/p&gt;
+&lt;h2 id=&#34;background&#34;&gt;Background&lt;/h2&gt;
+&lt;p&gt;The &amp;ldquo;small files&amp;rdquo; in the paper specifically refer to image data.&lt;/p&gt;
+&lt;p&gt;Facebook, as a social media company, deals heavily with image uploads and retrieval. As the business scaled, it became necessary to have a dedicated service to handle the massive, high-concurrency requests for image reads and writes.&lt;/p&gt;
+&lt;p&gt;In the social networking context, this type of data is characterized as &lt;code&gt;written once, read often, never modified, and rarely deleted&lt;/code&gt;. Based on this, Facebook developed Haystack to support image sharing services.&lt;/p&gt;
+&lt;h2 id=&#34;design&#34;&gt;Design&lt;/h2&gt;
+&lt;h3 id=&#34;traditional-design&#34;&gt;Traditional Design&lt;/h3&gt;
+&lt;p&gt;The paper describes two historical designs: CDN-based and NAS-based solutions.&lt;/p&gt;
+&lt;h4 id=&#34;cdn-based-solution&#34;&gt;CDN-based Solution&lt;/h4&gt;
+&lt;p&gt;The core of this solution is to use CDN (Content Delivery Network) to cache hot image data, reducing network transmission.&lt;/p&gt;
+&lt;p&gt;This approach optimizes access to hot images but also has some issues. Firstly, CDN is expensive and has limited capacity. Secondly, image sharing includes many &lt;code&gt;less popular&lt;/code&gt; images, which leads to the long tail effect, slowing down access.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011455343.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;CDNs are generally used to serve static data and are often pre-warmed before an event, making them unsuitable as an image cache service. Many &lt;code&gt;less popular&lt;/code&gt; images do not enter the CDN, leading to the long tail effect.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;nas-based-solution&#34;&gt;NAS-based Solution&lt;/h4&gt;
+&lt;p&gt;This was Facebook&amp;rsquo;s initial design and is essentially a variation of the CDN-based solution.&lt;/p&gt;
+&lt;p&gt;They introduced NAS (Network Attached Storage) for horizontal storage expansion, incorporating file system semantics, but disk I/O remained an issue. Similar to local files, reading uncached data requires at least three disk I/O operations:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Read directory metadata into memory&lt;/li&gt;
+&lt;li&gt;Load the inode into memory&lt;/li&gt;
+&lt;li&gt;Read the content of the file&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;PhotoStore was used as a caching layer to store some metadata like file handles to speed up the addressing process.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011454979.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The NAS-based design did not solve the fundamental issue of excessive metadata that could not be fully cached. When the number of files reaches a certain threshold, disk I/O becomes inevitable.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The fundamental issue is the &lt;strong&gt;one-to-one relationship between files and addressing metadata&lt;/strong&gt;, causing the volume of metadata to change with the number of files.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Thus, the key to optimization is changing the &lt;strong&gt;one-to-one relationship between files and metadata&lt;/strong&gt;, reducing the frequency of disk I/O during addressing.&lt;/p&gt;
+&lt;h3 id=&#34;haystack-based-solution&#34;&gt;Haystack-based Solution&lt;/h3&gt;
+&lt;p&gt;The core idea of Haystack is to &lt;strong&gt;aggregate multiple small files into a larger one&lt;/strong&gt;, maintaining a single piece of metadata for the large file. This changes the mapping between metadata and files, making it feasible to keep all metadata in memory.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Metadata is maintained only for the aggregated file, and the position of small files within the large file is maintained separately.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011456020.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;implementation&#34;&gt;Implementation&lt;/h2&gt;
+&lt;p&gt;Haystack mainly consists of three components: Haystack Directory, Haystack Cache, and Haystack Store.&lt;/p&gt;
+&lt;h3 id=&#34;file-mapping-and-storage&#34;&gt;File Mapping and Storage&lt;/h3&gt;
+&lt;p&gt;File data is ultimately stored on logical volumes, each of which corresponds to multiple physical volumes across machines.&lt;/p&gt;
+&lt;p&gt;Users first access the Directory to obtain access paths and then use the URL generated by the Directory to access other components to retrieve the required data.&lt;/p&gt;
+&lt;h3 id=&#34;components&#34;&gt;Components&lt;/h3&gt;
+&lt;h4 id=&#34;haystack-directory&#34;&gt;Haystack Directory&lt;/h4&gt;
+&lt;p&gt;This is Haystack&amp;rsquo;s access layer, responsible for &lt;strong&gt;file addressing&lt;/strong&gt; and &lt;strong&gt;access control&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;Read and write requests first go through the Directory. For read requests, the Directory generates an access URL containing the path: &lt;code&gt;http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}&lt;/code&gt;. For write requests, it provides a volume to write into.&lt;/p&gt;
+&lt;p&gt;The Directory has four main functions:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Load balancing for read and write requests.&lt;/li&gt;
+&lt;li&gt;Determine request access paths (e.g., CDN or direct access) and generate access URLs.&lt;/li&gt;
+&lt;li&gt;Metadata and mapping management, e.g., logical attributes to volume mapping.&lt;/li&gt;
+&lt;li&gt;Logical volume read/write management, where volumes can be read-only or write-enabled.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;This design is based on the data characteristics: &amp;ldquo;write once, read more.&amp;rdquo; This setup improves concurrency.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The Directory stores metadata such as file-to-volume mappings, logical-to-physical mappings, and volume attributes (size, owner, etc.). It relies on a distributed key-value store and a cache service to ensure low latency and high availability.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Proxy, Metadata Mapping, Access Control&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;haystack-cache&#34;&gt;Haystack Cache&lt;/h4&gt;
+&lt;p&gt;The Cache layer optimizes addressing and image retrieval. The core design is the &lt;strong&gt;Cache Rule&lt;/strong&gt;, which determines what data should be cached and how to handle &lt;strong&gt;cache misses&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;Images are cached if they meet these criteria:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;The request is directly from a user, not from a CDN.&lt;/li&gt;
+&lt;li&gt;The photo is retrieved from a write-enabled store machine.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;If a cache miss occurs, the Cache fetches the image from the Store and pushes it to both the user and the CDN.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The caching policy is based on typical access patterns.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;haystack-store&#34;&gt;Haystack Store&lt;/h4&gt;
+&lt;p&gt;The Store layer is responsible for data storage operations.&lt;/p&gt;
+&lt;p&gt;The addressing abstraction is: &lt;code&gt;filename + offset =&amp;gt; logical volume id + offset =&amp;gt; data&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Multiple physical volumes constitute a logical volume. In the Store, small files are encapsulated as &lt;strong&gt;Needles&lt;/strong&gt; managed by physical volumes.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg&#34; alt=&#34;Needle Abstraction&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Needles represent a way to encapsulate small files and manage volume blocks.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Store data is accessed at the Needle level. To speed up addressing, a memory map is used: &lt;code&gt;key/alternate key =&amp;gt; needle&#39;s flag/offset/other attributes&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;These maps are persisted in &lt;strong&gt;Index Files&lt;/strong&gt; on disk to provide a checkpoint for quick metadata recovery after a crash.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg&#34; alt=&#34;Index File&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg&#34; alt=&#34;Volume Mapping&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Each volume maintains its own in-memory mapping and index file.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;When updating the in-memory mapping (e.g., adding or modifying a file), the index file is updated asynchronously. Deleted files are only marked as deleted, not removed from the index file.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The index serves as a lookup aid. Needles without an index can still be addressed, making the asynchronous update and index retention strategy feasible.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;workloads&#34;&gt;Workloads&lt;/h3&gt;
+&lt;h4 id=&#34;read&#34;&gt;Read&lt;/h4&gt;
+&lt;p&gt;&lt;code&gt;(Logical Volume ID, key, alternate key, cookies) =&amp;gt; photo&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;For a read request, Store queries the in-memory mapping for the corresponding Needle. If found, it fetches the data from the volume and verifies the cookie and integrity; otherwise, it returns an error.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Cookies are randomly generated strings that prevent malicious attacks.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;write&#34;&gt;Write&lt;/h4&gt;
+&lt;p&gt;&lt;code&gt;(Logical Volume ID, key, alternate key, cookies, data) =&amp;gt; result&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Haystack only supports appending data rather than overwriting. When a write request is received, Store asynchronously appends data to a Needle and updates the in-memory mapping. If it&amp;rsquo;s an existing file, the Directory updates its metadata to point to the latest version.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Older volumes are frozen as read-only, and new writes are appended, so a larger offset indicates a newer version.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;delete&#34;&gt;Delete&lt;/h4&gt;
+&lt;p&gt;Deletion is handled using &lt;strong&gt;Mark Delete + Compact GC&lt;/strong&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;fault-tolerance&#34;&gt;Fault Tolerance&lt;/h3&gt;
+&lt;p&gt;Store ensures fault tolerance through &lt;strong&gt;monitoring + hot backup&lt;/strong&gt;. Directory and Cache use Raft-like consistency algorithms for data replication and availability.&lt;/p&gt;
+&lt;h2 id=&#34;optimization&#34;&gt;Optimization&lt;/h2&gt;
+&lt;p&gt;The main optimizations include: Compaction, Batch Load, and In-Memory processing.&lt;/p&gt;
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Key abstraction optimizations include asynchronous processing, batch operations, and caching.&lt;/li&gt;
+&lt;li&gt;Identifying the core issues, such as metadata management burden for a large number of small files, is crucial.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.usenix.org/legacy/event/osdi10/tech/full_papers/Beaver.pdf&#34;&gt;Finding a needle in Haystack: Facebook’s photo storage&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MIT6.824 Bigtable</title>
+      <link>https://noneback.github.io/blog/mit6.824-bigtable/</link>
+      <pubDate>Thu, 16 Sep 2021 22:54:59 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-bigtable/</guid>
+      <description>&lt;p&gt;I recently found a translated version of the Bigtable paper online and saved it, but hadn&amp;rsquo;t gotten around to reading it. Lately, I&amp;rsquo;ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.&lt;/p&gt;
+&lt;p&gt;This is the last of Google&amp;rsquo;s three foundational distributed system papers, and although it wasn&amp;rsquo;t originally part of the MIT6.824 reading list, I&amp;rsquo;ve categorized it here for consistency.&lt;/p&gt;
+&lt;p&gt;As with previous notes, I won&amp;rsquo;t dive deep into the technical details but will instead focus on the design considerations and thoughts on the problem.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;Bigtable is a distributed &lt;strong&gt;structured data&lt;/strong&gt; storage system built on top of GFS, designed to store large amounts of structured and semi-structured data. It is a NoSQL data store that emphasizes scalability and performance, as well as reliable fault tolerance through GFS.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Design Goal: Wide Applicability, Scalability, High Performance, High Availability&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;data-model&#34;&gt;Data Model&lt;/h2&gt;
+&lt;p&gt;Bigtable&amp;rsquo;s data model is No Schema and provides a simple model. It treats all data as strings, with encoding and decoding handled by the application layer.&lt;/p&gt;
+&lt;p&gt;Bigtable is essentially a &lt;strong&gt;sparse, distributed, persistent multidimensional sorted Map&lt;/strong&gt;. The &lt;strong&gt;index&lt;/strong&gt; of the Map is composed of &lt;strong&gt;Row Key, Column Key, and TimeStamp&lt;/strong&gt;, and the &lt;strong&gt;value&lt;/strong&gt; is an unstructured byte array.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Mapping abstraction
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;row&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;column&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;int64&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&amp;gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;// A Row Key is essentially a multi-dimensional structure composed of {Row, Column, Timestamp}.
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The paper describes the data model as follows:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;A Bigtable is a sparse, distributed, persistent multidimensional sorted map.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Sparse&lt;/strong&gt; means that columns in the same table can be null, which is quite common.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Row&lt;/th&gt;
+&lt;th&gt;Columns&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Row1&lt;/td&gt;
+&lt;td&gt;{ID, Name, Phone}&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Row2&lt;/td&gt;
+&lt;td&gt;{ID, Name, Phone, Address}&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Row3&lt;/td&gt;
+&lt;td&gt;{ID, Name, Phone, Email}&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;Distributed&lt;/strong&gt; refers to scalability and fault tolerance, i.e., &lt;strong&gt;Replication&lt;/strong&gt; and &lt;strong&gt;Sharding&lt;/strong&gt;. Bigtable leverages GFS replicas for fault tolerance and uses &lt;strong&gt;Tablet&lt;/strong&gt; for partitioning data to achieve scalability.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Persistent Multidimensional Sorted&lt;/strong&gt; indicates data is eventually persisted, and Bigtable optimizes write and read latency with WAL and LSM.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The open-source implementation of Bigtable is HBase, a row and column database.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;rows&#34;&gt;Rows&lt;/h3&gt;
+&lt;p&gt;Bigtable organizes data using lexicographic order of row keys. A Row Key can be any string, and read and write operations are atomic at the row level.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Lexicographic ordering helps aggregate related row records.
+MySQL achieves atomic row operations using an undo log.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;column-family&#34;&gt;Column Family&lt;/h3&gt;
+&lt;p&gt;A set of column keys forms a Column Family, where the data often shares the same type.&lt;/p&gt;
+&lt;p&gt;A column key is composed of &lt;code&gt;Column Family : Qualifier&lt;/code&gt;. The column family&amp;rsquo;s name must be a printable string, whereas the qualifier name can be any string.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The paper mentions:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Access control and both disk and memory accounting are performed at the column-family level.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;This is because business users tend to retrieve data by columns, e.g., reading webpage content. In practice, column data is often compressed for storage. Thus, the Column Family level is a more suitable level for access control and resource accounting than rows.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;timestamp&#34;&gt;TimeStamp&lt;/h3&gt;
+&lt;p&gt;The timestamp is used to maintain different versions of the same data, serving as a logical clock. It is also used as an index to query data versions.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Typically, timestamps are sorted in reverse chronological order. When the number of versions is low, a pointer to the previous version is used to maintain data versioning; when the number of versions increases, an index structure is needed.
+TimeStamp indexing inherently requires range queries, so a sortable data structure is appropriate for indexing.
+Extra version management increases maintenance overhead, usually handled by limiting the number of data versions and garbage collecting outdated versions.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;tablet&#34;&gt;Tablet&lt;/h3&gt;
+&lt;p&gt;Bigtable uses a &lt;strong&gt;range-based data sharding&lt;/strong&gt; strategy, and &lt;strong&gt;Tablet&lt;/strong&gt; is the basic unit for data sharding and load balancing.&lt;/p&gt;
+&lt;p&gt;A tablet is a collection of rows, managed by a Tablet Server. Rows in Bigtable are ultimately stored in a tablet, which is split or merged for load balancing among Tablet Servers.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Range-based sharding is beneficial for range queries, compared to hash-based sharding.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;sstable&#34;&gt;SSTable&lt;/h3&gt;
+&lt;p&gt;SSTable is a &lt;strong&gt;persistent, sorted, immutable Map&lt;/strong&gt;. Both keys and values are arbitrary byte arrays.&lt;/p&gt;
+&lt;p&gt;A tablet in Bigtable is stored in the form of SSTable files.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;SSTable is organized into data blocks (typically 64KB each), with an index for fast data lookup. Data is read by first reading the index, searching the index, and then reading the data block.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;api&#34;&gt;API&lt;/h3&gt;
+&lt;p&gt;The paper provides an API that highlights the differences from RDBMS.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Writing to Bigtable
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Open the table 
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Table &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;T &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; OpenOrDie(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/bigtable/web/webtable&amp;#34;&lt;/span&gt;);
+&lt;span style=&#34;color:#75715e&#34;&gt;// Write a new anchor and delete an old anchor 
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;RowMutation &lt;span style=&#34;color:#a6e22e&#34;&gt;r1&lt;/span&gt;(T, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+r1.Set(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.c-span.org&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CNN&amp;#34;&lt;/span&gt;); 
+r1.Delete(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.abc.com&amp;#34;&lt;/span&gt;); 
+Operation op; 
+Apply(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;op, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;r1);
+
+&lt;span style=&#34;color:#75715e&#34;&gt;// Reading from Bigtable
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Scanner &lt;span style=&#34;color:#a6e22e&#34;&gt;scanner&lt;/span&gt;(T); 
+ScanStream &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;stream; 
+stream &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; scanner.FetchColumnFamily(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor&amp;#34;&lt;/span&gt;); 
+stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;SetReturnAllVersions(); 
+scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (; &lt;span style=&#34;color:#f92672&#34;&gt;!&lt;/span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Done(); stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Next()) { 
+  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%s %s %lld %s&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, 
+         scanner.RowName(), 
+         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;ColumnName(), 
+         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;MicroTimestamp(), 
+         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Value());
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
+&lt;h3 id=&#34;external-components&#34;&gt;External Components&lt;/h3&gt;
+&lt;p&gt;Bigtable is built on top of other components in Google&amp;rsquo;s ecosystem, which significantly simplifies Bigtable&amp;rsquo;s design.&lt;/p&gt;
+&lt;h4 id=&#34;gfs&#34;&gt;GFS&lt;/h4&gt;
+&lt;p&gt;GFS is Bigtable&amp;rsquo;s underlying storage, providing replication and fault tolerance.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Refer to the previous notes for details.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;chubby&#34;&gt;Chubby&lt;/h4&gt;
+&lt;p&gt;Chubby is a highly available distributed lock service that provides a namespace, where directories and files can serve as distributed locks.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;High availability means maintaining multiple service replicas, with consistency ensured via Paxos. A lease mechanism prevents defunct Chubby clients from holding onto locks indefinitely.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Why Chubby? What is its role?&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Stores Column Family information&lt;/li&gt;
+&lt;li&gt;Stores ACL (Access Control List)&lt;/li&gt;
+&lt;li&gt;Stores root metadata for the Root Tablet location, which is essential for Bigtable startup.
+&lt;blockquote&gt;
+&lt;p&gt;Bigtable uses a three-layer B+ tree-like structure for metadata. The Root Tablet location is in Chubby, which helps locate other metadata tablets, which in turn store user Tablet locations.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;li&gt;Tablet Server lifecycle monitoring
+&lt;blockquote&gt;
+&lt;p&gt;Each Tablet Server creates a unique file in a designated directory in Chubby and acquires an exclusive lock on it. The server is considered offline if it loses the lock.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In summary, Chubby&amp;rsquo;s functionality can be categorized into two parts. One is to store critical metadata as a highly available node, while the other is to manage the lifecycle of storage nodes (Tablet Servers) using distributed locking.&lt;/p&gt;
+&lt;p&gt;In GFS, these responsibilities are handled by the Master. By offloading them to Chubby, Bigtable simplifies the Master design and reduces its load.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Conceptually, Chubby can be seen as part of the Master node.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;internal-components&#34;&gt;Internal Components&lt;/h3&gt;
+&lt;h4 id=&#34;master&#34;&gt;Master&lt;/h4&gt;
+&lt;p&gt;Bigtable follows a Master-Slave architecture, similar to GFS and MapReduce. However, unlike GFS, Bigtable relies on Chubby and Tablet Servers to store metadata, with the Master only responsible for orchestrating the process and not storing tablet locations.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Responsibilities include Tablet allocation, garbage collection, monitoring Tablet Server health, load balancing, and metadata updates.
+The Master requires:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;All Tablet information to determine allocation and distribution.&lt;/li&gt;
+&lt;li&gt;Tablet Server status information to decide on allocations.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;tablet-server&#34;&gt;Tablet Server&lt;/h4&gt;
+&lt;p&gt;Tablet Servers manage tablets, handling reads and writes, splitting and merging tablets when necessary.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Metadata is not stored by the Master. Clients interact directly with Chubby and Tablet Servers for reading data.
+Tablets are split by Tablet Servers, and Master may not be notified instantly. WAL+retry mechanisms should be employed to ensure operations aren&amp;rsquo;t lost.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;client-sdk&#34;&gt;Client SDK&lt;/h4&gt;
+&lt;p&gt;The client SDK is the entry point for businesses to access Bigtable. To minimize metadata lookup overhead, caching and prefetching are used to reduce the frequency of network interactions, making use of temporal and spatial locality.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Caching may introduce inconsistency issues, which require appropriate solutions, such as retries during inconsistent states.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;storage-design&#34;&gt;Storage Design&lt;/h2&gt;
+&lt;h3 id=&#34;mapping-and-addressing&#34;&gt;Mapping and Addressing&lt;/h3&gt;
+&lt;p&gt;Bigtable data is uniquely determined by a &lt;code&gt;(Table, Row, Column)&lt;/code&gt; tuple, stored in tablets, which in turn are stored in SSTable format on GFS.&lt;/p&gt;
+&lt;p&gt;Tablets are logical representations of Bigtable&amp;rsquo;s on-disk entity, managed by Tablet Servers.&lt;/p&gt;
+&lt;p&gt;Bigtable uses &lt;code&gt;Root Tablet + METADATA Table&lt;/code&gt; for addressing. The Root Tablet location is stored in Chubby, while the METADATA Table is maintained by Tablet Servers.&lt;/p&gt;
+&lt;p&gt;The Root Tablet stores the location of METADATA Tablets, and each METADATA Tablet contains the location of user tablets.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;METADATA Table Row: &lt;code&gt;(TableID, encoding of last row in Tablet) =&amp;gt; Tablet Location&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The system uses a B+ tree-like three-layer structure to maintain tablet location information.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;scheduling-and-monitoring&#34;&gt;Scheduling and Monitoring&lt;/h3&gt;
+&lt;h4 id=&#34;scheduling&#34;&gt;Scheduling&lt;/h4&gt;
+&lt;p&gt;Scheduling involves Tablet allocation and load balancing.&lt;/p&gt;
+&lt;p&gt;A Tablet can only be assigned to one Tablet Server at any given time. The Master maintains Tablet Server states and sends allocation requests as needed.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The Master does not maintain addressing information but holds Tablet Server states (including tablet count, status, and available resources) for scheduling.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;monitoring&#34;&gt;Monitoring&lt;/h4&gt;
+&lt;p&gt;Monitoring is carried out by Chubby and the Master.&lt;/p&gt;
+&lt;p&gt;Each Tablet Server creates a unique file in a Chubby directory and acquires an exclusive lock. When the Tablet Server disconnects and loses its lease, the lock is released.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The unique file determines whether a Tablet Server is active, and the Master may delete the file as needed.
+In cases of network disconnection, the Tablet Server will try to re-acquire the exclusive lock if the file still exists.
+If the file doesn&amp;rsquo;t exist, the disconnected Tablet Server should automatically leave the cluster.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The Master ensures its uniqueness by acquiring an exclusive lock on a unique file in Chubby, and monitors a specific directory for Tablet Server files.&lt;/p&gt;
+&lt;p&gt;Once it detects a failure, it deletes the Tablet Server&amp;rsquo;s Chubby file and reallocates its tablets to other Tablet Servers.&lt;/p&gt;
+&lt;h2 id=&#34;compaction&#34;&gt;Compaction&lt;/h2&gt;
+&lt;p&gt;Bigtable provides read and write services and uses an LSM-like structure to optimize write performance. For each write operation, the ACL information is first retrieved from Chubby to verify permissions. The write is then logged in WAL and stored in Memtable before eventually being persisted in SSTable.&lt;/p&gt;
+&lt;p&gt;When Memtable grows to a certain size, it triggers a &lt;strong&gt;Minor Compaction&lt;/strong&gt; to convert Memtable to SSTable and write it to GFS.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Memtable is first converted into an immutable Memtable before becoming SSTable. This intermediate step ensures that Minor Compaction does not interfere with incoming writes.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Bigtable uses &lt;strong&gt;Compaction&lt;/strong&gt; to accelerate writes, converting random writes into sequential writes and writing data in the background. Compaction occurs in three types:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Minor Compaction&lt;/strong&gt;: Converts Memtable to SSTable, discarding deleted data and retaining only the latest version.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Merge Compaction&lt;/strong&gt;: Combines Memtable and SSTable into a new SSTable.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Major Compaction&lt;/strong&gt;: Combines multiple SSTables into one.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;For reads, data aggregation is required across Memtable and multiple SSTables, as data may be distributed across these structures. &lt;strong&gt;Second-level caching&lt;/strong&gt; and &lt;strong&gt;Bloom filters&lt;/strong&gt; are used to speed up reads.&lt;/p&gt;
+&lt;p&gt;Tablet Servers have two levels of caching:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Scan Cache&lt;/strong&gt;: Caches frequently read key-value pairs.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Block Cache&lt;/strong&gt;: Caches SSTable blocks.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Bloom filters are also employed to reduce the number of SSTable lookups by indicating whether a key is not present.&lt;/p&gt;
+&lt;h2 id=&#34;optimization&#34;&gt;Optimization&lt;/h2&gt;
+&lt;h3 id=&#34;locality&#34;&gt;Locality&lt;/h3&gt;
+&lt;p&gt;High-frequency columns can be grouped together into one SSTable, reducing the time to fetch related data.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Space is traded for time, leveraging locality principles.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;compression&#34;&gt;Compression&lt;/h3&gt;
+&lt;p&gt;SSTable blocks are compressed to reduce network bandwidth and latency during transfers.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Compression is performed in blocks to reduce encoding/decoding time and improve parallelism.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;commitlog-design&#34;&gt;CommitLog Design&lt;/h3&gt;
+&lt;p&gt;Tablet Servers maintain one &lt;strong&gt;Commit Log&lt;/strong&gt; each, instead of one per Tablet, to minimize disk seeks and enable batch operations. During recovery, log entries must be sorted by &lt;code&gt;(Table, Row, Log Seq Num)&lt;/code&gt; to facilitate recovery.&lt;/p&gt;
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Keep it simple: Simple is better than complex.&lt;/li&gt;
+&lt;li&gt;Cluster monitoring is crucial for distributed services. Google&amp;rsquo;s three papers emphasize cluster monitoring and scheduling.&lt;/li&gt;
+&lt;li&gt;Do not make assumptions about other systems in your design. Issues may range from common network issues to unexpected operational problems.&lt;/li&gt;
+&lt;li&gt;Leverage background operations to accelerate user-facing actions, such as making writes fast and using background processes for cleanups.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/Bigtable&#34;&gt;Wikipedia - Bigtable&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/bigtable-osdi06.pdf&#34;&gt;Bigtable Paper&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.cnblogs.com/xybaby/p/9096748.html&#34;&gt;Bigtable Analysis&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/181498475&#34;&gt;LSM Tree Explained&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

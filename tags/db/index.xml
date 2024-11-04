@@ -5,8 +5,117 @@
     <link>https://noneback.github.io/tags/db/</link>
     <description>Recent content in DB on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 10 Nov 2021 23:45:27 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/db/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Kylin Overview</title>
+      <link>https://noneback.github.io/blog/kylin%E6%A6%82%E8%BF%B0/</link>
+      <pubDate>Wed, 10 Nov 2021 23:45:27 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/kylin%E6%A6%82%E8%BF%B0/</guid>
+      <description>&lt;p&gt;Previously, I was hoping to work on an interesting thesis, but I couldn&amp;rsquo;t find a suitable advisor nearby. I initially found a good advisor before the college started the topic selection, but it turned out they couldn&amp;rsquo;t take me on. However, I wasn&amp;rsquo;t that interested in the advisor&amp;rsquo;s field, so I decided to look for something else. Recently, the college&amp;rsquo;s thesis selection process started, and I found an interesting topic in the list. I reached out to the professor and took on the project.&lt;/p&gt;
+&lt;p&gt;The topic I chose is &lt;strong&gt;&amp;ldquo;Design and Implementation of Database Query Algorithms Based on Differential Privacy&amp;rdquo;&lt;/strong&gt;, focusing on Differential Privacy + OLAP. Specifically, it&amp;rsquo;s about adding Differential Privacy as a feature to Kylin.&lt;/p&gt;
+&lt;p&gt;That&amp;rsquo;s the overall gist; as for the details, I might write about them in future blog posts. This is the first in this series of blog posts.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;Kylin is a distributed OLAP data warehouse based on columnar storage systems like HBase and Parquet, and computational frameworks like Hadoop and Spark. It supports multidimensional analysis of massive datasets.&lt;/p&gt;
+&lt;p&gt;Kylin uses a cube pre-computation method, transforming real-time queries into queries against precomputed results, utilizing idle computation resources and storage space to optimize query times. This can significantly reduce query latency.&lt;/p&gt;
+&lt;h2 id=&#34;background&#34;&gt;Background&lt;/h2&gt;
+&lt;p&gt;Before Kylin, Hadoop was commonly used for large-scale data batch processing, with results stored in columnar storage systems like HBase. The related technologies for OLAP included &lt;strong&gt;big data parallel processing&lt;/strong&gt; and &lt;strong&gt;columnar storage&lt;/strong&gt;.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Massive Parallel Processing&lt;/strong&gt;: It leverages multiple machines to process computational tasks in parallel, essentially using linear growth in computing resources to achieve a linear decrease in processing time.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Columnar Storage&lt;/strong&gt;: Stores data in columns instead of rows. This approach is particularly effective for OLAP queries, which typically involve aggregations of specific columns. Columnar storage allows querying only the necessary columns and makes effective use of sequential I/O, thus improving performance.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;These technologies enabled minute-level SQL query performance on platforms like Hadoop. However, even this is insufficient for interactive analysis, as the latency is still too high.&lt;/p&gt;
+&lt;p&gt;The core issue is that &lt;strong&gt;neither parallel computing nor columnar storage changes the fundamental time complexity of querying; they do not break the linear relationship between query time and data volume&lt;/strong&gt;. Therefore, the only optimization comes from increasing computing resources and exploiting locality principles, both of which have scalability and theoretical bottlenecks as data grows.&lt;/p&gt;
+&lt;p&gt;To address this, Kylin introduced a &lt;strong&gt;pre-computation strategy&lt;/strong&gt;, building multidimensional &lt;strong&gt;cubes&lt;/strong&gt; for different dimensions and storing them as data tables. Future queries are made directly against these precomputed results. With pre-computation, the size of the materialized views is determined only by the cardinality of the dimensions and is no longer linearly proportional to the size of the dataset.&lt;/p&gt;
+&lt;p&gt;Essentially, this strategy &lt;strong&gt;uses idle computational resources and additional storage to improve response times during queries, breaking the linear relationship between query time and data size&lt;/strong&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;core-concepts&#34;&gt;Core Concepts&lt;/h2&gt;
+&lt;p&gt;The core working principle of Apache Kylin is &lt;strong&gt;MOLAP (Multidimensional Online Analytical Processing) Cube&lt;/strong&gt; technology.&lt;/p&gt;
+&lt;h3 id=&#34;dimensions-and-measures&#34;&gt;Dimensions and Measures&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Dimensions&lt;/strong&gt; refer to perspectives used for aggregating data, typically attributes of data records. &lt;strong&gt;Measures&lt;/strong&gt; are numerical values calculated based on data. Using dimensions, you can aggregate measures, e.g., $$D_1,D_2,D_3,&amp;hellip; \rightarrow S_1,S_2,&amp;hellip;$$&lt;/p&gt;
+&lt;h3 id=&#34;cube-theory&#34;&gt;Cube Theory&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Data Cube&lt;/strong&gt; involves building and querying precomputed, multidimensional data indices.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Cuboid&lt;/strong&gt;: The data calculated for a particular combination of dimensions.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Cube Segment&lt;/strong&gt;: The smallest building block of a cube. A cube can be split into multiple segments.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Incremental Cube Building&lt;/strong&gt;: Typically triggered based on time attributes.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Cube Cardinality&lt;/strong&gt;: The cardinality of all dimensions in a cube determines the cube&amp;rsquo;s complexity. Higher cardinality often leads to cube expansion (amplified I/O and storage).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
+&lt;p&gt;Kylin consists of two parts: &lt;strong&gt;online querying&lt;/strong&gt; and &lt;strong&gt;offline building&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34; alt=&#34;Kylin Architecture&#34;&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Offline Building&lt;/strong&gt;: Involves three main components: the data source, the build engine, and the storage engine. Data is fetched from the data source, cubes are built, and they are stored in the columnar storage engine.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Online Querying&lt;/strong&gt;: Consists of an interface layer and a query engine, abstracting away concepts like cubes from the user. External applications use the REST API to submit queries, which are processed by the query engine and returned.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
+&lt;p&gt;As an OLAP engine, Kylin leverages &lt;strong&gt;parallel computing, columnar storage, and pre-computation&lt;/strong&gt; techniques to improve both online query and offline build performance. This has the following notable pros and cons:&lt;/p&gt;
+&lt;h3 id=&#34;advantages&#34;&gt;Advantages&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Standard SQL Interface&lt;/strong&gt;: Supports BI tools and makes integration easy.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;High Query Speed&lt;/strong&gt;: Queries against precomputed results are very fast.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Scalable Architecture&lt;/strong&gt;: Easily scales to handle increasing data volumes.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;disadvantages&#34;&gt;Disadvantages&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Complex Dependencies&lt;/strong&gt;: Kylin relies on many external systems, which can make operations and maintenance challenging.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;I/O and Storage Overhead&lt;/strong&gt;: Pre-computation and cube building can lead to amplified I/O and storage needs.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Limited by Data Models&lt;/strong&gt;: The complexity of data models and cube cardinality can impose limitations on scalability.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://tech.meituan.com/2020/11/19/apache-kylin-practice-in-meituan.html&#34;&gt;Meituan: Apache Kylin&amp;rsquo;s Practice and Optimization&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://kylin.apache.org/&#34;&gt;Kylin Official Documentation&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>MySQL Index Overview</title>
+      <link>https://noneback.github.io/blog/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/</link>
+      <pubDate>Sun, 21 Mar 2021 20:41:33 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Database indexes&lt;/strong&gt; are sorted data structures in DBMS that help in quickly querying and updating data in a database. Generally, data structures used for building indexes include B-trees, B+ trees, hash tables, etc.&lt;/p&gt;
+&lt;p&gt;MySQL uses B+ trees to build indexes. The reason for this choice is that a B+ tree node can store more data, and in a B+ tree, only leaf nodes store data, while non-leaf nodes store only indexes. This allows the index to be stored in memory as much as possible, reducing tree height, minimizing disk I/O when querying indexes, and greatly improving query efficiency.&lt;/p&gt;
+&lt;h2 id=&#34;indexes-in-innodb&#34;&gt;Indexes in InnoDB&lt;/h2&gt;
+&lt;h3 id=&#34;clustered-index-and-non-clustered-index&#34;&gt;Clustered Index and Non-Clustered Index&lt;/h3&gt;
+&lt;p&gt;Indexes can be divided into clustered and non-clustered indexes based on the data stored in the leaf nodes.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Clustered Index&lt;/strong&gt;: The leaf nodes store the data rows directly, allowing direct access to user data.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Non-Clustered Index&lt;/strong&gt;: The leaf nodes store the primary key value, and data must be fetched by traversing back to the primary key index (a process known as &lt;strong&gt;index backtracking&lt;/strong&gt;).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In the InnoDB engine, the table&amp;rsquo;s data is organized using the primary key index. Each table must have a primary key, which constructs the B+ tree, resulting in a primary key index. &lt;strong&gt;The primary key index is a clustered index&lt;/strong&gt;, and all other &lt;strong&gt;secondary indexes are non-clustered indexes&lt;/strong&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;composite-index&#34;&gt;Composite Index&lt;/h3&gt;
+&lt;p&gt;A composite index is an index composed of multiple fields.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-sql&#34; data-lang=&#34;sql&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;create&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;index&lt;/span&gt; index_name &lt;span style=&#34;color:#66d9ef&#34;&gt;on&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;table_name&lt;/span&gt; (col_1, col_2...)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Compared to a single-field index, the main difference is that it follows the &lt;strong&gt;leftmost prefix matching principle&lt;/strong&gt;.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Leftmost Prefix Matching Principle&lt;/strong&gt;: When using a composite index, the index values are sorted according to the fields in the index from left to right.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;using-indexes-to-optimize-query-performance&#34;&gt;Using Indexes to Optimize Query Performance&lt;/h2&gt;
+&lt;p&gt;Since indexes are ordered, they can significantly improve query efficiency. When using indexes for query optimization, some principles must be followed.&lt;/p&gt;
+&lt;h3 id=&#34;leftmost-prefix-matching-principle&#34;&gt;Leftmost Prefix Matching Principle&lt;/h3&gt;
+&lt;p&gt;When using a composite index, the index values are sorted from left to right based on the indexed fields. We need to follow the leftmost prefix matching rule in our queries; otherwise, the data arrangement becomes unordered, resulting in a full table scan.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Suppose you create an index on &lt;code&gt;col1, col2, col3&lt;/code&gt;. Following the leftmost prefix matching principle, the query conditions should be designed in the order &lt;code&gt;col1 -&amp;gt; col2 -&amp;gt; col3&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Example:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;select * from table_name where col1 = 1 and col2 = 2;&lt;/code&gt; This will use the index.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;select * from table_name where col2 = 1 and col3 = 2;&lt;/code&gt; This will not use the index.&lt;/p&gt;
+&lt;p&gt;Note: &lt;strong&gt;MySQL will continue matching the columns until it encounters a range query (&amp;gt;, &amp;lt;, between, like), after which it stops matching.&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;index-coverage-principle&#34;&gt;Index Coverage Principle&lt;/h3&gt;
+&lt;p&gt;Index coverage refers to querying values directly from the index without needing to traverse back to the table. Well-designed indexes can reduce the number of backtracking operations.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;For a composite index &lt;code&gt;(col1, col2, col3)&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;A query like &lt;code&gt;select col1, col2, col3 from test where col1=1 and col2=2&lt;/code&gt; can directly retrieve values for &lt;code&gt;col1&lt;/code&gt;, &lt;code&gt;col2&lt;/code&gt;, and &lt;code&gt;col3&lt;/code&gt; without needing to traverse back to the table, as their values are already stored in the secondary index.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

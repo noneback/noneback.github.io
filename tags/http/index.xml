@@ -5,8 +5,109 @@
     <link>https://noneback.github.io/tags/http/</link>
     <description>Recent content in HTTP on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Sun, 21 Feb 2021 16:48:55 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/http/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>HTTPS Introduction</title>
+      <link>https://noneback.github.io/blog/https%E6%B5%85%E6%9E%90/</link>
+      <pubDate>Sun, 21 Feb 2021 16:48:55 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/https%E6%B5%85%E6%9E%90/</guid>
+      <description>&lt;p&gt;HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses &lt;a href=&#34;https://developer.mozilla.org/en-US/docs/Glossary/SSL&#34;&gt;SSL&lt;/a&gt; or &lt;a href=&#34;https://developer.mozilla.org/en-US/docs/Glossary/TLS&#34;&gt;TLS&lt;/a&gt; to encrypt communication between the client and the server.&lt;/p&gt;
+&lt;h2 id=&#34;problems-with-http&#34;&gt;Problems with HTTP&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Communication uses plain text, making it susceptible to eavesdropping.&lt;/li&gt;
+&lt;li&gt;Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks).&lt;/li&gt;
+&lt;li&gt;Cannot guarantee message integrity, making it possible for messages to be altered (e.g., Man-in-the-Middle attacks).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;To address these issues, we need:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Encryption&lt;/strong&gt; to prevent eavesdropping.
+&lt;ul&gt;
+&lt;li&gt;Encrypting either the &lt;strong&gt;content&lt;/strong&gt; or the &lt;strong&gt;communication channel&lt;/strong&gt; can help secure the communication.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Authentication&lt;/strong&gt; to prevent impersonation attacks.
+&lt;ul&gt;
+&lt;li&gt;Certificates are commonly used for identity verification.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Integrity checks&lt;/strong&gt; to prevent tampering.
+&lt;ul&gt;
+&lt;li&gt;Hash functions like MD5 and SHA-1 are often used to ensure data integrity.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;https&#34;&gt;HTTPS&lt;/h2&gt;
+&lt;p&gt;To solve the above problems comprehensively, we add encryption, authentication, and integrity protection to HTTP, resulting in &lt;strong&gt;HTTPS&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;$HTTP + Encryption + Authentication + Integrity Protection = HTTPS$&lt;/p&gt;
+&lt;h3 id=&#34;https-over-ssl&#34;&gt;HTTPS over SSL&lt;/h3&gt;
+&lt;p&gt;HTTPS is not a new protocol; it simply adds SSL or TLS between HTTP and TCP. By doing so, HTTPS provides encryption, certificates, and integrity protection.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/02/21/cdQk9AGJUCF4MLI.png&#34; alt=&#34;HTTPS Layers&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;SSL is independent of HTTP, and it can be used with other protocols like SMTP and Telnet to provide encryption.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;encryption-mechanism&#34;&gt;Encryption Mechanism&lt;/h3&gt;
+&lt;p&gt;HTTPS uses both symmetric (shared key) and asymmetric (public key) encryption to achieve its goals effectively:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Public key encryption&lt;/strong&gt; is used to encrypt the &lt;strong&gt;shared key&lt;/strong&gt; (Pre-master secret), ensuring it cannot be intercepted.&lt;/li&gt;
+&lt;li&gt;Once the shared key is established, &lt;strong&gt;symmetric encryption&lt;/strong&gt; is used for communication to ensure better performance.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Key differences:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Public key encryption&lt;/strong&gt;: Asymmetric, secure but computationally expensive.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Shared key encryption&lt;/strong&gt;: Symmetric, less secure for key exchange but more efficient for encryption.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;authentication-mechanism&#34;&gt;Authentication Mechanism&lt;/h3&gt;
+&lt;p&gt;Public key encryption requires proof that the public key itself is legitimate and not replaced. HTTPS uses &lt;strong&gt;certificates&lt;/strong&gt; to achieve this authentication.&lt;/p&gt;
+&lt;p&gt;Certificates are issued by &lt;strong&gt;Certificate Authorities (CAs)&lt;/strong&gt;, who verify the identity of the party requesting the certificate and sign the public key.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The server sends the signed public key certificate to the client using public key encryption.&lt;/li&gt;
+&lt;li&gt;The client uses the CA&amp;rsquo;s public key to verify the signature. If verified, it proves:
+&lt;ul&gt;
+&lt;li&gt;The CA is trustworthy.&lt;/li&gt;
+&lt;li&gt;The server&amp;rsquo;s public key is legitimate.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Both parties then use the public key to establish a secure channel.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The CA&amp;rsquo;s public key is usually pre-installed in browsers.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;integrity-protection&#34;&gt;Integrity Protection&lt;/h3&gt;
+&lt;p&gt;HTTPS ensures message integrity by using &lt;strong&gt;message digest algorithms&lt;/strong&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;hash-algorithms&#34;&gt;Hash Algorithms&lt;/h4&gt;
+&lt;p&gt;These algorithms, also known as hash or digest functions, convert input data of any length into a fixed-length output string, such as MD5 and SHA-2.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;A hash algorithm &lt;strong&gt;is not an encryption algorithm&lt;/strong&gt;. It cannot be reversed to obtain the original data, so it can only be used for integrity checking.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Applications attach a &lt;strong&gt;Message Authentication Code (MAC)&lt;/strong&gt; to messages. The MAC helps detect tampering, thus ensuring the integrity of the communication.&lt;/p&gt;
+&lt;h2 id=&#34;https-communication-flow&#34;&gt;HTTPS Communication Flow&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/02/21/BWwJxbpPETst5ug.png&#34; alt=&#34;HTTPS Communication Flow&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;other-considerations&#34;&gt;Other Considerations&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Due to the overhead of encryption, decryption, and SSL handshake, HTTPS is generally slower and requires more CPU resources than HTTP.
+&lt;ul&gt;
+&lt;li&gt;SSL accelerators (dedicated servers) are sometimes used to mitigate this issue.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;When a client repeatedly accesses the same HTTPS server, it may not need to perform a complete TLS handshake each time.
+&lt;ul&gt;
+&lt;li&gt;The server maintains a session ID for each client and uses it to resume secure sessions, avoiding a full handshake.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://developer.mozilla.org/zh-CN/docs/Glossary/https&#34;&gt;MDN Web Docs&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/%E8%B6%85%E6%96%87%E6%9C%AC%E4%BC%A0%E8%BE%93%E5%AE%89%E5%85%A8%E5%8D%8F%E8%AE%AE#%E4%B8%8EHTTP%E7%9A%84%E5%B7%AE%E5%BC%82&#34;&gt;Wikipedia&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.cnblogs.com/cxuanBlog/p/12490862.html&#34;&gt;Cxuan&amp;rsquo;s Blog&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.oreilly.com/library/view/illustrated-httphttps/9781492031484/&#34;&gt;&amp;ldquo;Illustrated HTTP/HTTPS&amp;rdquo;&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

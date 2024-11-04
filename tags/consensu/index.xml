@@ -5,8 +5,71 @@
     <link>https://noneback.github.io/tags/consensu/</link>
     <description>Recent content in Consensu on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Mon, 21 Feb 2022 01:26:46 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/consensu/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MIT6.824-Raft</title>
+      <link>https://noneback.github.io/blog/mit6.824-raft/</link>
+      <pubDate>Mon, 21 Feb 2022 01:26:46 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-raft/</guid>
+      <description>&lt;p&gt;Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.&lt;/p&gt;
+&lt;h2 id=&#34;algorithm-overview&#34;&gt;Algorithm Overview&lt;/h2&gt;
+&lt;p&gt;The basis of consensus algorithms is the replicated state machine, which means that &lt;strong&gt;executing the same deterministic commands in the same order will eventually lead to a consistent state&lt;/strong&gt;. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.&lt;/p&gt;
+&lt;p&gt;The core content of the Raft algorithm can be divided into three parts: $Leader Election + Log Replication + Safety$.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Initially, all nodes in the cluster start as Followers. If a Follower does not receive a heartbeat from the Leader within a certain period, it becomes a Candidate and triggers an election, requesting votes from the other Followers. The Candidate that receives a majority of votes becomes the Leader.&lt;/p&gt;
+&lt;p&gt;Raft is a &lt;strong&gt;strong leader&lt;/strong&gt; and strongly consistent distributed consensus algorithm. It uses Terms as a logical clock, and only one Leader can exist in each term. The Leader needs to send heartbeats periodically to maintain its status and to handle &lt;strong&gt;log replication&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;When replicating logs, the Leader first replicates the log to other Followers. Once a majority of the Followers successfully replicate the log, the Leader commits the log.&lt;/p&gt;
+&lt;p&gt;Safety mainly consists of five parts, with two core elements relevant to the implementation. One is the leader&amp;rsquo;s append-only rule, which means it cannot modify committed logs. The other is election safety, preventing split-brain scenarios and ensuring that the new Leader has the most up-to-date log.&lt;/p&gt;
+&lt;p&gt;For more details, please refer to the original paper.&lt;/p&gt;
+&lt;h2 id=&#34;implementation-ideas&#34;&gt;Implementation Ideas&lt;/h2&gt;
+&lt;p&gt;The implementation largely follows an excellent blog post (see references), and many algorithm details are also provided in Figure 2 of the original paper, so I will only focus on aspects that need attention when implementing each function.&lt;/p&gt;
+&lt;h3 id=&#34;leader-election&#34;&gt;Leader Election&lt;/h3&gt;
+&lt;h4 id=&#34;triggering-election--handling-election-results&#34;&gt;Triggering Election + Handling Election Results&lt;/h4&gt;
+&lt;p&gt;The election is initiated by launching multiple goroutines to send RPC requests to other nodes in the background. Therefore, when handling RPC responses, it is necessary to confirm that the current node is a Candidate and that the request is not outdated, i.e., &lt;code&gt;rf.state == Candidate &amp;amp;&amp;amp; req.Term == rf.currentTerm&lt;/code&gt;. If the election is successful, the node should immediately send heartbeats to notify other nodes of the election result.&lt;/p&gt;
+&lt;p&gt;If a failed response is received with &lt;code&gt;resp.Term &amp;gt; rf.currentTerm&lt;/code&gt;, the node should switch to the Follower state, update the term, and &lt;strong&gt;reset voting information&lt;/strong&gt;.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;In fact, whenever the term is updated, the voting information needs to be reset. If the &lt;code&gt;votedFor&lt;/code&gt; information is not reset, some tests will fail.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;request-vote-rpc&#34;&gt;Request Vote RPC&lt;/h4&gt;
+&lt;p&gt;First, filter outdated requests with &lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt; and ignore duplicate voting requests for the current term. Then, follow the algorithm&amp;rsquo;s logic to process the request. Note that if the node successfully grants the vote, it should reset the election timer.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Resetting the election timeout only when granting a vote helps with liveness in leader elections under unstable network conditions.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;state-transition&#34;&gt;State Transition&lt;/h4&gt;
+&lt;p&gt;When switching roles, be mindful of handling the state of different timers (stop or reset). When switching to Leader, reset the values of &lt;code&gt;matchIndex&lt;/code&gt; and &lt;code&gt;nextIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;log-replication&#34;&gt;Log Replication&lt;/h3&gt;
+&lt;p&gt;Log replication is the core of the Raft algorithm, and it requires careful attention.&lt;/p&gt;
+&lt;p&gt;My implementation uses multiple replicator and applier threads for asynchronous replication and application.&lt;/p&gt;
+&lt;h4 id=&#34;log-replication-rpc&#34;&gt;Log Replication RPC&lt;/h4&gt;
+&lt;p&gt;First, filter outdated requests with &lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt;. Then, handle log inconsistencies, log truncation, and duplicate log entries before replicating logs and processing &lt;code&gt;commitIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;trigger-log-replication--handle-request-results&#34;&gt;Trigger Log Replication + Handle Request Results&lt;/h4&gt;
+&lt;p&gt;Determine whether to replicate logs directly or send a snapshot before initiating replication.&lt;/p&gt;
+&lt;p&gt;The key point in handling request results is how to update &lt;code&gt;matchIndex&lt;/code&gt;, &lt;code&gt;nextIndex&lt;/code&gt;, and &lt;code&gt;commitIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;matchIndex&lt;/code&gt; is used to record the latest log successfully replicated on other nodes, while &lt;code&gt;nextIndex&lt;/code&gt; records the next log to be sent to other nodes. &lt;code&gt;commitIndex&lt;/code&gt; is updated by sorting &lt;code&gt;matchIndex&lt;/code&gt; and determining whether to trigger the applier to update &lt;code&gt;appliedIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;If the request fails, &lt;code&gt;nextIndex&lt;/code&gt; should be decremented, or the node should switch to the Follower state.&lt;/p&gt;
+&lt;h4 id=&#34;asynchronous-apply&#34;&gt;Asynchronous Apply&lt;/h4&gt;
+&lt;p&gt;This is essentially a background goroutine controlled by condition variables and uses channels for communication. Each time it is triggered, it sends &lt;code&gt;log[lastApplied:commitIndex]&lt;/code&gt; to the upper layer and updates &lt;code&gt;appliedIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;persistence&#34;&gt;Persistence&lt;/h3&gt;
+&lt;p&gt;Persist the updated attributes that need to be saved to disk in a timely manner.&lt;/p&gt;
+&lt;h3 id=&#34;install-snapshot&#34;&gt;Install Snapshot&lt;/h3&gt;
+&lt;p&gt;The main components are the Snapshot triggered by the Leader and the corresponding RPC. When applying a Snapshot, determine its freshness and update &lt;code&gt;log[0]&lt;/code&gt;, &lt;code&gt;appliedIndex&lt;/code&gt;, and &lt;code&gt;commitIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;pitfalls&#34;&gt;Pitfalls&lt;/h2&gt;
+&lt;h3 id=&#34;defer&#34;&gt;Defer&lt;/h3&gt;
+&lt;p&gt;The first pitfall is related to the &lt;strong&gt;defer&lt;/strong&gt; keyword in Go. I like to use the &lt;code&gt;defer&lt;/code&gt; keyword at the beginning of an RPC to directly print some data from the node: &lt;code&gt;defer Dprintf(&amp;quot;%+v&amp;quot;, raft.currentTerm)&lt;/code&gt;. This way, the log can be printed at the end of the call. However, the content to be printed is fixed at the time the defer statement is executed. The correct usage should be &lt;code&gt;defer func(ID int) { Dprintf(&amp;quot;%+v&amp;quot;, id) }()&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;log-dummy-header&#34;&gt;Log Dummy Header&lt;/h3&gt;
+&lt;p&gt;It is best to reserve a spot in the log for storing the index and term of the snapshot to avoid a painful refactor of the Snapshot section later.&lt;/p&gt;
+&lt;h3 id=&#34;lock&#34;&gt;Lock&lt;/h3&gt;
+&lt;p&gt;Refer to the guidance on locking suggestions. Use a single coarse-grained lock rather than multiple locks. Correctness of the algorithm is more important than performance. Avoid holding locks while sending RPCs or using channels, as it may lead to timeouts.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/Raft&#34;&gt;Raft Wikipedia&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://raft.github.io/&#34;&gt;Raft Official Website&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf&#34;&gt;Raft Paper&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Official&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab2.md&#34;&gt;Potato’s Implementation Doc&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

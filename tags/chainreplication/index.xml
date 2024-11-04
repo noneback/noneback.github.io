@@ -5,8 +5,51 @@
     <link>https://noneback.github.io/tags/chainreplication/</link>
     <description>Recent content in ChainReplication on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language>
-    <copyright>NoneBack All rights reserved</copyright>
+    <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 08 Feb 2023 23:05:57 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/chainreplication/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MIT6.824 Chain Replication</title>
+      <link>https://noneback.github.io/blog/mit6.824-chainreplication/</link>
+      <pubDate>Wed, 08 Feb 2023 23:05:57 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/mit6.824-chainreplication/</guid>
+      <description>&lt;p&gt;This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&amp;rsquo;s best to refer directly to the original paper.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34; alt=&#34;Chain Replication&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The design of the algorithm is both simple and elegant. CR splits the replication workload across all nodes in the chain, with each node responsible for forwarding updates to its successor. Write requests are propagated from the head node to the tail, while read requests are served by the tail node.&lt;/p&gt;
+&lt;p&gt;To maintain relationships between nodes in the chain, Chain Replication introduces a Master service responsible for managing node configurations and handling node failures.&lt;/p&gt;
+&lt;h2 id=&#34;failure-handling&#34;&gt;Failure Handling&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Head Failure&lt;/strong&gt;: If the head node fails, any pending or unprocessed requests are lost, but linearizable consistency remains unaffected. The second node in the chain is promoted to the new head.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Tail Failure&lt;/strong&gt;: If the tail node fails, the second-to-last node becomes the new tail, and pending requests from the original tail are committed.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Middle Node Failure&lt;/strong&gt;: When a middle node fails, the chain is reconnected in a manner similar to linked list operations. The previous node (&lt;code&gt;Node_pre&lt;/code&gt;) is linked directly to the next node (&lt;code&gt;Node_next&lt;/code&gt;). To ensure that no requests are lost during this failure, each CR node maintains a &lt;code&gt;SendReqList&lt;/code&gt; that records all requests forwarded to its successor. Since requests are propagated from head to tail, &lt;code&gt;Node_pre&lt;/code&gt; only needs to send &lt;code&gt;Node_next&lt;/code&gt; any missing data. When the tail node receives a request, it marks it as committed, and an acknowledgment (&lt;code&gt;Ack(req)&lt;/code&gt;) is sent back from the tail to the head, removing the request from each node&amp;rsquo;s &lt;code&gt;SendReqList&lt;/code&gt; as the acknowledgment propagates.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;pros-and-cons&#34;&gt;Pros and Cons&lt;/h2&gt;
+&lt;p&gt;The main advantages of Chain Replication include:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;High Throughput&lt;/strong&gt;: By distributing the workload across all nodes, CR effectively increases the throughput of a single node.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Balanced Load&lt;/strong&gt;: Each node has a similar workload, resulting in balanced utilization.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Simplicity&lt;/strong&gt;: The overall design is clean and straightforward, making it easier to implement.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;However, there are some clear disadvantages:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Bottlenecks&lt;/strong&gt;: If a node in the chain processes requests slowly, it will delay the entire chain&amp;rsquo;s processing.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Read Limitations&lt;/strong&gt;: Only the head and tail nodes can serve requests efficiently. The data in the middle nodes is mostly there for replication purposes and not directly utilized for serving requests. However, the CRAQ (Chain Replication with Asynchronous Queries) variant allows middle nodes to serve read-only requests, similar to Raft&amp;rsquo;s Read Index, which can help alleviate this limitation.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://tanxinyu.work/chain-replication-thesis/&#34;&gt;Chain Replication Paper Summary&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://nil.csail.mit.edu/6.824/2021/papers/cr-osdi04.pdf&#34;&gt;Original CR Paper&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

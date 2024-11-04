@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIT6.824-Raft</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mit6.824-raft/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="MIT6.824-Raft" />
+<meta property="og:description" content="这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/blog/zh/mit6.824-raft/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2022-02-21T01:26:46+08:00" />
+<meta property="article:modified_time" content="2022-02-21T01:26:46+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MIT6.824-Raft"/>
+<meta name="twitter:description" content="这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  4 ,
+      "name": "MIT6.824-Raft",
+      "item": "https://noneback.github.io/zh/blog/zh/mit6.824-raft/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "MIT6.824-Raft",
+  "name": "MIT6.824-Raft",
+  "description": "这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内",
+  "keywords": [
+    "Raft", "Paper Reading", "Consensu", "Distributed System", "MIT6.824"
+  ],
+  "articleBody": "这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内容，于是简单记录一下。\n算法简介 共识算法的基础是复制状态机，即按照相同顺序执行相同的确定性指令最终必然达到一致状态。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。\nRaft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。\n集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。\nRaft是一种强领导人的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理复制提交日志。\n复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。\n安全性主要有五个部分，与实现相关的最核心的内容我认为有两个。一个是领导人只追加原则，不允许修改已提交的日志；另一个是选举安全性，避免脑裂问题，同时保证新Leader拥有比较新的日志。\n剩下的其他内容请参考论文原文。\n实现思路 实现的思路大体上是参考了一篇大佬的博文（见参考），算法的细节很多也在原Paper的Figure2中，故而以下只讲一下实现各个功能时需要注意的地方。\n领导人选举 发起选举+选举结果处理 发起选举是会开启多个goroutine后台发送RPC请求到其他结点，所以处理RPC response的时候需要确定当前结点为Candidate，以及请求未过期，即rf.state == Candidate \u0026\u0026 req.Term == rf.currentTerm。选举成功需要立即发送心跳，通知其他结点选举结果。\n如果发现失败的Responseresp.Term  rf.currentTerm,此时需要切换到Follower状态，更新任期，并重置投票信息。\n 实际上一旦更新了任期，就需要重置投票信息。如果不重置votedFor信息，会有一些测试通过不了\n 请求投票RPC 前置逻辑过滤过期req.Term 以及当前任期的重复投票请求。之后再按照算法描述的逻辑处理，注意如果成功投票，需要重置选举计时器。\n 在 grant 投票时才重置选举超时时间，这样有助于网络不稳定条件下选主的 liveness 问题\n 状态切换 注意在切换角色时处理不同的计时器状态(stop or reset)，切换到Leader时需要重置matchIndex以及nextIndex的值。\n日志复制 Raft算法的核心，需要注意的地方最多。\n我的实现是使用多个replicator和applier线程异步复制和apply的方式。\n日志复制RPC 前置逻辑过滤掉req.Term 过期的请求。之后处理日志不一致以及日志被压缩以及重复日志的情况，之后复制日志再处理commitIndex。\n发起日志复制+请求结果处理 发起日志复制需要判断是直接复制日志或者发送快照。\n请求结果处理重点是如何处理matchIndex和nextIndex以及commitIndex。\nmatchIndex用来记录其他节点成功复制的最新日志，nextIndex是记录发送给其他节点的下一个日志。commitIndex通过排序matchIndex来更新。再决定是否需要触发applier更新appliedIndex。\n请求失败则可以回退nextIndex或者切换到Follower状态。\n异步Apply 实际上就是一个后台goroutine，通过条件变量控制，使用Channel通信。每次触发会把log[lastApplied:commitIndex]发送给上层，并更新appliedIndex。\n持久化 在需要持久化状态的属性更新时及时的刷盘。\n安装快照 主要就是Leader触发的Snapshot以及RPC。应用Snapshot的时候需要先判断其新旧以及更新log[0]和appliedIndex以及commitIndex。\n坑 Defer 首先是Golang的defer关键字。我比较喜欢在RPC开头使用defer关键字直接打印出结点的一些数据：defer Dprintf(\"%+v\", raft.currentTerm)，这样在调用结束时能打印出log，但实际上，在运行到defer这一行的代码时，打印的内容已经固定。正确的使用方式应该是defer func(ID int) { Dprintf(\"%+v\", id) }()\nLog Dummy Header Log处最好预留一个位置用于存放快照保存的Index和Term，不然Snapshot那部分的重构很痛苦。\nLock 参看guidance的用锁建议。使用一个大锁，而不是用多个锁。算法的正确性比性能重要。在发送RPC以及使用Channel时不要加锁，不然可能会超时。\n参考 Raft wikepedia\nRaft Official Website\nRaft Paper\nMIT6.824 Official\nPotato’s Implimentation Doc\n",
+  "wordCount" : "1988",
+  "inLanguage": "zh",
+  "datePublished": "2022-02-21T01:26:46+08:00",
+  "dateModified": "2022-02-21T01:26:46+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/blog/zh/mit6.824-raft/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"
+    integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"
+    integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR"
+    crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMathInElement(document.body, {
+            
+            
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: "\\begin{equation}", right: "\\end{equation}", display: true },
+                { left: "\\begin{align}", right: "\\end{align}", display: true },
+                { left: "\\begin{alignat}", right: "\\end{alignat}", display: true },
+                { left: "\\begin{gather}", right: "\\end{gather}", display: true },
+                { left: "\\begin{CD}", right: "\\end{CD}", display: true },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            
+            throwOnError: false,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command),
+            macros: {
+                "\\eqref": "\\href{###1}{(\\text{#1})}",
+                "\\ref": "\\href{###1}{\\text{#1}}",
+                "\\label": "\\htmlId{#1}{}"
+            }
+        });
+    });
+</script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/blog">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>MIT6.824-Raft</h1>
+  </header>
+
+  <p>
+  <small>
+    2022年2月21日&nbsp;· 1988 字&nbsp;· 4 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/paper-reading/">Paper Reading</a>
+      
+      <a href="https://noneback.github.io/zh/tags/consensu/">Consensu</a>
+      
+      <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
+      
+      <a href="https://noneback.github.io/zh/tags/mit6.824/">MIT6.824</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#算法简介">算法简介</a></li>
+    <li><a href="#实现思路">实现思路</a>
+      <ul>
+        <li><a href="#领导人选举">领导人选举</a></li>
+        <li><a href="#日志复制">日志复制</a></li>
+        <li><a href="#持久化">持久化</a></li>
+        <li><a href="#安装快照">安装快照</a></li>
+      </ul>
+    </li>
+    <li><a href="#坑">坑</a>
+      <ul>
+        <li><a href="#defer">Defer</a></li>
+        <li><a href="#log-dummy-header">Log Dummy Header</a></li>
+        <li><a href="#lock">Lock</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内容，于是简单记录一下。</p>
+<h2 id="算法简介">算法简介</h2>
+<p>共识算法的基础是复制状态机，即<strong>按照相同顺序执行相同的确定性指令最终必然达到一致状态</strong>。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。</p>
+<p>Raft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。</p>
+<p><img src="https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png" alt="img"></p>
+<p>集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。</p>
+<p>Raft是一种<strong>强领导人</strong>的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理<strong>复制提交</strong>日志。</p>
+<p>复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。</p>
+<p>安全性主要有五个部分，与实现相关的最核心的内容我认为有两个。一个是领导人只追加原则，不允许修改已提交的日志；另一个是选举安全性，避免脑裂问题，同时保证新Leader拥有比较新的日志。</p>
+<p>剩下的其他内容请参考论文原文。</p>
+<h2 id="实现思路">实现思路</h2>
+<p>实现的思路大体上是参考了一篇大佬的博文（见参考），算法的细节很多也在原Paper的Figure2中，故而以下只讲一下实现各个功能时需要注意的地方。</p>
+<h3 id="领导人选举">领导人选举</h3>
+<h4 id="发起选举选举结果处理">发起选举+选举结果处理</h4>
+<p>发起选举是会开启多个goroutine后台发送RPC请求到其他结点，所以处理RPC response的时候需要确定当前结点为Candidate，以及请求未过期，即<code>rf.state == Candidate &amp;&amp; req.Term == rf.currentTerm</code>。选举成功需要立即发送心跳，通知其他结点选举结果。</p>
+<p>如果发现失败的Response<code>resp.Term &gt; rf.currentTerm</code>,此时需要切换到Follower状态，更新任期，并<strong>重置投票信息</strong>。</p>
+<blockquote>
+<p>实际上一旦更新了任期，就需要重置投票信息。如果不重置votedFor信息，会有一些测试通过不了</p>
+</blockquote>
+<h4 id="请求投票rpc">请求投票RPC</h4>
+<p>前置逻辑过滤过期<code>req.Term &lt; rf.currentTerm</code>以及当前任期的重复投票请求。之后再按照算法描述的逻辑处理，注意如果成功投票，需要重置选举计时器。</p>
+<blockquote>
+<p>在 grant 投票时才重置选举超时时间，这样有助于网络不稳定条件下选主的 liveness 问题</p>
+</blockquote>
+<h4 id="状态切换">状态切换</h4>
+<p>注意在切换角色时处理不同的计时器状态(stop or reset)，切换到Leader时需要重置matchIndex以及nextIndex的值。</p>
+<h3 id="日志复制">日志复制</h3>
+<p>Raft算法的核心，需要注意的地方最多。</p>
+<p>我的实现是使用多个replicator和applier线程异步复制和apply的方式。</p>
+<h4 id="日志复制rpc">日志复制RPC</h4>
+<p>前置逻辑过滤掉<code>req.Term &lt; rf.currentTerm</code>过期的请求。之后处理日志不一致以及日志被压缩以及重复日志的情况，之后复制日志再处理<code>commitIndex</code>。</p>
+<h4 id="发起日志复制请求结果处理">发起日志复制+请求结果处理</h4>
+<p>发起日志复制需要判断是直接复制日志或者发送快照。</p>
+<p>请求结果处理重点是如何处理<code>matchIndex</code>和<code>nextIndex</code>以及<code>commitIndex</code>。</p>
+<p><code>matchIndex</code>用来记录其他节点成功复制的最新日志，<code>nextIndex</code>是记录发送给其他节点的下一个日志。<code>commitIndex</code>通过排序<code>matchIndex</code>来更新。再决定是否需要触发applier更新<code>appliedIndex</code>。</p>
+<p>请求失败则可以回退nextIndex或者切换到Follower状态。</p>
+<h4 id="异步apply">异步Apply</h4>
+<p>实际上就是一个后台goroutine，通过条件变量控制，使用Channel通信。每次触发会把<code>log[lastApplied:commitIndex]</code>发送给上层，并更新<code>appliedIndex</code>。</p>
+<h3 id="持久化">持久化</h3>
+<p>在需要持久化状态的属性更新时及时的刷盘。</p>
+<h3 id="安装快照">安装快照</h3>
+<p>主要就是Leader触发的Snapshot以及RPC。应用Snapshot的时候需要先判断其新旧以及更新<code>log[0]</code>和<code>appliedIndex</code>以及<code>commitIndex</code>。</p>
+<h2 id="坑">坑</h2>
+<h3 id="defer">Defer</h3>
+<p>首先是Golang的<strong>defer</strong>关键字。我比较喜欢在RPC开头使用defer关键字直接打印出结点的一些数据：<code>defer Dprintf(&quot;%+v&quot;, raft.currentTerm)</code>，这样在调用结束时能打印出log，但实际上，在运行到defer这一行的代码时，打印的内容已经固定。正确的使用方式应该是<code>defer func(ID int) { Dprintf(&quot;%+v&quot;, id) }()</code></p>
+<h3 id="log-dummy-header">Log Dummy Header</h3>
+<p>Log处最好预留一个位置用于存放快照保存的Index和Term，不然Snapshot那部分的重构很痛苦。</p>
+<h3 id="lock">Lock</h3>
+<p>参看guidance的用锁建议。使用一个大锁，而不是用多个锁。算法的正确性比性能重要。在发送RPC以及使用Channel时不要加锁，不然可能会超时。</p>
+<h2 id="参考">参考</h2>
+<p><a href="https://zh.wikipedia.org/wiki/Raft">Raft wikepedia</a></p>
+<p><a href="https://raft.github.io/">Raft Official Website</a></p>
+<p><a href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">Raft Paper</a></p>
+<p><a href="https://pdos.csail.mit.edu/6.824/index.html">MIT6.824 Official</a></p>
+<p><a href="https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab2.md">Potato’s Implimentation Doc</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/blog/zh/leveldb-%E5%90%AF%E5%8A%A8/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>LevelDB 启动</span></a>
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/blog/zh/arch&#43;dwm%E5%A5%97%E9%A4%90/"><span>Arch&#43;DWM生产力套餐尝试</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
