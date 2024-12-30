@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/transaction/</link>
     <description>Recent content in Transaction on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 28 Sep 2023 10:43:23 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/transaction/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -50,7 +51,7 @@ end
 &lt;blockquote&gt;
 &lt;p&gt;&lt;code&gt;lock + write + data&lt;/code&gt;: for transactions, where &lt;code&gt;lock&lt;/code&gt; indicates that a cell is held by a transaction, and &lt;code&gt;write&lt;/code&gt; represents the data visibility.&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;notify + ack&lt;/code&gt;: for watcher or notifier mechanisms.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
@@ -64,7 +65,7 @@ end
 &lt;/ol&gt;
 &lt;blockquote&gt;
 &lt;p&gt;The locking process utilizes the primary-secondary mechanism, where one write is chosen as the &lt;strong&gt;primary&lt;/strong&gt; and all others as &lt;strong&gt;secondary&lt;/strong&gt;. The secondary locks point to the primary.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;Clearly, data in the prewrite phase is invisible to other transactions.&lt;/p&gt;
 &lt;h4 id=&#34;commit&#34;&gt;Commit&lt;/h4&gt;
@@ -87,9 +88,9 @@ end
 &lt;h2 id=&#34;percolator-in-tidb&#34;&gt;Percolator in TiDB&lt;/h2&gt;
 &lt;p&gt;Based on our analysis above, Percolator is an optimized 2PC distributed transaction implementation, relying on a storage engine that supports single-node transactions.&lt;/p&gt;
 &lt;p&gt;Let&amp;rsquo;s briefly look at how TiDB uses Percolator to implement distributed transactions.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;The architecture of TiDB and TiKV is shown above. Data from relational tables in TiDB is ultimately mapped to KV pairs in TiKV. TiKV is a distributed KV store based on Raft and RocksDB. RocksDB supports transactional operations on KV pairs.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Thus, the transaction path in TiDB is as follows: a relational table transaction is converted into a set of KV transactions, which are executed based on Percolator to achieve relational table transaction operations.&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Of course, it cannot provide the same transactional semantics and performance guarantees as a single-node TP database. However, a shared-nothing architecture has its own advantages, which may make this trade-off acceptable.&lt;/p&gt;
@@ -138,13 +139,13 @@ end
 &lt;p&gt;&lt;strong&gt;Third-Party Payments&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;In a microservice architecture, payment and orders are independent services. The order payment status depends on a notification from the financial service, which, in turn, depends on notifications from a third-party payment service.&lt;/p&gt;
 &lt;p&gt;A classic scenario is illustrated below:&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;From the diagram, there are two calls: the third-party payment service calling the payment service, and the payment service calling the order service. Both calls can encounter &lt;strong&gt;timeouts&lt;/strong&gt;. Without distributed transactions, the actual payment status and the final payment status visible to the user may become &lt;strong&gt;inconsistent&lt;/strong&gt;.&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h1 id=&#34;implementation-approaches&#34;&gt;Implementation Approaches&lt;/h1&gt;
 &lt;h2 id=&#34;two-phase-commit-2pc&#34;&gt;Two-Phase Commit (2PC)&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;A transaction commit is divided into two phases:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
@@ -191,7 +192,7 @@ end
 &lt;h2 id=&#34;local-message-table&#34;&gt;Local Message Table&lt;/h2&gt;
 &lt;p&gt;The transaction initiator maintains a &lt;strong&gt;local message table&lt;/strong&gt;, and operations on the business table and the message table are within the same local transaction. Asynchronously, a &lt;strong&gt;scheduled task&lt;/strong&gt; scans the message table and delivers the message downstream.&lt;/p&gt;
 &lt;p&gt;The broad concept of the local message table also allows downstream notification through methods other than message delivery, such as RPC calls.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34; alt=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34; src=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34;&gt;&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;The initiator executes a local transaction, operating both the business table and the local message table.&lt;/li&gt;
 &lt;li&gt;A scheduled task scans pending local messages (in the message table) and sends them to the message queue:
@@ -260,7 +261,7 @@ end
 &lt;h3 id=&#34;classic-scenario&#34;&gt;Classic Scenario&lt;/h3&gt;
 &lt;p&gt;&lt;strong&gt;Payment Callback&lt;/strong&gt;:&lt;/p&gt;
 &lt;p&gt;The payment service receives a successful payment notification from a third-party service, updates the payment status of the order, and synchronously notifies the order service. If this synchronous notification fails, an asynchronous script will keep retrying the order service interface.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34; src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/&#34;&gt;Distributed Transactions: All You Need to Know&lt;/a&gt;&lt;/p&gt;
 </description>

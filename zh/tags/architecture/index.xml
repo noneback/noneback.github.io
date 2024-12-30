@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>architecture on NoneBack</title>
+    <title>Architecture on NoneBack</title>
     <link>https://noneback.github.io/zh/tags/architecture/</link>
-    <description>Recent content in architecture on NoneBack created by </description>
+    <description>Recent content in Architecture on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 20 May 2021 23:55:11 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/architecture/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -39,13 +40,13 @@
 &lt;p&gt;第三方支付&lt;/p&gt;
 &lt;p&gt;微服务架构下，支付与订单都是独立的服务。订单的支付状态依赖于财经服务的通知。财经服务又依赖于第三方支付服务的通知。&lt;/p&gt;
 &lt;p&gt;一个经典的场景如图：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;从图中可以看出有两次调用，第三方支付调用支付服务，以及支付服务调用订单服务，这两步调用都可能出现&lt;strong&gt;调用超时&lt;/strong&gt;的情况，此处如果没有分布式事务的保证，就会出现用户订单实际支付情况与最终用户看到的订单支付情况&lt;strong&gt;不一致&lt;/strong&gt;的情况。&lt;/p&gt;
 &lt;h1 id=&#34;实现方案&#34;&gt;实现方案&lt;/h1&gt;
 &lt;h2 id=&#34;两阶段提交&#34;&gt;两阶段提交&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;一次事务的提交主要分为两个阶段：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;

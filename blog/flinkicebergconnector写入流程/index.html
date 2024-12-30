@@ -10,7 +10,7 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
     <link rel="canonical" href="https://noneback.github.io/blog/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -38,8 +38,7 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
 <meta property="article:modified_time" content="2022-10-10T10:43:38+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Flink-Iceberg-Connector Write Process"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Flink-Iceberg-Connector Write Process"/>
 <meta name="twitter:description" content="The Iceberg community provides an official Flink Connector, and this chapter&rsquo;s source code analysis is based on that.
 Overview of the Write Submission Process Flink writes data through RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).
 private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Preconditions.checkArgument(inputCreator != null, &#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream."/>
@@ -49,16 +48,16 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "Flink-Iceberg-Connector Write Process",
       "item": "https://noneback.github.io/blog/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/"
     }
@@ -75,7 +74,7 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
   "keywords": [
     "big data", "lake house", "stream compute", "storage"
   ],
-  "articleBody": "The Iceberg community provides an official Flink Connector, and this chapter’s source code analysis is based on that.\nOverview of the Write Submission Process Flink writes data through RowData - distributeStream - WriterStream - CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).\nprivate T DataStreamSinkT chainIcebergOperators() { Preconditions.checkArgument(inputCreator != null, \"Please use forRowData() or forMapperOutputType() to initialize the input DataStream.\"); Preconditions.checkNotNull(tableLoader, \"Table loader shouldn't be null\"); DataStreamRowData rowDataInput = inputCreator.apply(uidPrefix); if (table == null) { tableLoader.open(); try (TableLoader loader = tableLoader) { this.table = loader.loadTable(); } catch (IOException e) { throw new UncheckedIOException(\"Failed to load iceberg table from table loader: \" + tableLoader, e); } } ListInteger equalityFieldIds = checkAndGetEqualityFieldIds(); RowType flinkRowType = toFlinkRowType(table.schema(), tableSchema); DataStreamRowData distributeStream = distributeDataStream( rowDataInput, table.properties(), equalityFieldIds, table.spec(), table.schema(), flinkRowType); SingleOutputStreamOperatorWriteResult writerStream = appendWriter(distributeStream, flinkRowType, equalityFieldIds); SingleOutputStreamOperatorVoid committerStream = appendCommitter(writerStream); return appendDummySink(committerStream); } Write Process Source Code Analysis WriteStream private SingleOutputStreamOperatorWriteResult appendWriter(DataStreamRowData input, RowType flinkRowType, ListInteger equalityFieldIds) { boolean upsertMode = upsert || PropertyUtil.propertyAsBoolean(table.properties(), UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT); if (upsertMode) { Preconditions.checkState(!overwrite, \"OVERWRITE mode shouldn't be enabled when configuring to use UPSERT data stream.\"); Preconditions.checkState(!equalityFieldIds.isEmpty(), \"Equality field columns shouldn't be empty when configuring to use UPSERT data stream.\"); if (!table.spec().isUnpartitioned()) { for (PartitionField partitionField : table.spec().fields()) { Preconditions.checkState(equalityFieldIds.contains(partitionField.sourceId()), \"In UPSERT mode, partition field '%s' should be included in equality fields: '%s'\", partitionField, equalityFieldColumns); } } } IcebergStreamWriterRowData streamWriter = createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode); int parallelism = writeParallelism == null ? input.getParallelism() : writeParallelism; SingleOutputStreamOperatorWriteResult writerStream = input .transform(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.of(WriteResult.class), streamWriter) .setParallelism(parallelism); if (uidPrefix != null) { writerStream = writerStream.uid(uidPrefix + \"-writer\"); } return writerStream; } The WriterStream operator is transformed from the distributeStream, with RowData as input and WriteResult as output. The transformation logic is encapsulated in the IcebergStreamWriter, which processes each element using processElement:\nprivate transient TaskWriterT writer; @Override public void processElement(StreamRecordT element) throws Exception { writer.write(element.getValue()); } IcebergStreamWriter delegates the writing to a TaskWriter created by TaskWriterFactory. The specific type could be PartitionedDeltaWriter or UnpartitionedWriter:\npublic TaskWriterRowData create() { Preconditions.checkNotNull(outputFileFactory, \"The outputFileFactory shouldn't be null if we have invoked the initialize().\"); if (equalityFieldIds == null || equalityFieldIds.isEmpty()) { if (spec.isUnpartitioned()) { return new UnpartitionedWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes); } else { return new RowDataPartitionedFanoutWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema); } } else { if (spec.isUnpartitioned()) { return new UnpartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert); } else { return new PartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert); } } } CommitterStream The CommitterStream receives WriteResult as input with no output. WriteResult contains the data files produced by WriteStream:\npublic class WriteResult implements Serializable { private DataFile[] dataFiles; private DeleteFile[] deleteFiles; private CharSequence[] referencedDataFiles; ... } The core logic for processing data file submissions is encapsulated in IcebergFilesCommitter. The IcebergFilesCommitter maintains a list of files that need to be committed for each checkpoint. Once a checkpoint completes, it tries to commit those files to Iceberg.\nclass IcebergFilesCommitter extends AbstractStreamOperatorVoid implements OneInputStreamOperatorWriteResult, Void, BoundedOneInput { ... private final NavigableMapLong, byte[] dataFilesPerCheckpoint = Maps.newTreeMap(); private final ListWriteResult writeResultsOfCurrentCkpt = Lists.newArrayList(); private transient ListStateSortedMapLong, byte[] checkpointsState; ... } The processElement method stores WriteResult from upstream in writeResultsOfCurrentCkpt:\n@Override public void processElement(StreamRecordWriteResult element) { this.writeResultsOfCurrentCkpt.add(element.getValue()); } During checkpointing (snapshotState), it saves the current checkpoint’s data in dataFilesPerCheckpoint. Later, once the checkpoint is completed (notifyCheckpointComplete), it commits the files:\npublic void snapshotState(StateSnapshotContext context) throws Exception { long checkpointId = context.getCheckpointId(); LOG.info(\"Start to flush snapshot state to state backend, table: {}, checkpointId: {}\", table, checkpointId); dataFilesPerCheckpoint.put(checkpointId, writeToManifest(checkpointId)); checkpointsState.clear(); checkpointsState.add(dataFilesPerCheckpoint); jobIdState.clear(); jobIdState.add(flinkJobId); writeResultsOfCurrentCkpt.clear(); } @Override public void notifyCheckpointComplete(long checkpointId) throws Exception { if (checkpointId  maxCommittedCheckpointId) { commitUpToCheckpoint(dataFilesPerCheckpoint, flinkJobId, checkpointId); this.maxCommittedCheckpointId = checkpointId; } } The commit logic is handled by commitUpToCheckpoint, which generates a new snapshot and adds it to Iceberg’s metadata:\nprivate void commitUpToCheckpoint(NavigableMapLong, byte[] deltaManifestsMap, String newFlinkJobId, long checkpointId) throws IOException { NavigableMapLong, byte[] pendingMap = deltaManifestsMap.headMap(checkpointId, true); ListManifestFile manifests = Lists.newArrayList(); NavigableMapLong, WriteResult pendingResults = Maps.newTreeMap(); for (Map.EntryLong, byte[] e : pendingMap.entrySet()) { if (Arrays.equals(EMPTY_MANIFEST_DATA, e.getValue())) { continue; } DeltaManifests deltaManifests = SimpleVersionedSerialization .readVersionAndDeSerialize(DeltaManifestsSerializer.INSTANCE, e.getValue()); pendingResults.put(e.getKey(), FlinkManifestUtil.readCompletedFiles(deltaManifests, table.io())); manifests.addAll(deltaManifests.manifests()); } int totalFiles = pendingResults.values().stream() .mapToInt(r - r.dataFiles().length + r.deleteFiles().length).sum(); continuousEmptyCheckpoints = totalFiles == 0 ? continuousEmptyCheckpoints + 1 : 0; if (totalFiles != 0 || continuousEmptyCheckpoints % maxContinuousEmptyCommits == 0) { if (replacePartitions) { replacePartitions(pendingResults, newFlinkJobId, checkpointId); } else { commitDeltaTxn(pendingResults, newFlinkJobId, checkpointId); } continuousEmptyCheckpoints = 0; } pendingMap.clear(); for (ManifestFile manifest : manifests) { try { table.io().deleteFile(manifest.path()); } catch (Exception e) { LOG.warn(\"The iceberg transaction has been committed, but we failed to clean the temporary flink manifests: {}\", manifest.path(), e); } } } public void commit(TableMetadata base, TableMetadata metadata) { if (base != current()) { if (base != null) { throw new CommitFailedException(\"Cannot commit: stale table metadata\"); } else { throw new AlreadyExistsException(\"Table already exists: %s\", tableName()); } } if (base == metadata) { LOG.info(\"Nothing to commit.\"); return; } long start = System.currentTimeMillis(); doCommit(base, metadata); deleteRemovedMetadataFiles(base, metadata); requestRefresh(); LOG.info(\"Successfully committed to table {} in {} ms\", tableName(), System.currentTimeMillis() - start); } Write Issues 1. Lots of Small Files For streaming writes, new files are generated each time, resulting in a lot of small files. While object storage supports small files well, it may increase Iceberg metadata overhead, as metadata files need to keep track of each data file. This can cause metadata files to become large and impact performance.\nSolution:\n Iceberg Rewrite Action: Iceberg supports rewriting data and metadata files via Flink or Spark actions, which need to be triggered separately. Snapshot Expiry: Configure snapshot expiration to periodically delete old snapshots.  import org.apache.iceberg.flink.actions.Actions; TableLoader tableLoader = TableLoader.fromHadoopTable(\"hdfs://nn:8020/warehouse/path\"); Table table = tableLoader.loadTable(); RewriteDataFilesActionResult result = Actions.forTable(table) .rewriteDataFiles() .execute(); Iceberg Flink Documentation Iceberg Maintenance Documentation\n2. Performance Issues with High Concurrency Iceberg’s writing process creates a new snapshot for each commit and uses optimistic concurrency control to handle conflicts. In high-concurrency scenarios, this can lead to many commits being retried, impacting performance.\nSolution:\n Batch Commit: Introduce a caching layer or additional service to batch commits to the data lake, reducing the number of concurrent commit operations. This cache layer can also compact multiple data files before committing.   References: Optimizing Iceberg Writes for High Concurrency InfoQ Article on Iceberg Optimization\n 3. Flink Iceberg Connector Limitations The Flink Iceberg Connector does not support hidden partitions or preprocessing of partition fields.\n",
+  "articleBody": "The Iceberg community provides an official Flink Connector, and this chapter’s source code analysis is based on that.\nOverview of the Write Submission Process Flink writes data through RowData -\u003e distributeStream -\u003e WriterStream -\u003e CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).\nprivate \u003cT\u003e DataStreamSink\u003cT\u003e chainIcebergOperators() { Preconditions.checkArgument(inputCreator != null, \"Please use forRowData() or forMapperOutputType() to initialize the input DataStream.\"); Preconditions.checkNotNull(tableLoader, \"Table loader shouldn't be null\"); DataStream\u003cRowData\u003e rowDataInput = inputCreator.apply(uidPrefix); if (table == null) { tableLoader.open(); try (TableLoader loader = tableLoader) { this.table = loader.loadTable(); } catch (IOException e) { throw new UncheckedIOException(\"Failed to load iceberg table from table loader: \" + tableLoader, e); } } List\u003cInteger\u003e equalityFieldIds = checkAndGetEqualityFieldIds(); RowType flinkRowType = toFlinkRowType(table.schema(), tableSchema); DataStream\u003cRowData\u003e distributeStream = distributeDataStream( rowDataInput, table.properties(), equalityFieldIds, table.spec(), table.schema(), flinkRowType); SingleOutputStreamOperator\u003cWriteResult\u003e writerStream = appendWriter(distributeStream, flinkRowType, equalityFieldIds); SingleOutputStreamOperator\u003cVoid\u003e committerStream = appendCommitter(writerStream); return appendDummySink(committerStream); } Write Process Source Code Analysis WriteStream private SingleOutputStreamOperator\u003cWriteResult\u003e appendWriter(DataStream\u003cRowData\u003e input, RowType flinkRowType, List\u003cInteger\u003e equalityFieldIds) { boolean upsertMode = upsert || PropertyUtil.propertyAsBoolean(table.properties(), UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT); if (upsertMode) { Preconditions.checkState(!overwrite, \"OVERWRITE mode shouldn't be enabled when configuring to use UPSERT data stream.\"); Preconditions.checkState(!equalityFieldIds.isEmpty(), \"Equality field columns shouldn't be empty when configuring to use UPSERT data stream.\"); if (!table.spec().isUnpartitioned()) { for (PartitionField partitionField : table.spec().fields()) { Preconditions.checkState(equalityFieldIds.contains(partitionField.sourceId()), \"In UPSERT mode, partition field '%s' should be included in equality fields: '%s'\", partitionField, equalityFieldColumns); } } } IcebergStreamWriter\u003cRowData\u003e streamWriter = createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode); int parallelism = writeParallelism == null ? input.getParallelism() : writeParallelism; SingleOutputStreamOperator\u003cWriteResult\u003e writerStream = input .transform(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.of(WriteResult.class), streamWriter) .setParallelism(parallelism); if (uidPrefix != null) { writerStream = writerStream.uid(uidPrefix + \"-writer\"); } return writerStream; } The WriterStream operator is transformed from the distributeStream, with RowData as input and WriteResult as output. The transformation logic is encapsulated in the IcebergStreamWriter, which processes each element using processElement:\nprivate transient TaskWriter\u003cT\u003e writer; @Override public void processElement(StreamRecord\u003cT\u003e element) throws Exception { writer.write(element.getValue()); } IcebergStreamWriter delegates the writing to a TaskWriter created by TaskWriterFactory. The specific type could be PartitionedDeltaWriter or UnpartitionedWriter:\npublic TaskWriter\u003cRowData\u003e create() { Preconditions.checkNotNull(outputFileFactory, \"The outputFileFactory shouldn't be null if we have invoked the initialize().\"); if (equalityFieldIds == null || equalityFieldIds.isEmpty()) { if (spec.isUnpartitioned()) { return new UnpartitionedWriter\u003c\u003e(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes); } else { return new RowDataPartitionedFanoutWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema); } } else { if (spec.isUnpartitioned()) { return new UnpartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert); } else { return new PartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert); } } } CommitterStream The CommitterStream receives WriteResult as input with no output. WriteResult contains the data files produced by WriteStream:\npublic class WriteResult implements Serializable { private DataFile[] dataFiles; private DeleteFile[] deleteFiles; private CharSequence[] referencedDataFiles; ... } The core logic for processing data file submissions is encapsulated in IcebergFilesCommitter. The IcebergFilesCommitter maintains a list of files that need to be committed for each checkpoint. Once a checkpoint completes, it tries to commit those files to Iceberg.\nclass IcebergFilesCommitter extends AbstractStreamOperator\u003cVoid\u003e implements OneInputStreamOperator\u003cWriteResult, Void\u003e, BoundedOneInput { ... private final NavigableMap\u003cLong, byte[]\u003e dataFilesPerCheckpoint = Maps.newTreeMap(); private final List\u003cWriteResult\u003e writeResultsOfCurrentCkpt = Lists.newArrayList(); private transient ListState\u003cSortedMap\u003cLong, byte[]\u003e\u003e checkpointsState; ... } The processElement method stores WriteResult from upstream in writeResultsOfCurrentCkpt:\n@Override public void processElement(StreamRecord\u003cWriteResult\u003e element) { this.writeResultsOfCurrentCkpt.add(element.getValue()); } During checkpointing (snapshotState), it saves the current checkpoint’s data in dataFilesPerCheckpoint. Later, once the checkpoint is completed (notifyCheckpointComplete), it commits the files:\npublic void snapshotState(StateSnapshotContext context) throws Exception { long checkpointId = context.getCheckpointId(); LOG.info(\"Start to flush snapshot state to state backend, table: {}, checkpointId: {}\", table, checkpointId); dataFilesPerCheckpoint.put(checkpointId, writeToManifest(checkpointId)); checkpointsState.clear(); checkpointsState.add(dataFilesPerCheckpoint); jobIdState.clear(); jobIdState.add(flinkJobId); writeResultsOfCurrentCkpt.clear(); } @Override public void notifyCheckpointComplete(long checkpointId) throws Exception { if (checkpointId \u003e maxCommittedCheckpointId) { commitUpToCheckpoint(dataFilesPerCheckpoint, flinkJobId, checkpointId); this.maxCommittedCheckpointId = checkpointId; } } The commit logic is handled by commitUpToCheckpoint, which generates a new snapshot and adds it to Iceberg’s metadata:\nprivate void commitUpToCheckpoint(NavigableMap\u003cLong, byte[]\u003e deltaManifestsMap, String newFlinkJobId, long checkpointId) throws IOException { NavigableMap\u003cLong, byte[]\u003e pendingMap = deltaManifestsMap.headMap(checkpointId, true); List\u003cManifestFile\u003e manifests = Lists.newArrayList(); NavigableMap\u003cLong, WriteResult\u003e pendingResults = Maps.newTreeMap(); for (Map.Entry\u003cLong, byte[]\u003e e : pendingMap.entrySet()) { if (Arrays.equals(EMPTY_MANIFEST_DATA, e.getValue())) { continue; } DeltaManifests deltaManifests = SimpleVersionedSerialization .readVersionAndDeSerialize(DeltaManifestsSerializer.INSTANCE, e.getValue()); pendingResults.put(e.getKey(), FlinkManifestUtil.readCompletedFiles(deltaManifests, table.io())); manifests.addAll(deltaManifests.manifests()); } int totalFiles = pendingResults.values().stream() .mapToInt(r -\u003e r.dataFiles().length + r.deleteFiles().length).sum(); continuousEmptyCheckpoints = totalFiles == 0 ? continuousEmptyCheckpoints + 1 : 0; if (totalFiles != 0 || continuousEmptyCheckpoints % maxContinuousEmptyCommits == 0) { if (replacePartitions) { replacePartitions(pendingResults, newFlinkJobId, checkpointId); } else { commitDeltaTxn(pendingResults, newFlinkJobId, checkpointId); } continuousEmptyCheckpoints = 0; } pendingMap.clear(); for (ManifestFile manifest : manifests) { try { table.io().deleteFile(manifest.path()); } catch (Exception e) { LOG.warn(\"The iceberg transaction has been committed, but we failed to clean the temporary flink manifests: {}\", manifest.path(), e); } } } public void commit(TableMetadata base, TableMetadata metadata) { if (base != current()) { if (base != null) { throw new CommitFailedException(\"Cannot commit: stale table metadata\"); } else { throw new AlreadyExistsException(\"Table already exists: %s\", tableName()); } } if (base == metadata) { LOG.info(\"Nothing to commit.\"); return; } long start = System.currentTimeMillis(); doCommit(base, metadata); deleteRemovedMetadataFiles(base, metadata); requestRefresh(); LOG.info(\"Successfully committed to table {} in {} ms\", tableName(), System.currentTimeMillis() - start); } Write Issues 1. Lots of Small Files For streaming writes, new files are generated each time, resulting in a lot of small files. While object storage supports small files well, it may increase Iceberg metadata overhead, as metadata files need to keep track of each data file. This can cause metadata files to become large and impact performance.\nSolution:\nIceberg Rewrite Action: Iceberg supports rewriting data and metadata files via Flink or Spark actions, which need to be triggered separately. Snapshot Expiry: Configure snapshot expiration to periodically delete old snapshots. import org.apache.iceberg.flink.actions.Actions; TableLoader tableLoader = TableLoader.fromHadoopTable(\"hdfs://nn:8020/warehouse/path\"); Table table = tableLoader.loadTable(); RewriteDataFilesActionResult result = Actions.forTable(table) .rewriteDataFiles() .execute(); Iceberg Flink Documentation Iceberg Maintenance Documentation\n2. Performance Issues with High Concurrency Iceberg’s writing process creates a new snapshot for each commit and uses optimistic concurrency control to handle conflicts. In high-concurrency scenarios, this can lead to many commits being retried, impacting performance.\nSolution:\nBatch Commit: Introduce a caching layer or additional service to batch commits to the data lake, reducing the number of concurrent commit operations. This cache layer can also compact multiple data files before committing. References: Optimizing Iceberg Writes for High Concurrency InfoQ Article on Iceberg Optimization\n3. Flink Iceberg Connector Limitations The Flink Iceberg Connector does not support hidden partitions or preprocessing of partition fields.\n",
   "wordCount" : "1056",
   "inLanguage": "en",
   "datePublished": "2022-10-10T10:43:38+08:00",
@@ -150,10 +149,10 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -215,11 +214,11 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -243,13 +242,13 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
       ·
       
       
-      <a href="https://noneback.github.io/tags/big-data/">big data</a>
+      <a href="https://noneback.github.io/tags/big-data/">Big Data</a>
       
-      <a href="https://noneback.github.io/tags/lake-house/">lake house</a>
+      <a href="https://noneback.github.io/tags/lake-house/">Lake House</a>
       
-      <a href="https://noneback.github.io/tags/stream-compute/">stream compute</a>
+      <a href="https://noneback.github.io/tags/stream-compute/">Stream Compute</a>
       
-      <a href="https://noneback.github.io/tags/storage/">storage</a>
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
     </small>
   
@@ -279,205 +278,205 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
   <section class="blog-content"><p>The Iceberg community provides an official Flink Connector, and this chapter&rsquo;s source code analysis is based on that.</p>
 <h2 id="overview-of-the-write-submission-process">Overview of the Write Submission Process</h2>
 <p>Flink writes data through <code>RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream</code>. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).</p>
-<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1655962006990-826460c7-b6fc-4efe-a8e0-65cc080ffea9.png" alt="Flink-Iceberg Write Flow"></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> DataStreamSink<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">chainIcebergOperators</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
-    Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkArgument</span><span style="color:#f92672">(</span>inputCreator <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">,</span>
-        <span style="color:#e6db74">&#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;</span><span style="color:#f92672">);</span>
-    Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkNotNull</span><span style="color:#f92672">(</span>tableLoader<span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Table loader shouldn&#39;t be null&#34;</span><span style="color:#f92672">);</span>
-
-    DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> rowDataInput <span style="color:#f92672">=</span> inputCreator<span style="color:#f92672">.</span><span style="color:#a6e22e">apply</span><span style="color:#f92672">(</span>uidPrefix<span style="color:#f92672">);</span>
-
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>table <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        tableLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">open</span><span style="color:#f92672">();</span>
-        <span style="color:#66d9ef">try</span> <span style="color:#f92672">(</span>TableLoader loader <span style="color:#f92672">=</span> tableLoader<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">table</span> <span style="color:#f92672">=</span> loader<span style="color:#f92672">.</span><span style="color:#a6e22e">loadTable</span><span style="color:#f92672">();</span>
-        <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>IOException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> UncheckedIOException<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Failed to load iceberg table from table loader: &#34;</span> <span style="color:#f92672">+</span> tableLoader<span style="color:#f92672">,</span> e<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span>
-
-    List<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> equalityFieldIds <span style="color:#f92672">=</span> checkAndGetEqualityFieldIds<span style="color:#f92672">();</span>
-
-    RowType flinkRowType <span style="color:#f92672">=</span> toFlinkRowType<span style="color:#f92672">(</span>table<span style="color:#f92672">.</span><span style="color:#a6e22e">schema</span><span style="color:#f92672">(),</span> tableSchema<span style="color:#f92672">);</span>
-
-    DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> distributeStream <span style="color:#f92672">=</span> distributeDataStream<span style="color:#f92672">(</span>
-        rowDataInput<span style="color:#f92672">,</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">properties</span><span style="color:#f92672">(),</span> equalityFieldIds<span style="color:#f92672">,</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">spec</span><span style="color:#f92672">(),</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">schema</span><span style="color:#f92672">(),</span> flinkRowType<span style="color:#f92672">);</span>
-
-    SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writerStream <span style="color:#f92672">=</span> appendWriter<span style="color:#f92672">(</span>distributeStream<span style="color:#f92672">,</span> flinkRowType<span style="color:#f92672">,</span>
-        equalityFieldIds<span style="color:#f92672">);</span>
-
-    SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> committerStream <span style="color:#f92672">=</span> appendCommitter<span style="color:#f92672">(</span>writerStream<span style="color:#f92672">);</span>
-
-    <span style="color:#66d9ef">return</span> appendDummySink<span style="color:#f92672">(</span>committerStream<span style="color:#f92672">);</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><h2 id="write-process-source-code-analysis">Write Process Source Code Analysis</h2>
+<p><img alt="Flink-Iceberg Write Flow" src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1655962006990-826460c7-b6fc-4efe-a8e0-65cc080ffea9.png"></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">private</span> <span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> DataStreamSink<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">chainIcebergOperators</span>() {
+</span></span><span style="display:flex;"><span>    Preconditions.<span style="color:#a6e22e">checkArgument</span>(inputCreator <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;</span>);
+</span></span><span style="display:flex;"><span>    Preconditions.<span style="color:#a6e22e">checkNotNull</span>(tableLoader, <span style="color:#e6db74">&#34;Table loader shouldn&#39;t be null&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> rowDataInput <span style="color:#f92672">=</span> inputCreator.<span style="color:#a6e22e">apply</span>(uidPrefix);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (table <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>        tableLoader.<span style="color:#a6e22e">open</span>();
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">try</span> (TableLoader loader <span style="color:#f92672">=</span> tableLoader) {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">table</span> <span style="color:#f92672">=</span> loader.<span style="color:#a6e22e">loadTable</span>();
+</span></span><span style="display:flex;"><span>        } <span style="color:#66d9ef">catch</span> (IOException e) {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> UncheckedIOException(<span style="color:#e6db74">&#34;Failed to load iceberg table from table loader: &#34;</span> <span style="color:#f92672">+</span> tableLoader, e);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    List<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> equalityFieldIds <span style="color:#f92672">=</span> checkAndGetEqualityFieldIds();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    RowType flinkRowType <span style="color:#f92672">=</span> toFlinkRowType(table.<span style="color:#a6e22e">schema</span>(), tableSchema);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> distributeStream <span style="color:#f92672">=</span> distributeDataStream(
+</span></span><span style="display:flex;"><span>        rowDataInput, table.<span style="color:#a6e22e">properties</span>(), equalityFieldIds, table.<span style="color:#a6e22e">spec</span>(), table.<span style="color:#a6e22e">schema</span>(), flinkRowType);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writerStream <span style="color:#f92672">=</span> appendWriter(distributeStream, flinkRowType,
+</span></span><span style="display:flex;"><span>        equalityFieldIds);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> committerStream <span style="color:#f92672">=</span> appendCommitter(writerStream);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> appendDummySink(committerStream);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="write-process-source-code-analysis">Write Process Source Code Analysis</h2>
 <h3 id="writestream">WriteStream</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">appendWriter</span><span style="color:#f92672">(</span>DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> input<span style="color:#f92672">,</span> RowType flinkRowType<span style="color:#f92672">,</span>
-                                                             List<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> equalityFieldIds<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">boolean</span> upsertMode <span style="color:#f92672">=</span> upsert <span style="color:#f92672">||</span> PropertyUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">propertyAsBoolean</span><span style="color:#f92672">(</span>table<span style="color:#f92672">.</span><span style="color:#a6e22e">properties</span><span style="color:#f92672">(),</span>
-        UPSERT_ENABLED<span style="color:#f92672">,</span> UPSERT_ENABLED_DEFAULT<span style="color:#f92672">);</span>
-
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>upsertMode<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkState</span><span style="color:#f92672">(!</span>overwrite<span style="color:#f92672">,</span>
-            <span style="color:#e6db74">&#34;OVERWRITE mode shouldn&#39;t be enabled when configuring to use UPSERT data stream.&#34;</span><span style="color:#f92672">);</span>
-        Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkState</span><span style="color:#f92672">(!</span>equalityFieldIds<span style="color:#f92672">.</span><span style="color:#a6e22e">isEmpty</span><span style="color:#f92672">(),</span>
-            <span style="color:#e6db74">&#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;</span><span style="color:#f92672">);</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>table<span style="color:#f92672">.</span><span style="color:#a6e22e">spec</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isUnpartitioned</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>PartitionField partitionField <span style="color:#f92672">:</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">spec</span><span style="color:#f92672">().</span><span style="color:#a6e22e">fields</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-                Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkState</span><span style="color:#f92672">(</span>equalityFieldIds<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>partitionField<span style="color:#f92672">.</span><span style="color:#a6e22e">sourceId</span><span style="color:#f92672">()),</span>
-                    <span style="color:#e6db74">&#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;</span><span style="color:#f92672">,</span>
-                    partitionField<span style="color:#f92672">,</span> equalityFieldColumns<span style="color:#f92672">);</span>
-            <span style="color:#f92672">}</span>
-        <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span>
-
-    IcebergStreamWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> streamWriter <span style="color:#f92672">=</span> createStreamWriter<span style="color:#f92672">(</span>table<span style="color:#f92672">,</span> flinkRowType<span style="color:#f92672">,</span> equalityFieldIds<span style="color:#f92672">,</span> upsertMode<span style="color:#f92672">);</span>
-
-    <span style="color:#66d9ef">int</span> parallelism <span style="color:#f92672">=</span> writeParallelism <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">?</span> input<span style="color:#f92672">.</span><span style="color:#a6e22e">getParallelism</span><span style="color:#f92672">()</span> <span style="color:#f92672">:</span> writeParallelism<span style="color:#f92672">;</span>
-    SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writerStream <span style="color:#f92672">=</span> input
-        <span style="color:#f92672">.</span><span style="color:#a6e22e">transform</span><span style="color:#f92672">(</span>operatorName<span style="color:#f92672">(</span>ICEBERG_STREAM_WRITER_NAME<span style="color:#f92672">),</span> TypeInformation<span style="color:#f92672">.</span><span style="color:#a6e22e">of</span><span style="color:#f92672">(</span>WriteResult<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">),</span> streamWriter<span style="color:#f92672">)</span>
-        <span style="color:#f92672">.</span><span style="color:#a6e22e">setParallelism</span><span style="color:#f92672">(</span>parallelism<span style="color:#f92672">);</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>uidPrefix <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        writerStream <span style="color:#f92672">=</span> writerStream<span style="color:#f92672">.</span><span style="color:#a6e22e">uid</span><span style="color:#f92672">(</span>uidPrefix <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;-writer&#34;</span><span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-    <span style="color:#66d9ef">return</span> writerStream<span style="color:#f92672">;</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><p>The <code>WriterStream</code> operator is transformed from the <code>distributeStream</code>, with <code>RowData</code> as input and <code>WriteResult</code> as output. The transformation logic is encapsulated in the <code>IcebergStreamWriter</code>, which processes each element using <code>processElement</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> TaskWriter<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> writer<span style="color:#f92672">;</span>
-<span style="color:#a6e22e">@Override</span>
-<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processElement</span><span style="color:#f92672">(</span>StreamRecord<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> element<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
-    writer<span style="color:#f92672">.</span><span style="color:#a6e22e">write</span><span style="color:#f92672">(</span>element<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">());</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><p><code>IcebergStreamWriter</code> delegates the writing to a <code>TaskWriter</code> created by <code>TaskWriterFactory</code>. The specific type could be <code>PartitionedDeltaWriter</code> or <code>UnpartitionedWriter</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> TaskWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">create</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
-    Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkNotNull</span><span style="color:#f92672">(</span>outputFileFactory<span style="color:#f92672">,</span>
-        <span style="color:#e6db74">&#34;The outputFileFactory shouldn&#39;t be null if we have invoked the initialize().&#34;</span><span style="color:#f92672">);</span>
-
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>equalityFieldIds <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> equalityFieldIds<span style="color:#f92672">.</span><span style="color:#a6e22e">isEmpty</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>spec<span style="color:#f92672">.</span><span style="color:#a6e22e">isUnpartitioned</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> UnpartitionedWriter<span style="color:#f92672">&lt;&gt;(</span>spec<span style="color:#f92672">,</span> format<span style="color:#f92672">,</span> appenderFactory<span style="color:#f92672">,</span> outputFileFactory<span style="color:#f92672">,</span> io<span style="color:#f92672">,</span> targetFileSizeBytes<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> RowDataPartitionedFanoutWriter<span style="color:#f92672">(</span>spec<span style="color:#f92672">,</span> format<span style="color:#f92672">,</span> appenderFactory<span style="color:#f92672">,</span> outputFileFactory<span style="color:#f92672">,</span>
-                io<span style="color:#f92672">,</span> targetFileSizeBytes<span style="color:#f92672">,</span> schema<span style="color:#f92672">,</span> flinkSchema<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>spec<span style="color:#f92672">.</span><span style="color:#a6e22e">isUnpartitioned</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> UnpartitionedDeltaWriter<span style="color:#f92672">(</span>spec<span style="color:#f92672">,</span> format<span style="color:#f92672">,</span> appenderFactory<span style="color:#f92672">,</span> outputFileFactory<span style="color:#f92672">,</span> io<span style="color:#f92672">,</span>
-                targetFileSizeBytes<span style="color:#f92672">,</span> schema<span style="color:#f92672">,</span> flinkSchema<span style="color:#f92672">,</span> equalityFieldIds<span style="color:#f92672">,</span> upsert<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> PartitionedDeltaWriter<span style="color:#f92672">(</span>spec<span style="color:#f92672">,</span> format<span style="color:#f92672">,</span> appenderFactory<span style="color:#f92672">,</span> outputFileFactory<span style="color:#f92672">,</span> io<span style="color:#f92672">,</span>
-                targetFileSizeBytes<span style="color:#f92672">,</span> schema<span style="color:#f92672">,</span> flinkSchema<span style="color:#f92672">,</span> equalityFieldIds<span style="color:#f92672">,</span> upsert<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><h3 id="committerstream">CommitterStream</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">private</span> SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">appendWriter</span>(DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> input, RowType flinkRowType,
+</span></span><span style="display:flex;"><span>                                                             List<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> equalityFieldIds) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">boolean</span> upsertMode <span style="color:#f92672">=</span> upsert <span style="color:#f92672">||</span> PropertyUtil.<span style="color:#a6e22e">propertyAsBoolean</span>(table.<span style="color:#a6e22e">properties</span>(),
+</span></span><span style="display:flex;"><span>        UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (upsertMode) {
+</span></span><span style="display:flex;"><span>        Preconditions.<span style="color:#a6e22e">checkState</span>(<span style="color:#f92672">!</span>overwrite,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;OVERWRITE mode shouldn&#39;t be enabled when configuring to use UPSERT data stream.&#34;</span>);
+</span></span><span style="display:flex;"><span>        Preconditions.<span style="color:#a6e22e">checkState</span>(<span style="color:#f92672">!</span>equalityFieldIds.<span style="color:#a6e22e">isEmpty</span>(),
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>table.<span style="color:#a6e22e">spec</span>().<span style="color:#a6e22e">isUnpartitioned</span>()) {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">for</span> (PartitionField partitionField : table.<span style="color:#a6e22e">spec</span>().<span style="color:#a6e22e">fields</span>()) {
+</span></span><span style="display:flex;"><span>                Preconditions.<span style="color:#a6e22e">checkState</span>(equalityFieldIds.<span style="color:#a6e22e">contains</span>(partitionField.<span style="color:#a6e22e">sourceId</span>()),
+</span></span><span style="display:flex;"><span>                    <span style="color:#e6db74">&#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;</span>,
+</span></span><span style="display:flex;"><span>                    partitionField, equalityFieldColumns);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    IcebergStreamWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> streamWriter <span style="color:#f92672">=</span> createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> parallelism <span style="color:#f92672">=</span> writeParallelism <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">?</span> input.<span style="color:#a6e22e">getParallelism</span>() : writeParallelism;
+</span></span><span style="display:flex;"><span>    SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writerStream <span style="color:#f92672">=</span> input
+</span></span><span style="display:flex;"><span>        .<span style="color:#a6e22e">transform</span>(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.<span style="color:#a6e22e">of</span>(WriteResult.<span style="color:#a6e22e">class</span>), streamWriter)
+</span></span><span style="display:flex;"><span>        .<span style="color:#a6e22e">setParallelism</span>(parallelism);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (uidPrefix <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>        writerStream <span style="color:#f92672">=</span> writerStream.<span style="color:#a6e22e">uid</span>(uidPrefix <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;-writer&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> writerStream;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The <code>WriterStream</code> operator is transformed from the <code>distributeStream</code>, with <code>RowData</code> as input and <code>WriteResult</code> as output. The transformation logic is encapsulated in the <code>IcebergStreamWriter</code>, which processes each element using <code>processElement</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> TaskWriter<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> writer;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">@Override</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processElement</span>(StreamRecord<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> element) <span style="color:#66d9ef">throws</span> Exception {
+</span></span><span style="display:flex;"><span>    writer.<span style="color:#a6e22e">write</span>(element.<span style="color:#a6e22e">getValue</span>());
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p><code>IcebergStreamWriter</code> delegates the writing to a <code>TaskWriter</code> created by <code>TaskWriterFactory</code>. The specific type could be <code>PartitionedDeltaWriter</code> or <code>UnpartitionedWriter</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> TaskWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">create</span>() {
+</span></span><span style="display:flex;"><span>    Preconditions.<span style="color:#a6e22e">checkNotNull</span>(outputFileFactory,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;The outputFileFactory shouldn&#39;t be null if we have invoked the initialize().&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (equalityFieldIds <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> equalityFieldIds.<span style="color:#a6e22e">isEmpty</span>()) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (spec.<span style="color:#a6e22e">isUnpartitioned</span>()) {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> UnpartitionedWriter<span style="color:#f92672">&lt;&gt;</span>(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes);
+</span></span><span style="display:flex;"><span>        } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> RowDataPartitionedFanoutWriter(spec, format, appenderFactory, outputFileFactory,
+</span></span><span style="display:flex;"><span>                io, targetFileSizeBytes, schema, flinkSchema);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (spec.<span style="color:#a6e22e">isUnpartitioned</span>()) {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> UnpartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io,
+</span></span><span style="display:flex;"><span>                targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert);
+</span></span><span style="display:flex;"><span>        } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> PartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io,
+</span></span><span style="display:flex;"><span>                targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="committerstream">CommitterStream</h3>
 <p>The <code>CommitterStream</code> receives <code>WriteResult</code> as input with no output. <code>WriteResult</code> contains the data files produced by <code>WriteStream</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteResult</span> <span style="color:#66d9ef">implements</span> Serializable <span style="color:#f92672">{</span>
-  <span style="color:#66d9ef">private</span> DataFile<span style="color:#f92672">[]</span> dataFiles<span style="color:#f92672">;</span>
-  <span style="color:#66d9ef">private</span> DeleteFile<span style="color:#f92672">[]</span> deleteFiles<span style="color:#f92672">;</span>
-  <span style="color:#66d9ef">private</span> CharSequence<span style="color:#f92672">[]</span> referencedDataFiles<span style="color:#f92672">;</span>
-  <span style="color:#f92672">...</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><p>The core logic for processing data file submissions is encapsulated in <code>IcebergFilesCommitter</code>. The <code>IcebergFilesCommitter</code> maintains a list of files that need to be committed for each checkpoint. Once a checkpoint completes, it tries to commit those files to Iceberg.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IcebergFilesCommitter</span> <span style="color:#66d9ef">extends</span> AbstractStreamOperator<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span>
-    <span style="color:#66d9ef">implements</span> OneInputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">,</span> Void<span style="color:#f92672">&gt;,</span> BoundedOneInput <span style="color:#f92672">{</span>
-    <span style="color:#f92672">...</span>
-
-    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> NavigableMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> dataFilesPerCheckpoint <span style="color:#f92672">=</span> Maps<span style="color:#f92672">.</span><span style="color:#a6e22e">newTreeMap</span><span style="color:#f92672">();</span>
-    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> List<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writeResultsOfCurrentCkpt <span style="color:#f92672">=</span> Lists<span style="color:#f92672">.</span><span style="color:#a6e22e">newArrayList</span><span style="color:#f92672">();</span>
-    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> ListState<span style="color:#f92672">&lt;</span>SortedMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;&gt;</span> checkpointsState<span style="color:#f92672">;</span>
-    <span style="color:#f92672">...</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><p>The <code>processElement</code> method stores <code>WriteResult</code> from upstream in <code>writeResultsOfCurrentCkpt</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a6e22e">@Override</span>
-<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processElement</span><span style="color:#f92672">(</span>StreamRecord<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> element<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">writeResultsOfCurrentCkpt</span><span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>element<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">());</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><p>During checkpointing (<code>snapshotState</code>), it saves the current checkpoint&rsquo;s data in <code>dataFilesPerCheckpoint</code>. Later, once the checkpoint is completed (<code>notifyCheckpointComplete</code>), it commits the files:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">snapshotState</span><span style="color:#f92672">(</span>StateSnapshotContext context<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">long</span> checkpointId <span style="color:#f92672">=</span> context<span style="color:#f92672">.</span><span style="color:#a6e22e">getCheckpointId</span><span style="color:#f92672">();</span>
-    LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">info</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Start to flush snapshot state to state backend, table: {}, checkpointId: {}&#34;</span><span style="color:#f92672">,</span> table<span style="color:#f92672">,</span> checkpointId<span style="color:#f92672">);</span>
-
-    dataFilesPerCheckpoint<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>checkpointId<span style="color:#f92672">,</span> writeToManifest<span style="color:#f92672">(</span>checkpointId<span style="color:#f92672">));</span>
-    checkpointsState<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">();</span>
-    checkpointsState<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>dataFilesPerCheckpoint<span style="color:#f92672">);</span>
-
-    jobIdState<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">();</span>
-    jobIdState<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>flinkJobId<span style="color:#f92672">);</span>
-
-    writeResultsOfCurrentCkpt<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">();</span>
-<span style="color:#f92672">}</span>
-
-<span style="color:#a6e22e">@Override</span>
-<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">notifyCheckpointComplete</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> checkpointId<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>checkpointId <span style="color:#f92672">&gt;</span> maxCommittedCheckpointId<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        commitUpToCheckpoint<span style="color:#f92672">(</span>dataFilesPerCheckpoint<span style="color:#f92672">,</span> flinkJobId<span style="color:#f92672">,</span> checkpointId<span style="color:#f92672">);</span>
-        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">maxCommittedCheckpointId</span> <span style="color:#f92672">=</span> checkpointId<span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><p>The commit logic is handled by <code>commitUpToCheckpoint</code>, which generates a new snapshot and adds it to Iceberg&rsquo;s metadata:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commitUpToCheckpoint</span><span style="color:#f92672">(</span>NavigableMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> deltaManifestsMap<span style="color:#f92672">,</span>
-                                  String newFlinkJobId<span style="color:#f92672">,</span>
-                                  <span style="color:#66d9ef">long</span> checkpointId<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> IOException <span style="color:#f92672">{</span>
-    NavigableMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> pendingMap <span style="color:#f92672">=</span> deltaManifestsMap<span style="color:#f92672">.</span><span style="color:#a6e22e">headMap</span><span style="color:#f92672">(</span>checkpointId<span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
-    List<span style="color:#f92672">&lt;</span>ManifestFile<span style="color:#f92672">&gt;</span> manifests <span style="color:#f92672">=</span> Lists<span style="color:#f92672">.</span><span style="color:#a6e22e">newArrayList</span><span style="color:#f92672">();</span>
-    NavigableMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> WriteResult<span style="color:#f92672">&gt;</span> pendingResults <span style="color:#f92672">=</span> Maps<span style="color:#f92672">.</span><span style="color:#a6e22e">newTreeMap</span><span style="color:#f92672">();</span>
-    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>Map<span style="color:#f92672">.</span><span style="color:#a6e22e">Entry</span><span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> e <span style="color:#f92672">:</span> pendingMap<span style="color:#f92672">.</span><span style="color:#a6e22e">entrySet</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>Arrays<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>EMPTY_MANIFEST_DATA<span style="color:#f92672">,</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">()))</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
-        <span style="color:#f92672">}</span>
-
-        DeltaManifests deltaManifests <span style="color:#f92672">=</span> SimpleVersionedSerialization
-            <span style="color:#f92672">.</span><span style="color:#a6e22e">readVersionAndDeSerialize</span><span style="color:#f92672">(</span>DeltaManifestsSerializer<span style="color:#f92672">.</span><span style="color:#a6e22e">INSTANCE</span><span style="color:#f92672">,</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">());</span>
-        pendingResults<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>e<span style="color:#f92672">.</span><span style="color:#a6e22e">getKey</span><span style="color:#f92672">(),</span> FlinkManifestUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">readCompletedFiles</span><span style="color:#f92672">(</span>deltaManifests<span style="color:#f92672">,</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">io</span><span style="color:#f92672">()));</span>
-        manifests<span style="color:#f92672">.</span><span style="color:#a6e22e">addAll</span><span style="color:#f92672">(</span>deltaManifests<span style="color:#f92672">.</span><span style="color:#a6e22e">manifests</span><span style="color:#f92672">());</span>
-    <span style="color:#f92672">}</span>
-
-    <span style="color:#66d9ef">int</span> totalFiles <span style="color:#f92672">=</span> pendingResults<span style="color:#f92672">.</span><span style="color:#a6e22e">values</span><span style="color:#f92672">().</span><span style="color:#a6e22e">stream</span><span style="color:#f92672">()</span>
-        <span style="color:#f92672">.</span><span style="color:#a6e22e">mapToInt</span><span style="color:#f92672">(</span>r <span style="color:#f92672">-&gt;</span> r<span style="color:#f92672">.</span><span style="color:#a6e22e">dataFiles</span><span style="color:#f92672">().</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">+</span> r<span style="color:#f92672">.</span><span style="color:#a6e22e">deleteFiles</span><span style="color:#f92672">().</span><span style="color:#a6e22e">length</span><span style="color:#f92672">).</span><span style="color:#a6e22e">sum</span><span style="color:#f92672">();</span>
-    continuousEmptyCheckpoints <span style="color:#f92672">=</span> totalFiles <span style="color:#f92672">==</span> 0 <span style="color:#f92672">?</span> continuousEmptyCheckpoints <span style="color:#f92672">+</span> 1 <span style="color:#f92672">:</span> 0<span style="color:#f92672">;</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>totalFiles <span style="color:#f92672">!=</span> 0 <span style="color:#f92672">||</span> continuousEmptyCheckpoints <span style="color:#f92672">%</span> maxContinuousEmptyCommits <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>replacePartitions<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            replacePartitions<span style="color:#f92672">(</span>pendingResults<span style="color:#f92672">,</span> newFlinkJobId<span style="color:#f92672">,</span> checkpointId<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-            commitDeltaTxn<span style="color:#f92672">(</span>pendingResults<span style="color:#f92672">,</span> newFlinkJobId<span style="color:#f92672">,</span> checkpointId<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span>
-        continuousEmptyCheckpoints <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span>
-    pendingMap<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">();</span>
-
-    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>ManifestFile manifest <span style="color:#f92672">:</span> manifests<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-            table<span style="color:#f92672">.</span><span style="color:#a6e22e">io</span><span style="color:#f92672">().</span><span style="color:#a6e22e">deleteFile</span><span style="color:#f92672">(</span>manifest<span style="color:#f92672">.</span><span style="color:#a6e22e">path</span><span style="color:#f92672">());</span>
-        <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Exception e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">warn</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;The iceberg transaction has been committed, but we failed to clean the temporary flink manifests: {}&#34;</span><span style="color:#f92672">,</span>
-                manifest<span style="color:#f92672">.</span><span style="color:#a6e22e">path</span><span style="color:#f92672">(),</span> e<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commit</span><span style="color:#f92672">(</span>TableMetadata base<span style="color:#f92672">,</span> TableMetadata metadata<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>base <span style="color:#f92672">!=</span> current<span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>base <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> CommitFailedException<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Cannot commit: stale table metadata&#34;</span><span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> AlreadyExistsException<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Table already exists: %s&#34;</span><span style="color:#f92672">,</span> tableName<span style="color:#f92672">());</span>
-        <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>base <span style="color:#f92672">==</span> metadata<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">info</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Nothing to commit.&#34;</span><span style="color:#f92672">);</span>
-        <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span>
-
-    <span style="color:#66d9ef">long</span> start <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
-    doCommit<span style="color:#f92672">(</span>base<span style="color:#f92672">,</span> metadata<span style="color:#f92672">);</span>
-    deleteRemovedMetadataFiles<span style="color:#f92672">(</span>base<span style="color:#f92672">,</span> metadata<span style="color:#f92672">);</span>
-    requestRefresh<span style="color:#f92672">();</span>
-
-    LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">info</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Successfully committed to table {} in {} ms&#34;</span><span style="color:#f92672">,</span>
-        tableName<span style="color:#f92672">(),</span>
-        System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> start<span style="color:#f92672">);</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><h2 id="write-issues">Write Issues</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteResult</span> <span style="color:#66d9ef">implements</span> Serializable {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">private</span> DataFile<span style="color:#f92672">[]</span> dataFiles;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">private</span> DeleteFile<span style="color:#f92672">[]</span> deleteFiles;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">private</span> CharSequence<span style="color:#f92672">[]</span> referencedDataFiles;
+</span></span><span style="display:flex;"><span>  ...
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The core logic for processing data file submissions is encapsulated in <code>IcebergFilesCommitter</code>. The <code>IcebergFilesCommitter</code> maintains a list of files that need to be committed for each checkpoint. Once a checkpoint completes, it tries to commit those files to Iceberg.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IcebergFilesCommitter</span> <span style="color:#66d9ef">extends</span> AbstractStreamOperator<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">implements</span> OneInputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult, Void<span style="color:#f92672">&gt;</span>, BoundedOneInput {
+</span></span><span style="display:flex;"><span>    ...
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> NavigableMap<span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> dataFilesPerCheckpoint <span style="color:#f92672">=</span> Maps.<span style="color:#a6e22e">newTreeMap</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> List<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writeResultsOfCurrentCkpt <span style="color:#f92672">=</span> Lists.<span style="color:#a6e22e">newArrayList</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> ListState<span style="color:#f92672">&lt;</span>SortedMap<span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;&gt;</span> checkpointsState;
+</span></span><span style="display:flex;"><span>    ...
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The <code>processElement</code> method stores <code>WriteResult</code> from upstream in <code>writeResultsOfCurrentCkpt</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#a6e22e">@Override</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processElement</span>(StreamRecord<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> element) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">writeResultsOfCurrentCkpt</span>.<span style="color:#a6e22e">add</span>(element.<span style="color:#a6e22e">getValue</span>());
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>During checkpointing (<code>snapshotState</code>), it saves the current checkpoint&rsquo;s data in <code>dataFilesPerCheckpoint</code>. Later, once the checkpoint is completed (<code>notifyCheckpointComplete</code>), it commits the files:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">snapshotState</span>(StateSnapshotContext context) <span style="color:#66d9ef">throws</span> Exception {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> checkpointId <span style="color:#f92672">=</span> context.<span style="color:#a6e22e">getCheckpointId</span>();
+</span></span><span style="display:flex;"><span>    LOG.<span style="color:#a6e22e">info</span>(<span style="color:#e6db74">&#34;Start to flush snapshot state to state backend, table: {}, checkpointId: {}&#34;</span>, table, checkpointId);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    dataFilesPerCheckpoint.<span style="color:#a6e22e">put</span>(checkpointId, writeToManifest(checkpointId));
+</span></span><span style="display:flex;"><span>    checkpointsState.<span style="color:#a6e22e">clear</span>();
+</span></span><span style="display:flex;"><span>    checkpointsState.<span style="color:#a6e22e">add</span>(dataFilesPerCheckpoint);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    jobIdState.<span style="color:#a6e22e">clear</span>();
+</span></span><span style="display:flex;"><span>    jobIdState.<span style="color:#a6e22e">add</span>(flinkJobId);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    writeResultsOfCurrentCkpt.<span style="color:#a6e22e">clear</span>();
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">@Override</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">notifyCheckpointComplete</span>(<span style="color:#66d9ef">long</span> checkpointId) <span style="color:#66d9ef">throws</span> Exception {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (checkpointId <span style="color:#f92672">&gt;</span> maxCommittedCheckpointId) {
+</span></span><span style="display:flex;"><span>        commitUpToCheckpoint(dataFilesPerCheckpoint, flinkJobId, checkpointId);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">maxCommittedCheckpointId</span> <span style="color:#f92672">=</span> checkpointId;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The commit logic is handled by <code>commitUpToCheckpoint</code>, which generates a new snapshot and adds it to Iceberg&rsquo;s metadata:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commitUpToCheckpoint</span>(NavigableMap<span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> deltaManifestsMap,
+</span></span><span style="display:flex;"><span>                                  String newFlinkJobId,
+</span></span><span style="display:flex;"><span>                                  <span style="color:#66d9ef">long</span> checkpointId) <span style="color:#66d9ef">throws</span> IOException {
+</span></span><span style="display:flex;"><span>    NavigableMap<span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> pendingMap <span style="color:#f92672">=</span> deltaManifestsMap.<span style="color:#a6e22e">headMap</span>(checkpointId, <span style="color:#66d9ef">true</span>);
+</span></span><span style="display:flex;"><span>    List<span style="color:#f92672">&lt;</span>ManifestFile<span style="color:#f92672">&gt;</span> manifests <span style="color:#f92672">=</span> Lists.<span style="color:#a6e22e">newArrayList</span>();
+</span></span><span style="display:flex;"><span>    NavigableMap<span style="color:#f92672">&lt;</span>Long, WriteResult<span style="color:#f92672">&gt;</span> pendingResults <span style="color:#f92672">=</span> Maps.<span style="color:#a6e22e">newTreeMap</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (Map.<span style="color:#a6e22e">Entry</span><span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> e : pendingMap.<span style="color:#a6e22e">entrySet</span>()) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (Arrays.<span style="color:#a6e22e">equals</span>(EMPTY_MANIFEST_DATA, e.<span style="color:#a6e22e">getValue</span>())) {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">continue</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        DeltaManifests deltaManifests <span style="color:#f92672">=</span> SimpleVersionedSerialization
+</span></span><span style="display:flex;"><span>            .<span style="color:#a6e22e">readVersionAndDeSerialize</span>(DeltaManifestsSerializer.<span style="color:#a6e22e">INSTANCE</span>, e.<span style="color:#a6e22e">getValue</span>());
+</span></span><span style="display:flex;"><span>        pendingResults.<span style="color:#a6e22e">put</span>(e.<span style="color:#a6e22e">getKey</span>(), FlinkManifestUtil.<span style="color:#a6e22e">readCompletedFiles</span>(deltaManifests, table.<span style="color:#a6e22e">io</span>()));
+</span></span><span style="display:flex;"><span>        manifests.<span style="color:#a6e22e">addAll</span>(deltaManifests.<span style="color:#a6e22e">manifests</span>());
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> totalFiles <span style="color:#f92672">=</span> pendingResults.<span style="color:#a6e22e">values</span>().<span style="color:#a6e22e">stream</span>()
+</span></span><span style="display:flex;"><span>        .<span style="color:#a6e22e">mapToInt</span>(r <span style="color:#f92672">-&gt;</span> r.<span style="color:#a6e22e">dataFiles</span>().<span style="color:#a6e22e">length</span> <span style="color:#f92672">+</span> r.<span style="color:#a6e22e">deleteFiles</span>().<span style="color:#a6e22e">length</span>).<span style="color:#a6e22e">sum</span>();
+</span></span><span style="display:flex;"><span>    continuousEmptyCheckpoints <span style="color:#f92672">=</span> totalFiles <span style="color:#f92672">==</span> 0 <span style="color:#f92672">?</span> continuousEmptyCheckpoints <span style="color:#f92672">+</span> 1 : 0;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (totalFiles <span style="color:#f92672">!=</span> 0 <span style="color:#f92672">||</span> continuousEmptyCheckpoints <span style="color:#f92672">%</span> maxContinuousEmptyCommits <span style="color:#f92672">==</span> 0) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (replacePartitions) {
+</span></span><span style="display:flex;"><span>            replacePartitions(pendingResults, newFlinkJobId, checkpointId);
+</span></span><span style="display:flex;"><span>        } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>            commitDeltaTxn(pendingResults, newFlinkJobId, checkpointId);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        continuousEmptyCheckpoints <span style="color:#f92672">=</span> 0;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    pendingMap.<span style="color:#a6e22e">clear</span>();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (ManifestFile manifest : manifests) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">try</span> {
+</span></span><span style="display:flex;"><span>            table.<span style="color:#a6e22e">io</span>().<span style="color:#a6e22e">deleteFile</span>(manifest.<span style="color:#a6e22e">path</span>());
+</span></span><span style="display:flex;"><span>        } <span style="color:#66d9ef">catch</span> (Exception e) {
+</span></span><span style="display:flex;"><span>            LOG.<span style="color:#a6e22e">warn</span>(<span style="color:#e6db74">&#34;The iceberg transaction has been committed, but we failed to clean the temporary flink manifests: {}&#34;</span>,
+</span></span><span style="display:flex;"><span>                manifest.<span style="color:#a6e22e">path</span>(), e);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commit</span>(TableMetadata base, TableMetadata metadata) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (base <span style="color:#f92672">!=</span> current()) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (base <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> CommitFailedException(<span style="color:#e6db74">&#34;Cannot commit: stale table metadata&#34;</span>);
+</span></span><span style="display:flex;"><span>        } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> AlreadyExistsException(<span style="color:#e6db74">&#34;Table already exists: %s&#34;</span>, tableName());
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (base <span style="color:#f92672">==</span> metadata) {
+</span></span><span style="display:flex;"><span>        LOG.<span style="color:#a6e22e">info</span>(<span style="color:#e6db74">&#34;Nothing to commit.&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> start <span style="color:#f92672">=</span> System.<span style="color:#a6e22e">currentTimeMillis</span>();
+</span></span><span style="display:flex;"><span>    doCommit(base, metadata);
+</span></span><span style="display:flex;"><span>    deleteRemovedMetadataFiles(base, metadata);
+</span></span><span style="display:flex;"><span>    requestRefresh();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    LOG.<span style="color:#a6e22e">info</span>(<span style="color:#e6db74">&#34;Successfully committed to table {} in {} ms&#34;</span>,
+</span></span><span style="display:flex;"><span>        tableName(),
+</span></span><span style="display:flex;"><span>        System.<span style="color:#a6e22e">currentTimeMillis</span>() <span style="color:#f92672">-</span> start);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="write-issues">Write Issues</h2>
 <h3 id="1-lots-of-small-files">1. Lots of Small Files</h3>
 <p>For streaming writes, new files are generated each time, resulting in a lot of small files. While object storage supports small files well, it may increase Iceberg metadata overhead, as metadata files need to keep track of each data file. This can cause metadata files to become large and impact performance.</p>
 <p><strong>Solution:</strong></p>
@@ -485,14 +484,14 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
 <li><strong>Iceberg Rewrite Action</strong>: Iceberg supports rewriting data and metadata files via Flink or Spark actions, which need to be triggered separately.</li>
 <li><strong>Snapshot Expiry</strong>: Configure snapshot expiration to periodically delete old snapshots.</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">import</span> org.apache.iceberg.flink.actions.Actions<span style="color:#f92672">;</span>
-
-TableLoader tableLoader <span style="color:#f92672">=</span> TableLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">fromHadoopTable</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;hdfs://nn:8020/warehouse/path&#34;</span><span style="color:#f92672">);</span>
-Table table <span style="color:#f92672">=</span> tableLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">loadTable</span><span style="color:#f92672">();</span>
-RewriteDataFilesActionResult result <span style="color:#f92672">=</span> Actions<span style="color:#f92672">.</span><span style="color:#a6e22e">forTable</span><span style="color:#f92672">(</span>table<span style="color:#f92672">)</span>
-    <span style="color:#f92672">.</span><span style="color:#a6e22e">rewriteDataFiles</span><span style="color:#f92672">()</span>
-    <span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">();</span>
-</code></pre></div><p><a href="https://iceberg.apache.org/docs/latest/flink/">Iceberg Flink Documentation</a>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#f92672">import</span> org.apache.iceberg.flink.actions.Actions;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>TableLoader tableLoader <span style="color:#f92672">=</span> TableLoader.<span style="color:#a6e22e">fromHadoopTable</span>(<span style="color:#e6db74">&#34;hdfs://nn:8020/warehouse/path&#34;</span>);
+</span></span><span style="display:flex;"><span>Table table <span style="color:#f92672">=</span> tableLoader.<span style="color:#a6e22e">loadTable</span>();
+</span></span><span style="display:flex;"><span>RewriteDataFilesActionResult result <span style="color:#f92672">=</span> Actions.<span style="color:#a6e22e">forTable</span>(table)
+</span></span><span style="display:flex;"><span>    .<span style="color:#a6e22e">rewriteDataFiles</span>()
+</span></span><span style="display:flex;"><span>    .<span style="color:#a6e22e">execute</span>();
+</span></span></code></pre></div><p><a href="https://iceberg.apache.org/docs/latest/flink/">Iceberg Flink Documentation</a>
 <a href="https://iceberg.apache.org/docs/latest/maintenance/">Iceberg Maintenance Documentation</a></p>
 <h3 id="2-performance-issues-with-high-concurrency">2. Performance Issues with High Concurrency</h3>
 <p>Iceberg&rsquo;s writing process creates a new snapshot for each commit and uses optimistic concurrency control to handle conflicts. In high-concurrency scenarios, this can lead to many commits being retried, impacting performance.</p>
@@ -563,7 +562,7 @@ RewriteDataFilesActionResult result <span style="color:#f92672">=</span> Actions
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -640,4 +639,4 @@ RewriteDataFilesActionResult result <span style="color:#f92672">=</span> Actions
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/cpu/</link>
     <description>Recent content in CPU on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Sun, 02 May 2021 13:47:30 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/cpu/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -21,7 +22,7 @@
 &lt;p&gt;When the processor issues a memory access request, it first checks if the requested data is in the cache. If it is (a cache hit), it directly returns the data without accessing main memory. If it isn&amp;rsquo;t (a cache miss), it loads the data from main memory into the cache before returning it to the processor.&lt;/p&gt;
 &lt;h2 id=&#34;cpu-cache-architecture&#34;&gt;CPU Cache Architecture&lt;/h2&gt;
 &lt;p&gt;There are usually three levels of cache between the CPU and main memory. The closer the cache is to the CPU, the faster it is but the smaller its capacity. When accessing data, the CPU first checks &lt;strong&gt;L1&lt;/strong&gt;, then &lt;strong&gt;L2&lt;/strong&gt;, and finally &lt;strong&gt;L3&lt;/strong&gt;. If the data isn&amp;rsquo;t in any of these caches, it must be fetched from main memory.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png&#34; alt=&#34;Cache Architecture&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Cache Architecture&#34; src=&#34;https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png&#34;&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;L1&lt;/strong&gt; is close to the CPU core that uses it. L1 and L2 caches can only be used by a single CPU core.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;L3&lt;/strong&gt; can be shared by all CPU cores in a socket.&lt;/li&gt;
@@ -39,7 +40,7 @@
 &lt;li&gt;When the other core reads &lt;code&gt;b&lt;/code&gt;, it finds that the cache line is invalid and must reload it from main memory.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;Because the cache operates at the level of cache lines, invalidating &lt;code&gt;a&lt;/code&gt;&amp;rsquo;s cache line also invalidates &lt;code&gt;b&lt;/code&gt;, and vice versa.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34; alt=&#34;False Sharing&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;False Sharing&#34; src=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;This causes a problem:&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;b&lt;/code&gt; and &lt;code&gt;a&lt;/code&gt; are completely unrelated, but each time &lt;code&gt;a&lt;/code&gt; is updated, &lt;code&gt;b&lt;/code&gt; has to be reloaded from main memory due to a cache miss, slowing down the process.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;CPU false sharing&lt;/strong&gt;: When multiple threads modify independent variables that share the same cache line, they unintentionally affect each other&amp;rsquo;s performance. This is known as false sharing.&lt;/p&gt;

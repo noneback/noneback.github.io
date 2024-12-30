@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>borg on NoneBack</title>
+    <title>Borg on NoneBack</title>
     <link>https://noneback.github.io/tags/borg/</link>
-    <description>Recent content in borg on NoneBack created by </description>
+    <description>Recent content in Borg on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Mon, 19 Feb 2024 11:12:16 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/borg/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -25,7 +26,7 @@
 &lt;p&gt;In terms of deployment architecture, a Borg cluster consists of several cells, each containing multiple machines.&lt;/p&gt;
 &lt;p&gt;For task scheduling, all physical or logical units on machines are treated as resources, including CPU, memory, IO, etc.&lt;/p&gt;
 &lt;h2 id=&#34;system-architecture&#34;&gt;System Architecture&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png&#34; alt=&#34;System Architecture&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;System Architecture&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Borg uses a master-slave architecture, consisting of a BorgMaster and several Borglet nodes. The scheduler is an independent service.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;BorgMaster&lt;/strong&gt; is a logical node responsible for interacting with both external components and Borglets, as well as maintaining the internal state of the cluster. It uses Paxos to achieve multi-replication and high availability.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Borglet&lt;/strong&gt; is the Borg proxy on each machine in the cell. It is responsible for starting/stopping tasks, managing node physical resources, and reporting status.&lt;/p&gt;

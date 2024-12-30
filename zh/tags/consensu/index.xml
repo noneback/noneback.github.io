@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/consensu/</link>
     <description>Recent content in Consensu on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Fri, 15 Apr 2022 10:49:57 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/consensu/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -17,7 +18,7 @@
 &lt;h2 id=&#34;实验相关&#34;&gt;实验相关&lt;/h2&gt;
 &lt;p&gt;Lab03的内容是在Raft基础上构建一个分布式KV服务。我们需要实现此服务的Server和Client。&lt;/p&gt;
 &lt;p&gt;RaftKV的结构和各个模块的交互如图所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34; alt=&#34;image-20220429211429808&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20220429211429808&#34; src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;相比于上个实验难度低了不少，实现上可以参考这篇大佬的&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;实现&lt;/a&gt;，我就不多写了。&lt;/p&gt;
 &lt;h2 id=&#34;raft-相关&#34;&gt;Raft 相关&lt;/h2&gt;
 &lt;p&gt;接下来说说Raft中有关客户端交互有关的内容。&lt;/p&gt;
@@ -95,7 +96,7 @@
 &lt;h2 id=&#34;算法简介&#34;&gt;算法简介&lt;/h2&gt;
 &lt;p&gt;共识算法的基础是复制状态机，即&lt;strong&gt;按照相同顺序执行相同的确定性指令最终必然达到一致状态&lt;/strong&gt;。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。&lt;/p&gt;
 &lt;p&gt;Raft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。&lt;/p&gt;
 &lt;p&gt;Raft是一种&lt;strong&gt;强领导人&lt;/strong&gt;的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理&lt;strong&gt;复制提交&lt;/strong&gt;日志。&lt;/p&gt;
 &lt;p&gt;复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。&lt;/p&gt;

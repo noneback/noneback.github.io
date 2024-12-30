@@ -11,7 +11,7 @@ Usage API epoll has three primary system calls:
     <link rel="canonical" href="https://noneback.github.io/blog/epoll-and-io%E5%A4%8D%E7%94%A8/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -40,8 +40,7 @@ Usage API epoll has three primary system calls:
 <meta property="article:modified_time" content="2021-08-15T21:47:45+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Epoll and IO Multiplexing"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Epoll and IO Multiplexing"/>
 <meta name="twitter:description" content="Let&rsquo;s start with epoll.
 epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.
 Usage API epoll has three primary system calls:
@@ -52,16 +51,16 @@ Usage API epoll has three primary system calls:
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "Epoll and IO Multiplexing",
       "item": "https://noneback.github.io/blog/epoll-and-io%E5%A4%8D%E7%94%A8/"
     }
@@ -78,7 +77,7 @@ Usage API epoll has three primary system calls:
   "keywords": [
     "OS", "Linux", "SysCall"
   ],
-  "articleBody": "Let’s start with epoll.\nepoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system’s maximum file open limit, providing excellent performance.\nUsage API epoll has three primary system calls:\n/** epoll_create * Creates an epoll instance and returns a file descriptor for it. * Needs to be closed afterward, as epfd also consumes the system's fd resources. * size: Indicates the number of file descriptors to be monitored by epfd. */ int epoll_create(int size); /** epoll_ctl * Adds or modifies a file descriptor to be monitored by epoll. * epfd: The epoll file descriptor. * op: Operation type. * EPOLL_CTL_ADD: Add a new fd to epfd. * EPOLL_CTL_MOD: Modify an already registered fd. * EPOLL_CTL_DEL: Remove an fd from epfd. * fd: The file descriptor to be monitored. * event: Specifies the type of event to be monitored. * EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed). * EPOLLOUT: Indicates the fd is ready for writing. * EPOLLPRI: Indicates urgent data can be read. * EPOLLERR: Indicates an error occurred on the fd. * EPOLLHUP: Indicates the fd has been hung up. * EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT). * EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd. */ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event); /** epoll_wait * Collects events that have been triggered and returns the number of triggered events. * epfd: The epoll file descriptor. * events: Array of epoll events that will be populated with triggered events. * maxevents: Indicates the size of the events array. * timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, 0 waits for the specified duration. */ int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout); Processing Flow epoll_create When a process calls epoll_create, the Linux kernel creates an eventpoll structure:\nstruct eventpoll { spinlock_t lock; struct mutex mtx; wait_queue_head_t wq; wait_queue_head_t poll_wait; struct list_head rdllist; struct rb_root rbr; struct epitem *ovflist; struct user_struct *user; struct file *file; int visited; struct list_head visited_list_link; }; During epoll_create, epoll registers a red-black tree with the kernel, which is used to store the monitored sockets. When epoll_create is called, a file node is created in this red-black tree, and the corresponding socket fd is registered.\nAdditionally, a doubly linked list is created to store events that are ready.\nepoll_ctl For each monitored event, an epitem structure is created:\nstruct epitem { struct rb_node rbn; struct list_head rdllink; struct epitem *next; struct epoll_filefd ffd; int nwait; struct list_head pwqlist; struct eventpoll *ep; struct list_head fllink; struct epoll_event event; }; When epoll_ctl is called, the socket fd is registered to the eventpoll’s red-black tree, and a callback function is registered with the kernel interrupt handler. When an interrupt occurs for the fd, it is added to the ready list.\nepoll_wait When epoll_wait is called, it simply checks if there is data in the list of ready events (epitem). If there is data, it returns immediately; otherwise, it sleeps until either data arrives or the timeout expires.\nEpoll Usage Model for (;;) { nfds = epoll_wait(epfd, events, 20, 500); for (i = 0; i  nfds; ++i) { if (events[i].data.fd == listenfd) { connfd = accept(listenfd, (sockaddr *)\u0026clientaddr, \u0026clilen); ev.data.fd = connfd; ev.events = EPOLLIN | EPOLLET; epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, \u0026ev); } else if (events[i].events \u0026 EPOLLIN) { n = read(sockfd, line, MAXLINE); ev.data.ptr = md; ev.events = EPOLLOUT | EPOLLET; epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, \u0026ev); } else if (events[i].events \u0026 EPOLLOUT) { struct myepoll_data *md = (myepoll_data *)events[i].data.ptr; sockfd = md-fd; send(sockfd, md-ptr, strlen((char *)md-ptr), 0); ev.data.fd = sockfd; ev.events = EPOLLIN | EPOLLET; epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, \u0026ev); } else { // Other processing  } } } Blocking IO, Non-blocking IO, and IO Multiplexing Blocking IO Blocking IO means that a thread waits for data to arrive, releasing the CPU until the data is available. When data arrives, the thread is rescheduled to run.\nIn scenarios with many read/write requests, frequent context switching and thread scheduling can lead to inefficiency.\nNon-blocking IO In non-blocking IO, a user thread makes an IO request, and if data is not yet available, it returns immediately. The thread must keep checking until the data is ready, at which point it can proceed.\nNon-blocking IO has a significant drawback: the thread must constantly poll, which can lead to high CPU usage.\nIO Multiplexing Blocking IO occupies resources, and excessive context switching can be inefficient. Non-blocking IO can lead to high CPU utilization due to constant polling.\nIO multiplexing manages multiple file descriptors in a single thread, reducing context switching and idle CPU usage. Mechanisms like select, poll, and epoll were developed to implement this concept, with epoll being the most scalable and efficient.\nReferences Linux IO Multiplexing and epoll Explained\nDeep Dive into epoll\n",
+  "articleBody": "Let’s start with epoll.\nepoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system’s maximum file open limit, providing excellent performance.\nUsage API epoll has three primary system calls:\n/** epoll_create * Creates an epoll instance and returns a file descriptor for it. * Needs to be closed afterward, as epfd also consumes the system's fd resources. * size: Indicates the number of file descriptors to be monitored by epfd. */ int epoll_create(int size); /** epoll_ctl * Adds or modifies a file descriptor to be monitored by epoll. * epfd: The epoll file descriptor. * op: Operation type. * EPOLL_CTL_ADD: Add a new fd to epfd. * EPOLL_CTL_MOD: Modify an already registered fd. * EPOLL_CTL_DEL: Remove an fd from epfd. * fd: The file descriptor to be monitored. * event: Specifies the type of event to be monitored. * EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed). * EPOLLOUT: Indicates the fd is ready for writing. * EPOLLPRI: Indicates urgent data can be read. * EPOLLERR: Indicates an error occurred on the fd. * EPOLLHUP: Indicates the fd has been hung up. * EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT). * EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd. */ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event); /** epoll_wait * Collects events that have been triggered and returns the number of triggered events. * epfd: The epoll file descriptor. * events: Array of epoll events that will be populated with triggered events. * maxevents: Indicates the size of the events array. * timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, \u003e0 waits for the specified duration. */ int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout); Processing Flow epoll_create When a process calls epoll_create, the Linux kernel creates an eventpoll structure:\nstruct eventpoll { spinlock_t lock; struct mutex mtx; wait_queue_head_t wq; wait_queue_head_t poll_wait; struct list_head rdllist; struct rb_root rbr; struct epitem *ovflist; struct user_struct *user; struct file *file; int visited; struct list_head visited_list_link; }; During epoll_create, epoll registers a red-black tree with the kernel, which is used to store the monitored sockets. When epoll_create is called, a file node is created in this red-black tree, and the corresponding socket fd is registered.\nAdditionally, a doubly linked list is created to store events that are ready.\nepoll_ctl For each monitored event, an epitem structure is created:\nstruct epitem { struct rb_node rbn; struct list_head rdllink; struct epitem *next; struct epoll_filefd ffd; int nwait; struct list_head pwqlist; struct eventpoll *ep; struct list_head fllink; struct epoll_event event; }; When epoll_ctl is called, the socket fd is registered to the eventpoll’s red-black tree, and a callback function is registered with the kernel interrupt handler. When an interrupt occurs for the fd, it is added to the ready list.\nepoll_wait When epoll_wait is called, it simply checks if there is data in the list of ready events (epitem). If there is data, it returns immediately; otherwise, it sleeps until either data arrives or the timeout expires.\nEpoll Usage Model for (;;) { nfds = epoll_wait(epfd, events, 20, 500); for (i = 0; i \u003c nfds; ++i) { if (events[i].data.fd == listenfd) { connfd = accept(listenfd, (sockaddr *)\u0026clientaddr, \u0026clilen); ev.data.fd = connfd; ev.events = EPOLLIN | EPOLLET; epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, \u0026ev); } else if (events[i].events \u0026 EPOLLIN) { n = read(sockfd, line, MAXLINE); ev.data.ptr = md; ev.events = EPOLLOUT | EPOLLET; epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, \u0026ev); } else if (events[i].events \u0026 EPOLLOUT) { struct myepoll_data *md = (myepoll_data *)events[i].data.ptr; sockfd = md-\u003efd; send(sockfd, md-\u003eptr, strlen((char *)md-\u003eptr), 0); ev.data.fd = sockfd; ev.events = EPOLLIN | EPOLLET; epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, \u0026ev); } else { // Other processing } } } Blocking IO, Non-blocking IO, and IO Multiplexing Blocking IO Blocking IO means that a thread waits for data to arrive, releasing the CPU until the data is available. When data arrives, the thread is rescheduled to run.\nIn scenarios with many read/write requests, frequent context switching and thread scheduling can lead to inefficiency.\nNon-blocking IO In non-blocking IO, a user thread makes an IO request, and if data is not yet available, it returns immediately. The thread must keep checking until the data is ready, at which point it can proceed.\nNon-blocking IO has a significant drawback: the thread must constantly poll, which can lead to high CPU usage.\nIO Multiplexing Blocking IO occupies resources, and excessive context switching can be inefficient. Non-blocking IO can lead to high CPU utilization due to constant polling.\nIO multiplexing manages multiple file descriptors in a single thread, reducing context switching and idle CPU usage. Mechanisms like select, poll, and epoll were developed to implement this concept, with epoll being the most scalable and efficient.\nReferences Linux IO Multiplexing and epoll Explained\nDeep Dive into epoll\n",
   "wordCount" : "834",
   "inLanguage": "en",
   "datePublished": "2021-08-15T21:47:45+08:00",
@@ -153,10 +152,10 @@ Usage API epoll has three primary system calls:
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -218,11 +217,11 @@ Usage API epoll has three primary system calls:
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -285,105 +284,105 @@ Usage API epoll has three primary system calls:
 <h2 id="usage">Usage</h2>
 <h3 id="api">API</h3>
 <p>epoll has three primary system calls:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">/** epoll_create
-</span><span style="color:#75715e"> *  Creates an epoll instance and returns a file descriptor for it.
-</span><span style="color:#75715e"> *  Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
-</span><span style="color:#75715e"> *  size: Indicates the number of file descriptors to be monitored by epfd.
-</span><span style="color:#75715e"> */</span>
-<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_create</span>(<span style="color:#66d9ef">int</span> size);
-
-<span style="color:#75715e">/** epoll_ctl
-</span><span style="color:#75715e"> *  Adds or modifies a file descriptor to be monitored by epoll.
-</span><span style="color:#75715e"> *  epfd: The epoll file descriptor.
-</span><span style="color:#75715e"> *  op: Operation type.
-</span><span style="color:#75715e"> *       EPOLL_CTL_ADD: Add a new fd to epfd.
-</span><span style="color:#75715e"> *       EPOLL_CTL_MOD: Modify an already registered fd.
-</span><span style="color:#75715e"> *       EPOLL_CTL_DEL: Remove an fd from epfd.
-</span><span style="color:#75715e"> *  fd: The file descriptor to be monitored.
-</span><span style="color:#75715e"> *  event: Specifies the type of event to be monitored.
-</span><span style="color:#75715e"> *         EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed).
-</span><span style="color:#75715e"> *         EPOLLOUT: Indicates the fd is ready for writing.
-</span><span style="color:#75715e"> *         EPOLLPRI: Indicates urgent data can be read.
-</span><span style="color:#75715e"> *         EPOLLERR: Indicates an error occurred on the fd.
-</span><span style="color:#75715e"> *         EPOLLHUP: Indicates the fd has been hung up.
-</span><span style="color:#75715e"> *         EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT).
-</span><span style="color:#75715e"> *         EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd.
-</span><span style="color:#75715e"> */</span>
-<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_ctl</span>(<span style="color:#66d9ef">int</span> epfd, <span style="color:#66d9ef">int</span> op, <span style="color:#66d9ef">int</span> fd, <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epoll_event</span> <span style="color:#f92672">*</span>event);
-
-<span style="color:#75715e">/** epoll_wait
-</span><span style="color:#75715e"> *  Collects events that have been triggered and returns the number of triggered events.
-</span><span style="color:#75715e"> *  epfd: The epoll file descriptor.
-</span><span style="color:#75715e"> *  events: Array of epoll events that will be populated with triggered events.
-</span><span style="color:#75715e"> *  maxevents: Indicates the size of the events array.
-</span><span style="color:#75715e"> *  timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, &gt;0 waits for the specified duration.
-</span><span style="color:#75715e"> */</span>
-<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_wait</span>(<span style="color:#66d9ef">int</span> epfd, <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epoll_event</span> <span style="color:#f92672">*</span>events, <span style="color:#66d9ef">int</span> maxevents, <span style="color:#66d9ef">int</span> timeout);
-</code></pre></div><h3 id="processing-flow">Processing Flow</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">/** epoll_create
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  Creates an epoll instance and returns a file descriptor for it.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  size: Indicates the number of file descriptors to be monitored by epfd.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> */</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_create</span>(<span style="color:#66d9ef">int</span> size);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/** epoll_ctl
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  Adds or modifies a file descriptor to be monitored by epoll.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  epfd: The epoll file descriptor.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  op: Operation type.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *       EPOLL_CTL_ADD: Add a new fd to epfd.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *       EPOLL_CTL_MOD: Modify an already registered fd.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *       EPOLL_CTL_DEL: Remove an fd from epfd.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  fd: The file descriptor to be monitored.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  event: Specifies the type of event to be monitored.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *         EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed).
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *         EPOLLOUT: Indicates the fd is ready for writing.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *         EPOLLPRI: Indicates urgent data can be read.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *         EPOLLERR: Indicates an error occurred on the fd.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *         EPOLLHUP: Indicates the fd has been hung up.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *         EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT).
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *         EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> */</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_ctl</span>(<span style="color:#66d9ef">int</span> epfd, <span style="color:#66d9ef">int</span> op, <span style="color:#66d9ef">int</span> fd, <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epoll_event</span> <span style="color:#f92672">*</span>event);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/** epoll_wait
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  Collects events that have been triggered and returns the number of triggered events.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  epfd: The epoll file descriptor.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  events: Array of epoll events that will be populated with triggered events.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  maxevents: Indicates the size of the events array.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *  timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, &gt;0 waits for the specified duration.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> */</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_wait</span>(<span style="color:#66d9ef">int</span> epfd, <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epoll_event</span> <span style="color:#f92672">*</span>events, <span style="color:#66d9ef">int</span> maxevents, <span style="color:#66d9ef">int</span> timeout);
+</span></span></code></pre></div><h3 id="processing-flow">Processing Flow</h3>
 <h4 id="epoll_create">epoll_create</h4>
 <p>When a process calls <code>epoll_create</code>, the Linux kernel creates an <code>eventpoll</code> structure:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">eventpoll</span> {
-    spinlock_t lock;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">mutex</span> mtx;
-    wait_queue_head_t wq;
-    wait_queue_head_t poll_wait;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> rdllist;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">rb_root</span> rbr;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epitem</span> <span style="color:#f92672">*</span>ovflist;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">user_struct</span> <span style="color:#f92672">*</span>user;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">file</span> <span style="color:#f92672">*</span>file;
-    <span style="color:#66d9ef">int</span> visited;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> visited_list_link;
-};
-</code></pre></div><p>During <code>epoll_create</code>, epoll registers a red-black tree with the kernel, which is used to store the monitored sockets. When <code>epoll_create</code> is called, a file node is created in this red-black tree, and the corresponding socket fd is registered.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">eventpoll</span> {
+</span></span><span style="display:flex;"><span>    spinlock_t lock;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">mutex</span> mtx;
+</span></span><span style="display:flex;"><span>    wait_queue_head_t wq;
+</span></span><span style="display:flex;"><span>    wait_queue_head_t poll_wait;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> rdllist;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">rb_root</span> rbr;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epitem</span> <span style="color:#f92672">*</span>ovflist;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">user_struct</span> <span style="color:#f92672">*</span>user;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">file</span> <span style="color:#f92672">*</span>file;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> visited;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> visited_list_link;
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><p>During <code>epoll_create</code>, epoll registers a red-black tree with the kernel, which is used to store the monitored sockets. When <code>epoll_create</code> is called, a file node is created in this red-black tree, and the corresponding socket fd is registered.</p>
 <p>Additionally, a doubly linked list is created to store events that are ready.</p>
 <h4 id="epoll_ctl">epoll_ctl</h4>
 <p>For each monitored event, an <code>epitem</code> structure is created:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epitem</span> {
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">rb_node</span> rbn;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> rdllink;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epitem</span> <span style="color:#f92672">*</span>next;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epoll_filefd</span> ffd;
-    <span style="color:#66d9ef">int</span> nwait;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> pwqlist;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">eventpoll</span> <span style="color:#f92672">*</span>ep;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> fllink;
-    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epoll_event</span> event;
-};
-</code></pre></div><p><img src="https://i.loli.net/2021/08/15/ZH6Pixq4X5BLc2z.png" alt="epitem structure"></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epitem</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">rb_node</span> rbn;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> rdllink;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epitem</span> <span style="color:#f92672">*</span>next;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epoll_filefd</span> ffd;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> nwait;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> pwqlist;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">eventpoll</span> <span style="color:#f92672">*</span>ep;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">list_head</span> fllink;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epoll_event</span> event;
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><p><img alt="epitem structure" src="https://i.loli.net/2021/08/15/ZH6Pixq4X5BLc2z.png"></p>
 <p>When <code>epoll_ctl</code> is called, the socket fd is registered to the <code>eventpoll</code>&rsquo;s red-black tree, and a callback function is registered with the kernel interrupt handler. When an interrupt occurs for the fd, it is added to the ready list.</p>
 <h4 id="epoll_wait">epoll_wait</h4>
 <p>When <code>epoll_wait</code> is called, it simply checks if there is data in the list of ready events (<code>epitem</code>). If there is data, it returns immediately; otherwise, it sleeps until either data arrives or the timeout expires.</p>
 <h2 id="epoll-usage-model">Epoll Usage Model</h2>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">for</span> (;;) {  
-    nfds <span style="color:#f92672">=</span> epoll_wait(epfd, events, <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">500</span>);  
-    <span style="color:#66d9ef">for</span> (i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> nfds; <span style="color:#f92672">++</span>i) {  
-        <span style="color:#66d9ef">if</span> (events[i].data.fd <span style="color:#f92672">==</span> listenfd) {  
-            connfd <span style="color:#f92672">=</span> accept(listenfd, (sockaddr <span style="color:#f92672">*</span>)<span style="color:#f92672">&amp;</span>clientaddr, <span style="color:#f92672">&amp;</span>clilen);  
-            ev.data.fd <span style="color:#f92672">=</span> connfd;  
-            ev.events <span style="color:#f92672">=</span> EPOLLIN <span style="color:#f92672">|</span> EPOLLET;  
-            epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, <span style="color:#f92672">&amp;</span>ev);  
-        }  
-        <span style="color:#66d9ef">else</span> <span style="color:#a6e22e">if</span> (events[i].events <span style="color:#f92672">&amp;</span> EPOLLIN) {  
-            n <span style="color:#f92672">=</span> read(sockfd, line, MAXLINE);
-            ev.data.ptr <span style="color:#f92672">=</span> md;  
-            ev.events <span style="color:#f92672">=</span> EPOLLOUT <span style="color:#f92672">|</span> EPOLLET;  
-            epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, <span style="color:#f92672">&amp;</span>ev);  
-        }  
-        <span style="color:#66d9ef">else</span> <span style="color:#a6e22e">if</span> (events[i].events <span style="color:#f92672">&amp;</span> EPOLLOUT) {  
-            <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">myepoll_data</span> <span style="color:#f92672">*</span>md <span style="color:#f92672">=</span> (myepoll_data <span style="color:#f92672">*</span>)events[i].data.ptr;  
-            sockfd <span style="color:#f92672">=</span> md<span style="color:#f92672">-&gt;</span>fd;  
-            send(sockfd, md<span style="color:#f92672">-&gt;</span>ptr, strlen((<span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>)md<span style="color:#f92672">-&gt;</span>ptr), <span style="color:#ae81ff">0</span>);  
-            ev.data.fd <span style="color:#f92672">=</span> sockfd;  
-            ev.events <span style="color:#f92672">=</span> EPOLLIN <span style="color:#f92672">|</span> EPOLLET;  
-            epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, <span style="color:#f92672">&amp;</span>ev);  
-        }  
-        <span style="color:#66d9ef">else</span> {  
-            <span style="color:#75715e">// Other processing  
-</span><span style="color:#75715e"></span>        }  
-    }  
-}
-</code></pre></div><h2 id="blocking-io-non-blocking-io-and-io-multiplexing">Blocking IO, Non-blocking IO, and IO Multiplexing</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">for</span> (;;) {  
+</span></span><span style="display:flex;"><span>    nfds <span style="color:#f92672">=</span> epoll_wait(epfd, events, <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">500</span>);  
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> nfds; <span style="color:#f92672">++</span>i) {  
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (events[i].data.fd <span style="color:#f92672">==</span> listenfd) {  
+</span></span><span style="display:flex;"><span>            connfd <span style="color:#f92672">=</span> accept(listenfd, (sockaddr <span style="color:#f92672">*</span>)<span style="color:#f92672">&amp;</span>clientaddr, <span style="color:#f92672">&amp;</span>clilen);  
+</span></span><span style="display:flex;"><span>            ev.data.fd <span style="color:#f92672">=</span> connfd;  
+</span></span><span style="display:flex;"><span>            ev.events <span style="color:#f92672">=</span> EPOLLIN <span style="color:#f92672">|</span> EPOLLET;  
+</span></span><span style="display:flex;"><span>            epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, <span style="color:#f92672">&amp;</span>ev);  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span> <span style="color:#a6e22e">if</span> (events[i].events <span style="color:#f92672">&amp;</span> EPOLLIN) {  
+</span></span><span style="display:flex;"><span>            n <span style="color:#f92672">=</span> read(sockfd, line, MAXLINE);
+</span></span><span style="display:flex;"><span>            ev.data.ptr <span style="color:#f92672">=</span> md;  
+</span></span><span style="display:flex;"><span>            ev.events <span style="color:#f92672">=</span> EPOLLOUT <span style="color:#f92672">|</span> EPOLLET;  
+</span></span><span style="display:flex;"><span>            epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, <span style="color:#f92672">&amp;</span>ev);  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span> <span style="color:#a6e22e">if</span> (events[i].events <span style="color:#f92672">&amp;</span> EPOLLOUT) {  
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">myepoll_data</span> <span style="color:#f92672">*</span>md <span style="color:#f92672">=</span> (myepoll_data <span style="color:#f92672">*</span>)events[i].data.ptr;  
+</span></span><span style="display:flex;"><span>            sockfd <span style="color:#f92672">=</span> md<span style="color:#f92672">-&gt;</span>fd;  
+</span></span><span style="display:flex;"><span>            send(sockfd, md<span style="color:#f92672">-&gt;</span>ptr, strlen((<span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>)md<span style="color:#f92672">-&gt;</span>ptr), <span style="color:#ae81ff">0</span>);  
+</span></span><span style="display:flex;"><span>            ev.data.fd <span style="color:#f92672">=</span> sockfd;  
+</span></span><span style="display:flex;"><span>            ev.events <span style="color:#f92672">=</span> EPOLLIN <span style="color:#f92672">|</span> EPOLLET;  
+</span></span><span style="display:flex;"><span>            epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, <span style="color:#f92672">&amp;</span>ev);  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span> {  
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// Other processing  
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        }  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="blocking-io-non-blocking-io-and-io-multiplexing">Blocking IO, Non-blocking IO, and IO Multiplexing</h2>
 <h3 id="blocking-io">Blocking IO</h3>
 <p><strong>Blocking IO</strong> means that a thread waits for data to arrive, releasing the CPU until the data is available. When data arrives, the thread is rescheduled to run.</p>
 <p>In scenarios with many read/write requests, frequent context switching and thread scheduling can lead to inefficiency.</p>
@@ -452,7 +451,7 @@ Usage API epoll has three primary system calls:
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -529,4 +528,4 @@ Usage API epoll has three primary system calls:
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

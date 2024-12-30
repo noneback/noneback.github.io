@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prometheus--TSDB</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@最近晋升，顺便总结一些以前的工作。工作里大规模数据库可观测系统占了很大一部分，不过这个和云原生监控系统Prometheus还是很不一样的。现">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/prometheus-tsdb/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="Prometheus--TSDB" />
+<meta property="og:description" content="最近晋升，顺便总结一些以前的工作。工作里大规模数据库可观测系统占了很大一部分，不过这个和云原生监控系统Prometheus还是很不一样的。现" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/zh/blog/zh/prometheus-tsdb/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2024-12-31T01:10:28+08:00" />
+<meta property="article:modified_time" content="2024-12-31T01:10:28+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Prometheus--TSDB"/>
+<meta name="twitter:description" content="最近晋升，顺便总结一些以前的工作。工作里大规模数据库可观测系统占了很大一部分，不过这个和云原生监控系统Prometheus还是很不一样的。现"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Prometheus--TSDB",
+      "item": "https://noneback.github.io/zh/blog/zh/prometheus-tsdb/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Prometheus--TSDB",
+  "name": "Prometheus--TSDB",
+  "description": "最近晋升，顺便总结一些以前的工作。工作里大规模数据库可观测系统占了很大一部分，不过这个和云原生监控系统Prometheus还是很不一样的。现",
+  "keywords": [
+    "Prometheus", "TSDB", "Observability"
+  ],
+  "articleBody": "最近晋升，顺便总结一些以前的工作。工作里大规模数据库可观测系统占了很大一部分，不过这个和云原生监控系统Prometheus还是很不一样的。现在来学习一下开源监控的标准系统。\n文章主要涉及 Prometheus 自带的单机时序存储。简单写写里面的TSDB设计，不涉及源码分析。\n这种项目的源码分析性价比有点低,除非我是专门搞tsdb的，不然分析之后也容易忘，再说了也不是什么很好的代码。\n数据+查询模型 一个监控指标被描述为一组与时间有关的数据结构，timeseries。 $$ {timeseries} = \\quad\\lbrace \\quad metric(attached\\ with\\ a\\ set\\ of\\ labels) \\Rightarrow (t_0,\\ v_0),\\ (t_1,\\ v_1),\\ (t_2,\\ v_2),\\ \\ldots,\\ (t_n, v_n) \\quad\\rbrace $$\n查询使用 ${identifier(metric\\ +\\ sets\\ of\\ selected\\ labels\\ value)}$ 查询得到对应的timeseries series ^ │ . . . . . . . . . . . . . . . . . . . . . . {__name__=\"request_total\", method=\"GET\"} │ . . . . . . . . . . . . . . . . . . . . . . {__name__=\"request_total\", method=\"POST\"} │ . . . . . . . │ . . . . . . . . . . . . . . . . . . . ... │ . . . . . . . . . . . . . . . . . . . . . │ . . . . . . . . . . . . . . . . . . . . . {__name__=\"errors_total\", method=\"POST\"} │ . . . . . . . . . . . . . . . . . {__name__=\"errors_total\", method=\"GET\"} │ . . . . . . . . . . . . . . │ . . . . . . . . . . . . . . . . . . . ... │ . . . . . . . . . . . . . . . . . . . . v \u003c-------------------- time ---------------------\u003e identifier 的定义很重要。否则 ts 数据容易膨胀，比如容器重建的场景，如果 label 用的不好很容易膨胀。\n数据组织方式 对云原生的场景，监控数据有哪些特点？\n数据的生命周期短。因为单个容器本身的生命周期就很短（比如扩缩容场景，大量临时任务等场景），timeseries 很容易在一定时间维度上膨胀。 垂直写入，水平查询 带着这些问题看看 数据文件的组织方法，如何解决或者避免这些问题。\n那么首先看看逻辑的结构\n整个 db 由 blocks + HEAD 组成，block 又可以进一步被拆分成 chunks，HEAD 基本上就是内存数据+wal 保障的读写 buffer 区域。chunks 包含多种 timeseries。\n对于单个 Block 的磁盘目录结构如下：\n├── 01BKGV7JC0RY8A6MACW02A2PJD // block 的 ULID │ ├── chunks │ │ └── 000001 │ ├── tombstones │ ├── index │ └── meta.json ├── chunks_head │ └── 000001 └── wal ├── 000000002 └── checkpoint.00000001 └── 00000000 block，一个时间段内（默认 2 小时）的所有数据，只读，用 ULID 命名。每一个 block 内主要包括： chunks 固定大小（最大 128M）的 chunks 文件 index 索引文件，主要包含倒排索引的信息 meta.json 元信息，主要包括 block 的 minTime/maxTime，用于在查询的时候data skip。 chunks_head，当前在写入的 block 对应的 chunks 文件，只读，最多 120 个数据点，时间跨度最大 2 小时。 wal： 数据完整性保证 从图上可以知道很多信息，比如wal保障数据完整性；Head 类似 tsdb 的 buffer pool，只不过用 mmap 托管，实现内存数据批量刷盘。Head 到达一定条件（比如时间阈值 ，数据大小 阈值） 之后 变成 immutable 的结构（block）刷盘。\n整体在数据组织上有很多概念和lsm 类存储结构类似。LSM结构也确实很适合 tsdb。\n不难看出 Prometheus 的设计思路：\n通过数据按时间分片的方式来解决数据生命周期短的问题 通过内存攒批的方式来对应只写最新数据的场景 抛开与 leveldb 类似的地方不谈，我们来看看有什么不一样的地方。\n首先，使用的模型上不一样。leveldb 是 kv ，tsdb 是 timeseries，查询的模型不一样。tsdb 会有更多样话的查询方式，比如对label 的各种集合操作对 timeseries 进行过滤 ，所以会有更多的元信息来标注 timeseries，以便高效的查询。\n因为这类的需求，这里引入了一些新结构：倒排索引，checkpoint，tomebstone。这些让我们和对应的文件 format 一起分析。\n文件组织格式 让我们来看看有哪些成分，具体的组织方式不是本文重点。\nmeta.json block 的一些信息，关键看 compaction 和 minT,maxT。\nminT,maxT 记录block 的时间访问，查询的时候可以用来做 data skip。\ncompanction：？？？？？暂时不知道干啥的\n{ \"ulid\": \"01EM6Q6A1YPX4G9TEB20J22B2R\", # \"minTime\": 1602237600000, \"maxTime\": 1602244800000, \"stats\": { \"numSamples\": 553673232, \"numSeries\": 1346066, \"numChunks\": 4440437 }, \"compaction\": { \"level\": 1, \"sources\": [ \"01EM65SHSX4VARXBBHBF0M0FDS\", \"01EM6GAJSYWSQQRDY782EA5ZPN\" ] }, \"version\": 1 } chunks 普通的数据文件，它的索引都在 index 文件里。需要注意的是一个chunk 只能属于一个 timeseries，一个 timeseries 由多个 chunks组成。\n┌──────────────────────────────┐ │ magic(0x85BD40DD) \u003c4 byte\u003e │ ├──────────────────────────────┤ │ version(1) \u003c1 byte\u003e │ ├──────────────────────────────┤ │ padding(0) \u003c3 byte\u003e │ ├──────────────────────────────┤ │ ┌──────────────────────────┐ │ │ │ Chunk 1 │ │ │ ├──────────────────────────┤ │ │ │ ... │ │ │ ├──────────────────────────┤ │ │ │ Chunk N │ │ │ └──────────────────────────┘ │ └──────────────────────────────┘ Every Chunk: ┌───────────────┬───────────────────┬──────────────┬────────────────┐ │ len │ encoding \u003c1 byte\u003e │ data │ CRC32 \u003c4 byte\u003e │ └───────────────┴───────────────────┴──────────────┴────────────────┘ tombstone 标记删除，tsdb 有时候会有一些删除操作。比如，短时 Job、容器销毁之后，业务上可能希望删除。标记删除主要是为了用追加写代替原地修改。后续可以通过 Compaction 回收这部分磁盘。\n当然不删除也没事，会有 TTL 到期删除磁盘过期数据。\n┌────────────────────────────┬─────────────────────┐ │ magic(0x0130BA30) \u003c4b\u003e │ version(1) \u003c1 byte\u003e │ ├────────────────────────────┴─────────────────────┤ │ ┌──────────────────────────────────────────────┐ │ │ │ Tombstone 1 │ │ │ ├──────────────────────────────────────────────┤ │ │ │ ... │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Tombstone N │ │ │ ├──────────────────────────────────────────────┤ │ │ │ CRC\u003c4b\u003e │ │ │ └──────────────────────────────────────────────┘ │ └──────────────────────────────────────────────────┘ Every Tombstone: ┌────────────────────────┬─────────────────┬─────────────────┐ │ series ref │ mint │ maxt │ └────────────────────────┴─────────────────┴─────────────────┘ index 文件 包含了读取用到的所有信息。比如倒排索引，timeseries 和 chunks 的映射关系。\n里面值得注意的是 Series 和 Postings 两类。\nSeries 里面记录了Blocks里所有 series 对应 chunks的信息。\nPosting Offset Table记录了各个倒排索引的位置。倒排索引具体的内容被放在了 Postings里。\n对倒排索引的集合操作，可以快速过滤出来符合条件的 timeseries\n┌────────────────────────────┬─────────────────────┐ │ magic(0xBAAAD700) \u003c4b\u003e │ version(1) \u003c1 byte\u003e │ ├────────────────────────────┴─────────────────────┤ │ ┌──────────────────────────────────────────────┐ │ │ │ Symbol Table │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Series │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Label Index 1 │ │ │ ├──────────────────────────────────────────────┤ │ │ │ ... │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Label Index N │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Postings 1 │ │ │ ├──────────────────────────────────────────────┤ │ │ │ ... │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Postings N │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Label Offset Table │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Postings Offset Table │ │ │ ├──────────────────────────────────────────────┤ │ │ │ TOC │ │ │ └──────────────────────────────────────────────┘ │ └──────────────────────────────────────────────────┘ A Series: ┌──────────────────────────────────────────────────────┐ │ len │ ├──────────────────────────────────────────────────────┤ │ ┌──────────────────────────────────────────────────┐ │ │ │ labels count │ │ │ ├──────────────────────────────────────────────────┤ │ │ │ ┌────────────────────────────────────────────┐ │ │ │ │ │ ref(l_i.name) │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ ref(l_i.value) │ │ │ │ │ └────────────────────────────────────────────┘ │ │ │ │ ... │ │ │ ├──────────────────────────────────────────────────┤ │ │ │ chunks count │ │ │ ├──────────────────────────────────────────────────┤ │ │ │ ┌────────────────────────────────────────────┐ │ │ │ │ │ c_0.mint │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ c_0.maxt - c_0.mint │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ ref(c_0.data) │ │ │ │ │ └────────────────────────────────────────────┘ │ │ │ │ ┌────────────────────────────────────────────┐ │ │ │ │ │ c_i.mint - c_i-1.maxt │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ c_i.maxt - c_i.mint │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ ref(c_i.data) - ref(c_i-1.data) │ │ │ │ │ └────────────────────────────────────────────┘ │ │ │ │ ... │ │ │ └──────────────────────────────────────────────────┘ │ ├──────────────────────────────────────────────────────┤ │ CRC32 \u003c4b\u003e │ └──────────────────────────────────────────────────────┘ A Postings: ┌────────────────────┬────────────────────┐ │ len \u003c4b\u003e │ #entries \u003c4b\u003e │ ├────────────────────┴────────────────────┤ │ ┌─────────────────────────────────────┐ │ │ │ ref(series_1) \u003c4b\u003e │ │ │ ├─────────────────────────────────────┤ │ │ │ ... │ │ │ ├─────────────────────────────────────┤ │ │ │ ref(series_n) \u003c4b\u003e │ │ │ └─────────────────────────────────────┘ │ ├─────────────────────────────────────────┤ │ CRC32 \u003c4b\u003e │ └─────────────────────────────────────────┘ 加速磁盘查询 这里重点讲述一次查询是如何找到符合条件的数据的：\n首先在 Posting Offset Table 中，找到对应 label 的 Postings 位置 根据 Postings 中的 series 信息，找到对应的 chunk 位置，即上文中的 series ref 根据timeseries 找到对应的 chunks Compaction 类似 leveldb，也有 major compaction和 minor compaction。在这里加 Compaction 和 Head Compaction。\nHead Compaction类似把 Head部分持久化成 Chunk 的过程，在这个过程中，mark delete 的tombstone 会被真的删除（毕竟要读到内存里，顺手删了）。\nCompaction 就是把 Block 合并的一个过程。这个动作可以回收：\n标记删除占用的磁盘资源。 重复的部分信息。比如散落在多个 block 里面的重复 chunk， 倒排索引这类的磁盘记录 加速一些查询的处理。比如数据在多个数据块之间overlapping（没处理的话，读出来之后要在内存里处理，不如顺便在 compaction 的时候处理掉，合并之后读取也方便了） 什么时候会 compaction？ 官方博客里没咋说清楚，只提到了data overlapping 的时候会触发。 不过其他策略也挺多的。比如定时触发，每次 minor 触发的时候判断，基于 tombstone 的大小判断，手动触发这类。可以参考一些 leveldb 的策略。\nRetention 没啥说的，就是 Time or Size Based TTL，感觉放到 Compaction 里面做也不是不行。\nSnapshot 感觉就是把内存数据 dump 一份到磁盘上而已……。可能是为了平衡大量指标数据磁盘写入以及数据完整性。不然有了 wal 还要它干啥。\nReference https://web.archive.org/web/20210803115658/https://fabxc.org/tsdb/\nhttps://liujiacai.net/blog/2021/04/11/prometheus-storage-engine/\nhttps://tech.qimao.com/prometheus-tsdb-de-she-ji-yu-shi-xian-2/\nhttps://ganeshvernekar.com/blog/prometheus-tsdb-persistent-block-and-its-index/\nhttps://ganeshvernekar.com/blog/prometheus-tsdb-compaction-and-retention/#compaction\n",
+  "wordCount" : "5811",
+  "inLanguage": "zh",
+  "datePublished": "2024-12-31T01:10:28+08:00",
+  "dateModified": "2024-12-31T01:10:28+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/zh/blog/zh/prometheus-tsdb/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"
+    integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"
+    integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR"
+    crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMathInElement(document.body, {
+            
+            
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: "\\begin{equation}", right: "\\end{equation}", display: true },
+                { left: "\\begin{align}", right: "\\end{align}", display: true },
+                { left: "\\begin{alignat}", right: "\\end{alignat}", display: true },
+                { left: "\\begin{gather}", right: "\\end{gather}", display: true },
+                { left: "\\begin{CD}", right: "\\end{CD}", display: true },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            
+            throwOnError: false,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command),
+            macros: {
+                "\\eqref": "\\href{###1}{(\\text{#1})}",
+                "\\ref": "\\href{###1}{\\text{#1}}",
+                "\\label": "\\htmlId{#1}{}"
+            }
+        });
+    });
+</script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/zh">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/blog">文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/tags">分类</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/archives">历史文章</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">网站统计</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/zh/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/">EN</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>Prometheus--TSDB</h1>
+  </header>
+
+  <p>
+  <small>
+    2024年12月31日&nbsp;· 5811 字&nbsp;· 12 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/prometheus/">Prometheus</a>
+      
+      <a href="https://noneback.github.io/zh/tags/tsdb/">TSDB</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据查询模型">数据+查询模型</a></li>
+    <li><a href="#数据组织方式">数据组织方式</a>
+      <ul>
+        <li><a href="#文件组织格式">文件组织格式</a></li>
+      </ul>
+    </li>
+    <li><a href="#加速磁盘查询">加速磁盘查询</a></li>
+    <li><a href="#compaction">Compaction</a>
+      <ul>
+        <li><a href="#什么时候会-compaction">什么时候会 compaction？</a></li>
+      </ul>
+    </li>
+    <li><a href="#retention">Retention</a></li>
+    <li><a href="#snapshot">Snapshot</a></li>
+    <li><a href="#reference">Reference</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>最近晋升，顺便总结一些以前的工作。工作里大规模数据库可观测系统占了很大一部分，不过这个和云原生监控系统Prometheus还是很不一样的。现在来学习一下开源监控的标准系统。</p>
+<p>文章主要涉及 Prometheus 自带的单机时序存储。简单写写里面的TSDB设计，不涉及源码分析。</p>
+<p>这种项目的源码分析性价比有点低,除非我是专门搞tsdb的，不然分析之后也容易忘，再说了也不是什么很好的代码。</p>
+<h2 id="数据查询模型">数据+查询模型</h2>
+<ol>
+<li><strong>一个</strong>监控指标被描述为一组与时间有关的数据结构，timeseries。</li>
+</ol>
+<p>$$
+{timeseries} = \quad\lbrace \quad metric(attached\ with\ a\ set\ of\ labels) \Rightarrow   (t_0,\ v_0),\ (t_1,\ v_1),\  (t_2,\ v_2),\ \ldots,\ (t_n, v_n) \quad\rbrace
+$$</p>
+<ol>
+<li>查询使用 ${identifier(metric\ +\ sets\ of\ selected\ labels\ value)}$ 查询得到对应的timeseries</li>
+</ol>
+<pre tabindex="0"><code>series
+  ^   
+  │   . . . . . . . . . . . . . . . . .   . . . . .   {__name__=&#34;request_total&#34;, method=&#34;GET&#34;}
+  │     . . . . . . . . . . . . . . . . . . . . . .   {__name__=&#34;request_total&#34;, method=&#34;POST&#34;}
+  │         . . . . . . .
+  │       . . .     . . . . . . . . . . . . . . . .                  ... 
+  │     . . . . . . . . . . . . . . . . .   . . . .   
+  │     . . . . . . . . . .   . . . . . . . . . . .   {__name__=&#34;errors_total&#34;, method=&#34;POST&#34;}
+  │           . . .   . . . . . . . . .   . . . . .   {__name__=&#34;errors_total&#34;, method=&#34;GET&#34;}
+  │         . . . . . . . . .       . . . . .
+  │       . . .     . . . . . . . . . . . . . . . .                  ... 
+  │     . . . . . . . . . . . . . . . .   . . . . 
+  v
+    &lt;-------------------- time ---------------------&gt;
+</code></pre><blockquote>
+<p>identifier 的定义很重要。否则  ts 数据容易膨胀，比如容器重建的场景，如果 label 用的不好很容易膨胀。</p>
+</blockquote>
+<h2 id="数据组织方式">数据组织方式</h2>
+<p>对云原生的场景，监控数据有哪些特点？</p>
+<ol>
+<li>数据的生命周期短。因为单个容器本身的生命周期就很短（比如扩缩容场景，大量临时任务等场景），timeseries 很容易在一定时间维度上膨胀。</li>
+<li>垂直写入，水平查询</li>
+</ol>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010014.png"></p>
+<p>带着这些问题看看 数据文件的组织方法，如何解决或者避免这些问题。</p>
+<p>那么首先看看逻辑的结构</p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010031.png"></p>
+<p>整个 db 由 blocks + HEAD 组成，block 又可以进一步被拆分成 chunks，HEAD 基本上就是内存数据+wal 保障的读写 buffer 区域。chunks 包含多种 timeseries。</p>
+<p>对于单个 Block 的磁盘目录结构如下：</p>
+<pre tabindex="0"><code>├── 01BKGV7JC0RY8A6MACW02A2PJD  // block 的 ULID
+│   ├── chunks
+│   │   └── 000001
+│   ├── tombstones
+│   ├── index
+│   └── meta.json
+├── chunks_head
+│   └── 000001
+└── wal
+    ├── 000000002
+    └── checkpoint.00000001
+        └── 00000000
+</code></pre><ul>
+<li>block，一个时间段内（默认 2 小时）的所有数据，只读，用 <a href="https://github.com/oklog/ulid">ULID</a> 命名。每一个 block 内主要包括：
+<ul>
+<li>chunks 固定大小（最大 128M）的 chunks 文件</li>
+<li>index 索引文件，主要包含倒排索引的信息</li>
+<li>meta.json 元信息，主要包括 block 的 minTime/maxTime，用于在查询的时候data skip。</li>
+</ul>
+</li>
+<li>chunks_head，当前在写入的 block 对应的 chunks 文件，只读，最多 120 个数据点，时间跨度最大 2 小时。</li>
+<li>wal： 数据完整性保证</li>
+</ul>
+<blockquote>
+<p>从图上可以知道很多信息，比如wal保障数据完整性；Head 类似 tsdb 的 buffer pool，只不过用 mmap 托管，实现内存数据批量刷盘。Head 到达一定条件（比如时间阈值  ，数据大小 阈值）    之后 变成 immutable 的结构（block）刷盘。</p>
+</blockquote>
+<p>整体在数据组织上有很多概念和lsm 类存储结构类似。LSM结构也确实很适合 tsdb。</p>
+<blockquote>
+</blockquote>
+<p>不难看出 Prometheus 的设计思路：</p>
+<ul>
+<li>通过数据按时间分片的方式来解决数据生命周期短的问题</li>
+<li>通过内存攒批的方式来对应只写最新数据的场景</li>
+</ul>
+<p>抛开与 leveldb 类似的地方不谈，我们来看看有什么不一样的地方。</p>
+<p>首先，使用的模型上不一样。leveldb 是 kv ，tsdb 是 timeseries，查询的模型不一样。tsdb 会有更多样话的查询方式，比如对label 的各种集合操作对 timeseries 进行过滤 ，所以会有更多的元信息来标注 timeseries，以便高效的查询。</p>
+<p>因为这类的需求，这里引入了一些新结构：倒排索引，checkpoint，tomebstone。这些让我们和对应的文件 format 一起分析。</p>
+<h3 id="文件组织格式">文件组织格式</h3>
+<p>让我们来看看有哪些成分，具体的组织方式不是本文重点。</p>
+<h4 id="metajson">meta.json</h4>
+<p>block 的一些信息，关键看 compaction 和 minT,maxT。</p>
+<p>minT,maxT 记录block 的时间访问，查询的时候可以用来做 data skip。</p>
+<p>companction：？？？？？暂时不知道干啥的</p>
+<pre tabindex="0"><code>{
+    &#34;ulid&#34;: &#34;01EM6Q6A1YPX4G9TEB20J22B2R&#34;, # 
+    &#34;minTime&#34;: 1602237600000,
+    &#34;maxTime&#34;: 1602244800000,
+    &#34;stats&#34;: {
+        &#34;numSamples&#34;: 553673232,
+        &#34;numSeries&#34;: 1346066,
+        &#34;numChunks&#34;: 4440437
+    },
+    &#34;compaction&#34;: {
+        &#34;level&#34;: 1,
+        &#34;sources&#34;: [
+            &#34;01EM65SHSX4VARXBBHBF0M0FDS&#34;,
+            &#34;01EM6GAJSYWSQQRDY782EA5ZPN&#34;
+        ]
+    },
+    &#34;version&#34;: 1
+}
+</code></pre><h4 id="chunks">chunks</h4>
+<p>普通的数据文件，它的索引都在 index 文件里。需要注意的是一个chunk 只能属于一个 timeseries，一个 timeseries 由多个 chunks组成。</p>
+<pre tabindex="0"><code>┌──────────────────────────────┐
+│  magic(0x85BD40DD) &lt;4 byte&gt;  │
+├──────────────────────────────┤
+│    version(1) &lt;1 byte&gt;       │
+├──────────────────────────────┤
+│    padding(0) &lt;3 byte&gt;       │
+├──────────────────────────────┤
+│ ┌──────────────────────────┐ │
+│ │         Chunk 1          │ │
+│ ├──────────────────────────┤ │
+│ │          ...             │ │
+│ ├──────────────────────────┤ │
+│ │         Chunk N          │ │
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
+
+Every Chunk:
+┌───────────────┬───────────────────┬──────────────┬────────────────┐
+│ len &lt;uvarint&gt; │ encoding &lt;1 byte&gt; │ data &lt;bytes&gt; │ CRC32 &lt;4 byte&gt; │
+└───────────────┴───────────────────┴──────────────┴────────────────┘
+</code></pre><h4 id="tombstone">tombstone</h4>
+<p>标记删除，tsdb 有时候会有一些删除操作。比如，短时 Job、容器销毁之后，业务上可能希望删除。标记删除主要是为了用追加写代替原地修改。后续可以通过 Compaction 回收这部分磁盘。</p>
+<p>当然不删除也没事，会有 TTL 到期删除磁盘过期数据。</p>
+<pre tabindex="0"><code>┌────────────────────────────┬─────────────────────┐
+│ magic(0x0130BA30) &lt;4b&gt;     │ version(1) &lt;1 byte&gt; │
+├────────────────────────────┴─────────────────────┤
+│ ┌──────────────────────────────────────────────┐ │
+│ │                Tombstone 1                   │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      ...                     │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                Tombstone N                   │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                  CRC&lt;4b&gt;                     │ │
+│ └──────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+
+Every Tombstone:
+┌────────────────────────┬─────────────────┬─────────────────┐
+│ series ref &lt;uvarint64&gt; │ mint &lt;varint64&gt; │ maxt &lt;varint64&gt; │
+└────────────────────────┴─────────────────┴─────────────────┘
+</code></pre><h4 id="index-文件">index 文件</h4>
+<p>包含了读取用到的所有信息。比如倒排索引，timeseries 和 chunks 的映射关系。</p>
+<p>里面值得注意的是 Series 和 Postings 两类。</p>
+<p>Series 里面记录了Blocks里所有 series 对应 chunks的信息。</p>
+<p>Posting Offset Table记录了各个倒排索引的位置。倒排索引具体的内容被放在了 Postings里。</p>
+<blockquote>
+<p>对倒排索引的集合操作，可以快速过滤出来符合条件的 timeseries</p>
+</blockquote>
+<pre tabindex="0"><code>┌────────────────────────────┬─────────────────────┐
+│ magic(0xBAAAD700) &lt;4b&gt;     │ version(1) &lt;1 byte&gt; │
+├────────────────────────────┴─────────────────────┤
+│ ┌──────────────────────────────────────────────┐ │
+│ │                 Symbol Table                 │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                    Series                    │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                 Label Index 1                │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      ...                     │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                 Label Index N                │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                   Postings 1                 │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      ...                     │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                   Postings N                 │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │               Label Offset Table             │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │             Postings Offset Table            │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      TOC                     │ │
+│ └──────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+
+A Series:
+┌──────────────────────────────────────────────────────┐
+│ len &lt;uvarint&gt;                                        │
+├──────────────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────────────────┐ │
+│ │            labels count &lt;uvarint64&gt;              │ │
+│ ├──────────────────────────────────────────────────┤ │
+│ │  ┌────────────────────────────────────────────┐  │ │
+│ │  │ ref(l_i.name) &lt;uvarint32&gt;                  │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ ref(l_i.value) &lt;uvarint32&gt;                 │  │ │
+│ │  └────────────────────────────────────────────┘  │ │
+│ │                       ...                        │ │
+│ ├──────────────────────────────────────────────────┤ │
+│ │            chunks count &lt;uvarint64&gt;              │ │
+│ ├──────────────────────────────────────────────────┤ │
+│ │  ┌────────────────────────────────────────────┐  │ │
+│ │  │ c_0.mint &lt;varint64&gt;                        │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ c_0.maxt - c_0.mint &lt;uvarint64&gt;            │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ ref(c_0.data) &lt;uvarint64&gt;                  │  │ │
+│ │  └────────────────────────────────────────────┘  │ │
+│ │  ┌────────────────────────────────────────────┐  │ │
+│ │  │ c_i.mint - c_i-1.maxt &lt;uvarint64&gt;          │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ c_i.maxt - c_i.mint &lt;uvarint64&gt;            │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ ref(c_i.data) - ref(c_i-1.data) &lt;varint64&gt; │  │ │
+│ │  └────────────────────────────────────────────┘  │ │
+│ │                       ...                        │ │
+│ └──────────────────────────────────────────────────┘ │
+├──────────────────────────────────────────────────────┤
+│ CRC32 &lt;4b&gt;                                           │
+└──────────────────────────────────────────────────────┘
+
+A Postings:
+┌────────────────────┬────────────────────┐
+│ len &lt;4b&gt;           │ #entries &lt;4b&gt;      │
+├────────────────────┴────────────────────┤
+│ ┌─────────────────────────────────────┐ │
+│ │ ref(series_1) &lt;4b&gt;                  │ │
+│ ├─────────────────────────────────────┤ │
+│ │ ...                                 │ │
+│ ├─────────────────────────────────────┤ │
+│ │ ref(series_n) &lt;4b&gt;                  │ │
+│ └─────────────────────────────────────┘ │
+├─────────────────────────────────────────┤
+│ CRC32 &lt;4b&gt;                              │
+└─────────────────────────────────────────┘
+</code></pre><h2 id="加速磁盘查询">加速磁盘查询</h2>
+<p>这里重点讲述一次查询是如何找到符合条件的数据的：</p>
+<ul>
+<li>首先在 Posting Offset Table 中，找到对应 label 的 Postings 位置</li>
+<li>根据 Postings 中的 series 信息，找到对应的 chunk 位置，即上文中的 series ref</li>
+<li>根据timeseries 找到对应的 chunks</li>
+</ul>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png">
+<img alt="!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg" src="https://github.com/noneback/images/blob/picgo/image.png?raw=true"></p>
+<h2 id="compaction">Compaction</h2>
+<p>类似 leveldb，也有 major compaction和 minor compaction。在这里加 Compaction 和 Head Compaction。</p>
+<p>Head Compaction类似把 Head部分持久化成 Chunk 的过程，在这个过程中，mark delete 的tombstone 会被真的删除（毕竟要读到内存里，顺手删了）。</p>
+<p>Compaction 就是把 Block 合并的一个过程。这个动作可以回收：</p>
+<ol>
+<li>标记删除占用的磁盘资源。</li>
+<li>重复的部分信息。比如散落在多个 block 里面的重复 chunk， 倒排索引这类的磁盘记录</li>
+<li>加速一些查询的处理。比如数据在多个数据块之间overlapping（没处理的话，读出来之后要在内存里处理，不如顺便在 compaction 的时候处理掉，合并之后读取也方便了）</li>
+</ol>
+<h3 id="什么时候会-compaction">什么时候会 compaction？</h3>
+<p>官方博客里没咋说清楚，只提到了data overlapping 的时候会触发。 不过其他策略也挺多的。比如定时触发，每次 minor 触发的时候判断，基于 tombstone 的大小判断，手动触发这类。可以参考一些 leveldb 的策略。</p>
+<h2 id="retention">Retention</h2>
+<p>没啥说的，就是 Time or Size Based TTL，感觉放到 Compaction 里面做也不是不行。</p>
+<h2 id="snapshot">Snapshot</h2>
+<p>感觉就是把内存数据 dump 一份到磁盘上而已……。可能是为了平衡大量指标数据磁盘写入以及数据完整性。不然有了 wal 还要它干啥。</p>
+<h2 id="reference">Reference</h2>
+<p><a href="https://web.archive.org/web/20210803115658/https://fabxc.org/tsdb/">https://web.archive.org/web/20210803115658/https://fabxc.org/tsdb/</a></p>
+<p><a href="https://liujiacai.net/blog/2021/04/11/prometheus-storage-engine/">https://liujiacai.net/blog/2021/04/11/prometheus-storage-engine/</a></p>
+<p><a href="https://tech.qimao.com/prometheus-tsdb-de-she-ji-yu-shi-xian-2/">https://tech.qimao.com/prometheus-tsdb-de-she-ji-yu-shi-xian-2/</a></p>
+<p><a href="https://ganeshvernekar.com/blog/prometheus-tsdb-persistent-block-and-its-index/">https://ganeshvernekar.com/blog/prometheus-tsdb-persistent-block-and-its-index/</a></p>
+<p><a href="https://ganeshvernekar.com/blog/prometheus-tsdb-compaction-and-retention/#compaction">https://ganeshvernekar.com/blog/prometheus-tsdb-compaction-and-retention/#compaction</a></p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    
+    <a class="next" href="https://noneback.github.io/zh/blog/zh/borg/"><span>Borg: Large-scale cluster management at Google with Borg</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

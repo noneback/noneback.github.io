@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/zookeeper/</link>
     <description>Recent content in ZooKeeper on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Tue, 03 Jan 2023 23:49:41 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/zookeeper/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -36,12 +37,12 @@
 &lt;blockquote&gt;
 &lt;p&gt;The difference between regular and ephemeral znodes is that ephemeral nodes are automatically deleted when the session ends.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155342Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155342Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D\&#34;Untitled.png\&#34;&amp;x-id=GetObject&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Clients interact with ZooKeeper through its API, and ZooKeeper manages client connections through sessions. In a session, clients can observe state changes that reflect their operations.&lt;/p&gt;
 &lt;h2 id=&#34;cap-guarantees&#34;&gt;CAP Guarantees&lt;/h2&gt;
 &lt;p&gt;ZooKeeper provides CP (Consistency and Partition Tolerance) guarantees. For instance, during leader election, ZooKeeper will stop serving requests until a new leader is elected, ensuring consistency.&lt;/p&gt;
 &lt;h2 id=&#34;implementation&#34;&gt;Implementation&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155414Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155414Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D\&#34;Untitled.png\&#34;&amp;x-id=GetObject&#34;&gt;&lt;/p&gt;
 &lt;p&gt;ZooKeeper uses multiple replicas to achieve high availability.&lt;/p&gt;
 &lt;p&gt;In simple terms, ZooKeeper&amp;rsquo;s upper layer uses the ZAB protocol to handle write requests, ensuring linearizability across replicas. Reads are processed locally, ensuring sequential consistency. The underlying data state machine is stored in the replicated database (in-memory) and Write-Ahead Log (WAL) on ZooKeeper cluster machines, with periodic snapshots to ensure durability. The entire in-memory database uses fuzzy snapshots and WAL replay to ensure crash safety and fast recovery after a crash.&lt;/p&gt;
 &lt;blockquote&gt;

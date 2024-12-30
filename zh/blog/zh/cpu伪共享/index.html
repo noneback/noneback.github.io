@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2021-05-02T13:47:30+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="CPU伪共享"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="CPU伪共享"/>
 <meta name="twitter:description" content="起因只是因为面试时被问到的一个问题：什么是CPU伪共享？ CPU缓存 让我们先从CPU缓存讲起。 CPU Cache是计算机为了解决CPU和主存之间的速"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "CPU伪共享",
       "item": "https://noneback.github.io/zh/blog/zh/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "CPU\".\"Cache\""
   ],
-  "articleBody": "起因只是因为面试时被问到的一个问题：什么是CPU伪共享？\nCPU缓存 让我们先从CPU缓存讲起。\nCPU Cache是计算机为了解决CPU和主存之间的速度差异，引入 的一种存储介质。在金字塔式存储体系中它位于自顶向下的第二层，仅次于CPU寄存器。其容量远小于内存，但速度却可以接近处理器的频率。\n缓存的有效实际上是依托于程序的时空局部性原理。\n使用场景上，当处理器发出内存访问请求时，会先查看缓存内是否有请求数据。如果存在（命中），则不经访问内存直接返回该数据；如果不存在（失效），则要先把内存中的相应数据载入缓存，再将其返回处理器。\nCPU缓存架构 CPU与主存之间通常有三级缓存，缓存靠近CPU缓存的速率就越快，同时容量也越小。CPU获取数据时，它先去 L1 查找所需的数据，再去 L2，然后是 L3，最后如果这些缓存中都没有，所需的数据就要去主内存拿。\n其中：\n L1 紧靠着在使用它的 CPU 内核。L1，L2只能被一个单独的 CPU 核使用。 L3 能够被单个插槽上的所有 CPU 核共享。  CPU缓存块 缓存实际上是以缓存块（或者称之为缓存行）为最小存取单位进行存取的，通常是64个字节，它有效引用了主存中的一块地址（64字节）。\n缓存的更新一次性至少更新一个缓存块。\n这样加载缓存的好处是，如果我们需要的数据正好彼此相邻，那么就不需要再次更新缓存；\n坏处在于可能会导致CPU的伪共享问题。\nCPU伪共享 假设这么一个场景：\n 首先，我们有个 long 类型的变量 a，它不是数组的一部分，而是一个单独的变量，并且还有另外一个 long 类型的变量 b 紧挨着它，那么当加载 a 的时候将免费加载 b。 这个时候，一个 CPU 核心的线程在对 a 进行修改，另一个 CPU 核心的线程却在对 b 进行读取。 当前者修改 a 时，会把 a 和 b 同时加载到前者核心的缓存行中，更新完 a 后其它所有包含 a 的缓存行都将失效，因为其它缓存中的 a 不是最新值了。 而当后者读取 b 时，发现这个缓存行已经失效了，需要从主内存中重新加载。  我们的缓存都是以缓存行作为一个单位来处理的，所以失效 a 的缓存的同时，也会把 b 失效，反之亦然。\n这样就出现了问题：\nb 和 a 完全不相干，每次却要因为 a 的更新需要从主内存重新读取，它被缓存未命中给拖慢了。\nCPU的伪共享：当多线程修改互相独立的变量时，如果这些变量共享同一个缓存行，就会无意中影响彼此的性能，这就是伪共享。\n避免CPU伪共享  让数据内存分布不相邻 编译时让变量对齐  参考 杂谈:什么是CPU伪共享\nwikipedia\n",
+  "articleBody": "起因只是因为面试时被问到的一个问题：什么是CPU伪共享？\nCPU缓存 让我们先从CPU缓存讲起。\nCPU Cache是计算机为了解决CPU和主存之间的速度差异，引入 的一种存储介质。在金字塔式存储体系中它位于自顶向下的第二层，仅次于CPU寄存器。其容量远小于内存，但速度却可以接近处理器的频率。\n缓存的有效实际上是依托于程序的时空局部性原理。\n使用场景上，当处理器发出内存访问请求时，会先查看缓存内是否有请求数据。如果存在（命中），则不经访问内存直接返回该数据；如果不存在（失效），则要先把内存中的相应数据载入缓存，再将其返回处理器。\nCPU缓存架构 CPU与主存之间通常有三级缓存，缓存靠近CPU缓存的速率就越快，同时容量也越小。CPU获取数据时，它先去 L1 查找所需的数据，再去 L2，然后是 L3，最后如果这些缓存中都没有，所需的数据就要去主内存拿。\n其中：\nL1 紧靠着在使用它的 CPU 内核。L1，L2只能被一个单独的 CPU 核使用。 L3 能够被单个插槽上的所有 CPU 核共享。 CPU缓存块 缓存实际上是以缓存块（或者称之为缓存行）为最小存取单位进行存取的，通常是64个字节，它有效引用了主存中的一块地址（64字节）。\n缓存的更新一次性至少更新一个缓存块。\n这样加载缓存的好处是，如果我们需要的数据正好彼此相邻，那么就不需要再次更新缓存；\n坏处在于可能会导致CPU的伪共享问题。\nCPU伪共享 假设这么一个场景：\n首先，我们有个 long 类型的变量 a，它不是数组的一部分，而是一个单独的变量，并且还有另外一个 long 类型的变量 b 紧挨着它，那么当加载 a 的时候将免费加载 b。 这个时候，一个 CPU 核心的线程在对 a 进行修改，另一个 CPU 核心的线程却在对 b 进行读取。 当前者修改 a 时，会把 a 和 b 同时加载到前者核心的缓存行中，更新完 a 后其它所有包含 a 的缓存行都将失效，因为其它缓存中的 a 不是最新值了。 而当后者读取 b 时，发现这个缓存行已经失效了，需要从主内存中重新加载。 我们的缓存都是以缓存行作为一个单位来处理的，所以失效 a 的缓存的同时，也会把 b 失效，反之亦然。\n这样就出现了问题：\nb 和 a 完全不相干，每次却要因为 a 的更新需要从主内存重新读取，它被缓存未命中给拖慢了。\nCPU的伪共享：当多线程修改互相独立的变量时，如果这些变量共享同一个缓存行，就会无意中影响彼此的性能，这就是伪共享。\n避免CPU伪共享 让数据内存分布不相邻 编译时让变量对齐 参考 杂谈:什么是CPU伪共享\nwikipedia\n",
   "wordCount" : "980",
   "inLanguage": "zh",
   "datePublished": "2021-05-02T13:47:30+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -260,7 +265,7 @@ if (!doNotTrack) {
 <p>使用场景上，当处理器发出内存访问请求时，会先查看缓存内是否有请求数据。如果存在（命中），则不经访问内存直接返回该数据；如果不存在（失效），则要先把内存中的相应数据载入缓存，再将其返回处理器。</p>
 <h2 id="cpu缓存架构">CPU缓存架构</h2>
 <p>CPU与主存之间通常有三级缓存，缓存靠近CPU缓存的速率就越快，同时容量也越小。CPU获取数据时，它先去 L1 查找所需的数据，再去 L2，然后是 L3，最后如果这些缓存中都没有，所需的数据就要去主内存拿。</p>
-<p><img src="https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png" alt="608ba4a2f346fb7dd394484a.png">
+<p><img alt="608ba4a2f346fb7dd394484a.png" src="https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png">
 其中：</p>
 <ul>
 <li>L1 紧靠着在使用它的 CPU 内核。L1，L2只能被一个单独的 CPU 核使用。</li>
@@ -280,7 +285,7 @@ if (!doNotTrack) {
 <li>而当后者读取 b 时，发现这个缓存行已经失效了，需要从主内存中重新加载。</li>
 </ul>
 <p>我们的缓存都是以缓存行作为一个单位来处理的，所以失效 a 的缓存的同时，也会把 b 失效，反之亦然。</p>
-<p><img src="https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg" alt="https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg"></p>
+<p><img alt="https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg" src="https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg"></p>
 <p>这样就出现了问题：</p>
 <p>b 和 a 完全不相干，每次却要因为 a 的更新需要从主内存重新读取，它被缓存未命中给拖慢了。</p>
 <p>CPU的<em>伪共享</em>：<strong>当多线程修改互相独立的变量时，如果这些变量共享同一个缓存行，就会无意中影响彼此的性能，这就是伪共享</strong>。</p>
@@ -348,7 +353,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -425,4 +430,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

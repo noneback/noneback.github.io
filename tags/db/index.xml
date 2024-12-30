@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/db/</link>
     <description>Recent content in DB on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 10 Nov 2021 23:45:27 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/db/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -47,7 +48,7 @@
 &lt;/ul&gt;
 &lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
 &lt;p&gt;Kylin consists of two parts: &lt;strong&gt;online querying&lt;/strong&gt; and &lt;strong&gt;offline building&lt;/strong&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34; alt=&#34;Kylin Architecture&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Kylin Architecture&#34; src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34;&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;Offline Building&lt;/strong&gt;: Involves three main components: the data source, the build engine, and the storage engine. Data is fetched from the data source, cubes are built, and they are stored in the columnar storage engine.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Online Querying&lt;/strong&gt;: Consists of an interface layer and a query engine, abstracting away concepts like cubes from the user. External applications use the REST API to submit queries, which are processed by the query engine and returned.&lt;/li&gt;
@@ -92,8 +93,8 @@
 &lt;p&gt;In the InnoDB engine, the table&amp;rsquo;s data is organized using the primary key index. Each table must have a primary key, which constructs the B+ tree, resulting in a primary key index. &lt;strong&gt;The primary key index is a clustered index&lt;/strong&gt;, and all other &lt;strong&gt;secondary indexes are non-clustered indexes&lt;/strong&gt;.&lt;/p&gt;
 &lt;h3 id=&#34;composite-index&#34;&gt;Composite Index&lt;/h3&gt;
 &lt;p&gt;A composite index is an index composed of multiple fields.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-sql&#34; data-lang=&#34;sql&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;create&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;index&lt;/span&gt; index_name &lt;span style=&#34;color:#66d9ef&#34;&gt;on&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;table_name&lt;/span&gt; (col_1, col_2...)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Compared to a single-field index, the main difference is that it follows the &lt;strong&gt;leftmost prefix matching principle&lt;/strong&gt;.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sql&#34; data-lang=&#34;sql&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;create&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;index&lt;/span&gt; index_name &lt;span style=&#34;color:#66d9ef&#34;&gt;on&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;table_name&lt;/span&gt; (col_1, col_2...)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Compared to a single-field index, the main difference is that it follows the &lt;strong&gt;leftmost prefix matching principle&lt;/strong&gt;.&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;Leftmost Prefix Matching Principle&lt;/strong&gt;: When using a composite index, the index values are sorted according to the fields in the index from left to right.&lt;/p&gt;
 &lt;/blockquote&gt;

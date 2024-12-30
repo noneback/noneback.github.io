@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/blog/arch&#43;dwm%E5%A5%97%E9%A4%90/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2022-01-15T23:13:16+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Arch &#43; DWM Setup Attempt"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Arch &#43; DWM Setup Attempt"/>
 <meta name="twitter:description" content="Originally, I wanted to replace Manjaro KDE with DWM, but I got stuck at the boot screen, and while trying to fix it, I ended up corrupting the bootloader. So, I decided to go all in, format the entire disk, and try setting up an Arch &#43; DWM development environment. Here, I&rsquo;m documenting the process to assist with future repairs and device migrations. This is not a step-by-step guide, but"/>
 
 
@@ -43,16 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "Arch + DWM Setup Attempt",
       "item": "https://noneback.github.io/blog/arch+dwm%E5%A5%97%E9%A4%90/"
     }
@@ -69,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "arch", "linux", "dwm"
   ],
-  "articleBody": "Originally, I wanted to replace Manjaro KDE with DWM, but I got stuck at the boot screen, and while trying to fix it, I ended up corrupting the bootloader. So, I decided to go all in, format the entire disk, and try setting up an Arch + DWM development environment. Here, I’m documenting the process to assist with future repairs and device migrations.\nThis is not a step-by-step guide, but rather a concise record of my journey.\nInstalling Arch Linux Preparation Environment for Installing Arch To create the installation USB, you’ll need:\n 16GB+ USB drive Rufus Windows machine Arch Linux ISO  After creating the bootable USB, boot from it to start Arch Linux.\nNetwork and Mirrors Connect to WiFi using iwctl, then update the system clock and modify the Pacman mirror list.\nInstalling Arch Linux Disk Partitioning The disk should be divided into three main parts: Boot, Swap, and Root partitions.\n   Mount Point Partition Partition Type Suggested Size     /mnt/boot or /mnt/efi /dev/*efi_system_partition* EFI System Partition At least 260 MiB   [SWAP] /dev/*swap_partition* Linux swap More than 512 MiB   /mnt /dev/*root_partition* Linux x86-64 Root (/) Remaining Space    fdisk -l # View disk information cfdisk /dev/nvme # Partition the disk Formatting Partitions mkfs.ext4 ${root} mkswap ${swap} mkfs.fat -F 32 ${efi} Configuring Partitions and Installing the System  Mount Root: mount /dev/${root_partition} /mnt Mount EFI: mount /dev/${efi_partition} /mnt/boot/efi Activate Swap: swapon /dev/${swap_partition} Install Kernel and Essential Packages: pacstrap /mnt base linux linux-firmware Generate fstab Config: genfstab -U /mnt  /mnt/etc/fstab (check for correctness)  The system should now be installed, but there is no bootloader, so we need to install GRUB.\nOther Configurations Before Booting  Change root to the new system:  mount /dev/${root_partition} /mnt arch-chroot /mnt   Set timezone and sync time.\n  Configure language by editing locale.gen and locale.conf.\n  Network configuration: set hostname and hosts.\n  Set the root password.\n  Install the GRUB bootloader and EFI tools: grub-install --target=x86_64-efi --efi-directory=esp --bootloader-id=GRUB\n  Install and start iwd to connect to WiFi.\n  Boot into Arch Linux.\n  Post-Boot Configuration Install Essential Software    Purpose Software     Bluetooth bluetoothctl   Network iwd   Daily Use nvim, ranger, zsh   Sound alsamixer   Input Method fcitx5-im, fcitx5-chinese-addons   Proxy clash    Installing the Desktop Environment Install Xorg Xorg provides an open-source implementation of the X window system, which is the basis for graphical user interfaces.\nInstall: xorg-server, xorg-apps, xrandr, xinit.\nInstall Desktop Companion Software I used the Suckless tiling window management suite: dwm, slock, st, dmenu, slim, slstatus.\nConfigure .xinitc and .xprofile Add to .xinitc:\n# .xinitc fcitx5 \u0026 xautolock -time 10 -locker slock \u0026 autorandr -l home picom -b feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg exec slstatus \u0026 exec dwm # .xprofile export INPUT_METHOD=fcitx5 export GTK_IM_MODULE=fcitx5 export QT_IM_MODULE=fcitx5 export XMODIFIERS=@im=fcitx5 Customization and Usability    Purpose Software     Wallpaper feh   Window Effects picom   Screen Lock xautolock   Multi-Screen autorandr   Power Saving tlp    Additional Notes For more detailed instructions, please refer to the official installation documentation.\nReferences  Arch Linux Install Wiki X Server Wiki Personal DWM Desktop  ",
+  "articleBody": "Originally, I wanted to replace Manjaro KDE with DWM, but I got stuck at the boot screen, and while trying to fix it, I ended up corrupting the bootloader. So, I decided to go all in, format the entire disk, and try setting up an Arch + DWM development environment. Here, I’m documenting the process to assist with future repairs and device migrations.\nThis is not a step-by-step guide, but rather a concise record of my journey.\nInstalling Arch Linux Preparation Environment for Installing Arch To create the installation USB, you’ll need:\n16GB+ USB drive Rufus Windows machine Arch Linux ISO After creating the bootable USB, boot from it to start Arch Linux.\nNetwork and Mirrors Connect to WiFi using iwctl, then update the system clock and modify the Pacman mirror list.\nInstalling Arch Linux Disk Partitioning The disk should be divided into three main parts: Boot, Swap, and Root partitions.\nMount Point Partition Partition Type Suggested Size /mnt/boot or /mnt/efi /dev/*efi_system_partition* EFI System Partition At least 260 MiB [SWAP] /dev/*swap_partition* Linux swap More than 512 MiB /mnt /dev/*root_partition* Linux x86-64 Root (/) Remaining Space fdisk -l # View disk information cfdisk /dev/nvme # Partition the disk Formatting Partitions mkfs.ext4 ${root} mkswap ${swap} mkfs.fat -F 32 ${efi} Configuring Partitions and Installing the System Mount Root: mount /dev/${root_partition} /mnt Mount EFI: mount /dev/${efi_partition} /mnt/boot/efi Activate Swap: swapon /dev/${swap_partition} Install Kernel and Essential Packages: pacstrap /mnt base linux linux-firmware Generate fstab Config: genfstab -U /mnt \u003e\u003e /mnt/etc/fstab (check for correctness) The system should now be installed, but there is no bootloader, so we need to install GRUB.\nOther Configurations Before Booting Change root to the new system: mount /dev/${root_partition} /mnt arch-chroot /mnt Set timezone and sync time.\nConfigure language by editing locale.gen and locale.conf.\nNetwork configuration: set hostname and hosts.\nSet the root password.\nInstall the GRUB bootloader and EFI tools: grub-install --target=x86_64-efi --efi-directory=esp --bootloader-id=GRUB\nInstall and start iwd to connect to WiFi.\nBoot into Arch Linux.\nPost-Boot Configuration Install Essential Software Purpose Software Bluetooth bluetoothctl Network iwd Daily Use nvim, ranger, zsh Sound alsamixer Input Method fcitx5-im, fcitx5-chinese-addons Proxy clash Installing the Desktop Environment Install Xorg Xorg provides an open-source implementation of the X window system, which is the basis for graphical user interfaces.\nInstall: xorg-server, xorg-apps, xrandr, xinit.\nInstall Desktop Companion Software I used the Suckless tiling window management suite: dwm, slock, st, dmenu, slim, slstatus.\nConfigure .xinitc and .xprofile Add to .xinitc:\n# .xinitc fcitx5 \u0026 xautolock -time 10 -locker slock \u0026 autorandr -l home picom -b feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg exec slstatus \u0026 exec dwm # .xprofile export INPUT_METHOD=fcitx5 export GTK_IM_MODULE=fcitx5 export QT_IM_MODULE=fcitx5 export XMODIFIERS=@im=fcitx5 Customization and Usability Purpose Software Wallpaper feh Window Effects picom Screen Lock xautolock Multi-Screen autorandr Power Saving tlp Additional Notes For more detailed instructions, please refer to the official installation documentation.\nReferences Arch Linux Install Wiki X Server Wiki Personal DWM Desktop ",
   "wordCount" : "479",
   "inLanguage": "en",
   "datePublished": "2022-01-15T23:13:16+08:00",
@@ -144,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -209,11 +208,11 @@ if (!doNotTrack) {
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -237,9 +236,9 @@ if (!doNotTrack) {
       ·
       
       
-      <a href="https://noneback.github.io/tags/arch/">arch</a>
+      <a href="https://noneback.github.io/tags/arch/">Arch</a>
       
-      <a href="https://noneback.github.io/tags/dwm/">dwm</a>
+      <a href="https://noneback.github.io/tags/dwm/">Dwm</a>
       
     </small>
   
@@ -293,7 +292,7 @@ if (!doNotTrack) {
 <tr>
 <td><code>/mnt/boot</code> or <code>/mnt/efi</code></td>
 <td><code>/dev/*efi_system_partition*</code></td>
-<td><a href="https://wiki.archlinux.org/title/EFI_system_partition_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)">EFI System Partition</a></td>
+<td><a href="https://wiki.archlinux.org/title/EFI_system_partition_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29">EFI System Partition</a></td>
 <td>At least 260 MiB</td>
 </tr>
 <tr>
@@ -310,13 +309,13 @@ if (!doNotTrack) {
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">fdisk -l <span style="color:#75715e"># View disk information</span>
-cfdisk /dev/nvme <span style="color:#75715e"># Partition the disk</span>
-</code></pre></div><h4 id="formatting-partitions">Formatting Partitions</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mkfs.ext4 <span style="color:#e6db74">${</span>root<span style="color:#e6db74">}</span>
-mkswap <span style="color:#e6db74">${</span>swap<span style="color:#e6db74">}</span>
-mkfs.fat -F <span style="color:#ae81ff">32</span> <span style="color:#e6db74">${</span>efi<span style="color:#e6db74">}</span>
-</code></pre></div><h4 id="configuring-partitions-and-installing-the-system">Configuring Partitions and Installing the System</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>fdisk -l <span style="color:#75715e"># View disk information</span>
+</span></span><span style="display:flex;"><span>cfdisk /dev/nvme <span style="color:#75715e"># Partition the disk</span>
+</span></span></code></pre></div><h4 id="formatting-partitions">Formatting Partitions</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>mkfs.ext4 <span style="color:#e6db74">${</span>root<span style="color:#e6db74">}</span>
+</span></span><span style="display:flex;"><span>mkswap <span style="color:#e6db74">${</span>swap<span style="color:#e6db74">}</span>
+</span></span><span style="display:flex;"><span>mkfs.fat -F <span style="color:#ae81ff">32</span> <span style="color:#e6db74">${</span>efi<span style="color:#e6db74">}</span>
+</span></span></code></pre></div><h4 id="configuring-partitions-and-installing-the-system">Configuring Partitions and Installing the System</h4>
 <ul>
 <li>Mount Root: <code>mount /dev/${root_partition} /mnt</code></li>
 <li>Mount EFI: <code>mount /dev/${efi_partition} /mnt/boot/efi</code></li>
@@ -329,9 +328,9 @@ mkfs.fat -F <span style="color:#ae81ff">32</span> <span style="color:#e6db74">${
 <ul>
 <li>Change root to the new system:</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount /dev/<span style="color:#e6db74">${</span>root_partition<span style="color:#e6db74">}</span> /mnt
-arch-chroot /mnt
-</code></pre></div><ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>mount /dev/<span style="color:#e6db74">${</span>root_partition<span style="color:#e6db74">}</span> /mnt
+</span></span><span style="display:flex;"><span>arch-chroot /mnt
+</span></span></code></pre></div><ul>
 <li>
 <p>Set timezone and sync time.</p>
 </li>
@@ -392,28 +391,28 @@ arch-chroot /mnt
 </table>
 <h3 id="installing-the-desktop-environment">Installing the Desktop Environment</h3>
 <h4 id="install-xorg">Install Xorg</h4>
-<p><a href="https://wiki.archlinux.org/title/Xorg_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)">Xorg</a> provides an open-source implementation of the X window system, which is the basis for graphical user interfaces.</p>
+<p><a href="https://wiki.archlinux.org/title/Xorg_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29">Xorg</a> provides an open-source implementation of the X window system, which is the basis for graphical user interfaces.</p>
 <p>Install: <strong>xorg-server</strong>, <strong>xorg-apps</strong>, <strong>xrandr</strong>, <strong>xinit</strong>.</p>
 <h4 id="install-desktop-companion-software">Install Desktop Companion Software</h4>
 <p>I used the Suckless tiling window management suite: <strong>dwm</strong>, <strong>slock</strong>, <strong>st</strong>, <strong>dmenu</strong>, <strong>slim</strong>, <strong>slstatus</strong>.</p>
 <h4 id="configure-xinitc-and-xprofile">Configure <code>.xinitc</code> and <code>.xprofile</code></h4>
 <p>Add to <code>.xinitc</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#75715e"># .xinitc</span>
-fcitx5 &amp;
-xautolock -time <span style="color:#ae81ff">10</span> -locker slock &amp;
-
-autorandr -l home
-picom -b
-feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
-exec slstatus &amp;
-exec dwm
-
-<span style="color:#75715e"># .xprofile</span>
-export INPUT_METHOD<span style="color:#f92672">=</span>fcitx5
-export GTK_IM_MODULE<span style="color:#f92672">=</span>fcitx5
-export QT_IM_MODULE<span style="color:#f92672">=</span>fcitx5
-export XMODIFIERS<span style="color:#f92672">=</span>@im<span style="color:#f92672">=</span>fcitx5
-</code></pre></div><h4 id="customization-and-usability">Customization and Usability</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#75715e"># .xinitc</span>
+</span></span><span style="display:flex;"><span>fcitx5 &amp;
+</span></span><span style="display:flex;"><span>xautolock -time <span style="color:#ae81ff">10</span> -locker slock &amp;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>autorandr -l home
+</span></span><span style="display:flex;"><span>picom -b
+</span></span><span style="display:flex;"><span>feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
+</span></span><span style="display:flex;"><span>exec slstatus &amp;
+</span></span><span style="display:flex;"><span>exec dwm
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># .xprofile</span>
+</span></span><span style="display:flex;"><span>export INPUT_METHOD<span style="color:#f92672">=</span>fcitx5
+</span></span><span style="display:flex;"><span>export GTK_IM_MODULE<span style="color:#f92672">=</span>fcitx5
+</span></span><span style="display:flex;"><span>export QT_IM_MODULE<span style="color:#f92672">=</span>fcitx5
+</span></span><span style="display:flex;"><span>export XMODIFIERS<span style="color:#f92672">=</span>@im<span style="color:#f92672">=</span>fcitx5
+</span></span></code></pre></div><h4 id="customization-and-usability">Customization and Usability</h4>
 <table>
 <thead>
 <tr>
@@ -508,7 +507,7 @@ export XMODIFIERS<span style="color:#f92672">=</span>@im<span style="color:#f926
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -585,4 +584,4 @@ export XMODIFIERS<span style="color:#f92672">=</span>@im<span style="color:#f926
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

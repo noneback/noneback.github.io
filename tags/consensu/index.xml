@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/consensu/</link>
     <description>Recent content in Consensu on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Mon, 21 Feb 2022 01:26:46 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/consensu/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -17,7 +18,7 @@
 &lt;h2 id=&#34;algorithm-overview&#34;&gt;Algorithm Overview&lt;/h2&gt;
 &lt;p&gt;The basis of consensus algorithms is the replicated state machine, which means that &lt;strong&gt;executing the same deterministic commands in the same order will eventually lead to a consistent state&lt;/strong&gt;. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.&lt;/p&gt;
 &lt;p&gt;The core content of the Raft algorithm can be divided into three parts: $Leader Election + Log Replication + Safety$.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Initially, all nodes in the cluster start as Followers. If a Follower does not receive a heartbeat from the Leader within a certain period, it becomes a Candidate and triggers an election, requesting votes from the other Followers. The Candidate that receives a majority of votes becomes the Leader.&lt;/p&gt;
 &lt;p&gt;Raft is a &lt;strong&gt;strong leader&lt;/strong&gt; and strongly consistent distributed consensus algorithm. It uses Terms as a logical clock, and only one Leader can exist in each term. The Leader needs to send heartbeats periodically to maintain its status and to handle &lt;strong&gt;log replication&lt;/strong&gt;.&lt;/p&gt;
 &lt;p&gt;When replicating logs, the Leader first replicates the log to other Followers. Once a majority of the Followers successfully replicate the log, the Leader commits the log.&lt;/p&gt;

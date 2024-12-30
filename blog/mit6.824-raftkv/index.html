@@ -10,7 +10,7 @@ The structure of RaftKV and the interaction between its modules are shown below:
     <link rel="canonical" href="https://noneback.github.io/blog/mit6.824-raftkv/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -38,8 +38,7 @@ The structure of RaftKV and the interaction between its modules are shown below:
 <meta property="article:modified_time" content="2022-04-15T10:49:57+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824-RaftKV"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-RaftKV"/>
 <meta name="twitter:description" content="Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.
 Lab Overview Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.
 The structure of RaftKV and the interaction between its modules are shown below:"/>
@@ -49,16 +48,16 @@ The structure of RaftKV and the interaction between its modules are shown below:
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "MIT6.824-RaftKV",
       "item": "https://noneback.github.io/blog/mit6.824-raftkv/"
     }
@@ -75,7 +74,7 @@ The structure of RaftKV and the interaction between its modules are shown below:
   "keywords": [
     "Raft", "Distributed System", "Consensus", "MIT6.824"
   ],
-  "articleBody": "Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.\nLab Overview Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.\nThe structure of RaftKV and the interaction between its modules are shown below:\nCompared to the previous lab, the difficulty is significantly lower. For implementation, you can refer to this excellent implementation, so I won’t elaborate too much.\nRaft-Related Topics Let’s talk about Raft and its interactions with clients.\nRouting and Linearizability To build a service that allows client access on top of Raft, the issues of routing and linearizability must first be addressed.\nRouting Raft is a Strong Leader consensus algorithm, and read and write requests usually need to be executed by the Leader. When a client queries the Raft cluster, it typically randomly selects a node. If that node is not the Leader, it returns the Leader information to the client, and the client redirects the request to the Leader.\nLinearizability Currently, Raft only supports At Least Once semantics. For a single client request, the Raft state machine may apply the command multiple times, which is particularly unsuitable for consensus-based systems.\nTo achieve linearizability, it is clear that requests need to be made idempotent.\nA basic approach is for the client to assign a unique UID to each request, and the server maintains a session using this UID to cache the response of successful requests. When a duplicate request arrives at the server, it can respond directly using the cached response, thus achieving idempotency.\nOf course, this introduces the issue of session management, but that is not the focus of this article.\nRead-Only Optimization After solving the above two problems, we have a usable Raft-based service.\nHowever, we notice that whether it’s a read or write request, our application needs to go through a round of AppendEntries communication initiated by the Leader. It also requires successful quorum ACKs and additional disk write operations before the log is committed, after which the result can be returned to the client.\nWrite operations change the state machine, so these are necessary steps for write requests. However, read operations do not change the state machine, and we can optimize read requests to bypass the Raft log, reducing the overhead of synchronous write operations on disk IO.\nThe problem is that without additional measures, read-only query results that bypass the Raft log may become stale.\n For example, if the old cluster Leader and a new Leader’s cluster are partitioned, queries made to the old Leader could be outdated.\n The Raft paper mentions two methods to bypass the Raft log and optimize read-only requests: Read Index and Lease Read.\nRead Index The Read Index approach needs to address several issues:\n Committed logs from the old term   For example, if the old Leader commits a log but crashes before sending heartbeats, other nodes will elect a new Leader. According to the Raft paper, the new Leader does not proactively commit logs from the old Leader.\nTo solve this, a no-op log is committed after a new Leader is elected to commit the old log.\n  Gap between commitIndex and appliedIndex   Introduce a readIndex variable, where the Leader saves the current commitIndex in a local variable called readIndex. This acts as a boundary for applying the log, and when a read-only request arrives, the log must be applied up to the position recorded by readIndex before the Leader can query the state machine to provide read services.\n  Ensure no Leader change when providing read-only services   To achieve this, after receiving a read request, the Leader first sends a heartbeat and needs to receive quorum ACKs to ensure there is no other Leader with a higher term, thus ensuring that readIndex is the highest committed index in the cluster.\n For the specific process and optimizations like Batch and Follower Read, refer to the author’s PhD dissertation on Raft.\nLease Read The Read Index approach only optimizes the overhead of disk IO, but still requires a round of network communication. However, this overhead can also be optimized, leading to the Lease Read approach.\nThe core idea of Lease Read is to use the fact that a Leader Election requires at least one ElectionTimeout time period. During this period, the system will not conduct a new election, thereby avoiding Leader changes when providing read-only services. We can use clocks to optimize network IO.\nImplementation To let the clock replace network communication, we need an additional lease mechanism. Once the Leader’s Heartbeat is approved by a quorum, the Leader can assume that no other node can become Leader during the ElectionTimeout period, and it can extend its lease accordingly. While holding the lease, the Leader can directly serve read-only queries without extra network communication.\nHowever, there may be clock drift among servers, which means Followers cannot ensure that the Leader will not time out during the lease. This introduces the critical design for Lease Read: what strategy should be used to extend the lease?\nThe paper assumes that $ClockDrift$ is bounded, and when a heartbeat successfully updates the lease, the lease is extended to $start + rac{ElectionTimeout}{ClockDriftBound}$.\n$ClockDriftBound$ represents the limit of clock drift in the cluster, but discovering and maintaining this limit is challenging due to many real-time factors that cause clock drift.\n For instance, garbage collection (GC), virtual machine scheduling, cloud machine scaling, etc.\n In practice, some safety is usually sacrificed for Lease Read performance. Generally, the lease is extended to $StartTime + ElectionTimeout - \\Delta{t}$, where $\\Delta{t}$ is a positive value. This reduces the lease extension time compared to ElectionTimeout, trading off between network IO overhead and safety.\nSummary When building a Raft-based service, it is crucial to design routing and idempotency mechanisms for accessing the service.\nFor read-only operations, there are two main optimization methods: Read Index and Lease Read. The former optimizes disk IO during read operations, while the latter uses clocks to optimize network IO.\nReferences Implementation Doc\nRaft Paper\nMIT6.824 Official\nConsensus: Bridging Theory and Practice - zh\nTikv Lease-Read\n",
+  "articleBody": "Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.\nLab Overview Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.\nThe structure of RaftKV and the interaction between its modules are shown below:\nCompared to the previous lab, the difficulty is significantly lower. For implementation, you can refer to this excellent implementation, so I won’t elaborate too much.\nRaft-Related Topics Let’s talk about Raft and its interactions with clients.\nRouting and Linearizability To build a service that allows client access on top of Raft, the issues of routing and linearizability must first be addressed.\nRouting Raft is a Strong Leader consensus algorithm, and read and write requests usually need to be executed by the Leader. When a client queries the Raft cluster, it typically randomly selects a node. If that node is not the Leader, it returns the Leader information to the client, and the client redirects the request to the Leader.\nLinearizability Currently, Raft only supports At Least Once semantics. For a single client request, the Raft state machine may apply the command multiple times, which is particularly unsuitable for consensus-based systems.\nTo achieve linearizability, it is clear that requests need to be made idempotent.\nA basic approach is for the client to assign a unique UID to each request, and the server maintains a session using this UID to cache the response of successful requests. When a duplicate request arrives at the server, it can respond directly using the cached response, thus achieving idempotency.\nOf course, this introduces the issue of session management, but that is not the focus of this article.\nRead-Only Optimization After solving the above two problems, we have a usable Raft-based service.\nHowever, we notice that whether it’s a read or write request, our application needs to go through a round of AppendEntries communication initiated by the Leader. It also requires successful quorum ACKs and additional disk write operations before the log is committed, after which the result can be returned to the client.\nWrite operations change the state machine, so these are necessary steps for write requests. However, read operations do not change the state machine, and we can optimize read requests to bypass the Raft log, reducing the overhead of synchronous write operations on disk IO.\nThe problem is that without additional measures, read-only query results that bypass the Raft log may become stale.\nFor example, if the old cluster Leader and a new Leader’s cluster are partitioned, queries made to the old Leader could be outdated.\nThe Raft paper mentions two methods to bypass the Raft log and optimize read-only requests: Read Index and Lease Read.\nRead Index The Read Index approach needs to address several issues:\nCommitted logs from the old term For example, if the old Leader commits a log but crashes before sending heartbeats, other nodes will elect a new Leader. According to the Raft paper, the new Leader does not proactively commit logs from the old Leader.\nTo solve this, a no-op log is committed after a new Leader is elected to commit the old log.\nGap between commitIndex and appliedIndex Introduce a readIndex variable, where the Leader saves the current commitIndex in a local variable called readIndex. This acts as a boundary for applying the log, and when a read-only request arrives, the log must be applied up to the position recorded by readIndex before the Leader can query the state machine to provide read services.\nEnsure no Leader change when providing read-only services To achieve this, after receiving a read request, the Leader first sends a heartbeat and needs to receive quorum ACKs to ensure there is no other Leader with a higher term, thus ensuring that readIndex is the highest committed index in the cluster.\nFor the specific process and optimizations like Batch and Follower Read, refer to the author’s PhD dissertation on Raft.\nLease Read The Read Index approach only optimizes the overhead of disk IO, but still requires a round of network communication. However, this overhead can also be optimized, leading to the Lease Read approach.\nThe core idea of Lease Read is to use the fact that a Leader Election requires at least one ElectionTimeout time period. During this period, the system will not conduct a new election, thereby avoiding Leader changes when providing read-only services. We can use clocks to optimize network IO.\nImplementation To let the clock replace network communication, we need an additional lease mechanism. Once the Leader’s Heartbeat is approved by a quorum, the Leader can assume that no other node can become Leader during the ElectionTimeout period, and it can extend its lease accordingly. While holding the lease, the Leader can directly serve read-only queries without extra network communication.\nHowever, there may be clock drift among servers, which means Followers cannot ensure that the Leader will not time out during the lease. This introduces the critical design for Lease Read: what strategy should be used to extend the lease?\nThe paper assumes that $ClockDrift$ is bounded, and when a heartbeat successfully updates the lease, the lease is extended to $start + rac{ElectionTimeout}{ClockDriftBound}$.\n$ClockDriftBound$ represents the limit of clock drift in the cluster, but discovering and maintaining this limit is challenging due to many real-time factors that cause clock drift.\nFor instance, garbage collection (GC), virtual machine scheduling, cloud machine scaling, etc.\nIn practice, some safety is usually sacrificed for Lease Read performance. Generally, the lease is extended to $StartTime + ElectionTimeout - \\Delta{t}$, where $\\Delta{t}$ is a positive value. This reduces the lease extension time compared to ElectionTimeout, trading off between network IO overhead and safety.\nSummary When building a Raft-based service, it is crucial to design routing and idempotency mechanisms for accessing the service.\nFor read-only operations, there are two main optimization methods: Read Index and Lease Read. The former optimizes disk IO during read operations, while the latter uses clocks to optimize network IO.\nReferences Implementation Doc\nRaft Paper\nMIT6.824 Official\nConsensus: Bridging Theory and Practice - zh\nTikv Lease-Read\n",
   "wordCount" : "1039",
   "inLanguage": "en",
   "datePublished": "2022-04-15T10:49:57+08:00",
@@ -150,10 +149,10 @@ The structure of RaftKV and the interaction between its modules are shown below:
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -215,11 +214,11 @@ The structure of RaftKV and the interaction between its modules are shown below:
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -275,7 +274,7 @@ The structure of RaftKV and the interaction between its modules are shown below:
 <h2 id="lab-overview">Lab Overview</h2>
 <p>Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.</p>
 <p>The structure of RaftKV and the interaction between its modules are shown below:</p>
-<p><img src="https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png" alt="image-20220429211429808"></p>
+<p><img alt="image-20220429211429808" src="https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png"></p>
 <p>Compared to the previous lab, the difficulty is significantly lower. For implementation, you can refer to this excellent <a href="https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md">implementation</a>, so I won&rsquo;t elaborate too much.</p>
 <h2 id="raft-related-topics">Raft-Related Topics</h2>
 <p>Let&rsquo;s talk about Raft and its interactions with clients.</p>
@@ -396,7 +395,7 @@ The structure of RaftKV and the interaction between its modules are shown below:
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -473,4 +472,4 @@ The structure of RaftKV and the interaction between its modules are shown below:
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

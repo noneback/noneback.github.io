@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%8C%E6%AD%A5%E4%B8%8E%E4%BA%92%E6%96%A5/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2019-11-01T00:00:00+00:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="进程的同步与互斥"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="进程的同步与互斥"/>
 <meta name="twitter:description" content="进程的同步与互斥 [TOC] 进程的同步 引入 在多进程的系统中，进程是并发执行的，进程具有“异步”的天性，异步性指的是各并发执行的进程以各自独立的、不可预"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "进程的同步与互斥",
       "item": "https://noneback.github.io/zh/blog/zh/%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%8C%E6%AD%A5%E4%B8%8E%E4%BA%92%E6%96%A5/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "Linux", "OS", "Multi-process"
   ],
-  "articleBody": "进程的同步与互斥 [TOC]\n进程的同步 引入 在多进程的系统中，进程是并发执行的，进程具有“异步”的天性，异步性指的是各并发执行的进程以各自独立的、不可预知的速度向前推进。\n我们知道多进程存在对共享资源的访问，如果对异步性不加控制，那么多进程的不可预知的执行次序会导致对共享数据的脏读、误读、幻读等莫名错误，这样的话，我们的进程拿不到准确的数据，多进程的并发优势反而得不偿失。\n为了能避免异步性带来的副作用，我们就引入了“进程同步”，这是个辅助手段，主要解决异步性带来的“不可预知性”。\n进程同步机制就是针对解决异步进程间的执行次序的“不可预知性”，保证多个进程之间按照某种设计好的、程序能控制的执行次序，以达到对共享资源访问的能控性、有效性、准确性\n进程同步的控制机制 基于 P 、 V 操作的信号量机制 最早出现的用来解决进程同步与互斥问题的机制 , 包括一个称为信号量的变量及对它进行的两个原语操作 。\n==key==\n一个信号量的建立必须经过说明 , 即应该准确说明 s 的意义和初值 , 信号量的值仅能由 PV 原语来改变 。P 操作是申请资源 , 它使信号量值减 1 , 若结果非负 , 该进程继续 , 否则该进程被封锁 ;V 操作是释放资源 , 它使信号量值增 1 ，若结果大于零 , 该进程继续 , 否则从该信号量的等待队列中移出一个进程 , 解除它的等待状态 。\n管程机制   概念引入：\n为实现进程间的同步在每个并发进程中都 要设置大量的同步操作原语 , 这不仅给编程带来麻烦 , 且会因 P 操作使用不当而导致数据的不定性或死锁;\n   同时操作系统的结构不够清晰 。因此后来又提出了一种集中式同步进程 ———**管程 **。\n   基本思想：将共享变量和对它们的操作集中在一个模块中 , 操作系统或并发程序就由这样的模块构成 。这样模块之间联系清晰 , 便于维护和修改 , 易于保证正确性。\n  从语言的角度看，管程主要有以下特性： （1）模块。管程是一个基本程序单位，可以单独编译;\n（2）抽象。管程是中不仅有数据，而且有对数据的操作;\n（3）封装。管程外可以调用管程内部定义的一些函数，但函数的具体实现外部不可见;对于管程中定义的共享变量的所有操作都局限在管程中，外部只能通过调用管程的某些函数来间接访问这些变量。\n  为了保证共享变量的数据一致性，管程应互斥使用。\n  管程通常是用于管理资源的，因此管程中有进程等待队列和相应的等待和唤醒操作。\n在管程入口有一个等待队列，称为入口等待队列。当一个已进入管程的进程等待时，就释放管程的互斥使用权；当已进入管程的一个进程唤醒另一个进程时，两者必须有一个退出或停止使用管程。在管程内部，由于执行唤醒操作，可能存在多个等待进程（等待使用管程），称为紧急等待队列，它的优先级高于入口等待队列。 因此，一个进程进入管程之前要先申请，一般由管程提供一个enter过程；离开时释放使用权，如果紧急等待队列不空，则唤醒第一个等待者，一般也由管程提供外部过程leave。\n  管程内部有自己的等待机制。管程可以说明一种特殊的条件型变量：var c:condition；实际上是一个指针，指向一个等待该条件的PCB队列。\n 对条件型变量可执行wait和signal操作： wait(c):若紧急等待队列不空，唤醒第一个等待者，否则释放管程使用权。执行本操作的进程进入C队列尾部； signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待者，自己进入紧急等待队列尾部。    总结：管程(monitor)是一种基本的，高级的同步构造，是为了解决信号量因不正确的使用而导致的一些时序错误而提出的一种高级语言构造。 管程也是进程同步的一种方式，相比于其他进程同步方式，管程将共享变量和对它们的操作集中在一个模块中，操作系统或并发程序就由这样的模块构成。这样模块之间联系清晰，便于维护和修改，易于保证正确性。 管程只是保证了同一时刻只有一个进程在管程内活动,即管程内定义的操作在同一时刻只被一个进程调用(由编译器实现).但是这样并不能保证进程以设计的顺序执行,因此需要设置condition变量,让进入管程而无法继续执行的进程阻塞自己。\n  会合机制  会合机制的提出  在不具有公共内存的分布式操作系统中，要使用P，V操作或管程 机制存在着十分大的问题–信号灯量和管程共享变量存放在何处？\n如果分步式系统中有两个主机H1和H2，它们之间并没有公共 内存，H1中有进程P1，H2中有进程P2，如果有一个信号量(或管程共享变量)S，那S放在何处呢？\n如果放在H1中，显然P2无法访问到S；同理，如果放在H2中,S对P1又是不可访问的。\n显然，P，V操作和管程都是以进程所操作的对象为核心的，而这些对象在无公共内存的分布式操作系统中的存储是一个不可克服的困难。\n因此，自然希望在分布式操作系统中的同步机制应该避开这些被动的成分，而以主动成分–进程直接进行相互作用。因而，产生了 会合这一种同步机制。\n  会合的一般形式 一个进程可以有许多入口，一个入口对应一段程序，一个进程可 以调用另一个进程的入口。当一个进程调用另一个进程的入口， 而且被调用的进程已准备好接受这个调用时，会合就发生了。\n当调用者发出调用请求时，被调用的进程未准备接受这个调用时， 则调用者等待；反之，当被调用者准备接受调用，而当前尚无调 用者时，则被调用者等待。即先到达会合处者等待后到达者。\n当多个进程调用同一个进程的同一个入口时，被调用者按先来先服务 （FCFS）的次序接受调用。入口处可以携带调用参数，还可以有返回参数，以实现信息的交换。被调用者可以选择会合的入口。\n  Petri 网  利用Petri网进行程序设计的内容较为抽象和晦涩，在此仅大概介绍一下，有兴趣可以自行查找相关资料。\n Petri 网是一种适于描述和分析异步并发系统的有力工具 。Petri 网是德国的C.A.Petri 于 1962 年在他的博士论文中首先提出的 , 用以构造系统模型及动态特性分析。在计算机科学的许多领域 , 如并行计算 、 分布式数据库设计等 , Petri网系统已起到了越来越重要的作用。\n( 1) Petri 网是以图形表示的模型 , 直观性强\n( 2) Petri 网中的托肯（Petri网中的一个成分）流动表现了系统的动态演变过程 。\n( 3) Petri 网能准确地刻画系统的一些重要特性 , 如 : 并发 、冲突 、同步 、异 步 、死锁 、饥饿 、溢出等 。\n( 4) 有一套严格的数学理论和分析方法 , 支持对系统模型的各种性质的分析和性能评价 。\nPetri网是一种适合于描述异步并发现象的系统模型，它既有严格的数学定义，又有直观的图形表示，借由它可以很好的表示程序的运行过程以及状态（并发 、冲突 、同步 、异 步 、死锁 、饥饿 、溢出等 )。通过对网图的分析、同步合成和共享合成，将串行进程并行化 , 中间过程运用从粗到细的逐步精炼思想 , 最终获得一个高效、 正确的并行程序。\ndemo:\n进程的互斥 引入 “进程互斥“与“进程同步“本质上都是在围绕同一个话题在讨论，即如果保证多进程对**共享资源（如，内存数据、打印机、摄像头）**访问的可控性、有效性和正确性；\n 所以，共享资源才是研究的核心对象\n 我们在这需要讨论的是，在某个时间段内，因为存在多个进程的“异步”运行、存在对共享资源的“乱序”持有及改动，所以，如果这个“时间段”不让进程的发生切换，即限制这个时间段内，只允许一个进程开展任务，任务完成之前，该进程不释放当前持有的共享资源，其他的进程在这段时间内也不能抢占这个资源；\n这种在“时间段”角度下，解决并发访问共享资源问题的机制，就叫做“进程互斥”\n 进程互斥的四大原则\n1.空闲让进。 当临界资源处于空闲状态，允许一个请求进入临界区的进程立即进入临界区，从 而有效的利用资源。\n2.忙则等待。 已经有进程进入临界区时，意味着相应的临界资源正在被访问，所以其他准备进 入临界区的进程必须等待，来保证多进程互斥。\n3.有限等待。 对要求访问临界资源的进程，应该保证该进程能在有效的时间内进入临界区，防 止死等状态。\n4.让权等待。 当进程不能进入临界区，应该立即释放处理机，防止进程忙等待。\n 进程互斥的实现机制 下面介绍历史上对进程互斥的实现方法：\n软件实现 单标志法 问题：违背“空闲让进”的原则\n 单标志法在一些情况下确实能达到互斥访问的效果，但是这个算法也存在很大的缺陷，比如上面的turn初始为0，如果P0进程一直还未曾执行过临界区代码，那么临界资源就不会被P0占用，并处于空闲状态，但是这种情况下，P1进程也只能看着临界资源空闲也没法占有，因为P1在第5部被while循环“卡住”了。\n 双标志先检查法 问题：双标志先检查法的算法设计中忽视并发进程存在异步性。 违反“忙则等待”原则\n 具体来说，如果上图中的P0进程和P1进程在交替运行后，分别执行完了第1步和第5步，并且还未曾执行第2步和第6步，这种情况在不可预知的异步性下，是完全有可能发生的，但是如果真发生这种执行状况，那么P0和P1就都可以进入临界区了，原本想到达的互斥效果，就失败了；\n  这个算法错误的根本原因在于：进入区的“检查”（while轮训）和“上锁”（设置flag）两个处理不是一气呵成的；“检查”后，“上锁”前的这个时间间隙有可能会发生进程切换，导致其他进程“有机可乘”；当然，如果“检查”和“上锁”是一个不可分割的原子操作，那么这个算法的问题就可以解决 了**；**\n 双标志后检查法 问题：与双标志先检查法一样，忽略了并发进程的异步性。\n因此，双标志后检查法虽然解决了“忙则等待”的问题，但是又违背了“空闲让进”和“有限等待”原则，会因各进程都长期无法访问临界资源而产生“饥饿”现象；\nPeterson算法 从Peterson算法的while条件的设计，可以看出，它综合了单标志算法和双标志检查算法的优点，做到了兼顾“公平性”和“互斥性”；\n问题：依然没有遵循让权等待的原则。\n 事实上运用进程同步一些的机制（信号量，管程等）也能实现临界资源的互斥，在此不多说。  硬件实现 中断屏蔽方法  缺点：\n 不适用于多核CPU，因为关中断指令只对执行该指令的CPU有效，如果是多核CPU，那么这个指令不会影响其他核的中断处理机制；因此，这种方式只能保证执行关中断指令的这个核不进行进程切换，但是其他核的进程还是有可能丝毫不受阻拦的访问该临界资源，所以总体上看，还是没法保证进程对临界资源的互斥访问； 开关中断指令是特权指令，只能在内核态下执行，因此用户态进程无法使用这个功能，否则必须切换至内核态下；   TestAndSet指令  TSL指令是用硬件实现的，执行的过程不允许被中断，只能一气呵成 所谓“硬件实现”，可以理解为TSL看似是一堆指令的集合，但是这一堆指令可以在硬件上只需要一个时钟周期就可完成，所以这一堆指令是不会被中断，不会被破坏的；\n TSL指令逻辑的C语言描述，注意这里只是描述，真实的执行过程就是一个瞬间的硬件操作而已；\n//lock 表示当前临界区是否被加锁 bool TestAndSet(bool *lock){ bool old=*lock; *lock=true; return old; }  这段描述的核心就是共享变量lock，对于多个进程竞争临界资源时，这个共享的lock变量，是全局的、独一无二的；\n 下面来分析一下这段描述：\n// 将TestAndSet 配合 while一起使用 while(TestAndSet(\u0026lock)) ; //临界区代码 lock=false; //剩余区代码  while会陷入死循环，直到lock出现过一次false，就跳出循环接着往下执行，并且跳出循环后，lock最终还是被设成true；\n 因为TestAndSet()函数是硬件实现的，属于原子操作，所以当进程共享的变量lock被其他进程修改成false之后，TestAndSet能保证当前进程对lock**“瞬间”**上锁。\n 这个“瞬间”过程可以描述为：\n 获得lock的false空闲锁状态； 将lock设为true，即上锁； 基于false作为返回值来跳出while死循环；   Swap指令  Swap指令和上面的TSL指令一样，也是通过硬件实现的，执行过程不允许被中断，只能一气呵成\n //swap指令的作用是交换两个变量的值。 void Swap(bool *a , bool *b){ bool temp=*a; *a=*b; *b=temp; } 与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。\n//lock表示当前临界区是否被加锁。 bool old=true; while(old==true){ Swap(\u0026lock,\u0026old); } //临界区代码 lock=false; //剩余区代码 while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；\n 这个**“瞬间”**过程的慢动作回放如下：\n lock出现false，即空闲锁状态； old被换成false，lock被换成true，即上锁； while条件不满足，跳出死循环   关于TSL和Swap：\n",
+  "articleBody": "进程的同步与互斥 [TOC]\n进程的同步 引入 在多进程的系统中，进程是并发执行的，进程具有“异步”的天性，异步性指的是各并发执行的进程以各自独立的、不可预知的速度向前推进。\n我们知道多进程存在对共享资源的访问，如果对异步性不加控制，那么多进程的不可预知的执行次序会导致对共享数据的脏读、误读、幻读等莫名错误，这样的话，我们的进程拿不到准确的数据，多进程的并发优势反而得不偿失。\n为了能避免异步性带来的副作用，我们就引入了“进程同步”，这是个辅助手段，主要解决异步性带来的“不可预知性”。\n进程同步机制就是针对解决异步进程间的执行次序的“不可预知性”，保证多个进程之间按照某种设计好的、程序能控制的执行次序，以达到对共享资源访问的能控性、有效性、准确性\n进程同步的控制机制 基于 P 、 V 操作的信号量机制 最早出现的用来解决进程同步与互斥问题的机制 , 包括一个称为信号量的变量及对它进行的两个原语操作 。\n==key==\n一个信号量的建立必须经过说明 , 即应该准确说明 s 的意义和初值 , 信号量的值仅能由 PV 原语来改变 。P 操作是申请资源 , 它使信号量值减 1 , 若结果非负 , 该进程继续 , 否则该进程被封锁 ;V 操作是释放资源 , 它使信号量值增 1 ，若结果大于零 , 该进程继续 , 否则从该信号量的等待队列中移出一个进程 , 解除它的等待状态 。\n管程机制 概念引入：\n为实现进程间的同步在每个并发进程中都 要设置大量的同步操作原语 , 这不仅给编程带来麻烦 , 且会因 P 操作使用不当而导致数据的不定性或死锁;\n同时操作系统的结构不够清晰 。因此后来又提出了一种集中式同步进程 ———**管程 **。\n基本思想：将共享变量和对它们的操作集中在一个模块中 , 操作系统或并发程序就由这样的模块构成 。这样模块之间联系清晰 , 便于维护和修改 , 易于保证正确性。\n从语言的角度看，管程主要有以下特性： （1）模块。管程是一个基本程序单位，可以单独编译;\n（2）抽象。管程是中不仅有数据，而且有对数据的操作;\n（3）封装。管程外可以调用管程内部定义的一些函数，但函数的具体实现外部不可见;对于管程中定义的共享变量的所有操作都局限在管程中，外部只能通过调用管程的某些函数来间接访问这些变量。\n为了保证共享变量的数据一致性，管程应互斥使用。\n管程通常是用于管理资源的，因此管程中有进程等待队列和相应的等待和唤醒操作。\n在管程入口有一个等待队列，称为入口等待队列。当一个已进入管程的进程等待时，就释放管程的互斥使用权；当已进入管程的一个进程唤醒另一个进程时，两者必须有一个退出或停止使用管程。在管程内部，由于执行唤醒操作，可能存在多个等待进程（等待使用管程），称为紧急等待队列，它的优先级高于入口等待队列。 因此，一个进程进入管程之前要先申请，一般由管程提供一个enter过程；离开时释放使用权，如果紧急等待队列不空，则唤醒第一个等待者，一般也由管程提供外部过程leave。\n管程内部有自己的等待机制。管程可以说明一种特殊的条件型变量：var c:condition；实际上是一个指针，指向一个等待该条件的PCB队列。\n对条件型变量可执行wait和signal操作： wait(c):若紧急等待队列不空，唤醒第一个等待者，否则释放管程使用权。执行本操作的进程进入C队列尾部； signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待者，自己进入紧急等待队列尾部。 总结：管程(monitor)是一种基本的，高级的同步构造，是为了解决信号量因不正确的使用而导致的一些时序错误而提出的一种高级语言构造。 管程也是进程同步的一种方式，相比于其他进程同步方式，管程将共享变量和对它们的操作集中在一个模块中，操作系统或并发程序就由这样的模块构成。这样模块之间联系清晰，便于维护和修改，易于保证正确性。 管程只是保证了同一时刻只有一个进程在管程内活动,即管程内定义的操作在同一时刻只被一个进程调用(由编译器实现).但是这样并不能保证进程以设计的顺序执行,因此需要设置condition变量,让进入管程而无法继续执行的进程阻塞自己。\n会合机制 会合机制的提出 在不具有公共内存的分布式操作系统中，要使用P，V操作或管程 机制存在着十分大的问题–信号灯量和管程共享变量存放在何处？\n如果分步式系统中有两个主机H1和H2，它们之间并没有公共 内存，H1中有进程P1，H2中有进程P2，如果有一个信号量(或管程共享变量)S，那S放在何处呢？\n如果放在H1中，显然P2无法访问到S；同理，如果放在H2中,S对P1又是不可访问的。\n显然，P，V操作和管程都是以进程所操作的对象为核心的，而这些对象在无公共内存的分布式操作系统中的存储是一个不可克服的困难。\n因此，自然希望在分布式操作系统中的同步机制应该避开这些被动的成分，而以主动成分–进程直接进行相互作用。因而，产生了 会合这一种同步机制。\n会合的一般形式 一个进程可以有许多入口，一个入口对应一段程序，一个进程可 以调用另一个进程的入口。当一个进程调用另一个进程的入口， 而且被调用的进程已准备好接受这个调用时，会合就发生了。\n当调用者发出调用请求时，被调用的进程未准备接受这个调用时， 则调用者等待；反之，当被调用者准备接受调用，而当前尚无调 用者时，则被调用者等待。即先到达会合处者等待后到达者。\n当多个进程调用同一个进程的同一个入口时，被调用者按先来先服务 （FCFS）的次序接受调用。入口处可以携带调用参数，还可以有返回参数，以实现信息的交换。被调用者可以选择会合的入口。\nPetri 网 利用Petri网进行程序设计的内容较为抽象和晦涩，在此仅大概介绍一下，有兴趣可以自行查找相关资料。\nPetri 网是一种适于描述和分析异步并发系统的有力工具 。Petri 网是德国的C.A.Petri 于 1962 年在他的博士论文中首先提出的 , 用以构造系统模型及动态特性分析。在计算机科学的许多领域 , 如并行计算 、 分布式数据库设计等 , Petri网系统已起到了越来越重要的作用。\n( 1) Petri 网是以图形表示的模型 , 直观性强\n( 2) Petri 网中的托肯（Petri网中的一个成分）流动表现了系统的动态演变过程 。\n( 3) Petri 网能准确地刻画系统的一些重要特性 , 如 : 并发 、冲突 、同步 、异 步 、死锁 、饥饿 、溢出等 。\n( 4) 有一套严格的数学理论和分析方法 , 支持对系统模型的各种性质的分析和性能评价 。\nPetri网是一种适合于描述异步并发现象的系统模型，它既有严格的数学定义，又有直观的图形表示，借由它可以很好的表示程序的运行过程以及状态（并发 、冲突 、同步 、异 步 、死锁 、饥饿 、溢出等 )。通过对网图的分析、同步合成和共享合成，将串行进程并行化 , 中间过程运用从粗到细的逐步精炼思想 , 最终获得一个高效、 正确的并行程序。\ndemo:\n进程的互斥 引入 “进程互斥“与“进程同步“本质上都是在围绕同一个话题在讨论，即如果保证多进程对**共享资源（如，内存数据、打印机、摄像头）**访问的可控性、有效性和正确性；\n所以，共享资源才是研究的核心对象\n我们在这需要讨论的是，在某个时间段内，因为存在多个进程的“异步”运行、存在对共享资源的“乱序”持有及改动，所以，如果这个“时间段”不让进程的发生切换，即限制这个时间段内，只允许一个进程开展任务，任务完成之前，该进程不释放当前持有的共享资源，其他的进程在这段时间内也不能抢占这个资源；\n这种在“时间段”角度下，解决并发访问共享资源问题的机制，就叫做“进程互斥”\n进程互斥的四大原则\n1.空闲让进。 当临界资源处于空闲状态，允许一个请求进入临界区的进程立即进入临界区，从 而有效的利用资源。\n2.忙则等待。 已经有进程进入临界区时，意味着相应的临界资源正在被访问，所以其他准备进 入临界区的进程必须等待，来保证多进程互斥。\n3.有限等待。 对要求访问临界资源的进程，应该保证该进程能在有效的时间内进入临界区，防 止死等状态。\n4.让权等待。 当进程不能进入临界区，应该立即释放处理机，防止进程忙等待。\n进程互斥的实现机制 下面介绍历史上对进程互斥的实现方法：\n软件实现 单标志法 问题：违背“空闲让进”的原则\n单标志法在一些情况下确实能达到互斥访问的效果，但是这个算法也存在很大的缺陷，比如上面的turn初始为0，如果P0进程一直还未曾执行过临界区代码，那么临界资源就不会被P0占用，并处于空闲状态，但是这种情况下，P1进程也只能看着临界资源空闲也没法占有，因为P1在第5部被while循环“卡住”了。\n双标志先检查法 问题：双标志先检查法的算法设计中忽视并发进程存在异步性。 违反“忙则等待”原则\n具体来说，如果上图中的P0进程和P1进程在交替运行后，分别执行完了第1步和第5步，并且还未曾执行第2步和第6步，这种情况在不可预知的异步性下，是完全有可能发生的，但是如果真发生这种执行状况，那么P0和P1就都可以进入临界区了，原本想到达的互斥效果，就失败了；\n这个算法错误的根本原因在于：进入区的“检查”（while轮训）和“上锁”（设置flag）两个处理不是一气呵成的；“检查”后，“上锁”前的这个时间间隙有可能会发生进程切换，导致其他进程“有机可乘”；当然，如果“检查”和“上锁”是一个不可分割的原子操作，那么这个算法的问题就可以解决 了**；**\n双标志后检查法 问题：与双标志先检查法一样，忽略了并发进程的异步性。\n因此，双标志后检查法虽然解决了“忙则等待”的问题，但是又违背了“空闲让进”和“有限等待”原则，会因各进程都长期无法访问临界资源而产生“饥饿”现象；\nPeterson算法 从Peterson算法的while条件的设计，可以看出，它综合了单标志算法和双标志检查算法的优点，做到了兼顾“公平性”和“互斥性”；\n问题：依然没有遵循让权等待的原则。\n事实上运用进程同步一些的机制（信号量，管程等）也能实现临界资源的互斥，在此不多说。 硬件实现 中断屏蔽方法 缺点：\n不适用于多核CPU，因为关中断指令只对执行该指令的CPU有效，如果是多核CPU，那么这个指令不会影响其他核的中断处理机制；因此，这种方式只能保证执行关中断指令的这个核不进行进程切换，但是其他核的进程还是有可能丝毫不受阻拦的访问该临界资源，所以总体上看，还是没法保证进程对临界资源的互斥访问； 开关中断指令是特权指令，只能在内核态下执行，因此用户态进程无法使用这个功能，否则必须切换至内核态下； TestAndSet指令 TSL指令是用硬件实现的，执行的过程不允许被中断，只能一气呵成 所谓“硬件实现”，可以理解为TSL看似是一堆指令的集合，但是这一堆指令可以在硬件上只需要一个时钟周期就可完成，所以这一堆指令是不会被中断，不会被破坏的；\nTSL指令逻辑的C语言描述，注意这里只是描述，真实的执行过程就是一个瞬间的硬件操作而已；\n//lock 表示当前临界区是否被加锁 bool TestAndSet(bool *lock){ bool old=*lock; *lock=true; return old; } 这段描述的核心就是共享变量lock，对于多个进程竞争临界资源时，这个共享的lock变量，是全局的、独一无二的；\n下面来分析一下这段描述：\n// 将TestAndSet 配合 while一起使用 while(TestAndSet(\u0026lock)) ; //临界区代码 lock=false; //剩余区代码 while会陷入死循环，直到lock出现过一次false，就跳出循环接着往下执行，并且跳出循环后，lock最终还是被设成true；\n因为TestAndSet()函数是硬件实现的，属于原子操作，所以当进程共享的变量lock被其他进程修改成false之后，TestAndSet能保证当前进程对lock**“瞬间”**上锁。\n这个“瞬间”过程可以描述为：\n获得lock的false空闲锁状态； 将lock设为true，即上锁； 基于false作为返回值来跳出while死循环； Swap指令 Swap指令和上面的TSL指令一样，也是通过硬件实现的，执行过程不允许被中断，只能一气呵成\n//swap指令的作用是交换两个变量的值。 void Swap(bool *a , bool *b){ bool temp=*a; *a=*b; *b=temp; } 与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。\n//lock表示当前临界区是否被加锁。 bool old=true; while(old==true){ Swap(\u0026lock,\u0026old); } //临界区代码 lock=false; //剩余区代码 while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；\n这个**“瞬间”**过程的慢动作回放如下：\nlock出现false，即空闲锁状态； old被换成false，lock被换成true，即上锁； while条件不满足，跳出死循环 关于TSL和Swap：\n",
   "wordCount" : "4998",
   "inLanguage": "zh",
   "datePublished": "2019-11-01T00:00:00Z",
@@ -103,10 +108,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -168,11 +173,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -200,7 +205,7 @@ if (!doNotTrack) {
       
       <a href="https://noneback.github.io/zh/tags/os/">OS</a>
       
-      <a href="https://noneback.github.io/zh/tags/multi-process/">Multi-process</a>
+      <a href="https://noneback.github.io/zh/tags/multi-process/">Multi-Process</a>
       
     </small>
   
@@ -310,7 +315,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 <p>( 4) 有一套严格的数学理论和分析方法 , 支持对系统模型的各种性质的分析和性能评价 。</p>
 <p>Petri网是一种适合于描述异步并发现象的系统模型，<strong>它既有严格的数学定义，又有直观的图形表示，借由它可以很好的表示程序的运行过程以及状态（并发 、冲突 、同步 、异 步 、死锁 、饥饿 、溢出等 )</strong>。通过对网图的分析、同步合成和共享合成，将串行进程并行化 , 中间过程运用从粗到细的逐步精炼思想 , 最终获得一个高效、 正确的并行程序。</p>
 <p>demo:</p>
-<p><img src="https://i.loli.net/2019/11/16/Hbn7Ns3p1mIoRQS.png" alt="image.png"></p>
+<p><img alt="image.png" src="https://i.loli.net/2019/11/16/Hbn7Ns3p1mIoRQS.png"></p>
 <h2 id="进程的互斥">进程的互斥</h2>
 <h3 id="引入-1">引入</h3>
 <p>“进程互斥“与“进程同步“本质上都是在围绕同一个话题在讨论，即如果保证多进程对**共享资源（如，内存数据、打印机、摄像头）**访问的可控性、有效性和正确性；</p>
@@ -330,13 +335,13 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 <p>下面介绍历史上对进程互斥的实现方法：</p>
 <h4 id="软件实现">软件实现</h4>
 <h5 id="单标志法"><strong>单标志法</strong></h5>
-<p><img src="https://pic2.zhimg.com/v2-666ba65ca1ce4d8c806080b5761eb945_r.jpg" alt=""></p>
+<p><img src="https://pic2.zhimg.com/v2-666ba65ca1ce4d8c806080b5761eb945_r.jpg"></p>
 <p><strong>问题</strong>：<strong>违背“空闲让进”的原则</strong></p>
 <blockquote>
 <p>单标志法在一些情况下确实能达到互斥访问的效果，但是这个算法也存在很大的缺陷，比如上面的turn初始为0，如果P0进程一直还未曾执行过临界区代码，那么临界资源就不会被P0占用，并处于空闲状态，但是这种情况下，P1进程也只能看着临界资源空闲也没法占有，因为P1在第5部被while循环“卡住”了。</p>
 </blockquote>
 <h5 id="双标志先检查法"><strong>双标志先检查法</strong></h5>
-<p><img src="https://pic4.zhimg.com/v2-04898290158b27354c469cb3239fa5af_r.jpg" alt=""></p>
+<p><img src="https://pic4.zhimg.com/v2-04898290158b27354c469cb3239fa5af_r.jpg"></p>
 <p><strong>问题：双标志先检查法的算法设计中忽视并发进程存在异步性。 违反“忙则等待”原则</strong></p>
 <blockquote>
 <p>具体来说，如果上图中的P0进程和P1进程在交替运行后，分别执行完了第1步和第5步，并且还未曾执行第2步和第6步，这种情况在不可预知的异步性下，是完全有可能发生的，但是如果真发生这种执行状况，那么P0和P1就都可以进入临界区了，原本想到达的互斥效果，就失败了；</p>
@@ -345,19 +350,19 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 <p><strong>这个算法错误的根本原因在于：<strong>进入区的“检查”（while轮训）和“上锁”（设置flag）<strong>两个处理不是一气呵成的</strong>；“检查”后，“上锁”前的这个时间间隙</strong>有可能会发生进程切换</strong>，导致其他进程“有机可乘”；当然，如果“检查”和“上锁”是一个<strong>不可分割的原子操作</strong>，那么这个算法的问题就可以解决 了**；**</p>
 </blockquote>
 <h5 id="双标志后检查法"><strong>双标志后检查法</strong></h5>
-<p><img src="https://pic4.zhimg.com/80/v2-57ea9f1fcdf4344193396e2469f9626f_hd.jpg" alt=""></p>
+<p><img src="https://pic4.zhimg.com/80/v2-57ea9f1fcdf4344193396e2469f9626f_hd.jpg"></p>
 <p><strong>问题：与双标志先检查法一样，忽略了并发进程的异步性。</strong></p>
 <p><strong>因此，双标志后检查法虽然解决了“忙则等待”的问题，但是又违背了“空闲让进”和“有限等待”原则，会因各进程都长期无法访问临界资源而产生“饥饿”现象；</strong></p>
 <h5 id="peterson算法"><strong>Peterson算法</strong></h5>
 <p>从Peterson算法的while条件的设计，可以看出，它综合了单标志算法和双标志检查算法的优点，做到了兼顾“公平性”和“互斥性”；</p>
-<p><img src="https://pic2.zhimg.com/80/v2-15e35419601d3ccc467c96254de2df21_hd.jpg" alt=""></p>
+<p><img src="https://pic2.zhimg.com/80/v2-15e35419601d3ccc467c96254de2df21_hd.jpg"></p>
 <p><strong>问题：依然没有遵循让权等待的原则。</strong></p>
 <ul>
 <li><strong>事实上运用进程同步一些的机制（信号量，管程等）也能实现临界资源的互斥，在此不多说。</strong></li>
 </ul>
 <h4 id="硬件实现">硬件实现</h4>
 <h5 id="中断屏蔽方法"><strong>中断屏蔽方法</strong></h5>
-<p><img src="https://pic4.zhimg.com/v2-3dfee50c51e0af4fe7c10048c5a82943_r.jpg" alt=""></p>
+<p><img src="https://pic4.zhimg.com/v2-3dfee50c51e0af4fe7c10048c5a82943_r.jpg"></p>
 <blockquote>
 <p>缺点：</p>
 <ul>
@@ -371,22 +376,22 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 所谓“硬件实现”，可以理解为TSL看似是一堆指令的集合，但是这一堆指令可以在硬件上只需要一个时钟周期就可完成，所以这一堆指令是不会被中断，不会被破坏的；</p>
 </blockquote>
 <p>TSL指令逻辑的C语言描述，注意<strong>这里只是描述，真实的执行过程就是一个瞬间的硬件操作</strong>而已；</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">//lock 表示当前临界区是否被加锁
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">bool</span> <span style="color:#a6e22e">TestAndSet</span>(<span style="color:#66d9ef">bool</span> <span style="color:#f92672">*</span>lock){
-	<span style="color:#66d9ef">bool</span> old<span style="color:#f92672">=*</span>lock;
-	<span style="color:#f92672">*</span>lock<span style="color:#f92672">=</span>true;
-	<span style="color:#66d9ef">return</span> old;
-}
-</code></pre></div><blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">//lock 表示当前临界区是否被加锁
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">bool</span> <span style="color:#a6e22e">TestAndSet</span>(<span style="color:#66d9ef">bool</span> <span style="color:#f92672">*</span>lock){
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">bool</span> old<span style="color:#f92672">=*</span>lock;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">*</span>lock<span style="color:#f92672">=</span>true;
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> old;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
 <p>这段描述的核心就是<strong>共享变量lock</strong>，对于多个进程竞争临界资源时，这个共享的lock变量，是全局的、独一无二的；</p>
 </blockquote>
 <p>下面来分析一下这段描述：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">// 将TestAndSet 配合 while一起使用
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">while</span>(TestAndSet(<span style="color:#f92672">&amp;</span>lock)) ;
-<span style="color:#75715e">//临界区代码
-</span><span style="color:#75715e"></span>lock<span style="color:#f92672">=</span>false;
-<span style="color:#75715e">//剩余区代码
-</span></code></pre></div><blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">// 将TestAndSet 配合 while一起使用
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">while</span>(TestAndSet(<span style="color:#f92672">&amp;</span>lock)) ;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//临界区代码
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>lock<span style="color:#f92672">=</span>false;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//剩余区代码
+</span></span></span></code></pre></div><blockquote>
 <p>while会陷入死循环，直到lock出现过一次false，就跳出循环接着往下执行，并且跳出循环后，lock最终还是被设成true；</p>
 </blockquote>
 <p>因为TestAndSet()函数是<strong>硬件实现的</strong>，属于<strong>原子操作</strong>，所以当<strong>进程共享的变量lock被其他进程修改成false之后</strong>，TestAndSet能保证当前进程对lock**“瞬间”**上锁。</p>
@@ -402,22 +407,22 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 <blockquote>
 <p>Swap指令和上面的TSL指令一样，也是通过<strong>硬件实现</strong>的，执行过程不允许被中断，只能一气呵成</p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">//swap指令的作用是交换两个变量的值。
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Swap</span>(<span style="color:#66d9ef">bool</span> <span style="color:#f92672">*</span>a , <span style="color:#66d9ef">bool</span> <span style="color:#f92672">*</span>b){
-	<span style="color:#66d9ef">bool</span> temp<span style="color:#f92672">=*</span>a;
-	<span style="color:#f92672">*</span>a<span style="color:#f92672">=*</span>b;
-	<span style="color:#f92672">*</span>b<span style="color:#f92672">=</span>temp;
-}
-</code></pre></div><p>与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">//lock表示当前临界区是否被加锁。
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">bool</span> old<span style="color:#f92672">=</span>true;
-<span style="color:#66d9ef">while</span>(old<span style="color:#f92672">==</span>true){
-	Swap(<span style="color:#f92672">&amp;</span>lock,<span style="color:#f92672">&amp;</span>old);
-}
-<span style="color:#75715e">//临界区代码
-</span><span style="color:#75715e"></span>lock<span style="color:#f92672">=</span>false;
-<span style="color:#75715e">//剩余区代码
-</span></code></pre></div><p>while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">//swap指令的作用是交换两个变量的值。
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Swap</span>(<span style="color:#66d9ef">bool</span> <span style="color:#f92672">*</span>a , <span style="color:#66d9ef">bool</span> <span style="color:#f92672">*</span>b){
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">bool</span> temp<span style="color:#f92672">=*</span>a;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">*</span>a<span style="color:#f92672">=*</span>b;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">*</span>b<span style="color:#f92672">=</span>temp;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">//lock表示当前临界区是否被加锁。
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">bool</span> old<span style="color:#f92672">=</span>true;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">while</span>(old<span style="color:#f92672">==</span>true){
+</span></span><span style="display:flex;"><span>	Swap(<span style="color:#f92672">&amp;</span>lock,<span style="color:#f92672">&amp;</span>old);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//临界区代码
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>lock<span style="color:#f92672">=</span>false;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//剩余区代码
+</span></span></span></code></pre></div><p>while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；</p>
 <blockquote>
 <p>这个**“瞬间”**过程的慢动作回放如下：</p>
 <ol>
@@ -427,7 +432,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 </ol>
 </blockquote>
 <p><strong>关于TSL和Swap：</strong></p>
-<p><img src="https://pic3.zhimg.com/80/v2-9861c75cc6a86f5291e947f6879c50de_hd.jpg" alt=""></p>
+<p><img src="https://pic3.zhimg.com/80/v2-9861c75cc6a86f5291e947f6879c50de_hd.jpg"></p>
 </section>
 
   
@@ -484,7 +489,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -561,4 +566,4 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

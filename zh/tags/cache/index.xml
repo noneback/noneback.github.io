@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/cache/</link>
     <description>Recent content in Cache on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Sun, 02 May 2021 13:47:30 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/cache/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -21,7 +22,7 @@
 &lt;p&gt;使用场景上，当处理器发出内存访问请求时，会先查看缓存内是否有请求数据。如果存在（命中），则不经访问内存直接返回该数据；如果不存在（失效），则要先把内存中的相应数据载入缓存，再将其返回处理器。&lt;/p&gt;
 &lt;h2 id=&#34;cpu缓存架构&#34;&gt;CPU缓存架构&lt;/h2&gt;
 &lt;p&gt;CPU与主存之间通常有三级缓存，缓存靠近CPU缓存的速率就越快，同时容量也越小。CPU获取数据时，它先去 L1 查找所需的数据，再去 L2，然后是 L3，最后如果这些缓存中都没有，所需的数据就要去主内存拿。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png&#34; alt=&#34;608ba4a2f346fb7dd394484a.png&#34;&gt;
+&lt;p&gt;&lt;img alt=&#34;608ba4a2f346fb7dd394484a.png&#34; src=&#34;https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png&#34;&gt;
 其中：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;L1 紧靠着在使用它的 CPU 内核。L1，L2只能被一个单独的 CPU 核使用。&lt;/li&gt;
@@ -41,7 +42,7 @@
 &lt;li&gt;而当后者读取 b 时，发现这个缓存行已经失效了，需要从主内存中重新加载。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;我们的缓存都是以缓存行作为一个单位来处理的，所以失效 a 的缓存的同时，也会把 b 失效，反之亦然。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34; alt=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34; src=&#34;https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;这样就出现了问题：&lt;/p&gt;
 &lt;p&gt;b 和 a 完全不相干，每次却要因为 a 的更新需要从主内存重新读取，它被缓存未命中给拖慢了。&lt;/p&gt;
 &lt;p&gt;CPU的&lt;em&gt;伪共享&lt;/em&gt;：&lt;strong&gt;当多线程修改互相独立的变量时，如果这些变量共享同一个缓存行，就会无意中影响彼此的性能，这就是伪共享&lt;/strong&gt;。&lt;/p&gt;

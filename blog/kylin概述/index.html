@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/blog/kylin%E6%A6%82%E8%BF%B0/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2021-11-10T23:45:27+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Kylin Overview"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Kylin Overview"/>
 <meta name="twitter:description" content="Previously, I was hoping to work on an interesting thesis, but I couldn&rsquo;t find a suitable advisor nearby. I initially found a good advisor before the college started the topic selection, but it turned out they couldn&rsquo;t take me on. However, I wasn&rsquo;t that interested in the advisor&rsquo;s field, so I decided to look for something else. Recently, the college&rsquo;s thesis selection process started, and I found an interesting topic in the list."/>
 
 
@@ -43,16 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "Kylin Overview",
       "item": "https://noneback.github.io/blog/kylin%E6%A6%82%E8%BF%B0/"
     }
@@ -69,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "Thesis", "OLAP", "DB", "Differential Privacy", "Kylin", "Distributed System"
   ],
-  "articleBody": "Previously, I was hoping to work on an interesting thesis, but I couldn’t find a suitable advisor nearby. I initially found a good advisor before the college started the topic selection, but it turned out they couldn’t take me on. However, I wasn’t that interested in the advisor’s field, so I decided to look for something else. Recently, the college’s thesis selection process started, and I found an interesting topic in the list. I reached out to the professor and took on the project.\nThe topic I chose is “Design and Implementation of Database Query Algorithms Based on Differential Privacy”, focusing on Differential Privacy + OLAP. Specifically, it’s about adding Differential Privacy as a feature to Kylin.\nThat’s the overall gist; as for the details, I might write about them in future blog posts. This is the first in this series of blog posts.\nIntroduction Kylin is a distributed OLAP data warehouse based on columnar storage systems like HBase and Parquet, and computational frameworks like Hadoop and Spark. It supports multidimensional analysis of massive datasets.\nKylin uses a cube pre-computation method, transforming real-time queries into queries against precomputed results, utilizing idle computation resources and storage space to optimize query times. This can significantly reduce query latency.\nBackground Before Kylin, Hadoop was commonly used for large-scale data batch processing, with results stored in columnar storage systems like HBase. The related technologies for OLAP included big data parallel processing and columnar storage.\n  Massive Parallel Processing: It leverages multiple machines to process computational tasks in parallel, essentially using linear growth in computing resources to achieve a linear decrease in processing time.\n  Columnar Storage: Stores data in columns instead of rows. This approach is particularly effective for OLAP queries, which typically involve aggregations of specific columns. Columnar storage allows querying only the necessary columns and makes effective use of sequential I/O, thus improving performance.\n  These technologies enabled minute-level SQL query performance on platforms like Hadoop. However, even this is insufficient for interactive analysis, as the latency is still too high.\nThe core issue is that neither parallel computing nor columnar storage changes the fundamental time complexity of querying; they do not break the linear relationship between query time and data volume. Therefore, the only optimization comes from increasing computing resources and exploiting locality principles, both of which have scalability and theoretical bottlenecks as data grows.\nTo address this, Kylin introduced a pre-computation strategy, building multidimensional cubes for different dimensions and storing them as data tables. Future queries are made directly against these precomputed results. With pre-computation, the size of the materialized views is determined only by the cardinality of the dimensions and is no longer linearly proportional to the size of the dataset.\nEssentially, this strategy uses idle computational resources and additional storage to improve response times during queries, breaking the linear relationship between query time and data size.\nCore Concepts The core working principle of Apache Kylin is MOLAP (Multidimensional Online Analytical Processing) Cube technology.\nDimensions and Measures Dimensions refer to perspectives used for aggregating data, typically attributes of data records. Measures are numerical values calculated based on data. Using dimensions, you can aggregate measures, e.g., $$D_1,D_2,D_3,… \\rightarrow S_1,S_2,…$$\nCube Theory Data Cube involves building and querying precomputed, multidimensional data indices.\n Cuboid: The data calculated for a particular combination of dimensions. Cube Segment: The smallest building block of a cube. A cube can be split into multiple segments. Incremental Cube Building: Typically triggered based on time attributes. Cube Cardinality: The cardinality of all dimensions in a cube determines the cube’s complexity. Higher cardinality often leads to cube expansion (amplified I/O and storage).  Architecture Design Kylin consists of two parts: online querying and offline building.\n Offline Building: Involves three main components: the data source, the build engine, and the storage engine. Data is fetched from the data source, cubes are built, and they are stored in the columnar storage engine. Online Querying: Consists of an interface layer and a query engine, abstracting away concepts like cubes from the user. External applications use the REST API to submit queries, which are processed by the query engine and returned.  Summary As an OLAP engine, Kylin leverages parallel computing, columnar storage, and pre-computation techniques to improve both online query and offline build performance. This has the following notable pros and cons:\nAdvantages  Standard SQL Interface: Supports BI tools and makes integration easy. High Query Speed: Queries against precomputed results are very fast. Scalable Architecture: Easily scales to handle increasing data volumes.  Disadvantages  Complex Dependencies: Kylin relies on many external systems, which can make operations and maintenance challenging. I/O and Storage Overhead: Pre-computation and cube building can lead to amplified I/O and storage needs. Limited by Data Models: The complexity of data models and cube cardinality can impose limitations on scalability.  References  Meituan: Apache Kylin’s Practice and Optimization Kylin Official Documentation  ",
+  "articleBody": "Previously, I was hoping to work on an interesting thesis, but I couldn’t find a suitable advisor nearby. I initially found a good advisor before the college started the topic selection, but it turned out they couldn’t take me on. However, I wasn’t that interested in the advisor’s field, so I decided to look for something else. Recently, the college’s thesis selection process started, and I found an interesting topic in the list. I reached out to the professor and took on the project.\nThe topic I chose is “Design and Implementation of Database Query Algorithms Based on Differential Privacy”, focusing on Differential Privacy + OLAP. Specifically, it’s about adding Differential Privacy as a feature to Kylin.\nThat’s the overall gist; as for the details, I might write about them in future blog posts. This is the first in this series of blog posts.\nIntroduction Kylin is a distributed OLAP data warehouse based on columnar storage systems like HBase and Parquet, and computational frameworks like Hadoop and Spark. It supports multidimensional analysis of massive datasets.\nKylin uses a cube pre-computation method, transforming real-time queries into queries against precomputed results, utilizing idle computation resources and storage space to optimize query times. This can significantly reduce query latency.\nBackground Before Kylin, Hadoop was commonly used for large-scale data batch processing, with results stored in columnar storage systems like HBase. The related technologies for OLAP included big data parallel processing and columnar storage.\nMassive Parallel Processing: It leverages multiple machines to process computational tasks in parallel, essentially using linear growth in computing resources to achieve a linear decrease in processing time.\nColumnar Storage: Stores data in columns instead of rows. This approach is particularly effective for OLAP queries, which typically involve aggregations of specific columns. Columnar storage allows querying only the necessary columns and makes effective use of sequential I/O, thus improving performance.\nThese technologies enabled minute-level SQL query performance on platforms like Hadoop. However, even this is insufficient for interactive analysis, as the latency is still too high.\nThe core issue is that neither parallel computing nor columnar storage changes the fundamental time complexity of querying; they do not break the linear relationship between query time and data volume. Therefore, the only optimization comes from increasing computing resources and exploiting locality principles, both of which have scalability and theoretical bottlenecks as data grows.\nTo address this, Kylin introduced a pre-computation strategy, building multidimensional cubes for different dimensions and storing them as data tables. Future queries are made directly against these precomputed results. With pre-computation, the size of the materialized views is determined only by the cardinality of the dimensions and is no longer linearly proportional to the size of the dataset.\nEssentially, this strategy uses idle computational resources and additional storage to improve response times during queries, breaking the linear relationship between query time and data size.\nCore Concepts The core working principle of Apache Kylin is MOLAP (Multidimensional Online Analytical Processing) Cube technology.\nDimensions and Measures Dimensions refer to perspectives used for aggregating data, typically attributes of data records. Measures are numerical values calculated based on data. Using dimensions, you can aggregate measures, e.g., $$D_1,D_2,D_3,… \\rightarrow S_1,S_2,…$$\nCube Theory Data Cube involves building and querying precomputed, multidimensional data indices.\nCuboid: The data calculated for a particular combination of dimensions. Cube Segment: The smallest building block of a cube. A cube can be split into multiple segments. Incremental Cube Building: Typically triggered based on time attributes. Cube Cardinality: The cardinality of all dimensions in a cube determines the cube’s complexity. Higher cardinality often leads to cube expansion (amplified I/O and storage). Architecture Design Kylin consists of two parts: online querying and offline building.\nOffline Building: Involves three main components: the data source, the build engine, and the storage engine. Data is fetched from the data source, cubes are built, and they are stored in the columnar storage engine. Online Querying: Consists of an interface layer and a query engine, abstracting away concepts like cubes from the user. External applications use the REST API to submit queries, which are processed by the query engine and returned. Summary As an OLAP engine, Kylin leverages parallel computing, columnar storage, and pre-computation techniques to improve both online query and offline build performance. This has the following notable pros and cons:\nAdvantages Standard SQL Interface: Supports BI tools and makes integration easy. High Query Speed: Queries against precomputed results are very fast. Scalable Architecture: Easily scales to handle increasing data volumes. Disadvantages Complex Dependencies: Kylin relies on many external systems, which can make operations and maintenance challenging. I/O and Storage Overhead: Pre-computation and cube building can lead to amplified I/O and storage needs. Limited by Data Models: The complexity of data models and cube cardinality can impose limitations on scalability. References Meituan: Apache Kylin’s Practice and Optimization Kylin Official Documentation ",
   "wordCount" : "803",
   "inLanguage": "en",
   "datePublished": "2021-11-10T23:45:27+08:00",
@@ -144,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -209,11 +208,11 @@ if (!doNotTrack) {
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -310,7 +309,7 @@ if (!doNotTrack) {
 </ul>
 <h2 id="architecture-design">Architecture Design</h2>
 <p>Kylin consists of two parts: <strong>online querying</strong> and <strong>offline building</strong>.</p>
-<p><img src="https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png" alt="Kylin Architecture"></p>
+<p><img alt="Kylin Architecture" src="https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png"></p>
 <ul>
 <li><strong>Offline Building</strong>: Involves three main components: the data source, the build engine, and the storage engine. Data is fetched from the data source, cubes are built, and they are stored in the columnar storage engine.</li>
 <li><strong>Online Querying</strong>: Consists of an interface layer and a query engine, abstracting away concepts like cubes from the user. External applications use the REST API to submit queries, which are processed by the query engine and returned.</li>
@@ -390,7 +389,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -467,4 +466,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

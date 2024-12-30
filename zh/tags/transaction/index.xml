@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/transaction/</link>
     <description>Recent content in Transaction on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 28 Sep 2023 10:43:23 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/transaction/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -30,7 +31,6 @@ commit*/abort*                COMMIT/ROLLBACK
                               ACKNOWLEDGMENT        commit*/abort*
                 &amp;lt;--------------------------------
 end
-
 &lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;percolator&#34;&gt;Percolator&lt;/h3&gt;
 &lt;p&gt;本身其实算一种经过优化的二阶段提交的实现，比如：&lt;/p&gt;
 &lt;ul&gt;
@@ -51,7 +51,7 @@ end
 &lt;blockquote&gt;
 &lt;p&gt;&lt;code&gt;lock + write + data&lt;/code&gt;: for transaction，lock表示cell被事务持有，write表示数据的可见性&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;notify + ack&lt;/code&gt;: for watcher or notifier&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
@@ -65,7 +65,7 @@ end
 &lt;/ol&gt;
 &lt;blockquote&gt;
 &lt;p&gt;上锁过程利用了Primary-Secondary机制，选择一个 Write 作为 primary，其它 Write 则是 secondary。Secondary的锁记录指向Primary。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;显然，Prewrite阶段的数据对其他事务均不可见。&lt;/p&gt;
 &lt;h4 id=&#34;commit&#34;&gt;Commit&lt;/h4&gt;
@@ -88,9 +88,9 @@ end
 &lt;h2 id=&#34;percolator在tidb上的使用&#34;&gt;Percolator在TiDB上的使用&lt;/h2&gt;
 &lt;p&gt;基于我们上文的分析，我们可以得出这样的结论：Percolator是一种优化过的2PC分布式事务实现，实现的基础是支持单机事务的存储引擎。&lt;/p&gt;
 &lt;p&gt;让我们来简单看看TiDB的的基于Percolator算法实现分布式事务。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;TiDB和TiKV架构如上。TiDB关系表里的数据最终都被映射到了TiKV中的KV中。TiKV是一个基于Raft+RocksDB的分布式KV。RocksDB是一个支持事务操作的KV。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;所以TiDB的事务的执行路径可以是这样：对关系表的事务操作转为对一组KV的事务操作，再基于Percolator去执行，以此实现关系表的事务操作。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;当然不可能提供和单机TP数据库一样的事务语义和性能保证。但Share Nothing架构也有自己的优点，所以这个也许并不重要。&lt;/p&gt;
@@ -139,13 +139,13 @@ end
 &lt;p&gt;第三方支付&lt;/p&gt;
 &lt;p&gt;微服务架构下，支付与订单都是独立的服务。订单的支付状态依赖于财经服务的通知。财经服务又依赖于第三方支付服务的通知。&lt;/p&gt;
 &lt;p&gt;一个经典的场景如图：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;从图中可以看出有两次调用，第三方支付调用支付服务，以及支付服务调用订单服务，这两步调用都可能出现&lt;strong&gt;调用超时&lt;/strong&gt;的情况，此处如果没有分布式事务的保证，就会出现用户订单实际支付情况与最终用户看到的订单支付情况&lt;strong&gt;不一致&lt;/strong&gt;的情况。&lt;/p&gt;
 &lt;h1 id=&#34;实现方案&#34;&gt;实现方案&lt;/h1&gt;
 &lt;h2 id=&#34;两阶段提交&#34;&gt;两阶段提交&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;一次事务的提交主要分为两个阶段：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;

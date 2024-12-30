@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/arch&#43;dwm%E5%A5%97%E9%A4%90/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2022-01-15T23:13:16+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Arch&#43;DWM生产力套餐尝试"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Arch&#43;DWM生产力套餐尝试"/>
 <meta name="twitter:description" content="本来想把原来的Manjaro的KDE换DWM试一试，最后卡在开机界面外加修复的时候把引导搞坏了，于是破罐子破摔，打算全部格式化磁盘，尝试一下"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "Arch+DWM生产力套餐尝试",
       "item": "https://noneback.github.io/zh/blog/zh/arch+dwm%E5%A5%97%E9%A4%90/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "arch", "linux", "dwm"
   ],
-  "articleBody": "本来想把原来的Manjaro的KDE换DWM试一试，最后卡在开机界面外加修复的时候把引导搞坏了，于是破罐子破摔，打算全部格式化磁盘，尝试一下Arch + DWM的开发环境。写个博客记录一下，以便之后修复以及换设备使用。\n本文不是step by step的教程，只是我对这次折腾的一个精简记录。\n安装Arch Linux 前期准备 安装Arch需要的环境 16g以上U盘 + rufus + windows + arch linux iso制作启动盘。之后从启动盘启动Arch Liunx。\n联网+镜像 使用iwctl连接wifi，之后更新系统时间以及修改pacman的镜像\n安装ArchLinux 配置硬盘分区 分区需要分出三个主要部分：引导区+交换分区+主分区\n   挂载点 分区 分区类型 建议大小     /mnt/boot 或 /mnt/efi /dev/*efi_system_partition（efi 系统分区）* EFI 系统分区 至少 260 MiB   [SWAP] /dev/*swap_partition（交换空间分区）* Linux swap (交换空间) 大于 512 MiB   /mnt /dev/*root_partition（根分区）* Linux x86-64 根目录 (/) 剩余空间    fdisk -l 查看硬盘信息 利用cfdisk /dev/nvme 对硬盘分区 分区格式化 mkfs.ext4 ${root} mkswap ${swap} mkfs.fat -F 32 ${efi} 分区配置和安装系统  挂载Root mount /dev/${root_partition} /mnt 挂载EFI mount /dev/${efi_partiton} /mnt/boot/efi 开启交换分区 swapon /dev/${swap_partition} 安装内核以及必要软件包pacstrap /mnt base linux linux-firmware 生成fstab配置 genfstab -U /mnt  /mnt/etc/fstab + 检查fstab配置文件正确性  至此系统应该已经安装完毕，但没有引导程序，所以无法启动。我们需要安装grub引导工具。\n启动前的其他配置  Change Root到新安装的系统  mount /dev/${root_partition} /mnt arch-chroot /mnt   设置时区，同步时间\n  配置语言需要配置locale.gen和locale.conf\n  网络配置，配置hostname 和 hosts\n  设置Root用户密码\n  安装引导程序grub + efibootmgr 并配置grub-install --target=x86_64-efi --efi-directory=esp --bootloader-id=GRUB\n  安装并启动iwd,以便连接wifi\n  启动ArchLinux\n  启动之后的配置 安装必要软件    用途 软件     蓝牙 bluetoothctl   网络 iwd   日常 nvim + ranger + zsh   声音 alsamixer   输入法 fcitx5-im + fcitx5-chinese-addons   代理 clash    安装桌面环境 安装xorg软件 Xorg 项目提供了一个 X 窗口系统(图形化用户界面的基础)的开源实现。\nxorg-server + xorg-apps + xrandr + xinit\n安装桌面配套软件 使用suckless全套的平铺式桌面环境dwm + slock + st + dmenu + slim + slstatus\n编写xinitc配置以及xprofile 在xinitc中添加\n# .xinitc fcitx5 \u0026 xautolock -time 10 -locker slock \u0026 autorandr -l home picom -b feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg exec slstatus \u0026 exec dwm # .xprofile export INPUT_METHOD=fcitx5 export GTK_IM_MODULE=fcitx5 export QT_IM_MODULE=fcitx5 export XMODIFIERS=@im=fcitx5 美化以及易用    用途 软件名     壁纸 feh   窗口特效 picom   锁屏 xautolock   多屏幕配置 autorandr   电池优化 tlp    其他 很多省略的细节请参考官方安装文档\n参考 arch linux install wiki\nx server wiki\npersonal dwm desktop\n",
+  "articleBody": "本来想把原来的Manjaro的KDE换DWM试一试，最后卡在开机界面外加修复的时候把引导搞坏了，于是破罐子破摔，打算全部格式化磁盘，尝试一下Arch + DWM的开发环境。写个博客记录一下，以便之后修复以及换设备使用。\n本文不是step by step的教程，只是我对这次折腾的一个精简记录。\n安装Arch Linux 前期准备 安装Arch需要的环境 16g以上U盘 + rufus + windows + arch linux iso制作启动盘。之后从启动盘启动Arch Liunx。\n联网+镜像 使用iwctl连接wifi，之后更新系统时间以及修改pacman的镜像\n安装ArchLinux 配置硬盘分区 分区需要分出三个主要部分：引导区+交换分区+主分区\n挂载点 分区 分区类型 建议大小 /mnt/boot 或 /mnt/efi /dev/*efi_system_partition（efi 系统分区）* EFI 系统分区 至少 260 MiB [SWAP] /dev/*swap_partition（交换空间分区）* Linux swap (交换空间) 大于 512 MiB /mnt /dev/*root_partition（根分区）* Linux x86-64 根目录 (/) 剩余空间 fdisk -l 查看硬盘信息 利用cfdisk /dev/nvme 对硬盘分区 分区格式化 mkfs.ext4 ${root} mkswap ${swap} mkfs.fat -F 32 ${efi} 分区配置和安装系统 挂载Root mount /dev/${root_partition} /mnt 挂载EFI mount /dev/${efi_partiton} /mnt/boot/efi 开启交换分区 swapon /dev/${swap_partition} 安装内核以及必要软件包pacstrap /mnt base linux linux-firmware 生成fstab配置 genfstab -U /mnt \u003e\u003e /mnt/etc/fstab + 检查fstab配置文件正确性 至此系统应该已经安装完毕，但没有引导程序，所以无法启动。我们需要安装grub引导工具。\n启动前的其他配置 Change Root到新安装的系统 mount /dev/${root_partition} /mnt arch-chroot /mnt 设置时区，同步时间\n配置语言需要配置locale.gen和locale.conf\n网络配置，配置hostname 和 hosts\n设置Root用户密码\n安装引导程序grub + efibootmgr 并配置grub-install --target=x86_64-efi --efi-directory=esp --bootloader-id=GRUB\n安装并启动iwd,以便连接wifi\n启动ArchLinux\n启动之后的配置 安装必要软件 用途 软件 蓝牙 bluetoothctl 网络 iwd 日常 nvim + ranger + zsh 声音 alsamixer 输入法 fcitx5-im + fcitx5-chinese-addons 代理 clash 安装桌面环境 安装xorg软件 Xorg 项目提供了一个 X 窗口系统(图形化用户界面的基础)的开源实现。\nxorg-server + xorg-apps + xrandr + xinit\n安装桌面配套软件 使用suckless全套的平铺式桌面环境dwm + slock + st + dmenu + slim + slstatus\n编写xinitc配置以及xprofile 在xinitc中添加\n# .xinitc fcitx5 \u0026 xautolock -time 10 -locker slock \u0026 autorandr -l home picom -b feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg exec slstatus \u0026 exec dwm # .xprofile export INPUT_METHOD=fcitx5 export GTK_IM_MODULE=fcitx5 export QT_IM_MODULE=fcitx5 export XMODIFIERS=@im=fcitx5 美化以及易用 用途 软件名 壁纸 feh 窗口特效 picom 锁屏 xautolock 多屏幕配置 autorandr 电池优化 tlp 其他 很多省略的细节请参考官方安装文档\n参考 arch linux install wiki\nx server wiki\npersonal dwm desktop\n",
   "wordCount" : "1000",
   "inLanguage": "zh",
   "datePublished": "2022-01-15T23:13:16+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -231,9 +236,9 @@ if (!doNotTrack) {
       ·
       
       
-      <a href="https://noneback.github.io/zh/tags/arch/">arch</a>
+      <a href="https://noneback.github.io/zh/tags/arch/">Arch</a>
       
-      <a href="https://noneback.github.io/zh/tags/dwm/">dwm</a>
+      <a href="https://noneback.github.io/zh/tags/dwm/">Dwm</a>
       
     </small>
   
@@ -280,7 +285,7 @@ if (!doNotTrack) {
 <tr>
 <td style="text-align:center"><code>/mnt/boot</code> 或 <code>/mnt/efi</code></td>
 <td style="text-align:center"><code>/dev/*efi_system_partition（efi 系统分区）*</code></td>
-<td style="text-align:center"><a href="https://wiki.archlinux.org/title/EFI_system_partition_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)">EFI 系统分区</a></td>
+<td style="text-align:center"><a href="https://wiki.archlinux.org/title/EFI_system_partition_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29">EFI 系统分区</a></td>
 <td style="text-align:left">至少 260 MiB</td>
 </tr>
 <tr>
@@ -297,13 +302,13 @@ if (!doNotTrack) {
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">fdisk -l 查看硬盘信息
-利用cfdisk /dev/nvme 对硬盘分区
-</code></pre></div><h4 id="分区格式化">分区格式化</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mkfs.ext4 <span style="color:#e6db74">${</span>root<span style="color:#e6db74">}</span>
-mkswap <span style="color:#e6db74">${</span>swap<span style="color:#e6db74">}</span>
-mkfs.fat -F <span style="color:#ae81ff">32</span> <span style="color:#e6db74">${</span>efi<span style="color:#e6db74">}</span>
-</code></pre></div><h4 id="分区配置和安装系统">分区配置和安装系统</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>fdisk -l 查看硬盘信息
+</span></span><span style="display:flex;"><span>利用cfdisk /dev/nvme 对硬盘分区
+</span></span></code></pre></div><h4 id="分区格式化">分区格式化</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>mkfs.ext4 <span style="color:#e6db74">${</span>root<span style="color:#e6db74">}</span>
+</span></span><span style="display:flex;"><span>mkswap <span style="color:#e6db74">${</span>swap<span style="color:#e6db74">}</span>
+</span></span><span style="display:flex;"><span>mkfs.fat -F <span style="color:#ae81ff">32</span> <span style="color:#e6db74">${</span>efi<span style="color:#e6db74">}</span>
+</span></span></code></pre></div><h4 id="分区配置和安装系统">分区配置和安装系统</h4>
 <ul>
 <li>挂载Root <code>mount /dev/${root_partition} /mnt</code></li>
 <li>挂载EFI <code>mount /dev/${efi_partiton} /mnt/boot/efi</code></li>
@@ -316,9 +321,9 @@ mkfs.fat -F <span style="color:#ae81ff">32</span> <span style="color:#e6db74">${
 <ul>
 <li>Change Root到新安装的系统</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount /dev/<span style="color:#e6db74">${</span>root_partition<span style="color:#e6db74">}</span> /mnt
-arch-chroot /mnt
-</code></pre></div><ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>mount /dev/<span style="color:#e6db74">${</span>root_partition<span style="color:#e6db74">}</span> /mnt
+</span></span><span style="display:flex;"><span>arch-chroot /mnt
+</span></span></code></pre></div><ul>
 <li>
 <p>设置时区，同步时间</p>
 </li>
@@ -379,28 +384,28 @@ arch-chroot /mnt
 </table>
 <h3 id="安装桌面环境">安装桌面环境</h3>
 <h4 id="安装xorg软件">安装xorg软件</h4>
-<p><a href="https://wiki.archlinux.org/title/Xorg_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)">Xorg</a> 项目提供了一个 X 窗口系统(图形化用户界面的基础)的开源实现。</p>
+<p><a href="https://wiki.archlinux.org/title/Xorg_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29">Xorg</a> 项目提供了一个 X 窗口系统(图形化用户界面的基础)的开源实现。</p>
 <p><strong>xorg-server + xorg-apps + xrandr + xinit</strong></p>
 <h4 id="安装桌面配套软件">安装桌面配套软件</h4>
 <p>使用suckless全套的平铺式桌面环境<strong>dwm + slock + st + dmenu + slim + slstatus</strong></p>
 <h4 id="编写xinitc配置以及xprofile">编写xinitc配置以及xprofile</h4>
 <p>在xinitc中添加</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#75715e"># .xinitc</span>
-fcitx5 &amp;
-xautolock -time <span style="color:#ae81ff">10</span> -locker slock &amp;
-
-autorandr -l home
-picom -b
-feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
-exec slstatus &amp;
-exec dwm
-
-<span style="color:#75715e"># .xprofile</span>
-export INPUT_METHOD<span style="color:#f92672">=</span>fcitx5
-export GTK_IM_MODULE<span style="color:#f92672">=</span>fcitx5
-export QT_IM_MODULE<span style="color:#f92672">=</span>fcitx5
-export XMODIFIERS<span style="color:#f92672">=</span>@im<span style="color:#f92672">=</span>fcitx5
-</code></pre></div><h4 id="美化以及易用">美化以及易用</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#75715e"># .xinitc</span>
+</span></span><span style="display:flex;"><span>fcitx5 &amp;
+</span></span><span style="display:flex;"><span>xautolock -time <span style="color:#ae81ff">10</span> -locker slock &amp;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>autorandr -l home
+</span></span><span style="display:flex;"><span>picom -b
+</span></span><span style="display:flex;"><span>feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
+</span></span><span style="display:flex;"><span>exec slstatus &amp;
+</span></span><span style="display:flex;"><span>exec dwm
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># .xprofile</span>
+</span></span><span style="display:flex;"><span>export INPUT_METHOD<span style="color:#f92672">=</span>fcitx5
+</span></span><span style="display:flex;"><span>export GTK_IM_MODULE<span style="color:#f92672">=</span>fcitx5
+</span></span><span style="display:flex;"><span>export QT_IM_MODULE<span style="color:#f92672">=</span>fcitx5
+</span></span><span style="display:flex;"><span>export XMODIFIERS<span style="color:#f92672">=</span>@im<span style="color:#f92672">=</span>fcitx5
+</span></span></code></pre></div><h4 id="美化以及易用">美化以及易用</h4>
 <table>
 <thead>
 <tr>
@@ -493,7 +498,7 @@ export XMODIFIERS<span style="color:#f92672">=</span>@im<span style="color:#f926
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -570,4 +575,4 @@ export XMODIFIERS<span style="color:#f92672">=</span>@im<span style="color:#f926
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

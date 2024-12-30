@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2022-10-10T10:43:38+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Flink-Iceberg-Connector写入流程"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Flink-Iceberg-Connector写入流程"/>
 <meta name="twitter:description" content="Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。 写入提交流程总览 Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; Committer"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "Flink-Iceberg-Connector写入流程",
       "item": "https://noneback.github.io/zh/blog/zh/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "big data", "lake house", "stream compute", "storage"
   ],
-  "articleBody": "Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。\n写入提交流程总览 Flink 通过 RowData - distributeStream - WriterStream - CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest + snapshot + metadata，数据文件对外部可见）\nprivate T DataStreamSinkT chainIcebergOperators() { Preconditions.checkArgument(inputCreator != null, \"Please use forRowData() or forMapperOutputType() to initialize the input DataStream.\"); Preconditions.checkNotNull(tableLoader, \"Table loader shouldn't be null\"); DataStreamRowData rowDataInput = inputCreator.apply(uidPrefix); if (table == null) { tableLoader.open(); try (TableLoader loader = tableLoader) { this.table = loader.loadTable(); } catch (IOException e) { throw new UncheckedIOException(\"Failed to load iceberg table from table loader: \" + tableLoader, e); } } // Find out the equality field id list based on the user-provided equality field column names.  ListInteger equalityFieldIds = checkAndGetEqualityFieldIds(); // Convert the requested flink table schema to flink row type.  RowType flinkRowType = toFlinkRowType(table.schema(), tableSchema); // Distribute the records from input data stream based on the write.distribution-mode and equality fields.  DataStreamRowData distributeStream = distributeDataStream( rowDataInput, table.properties(), equalityFieldIds, table.spec(), table.schema(), flinkRowType); // Add parallel writers that append rows to files  SingleOutputStreamOperatorWriteResult writerStream = appendWriter(distributeStream, flinkRowType, equalityFieldIds); // Add single-parallelism committer that commits files  // after successful checkpoint or end of input  SingleOutputStreamOperatorVoid committerStream = appendCommitter(writerStream); // Add dummy discard sink  return appendDummySink(committerStream); } 写入流程源码分析 WriteStream private SingleOutputStreamOperatorWriteResult appendWriter(DataStreamRowData input, RowType flinkRowType, ListInteger equalityFieldIds) { // Fallback to use upsert mode parsed from table properties if don't specify in job level.  boolean upsertMode = upsert || PropertyUtil.propertyAsBoolean(table.properties(), UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT); // Validate the equality fields and partition fields if we enable the upsert mode.  if (upsertMode) { Preconditions.checkState(!overwrite, \"OVERWRITE mode shouldn't be enable when configuring to use UPSERT data stream.\"); Preconditions.checkState(!equalityFieldIds.isEmpty(), \"Equality field columns shouldn't be empty when configuring to use UPSERT data stream.\"); if (!table.spec().isUnpartitioned()) { for (PartitionField partitionField : table.spec().fields()) { Preconditions.checkState(equalityFieldIds.contains(partitionField.sourceId()), \"In UPSERT mode, partition field '%s' should be included in equality fields: '%s'\", partitionField, equalityFieldColumns); } } } IcebergStreamWriterRowData streamWriter = createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode); int parallelism = writeParallelism == null ? input.getParallelism() : writeParallelism; SingleOutputStreamOperatorWriteResult writerStream = input .transform(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.of(WriteResult.class), streamWriter) .setParallelism(parallelism); if (uidPrefix != null) { writerStream = writerStream.uid(uidPrefix + \"-writer\"); } return writerStream; } WriterStream流算子由distriteStream转换而来，以RowData作为输入，WriteResult作为输出，其中转换的逻辑封装在IcebergStreamWriter对象中，处理逻辑见processElement。\nprivate transient TaskWriterT writer; @Override public void processElement(StreamRecordT element) throws Exception { writer.write(element.getValue()); } IcebergStreamWriter将数据的写入委托给TaskWriterFactory（RowDataTaskWriterFactory）创建的TaskWriter（如PartitionedDeltaWriter，UnpartitionedWriter）执行。\npublic TaskWriterRowData create() { Preconditions.checkNotNull(outputFileFactory, \"The outputFileFactory shouldn't be null if we have invoked the initialize().\"); if (equalityFieldIds == null || equalityFieldIds.isEmpty()) { // Initialize a task writer to write INSERT only.  if (spec.isUnpartitioned()) { return new UnpartitionedWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes); } else { return new RowDataPartitionedFanoutWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema); } } else { // Initialize a task writer to write both INSERT and equality DELETE.  if (spec.isUnpartitioned()) { return new UnpartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert); } else { return new PartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert); } } }TaskWriterFactory TaskWriter又将写入交给RollingWriter（BaseRollingWriter）执行。\npublic void write(T row) throws IOException { PartitionKey partitionKey = partition(row); RollingFileWriter writer = writers.get(partitionKey); if (writer == null) { // NOTICE: we need to copy a new partition key here, in case of messing up the keys in writers.  PartitionKey copiedKey = partitionKey.copy(); writer = new RollingFileWriter(copiedKey); writers.put(copiedKey, writer); } writer.write(row); } RollingWriter会持有一个OutputFileFactory生成的OutputFile作为写入文件，并根据一些策略自动切换的新的OutputFile文件.\npublic void write(T record) throws IOException { write(currentWriter, record); this.currentRows++; if (shouldRollToNewFile()) { closeCurrent(); openCurrent(); } } private void openCurrent() { if (partitionKey == null) { // unpartitioned  this.currentFile = fileFactory.newOutputFile(); } else { // partitioned  this.currentFile = fileFactory.newOutputFile(partitionKey); } this.currentWriter = newWriter(currentFile, partitionKey); this.currentRows = 0; } OutputFile的命名规则是\n LocationProvider.newLocation(partitionId+taskId+operationId+fileCountID+ext)\n RollingWriter会把写入交个AppenderFactory构造的DataWriter，对于Flink，默认的DataWriter是ParquetDataWriter。ParquetDataWriter根据不同的数据类型委托给不同的ParquertValueWriter\nDataWriterT newWriter(EncryptedOutputFile file, StructLike partitionKey) { return appenderFactory.newDataWriter(file, format, partitionKey); } @Override public DataWriterRowData newDataWriter(EncryptedOutputFile file, FileFormat format, StructLike partition) { return new DataWriter( newAppender(file.encryptingOutputFile(), format), format, file.encryptingOutputFile().location(), spec, partition, file.keyMetadata()); } @Override public FileAppenderRowData newAppender(OutputFile outputFile, FileFormat format) { MetricsConfig metricsConfig = MetricsConfig.fromProperties(props); try { switch (format) { case AVRO: return Avro.writer... case ORC: return ORC.writer... case PARQUET: return Parquet.writer... default: throw new UnsupportedOperationException(\"Cannot write unknown file format: \" + format); } } catch (IOException e) { throw new UncheckedIOException(e); } } CommitterStream CommitterStream 接受 WriteResult 作为输入，无结果输出。WriteResult包含了WriteStream中产生的数据文件。\npublic class WriteResult implements Serializable { private DataFile[] dataFiles; private DeleteFile[] deleteFiles; private CharSequence[] referencedDataFiles; ... } 处理数据文件提交的核心逻辑封装在IcebergFilesCommitter.IcebergFlieCommitter用一个List（writeResultsOfCurrentCkpt）维护正在处理的Ckpt的需要提交的文件集合，用一个SortedMap（dataFilesPerCheckpoint）维护了系统当前Snapshot中所有Ckpt中提交的文件信息，用List of SortedMap 维护了系统所有的Snapshot的文件提交信息。\nclass IcebergFilesCommitter extends AbstractStreamOperatorVoid implements OneInputStreamOperatorWriteResult, Void, BoundedOneInput { ... // A sorted map to maintain the completed data files for each pending checkpointId (which have not been committed  // to iceberg table). We need a sorted map here because there's possible that few checkpoints snapshot failed, for  // example: the 1st checkpoint have 2 data files , the 2st checkpoint have 1 data files  // . Snapshot for checkpoint#1 interrupted because of network/disk failure etc, while we don't expect  // any data loss in iceberg table. So we keep the finished files  in memory and retry to commit  // iceberg table when the next checkpoint happen.  private final NavigableMapLong, byte[] dataFilesPerCheckpoint = Maps.newTreeMap(); // The completed files cache for current checkpoint. Once the snapshot barrier received, it will be flushed to the  // 'dataFilesPerCheckpoint'.  private final ListWriteResult writeResultsOfCurrentCkpt = Lists.newArrayList(); private transient ListStateSortedMapLong, byte[] checkpointsState; ... } @Override public void processElement(StreamRecordWriteResult element) { this.writeResultsOfCurrentCkpt.add(element.getValue()); } 上游的当前checkpoint的WriteResult一个writeResultsOfCurrentCkpt中。在SnapshotState的时候writeResultsOfCurrentCkpt - dataFilesPerCheckpoint - checkpointsState提交。之后通过notifyCheckpointComplete通知Ckpt完成，并将其提交。\npublic void snapshotState(StateSnapshotContext context) throws Exception { super.snapshotState(context); long checkpointId = context.getCheckpointId(); LOG.info(\"Start to flush snapshot state to state backend, table: {}, checkpointId: {}\", table, checkpointId); // Update the checkpoint state.  dataFilesPerCheckpoint.put(checkpointId, writeToManifest(checkpointId)); // Reset the snapshot state to the latest state.  checkpointsState.clear(); checkpointsState.add(dataFilesPerCheckpoint); jobIdState.clear(); jobIdState.add(flinkJobId); // Clear the local buffer for current checkpoint.  writeResultsOfCurrentCkpt.clear(); } @Override public void notifyCheckpointComplete(long checkpointId) throws Exception { super.notifyCheckpointComplete(checkpointId); // It's possible that we have the following events:  // 1. snapshotState(ckpId);  // 2. snapshotState(ckpId+1);  // 3. notifyCheckpointComplete(ckpId+1);  // 4. notifyCheckpointComplete(ckpId);  // For step#4, we don't need to commit iceberg table again because in step#3 we've committed all the files,  // Besides, we need to maintain the max-committed-checkpoint-id to be increasing.  if (checkpointId  maxCommittedCheckpointId) { commitUpToCheckpoint(dataFilesPerCheckpoint, flinkJobId, checkpointId); this.maxCommittedCheckpointId = checkpointId; } } 提交逻辑在commitUpToCheckpoint函数中。Iceberg抽象除了SnapshotUpdate接口处理Snapshot的变更。Iceberg使用乐观策略处理提交时的Snapshot并发冲突。当发生并发提交冲突时，会重试commit操作。每次commit都会基于当前最新的metadata产生一个新的Snapshot 对象，将其添加到新的Metadata中，最后尝试通过TableOperation.commit进行提交。\npublic void commit() { // this is always set to the latest commit attempt's snapshot id.  AtomicLong newSnapshotId = new AtomicLong(-1L); try { Tasks.foreach(ops) .retry(base.propertyAsInt(COMMIT_NUM_RETRIES, COMMIT_NUM_RETRIES_DEFAULT)) .exponentialBackoff( base.propertyAsInt(COMMIT_MIN_RETRY_WAIT_MS, COMMIT_MIN_RETRY_WAIT_MS_DEFAULT), base.propertyAsInt(COMMIT_MAX_RETRY_WAIT_MS, COMMIT_MAX_RETRY_WAIT_MS_DEFAULT), base.propertyAsInt(COMMIT_TOTAL_RETRY_TIME_MS, COMMIT_TOTAL_RETRY_TIME_MS_DEFAULT), 2.0 /* exponential */) .onlyRetryOn(CommitFailedException.class) .run(taskOps - { Snapshot newSnapshot = apply(); // generate a new snapshot based on new added data file and manifest,manifest list  newSnapshotId.set(newSnapshot.snapshotId()); TableMetadata.Builder update = TableMetadata.buildFrom(base); if (base.snapshot(newSnapshot.snapshotId()) != null) { // this is a rollback operation  update.setBranchSnapshot(newSnapshot.snapshotId(), SnapshotRef.MAIN_BRANCH); } else if (stageOnly) { update.addSnapshot(newSnapshot); } else { update.setBranchSnapshot(newSnapshot, SnapshotRef.MAIN_BRANCH); } TableMetadata updated = update.build(); if (updated.changes().isEmpty()) { // do not commit if the metadata has not changed. for example, this may happen when setting the current  // snapshot to an ID that is already current. note that this check uses identity.  return; } // if the table UUID is missing, add it here. the UUID will be re-created each time this operation retries  // to ensure that if a concurrent operation assigns the UUID, this operation will not fail.  taskOps.commit(base, updated.withUUID()); // commit table metadata, may cause commit failure  }); } catch (CommitStateUnknownException commitStateUnknownException) { throw commitStateUnknownException; } catch (RuntimeException e) { Exceptions.suppressAndThrow(e, this::cleanAll); } try { LOG.info(\"Committed snapshot {} ({})\", newSnapshotId.get(), getClass().getSimpleName()); // at this point, the commit must have succeeded. after a refresh, the snapshot is loaded by  // id in case another commit was added between this commit and the refresh.  Snapshot saved = ops.refresh().snapshot(newSnapshotId.get()); if (saved != null) { cleanUncommitted(Sets.newHashSet(saved.allManifests(ops.io()))); // also clean up unused manifest lists created by multiple attempts  for (String manifestList : manifestLists) { if (!saved.manifestListLocation().equals(manifestList)) { deleteFile(manifestList); } } } else { // saved may not be present if the latest metadata couldn't be loaded due to eventual  // consistency problems in refresh. in that case, don't clean up.  LOG.warn(\"Failed to load committed snapshot, skipping manifest clean-up\"); } } catch (Throwable e) { LOG.warn(\"Failed to load committed table metadata or during cleanup, skipping further cleanup\", e); } try { notifyListeners(); } catch (Throwable e) { LOG.warn(\"Failed to notify event listeners\", e); } } private void commitUpToCheckpoint(NavigableMapLong, byte[] deltaManifestsMap, String newFlinkJobId, long checkpointId) throws IOException { NavigableMapLong, byte[] pendingMap = deltaManifestsMap.headMap(checkpointId, true); ListManifestFile manifests = Lists.newArrayList(); NavigableMapLong, WriteResult pendingResults = Maps.newTreeMap(); for (Map.EntryLong, byte[] e : pendingMap.entrySet()) { if (Arrays.equals(EMPTY_MANIFEST_DATA, e.getValue())) { // Skip the empty flink manifest.  continue; } DeltaManifests deltaManifests = SimpleVersionedSerialization .readVersionAndDeSerialize(DeltaManifestsSerializer.INSTANCE, e.getValue()); pendingResults.put(e.getKey(), FlinkManifestUtil.readCompletedFiles(deltaManifests, table.io())); manifests.addAll(deltaManifests.manifests()); } int totalFiles = pendingResults.values().stream() .mapToInt(r - r.dataFiles().length + r.deleteFiles().length).sum(); continuousEmptyCheckpoints = totalFiles == 0 ? continuousEmptyCheckpoints + 1 : 0; if (totalFiles != 0 || continuousEmptyCheckpoints % maxContinuousEmptyCommits == 0) { if (replacePartitions) { replacePartitions(pendingResults, newFlinkJobId, checkpointId); } else { commitDeltaTxn(pendingResults, newFlinkJobId, checkpointId); } continuousEmptyCheckpoints = 0; } pendingMap.clear(); // Delete the committed manifests.  for (ManifestFile manifest : manifests) { try { table.io().deleteFile(manifest.path()); } catch (Exception e) { // The flink manifests cleaning failure shouldn't abort the completed checkpoint.  String details = MoreObjects.toStringHelper(this) .add(\"flinkJobId\", newFlinkJobId) .add(\"checkpointId\", checkpointId) .add(\"manifestPath\", manifest.path()) .toString(); LOG.warn(\"The iceberg transaction has been committed, but we failed to clean the temporary flink manifests: {}\", details, e); } } } public void commit(TableMetadata base, TableMetadata metadata) { // if the metadata is already out of date, reject it  if (base != current()) { if (base != null) { throw new CommitFailedException(\"Cannot commit: stale table metadata\"); } else { // when current is non-null, the table exists. but when base is null, the commit is trying to create the table  throw new AlreadyExistsException(\"Table already exists: %s\", tableName()); } } // if the metadata is not changed, return early  if (base == metadata) { LOG.info(\"Nothing to commit.\"); return; } long start = System.currentTimeMillis(); doCommit(base, metadata); deleteRemovedMetadataFiles(base, metadata); requestRefresh(); LOG.info(\"Successfully committed to table {} in {} ms\", tableName(), System.currentTimeMillis() - start); } 写入问题 就以上写入以及提交流程，最大的问题有两个：\n Lots of Small File  对于流式写入，每次都会生成新的文件。这就会产生大量的小文件。小文件在对象存储其实支持比较好。但是大量的小文件可能会带来Iceberg 元数据读取和更新的额外开销，因为这些数据文件的信息都需要靠iceberg元数据文件中维护，大量的小文件可能导致元数据文件的膨胀，导致读取元数据文件时的处理时间增加。如何解决？\n Iceberg Rewrite Action：支持Rewrite Data 和 Metadata 需要Flink / Spark Action 触发 snapshot 过期删除, 支持配置  import org.apache.iceberg.flink.actions.Actions; TableLoader tableLoader = TableLoader.fromHadoopTable(\"hdfs://nn:8020/warehouse/path\"); Table table = tableLoader.loadTable(); RewriteDataFilesActionResult result = Actions.forTable(table) .rewriteDataFiles() .execute(); https://iceberg.apache.org/docs/latest/flink/https://iceberg.apache.org/docs/latest/maintenance/\n高并发写入时的性能问题  Iceberg的写入会导致产生新的snapshot，并使用乐观并法策略处理并法冲突，冲突的提交将被重试。高并发写入场景下，并发冲突会导致很多提交snapshot的请求被重试，会有性能损失。\n 在准备提交snapshot前，iceberg会读取以前的快照然后创建新的快照，这个过程十分耗时，并且耗时会随着元数据增加而增加。\n 如何解决？\n Batch Commit : 引入缓存层或者一个额外的服务，批量提交到数据湖，降低提交操作并发度。同时缓存层也许可以对多次的数据文件进行compact   https://zhuanlan.zhihu.com/p/472617094https://www.infoq.cn/article/hfft7c7ahoomgayjsouz\n Flink Iceberg Connector不支持隐藏分区，也不支持分区字段预处理。  ",
+  "articleBody": "Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。\n写入提交流程总览 Flink 通过 RowData -\u003e distributeStream -\u003e WriterStream -\u003e CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest + snapshot + metadata，数据文件对外部可见）\nprivate \u003cT\u003e DataStreamSink\u003cT\u003e chainIcebergOperators() { Preconditions.checkArgument(inputCreator != null, \"Please use forRowData() or forMapperOutputType() to initialize the input DataStream.\"); Preconditions.checkNotNull(tableLoader, \"Table loader shouldn't be null\"); DataStream\u003cRowData\u003e rowDataInput = inputCreator.apply(uidPrefix); if (table == null) { tableLoader.open(); try (TableLoader loader = tableLoader) { this.table = loader.loadTable(); } catch (IOException e) { throw new UncheckedIOException(\"Failed to load iceberg table from table loader: \" + tableLoader, e); } } // Find out the equality field id list based on the user-provided equality field column names. List\u003cInteger\u003e equalityFieldIds = checkAndGetEqualityFieldIds(); // Convert the requested flink table schema to flink row type. RowType flinkRowType = toFlinkRowType(table.schema(), tableSchema); // Distribute the records from input data stream based on the write.distribution-mode and equality fields. DataStream\u003cRowData\u003e distributeStream = distributeDataStream( rowDataInput, table.properties(), equalityFieldIds, table.spec(), table.schema(), flinkRowType); // Add parallel writers that append rows to files SingleOutputStreamOperator\u003cWriteResult\u003e writerStream = appendWriter(distributeStream, flinkRowType, equalityFieldIds); // Add single-parallelism committer that commits files // after successful checkpoint or end of input SingleOutputStreamOperator\u003cVoid\u003e committerStream = appendCommitter(writerStream); // Add dummy discard sink return appendDummySink(committerStream); } 写入流程源码分析 WriteStream private SingleOutputStreamOperator\u003cWriteResult\u003e appendWriter(DataStream\u003cRowData\u003e input, RowType flinkRowType, List\u003cInteger\u003e equalityFieldIds) { // Fallback to use upsert mode parsed from table properties if don't specify in job level. boolean upsertMode = upsert || PropertyUtil.propertyAsBoolean(table.properties(), UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT); // Validate the equality fields and partition fields if we enable the upsert mode. if (upsertMode) { Preconditions.checkState(!overwrite, \"OVERWRITE mode shouldn't be enable when configuring to use UPSERT data stream.\"); Preconditions.checkState(!equalityFieldIds.isEmpty(), \"Equality field columns shouldn't be empty when configuring to use UPSERT data stream.\"); if (!table.spec().isUnpartitioned()) { for (PartitionField partitionField : table.spec().fields()) { Preconditions.checkState(equalityFieldIds.contains(partitionField.sourceId()), \"In UPSERT mode, partition field '%s' should be included in equality fields: '%s'\", partitionField, equalityFieldColumns); } } } IcebergStreamWriter\u003cRowData\u003e streamWriter = createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode); int parallelism = writeParallelism == null ? input.getParallelism() : writeParallelism; SingleOutputStreamOperator\u003cWriteResult\u003e writerStream = input .transform(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.of(WriteResult.class), streamWriter) .setParallelism(parallelism); if (uidPrefix != null) { writerStream = writerStream.uid(uidPrefix + \"-writer\"); } return writerStream; } WriterStream流算子由distriteStream转换而来，以RowData作为输入，WriteResult作为输出，其中转换的逻辑封装在IcebergStreamWriter对象中，处理逻辑见processElement。\nprivate transient TaskWriter\u003cT\u003e writer; @Override public void processElement(StreamRecord\u003cT\u003e element) throws Exception { writer.write(element.getValue()); } IcebergStreamWriter将数据的写入委托给TaskWriterFactory（RowDataTaskWriterFactory）创建的TaskWriter（如PartitionedDeltaWriter，UnpartitionedWriter）执行。\npublic TaskWriter\u003cRowData\u003e create() { Preconditions.checkNotNull(outputFileFactory, \"The outputFileFactory shouldn't be null if we have invoked the initialize().\"); if (equalityFieldIds == null || equalityFieldIds.isEmpty()) { // Initialize a task writer to write INSERT only. if (spec.isUnpartitioned()) { return new UnpartitionedWriter\u003c\u003e(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes); } else { return new RowDataPartitionedFanoutWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema); } } else { // Initialize a task writer to write both INSERT and equality DELETE. if (spec.isUnpartitioned()) { return new UnpartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert); } else { return new PartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert); } } }TaskWriterFactory TaskWriter又将写入交给RollingWriter（BaseRollingWriter）执行。\npublic void write(T row) throws IOException { PartitionKey partitionKey = partition(row); RollingFileWriter writer = writers.get(partitionKey); if (writer == null) { // NOTICE: we need to copy a new partition key here, in case of messing up the keys in writers. PartitionKey copiedKey = partitionKey.copy(); writer = new RollingFileWriter(copiedKey); writers.put(copiedKey, writer); } writer.write(row); } RollingWriter会持有一个OutputFileFactory生成的OutputFile作为写入文件，并根据一些策略自动切换的新的OutputFile文件.\npublic void write(T record) throws IOException { write(currentWriter, record); this.currentRows++; if (shouldRollToNewFile()) { closeCurrent(); openCurrent(); } } private void openCurrent() { if (partitionKey == null) { // unpartitioned this.currentFile = fileFactory.newOutputFile(); } else { // partitioned this.currentFile = fileFactory.newOutputFile(partitionKey); } this.currentWriter = newWriter(currentFile, partitionKey); this.currentRows = 0; } OutputFile的命名规则是\nLocationProvider.newLocation(partitionId+taskId+operationId+fileCountID+ext)\nRollingWriter会把写入交个AppenderFactory构造的DataWriter，对于Flink，默认的DataWriter是ParquetDataWriter。ParquetDataWriter根据不同的数据类型委托给不同的ParquertValueWriter\nDataWriter\u003cT\u003e newWriter(EncryptedOutputFile file, StructLike partitionKey) { return appenderFactory.newDataWriter(file, format, partitionKey); } @Override public DataWriter\u003cRowData\u003e newDataWriter(EncryptedOutputFile file, FileFormat format, StructLike partition) { return new DataWriter\u003c\u003e( newAppender(file.encryptingOutputFile(), format), format, file.encryptingOutputFile().location(), spec, partition, file.keyMetadata()); } @Override public FileAppender\u003cRowData\u003e newAppender(OutputFile outputFile, FileFormat format) { MetricsConfig metricsConfig = MetricsConfig.fromProperties(props); try { switch (format) { case AVRO: return Avro.writer... case ORC: return ORC.writer... case PARQUET: return Parquet.writer... default: throw new UnsupportedOperationException(\"Cannot write unknown file format: \" + format); } } catch (IOException e) { throw new UncheckedIOException(e); } } CommitterStream CommitterStream 接受 WriteResult 作为输入，无结果输出。WriteResult包含了WriteStream中产生的数据文件。\npublic class WriteResult implements Serializable { private DataFile[] dataFiles; private DeleteFile[] deleteFiles; private CharSequence[] referencedDataFiles; ... } 处理数据文件提交的核心逻辑封装在IcebergFilesCommitter.IcebergFlieCommitter用一个List（writeResultsOfCurrentCkpt）维护正在处理的Ckpt的需要提交的文件集合，用一个SortedMap（dataFilesPerCheckpoint）维护了系统当前Snapshot中所有Ckpt中提交的文件信息，用List of SortedMap 维护了系统所有的Snapshot的文件提交信息。\nclass IcebergFilesCommitter extends AbstractStreamOperator\u003cVoid\u003e implements OneInputStreamOperator\u003cWriteResult, Void\u003e, BoundedOneInput { ... // A sorted map to maintain the completed data files for each pending checkpointId (which have not been committed // to iceberg table). We need a sorted map here because there's possible that few checkpoints snapshot failed, for // example: the 1st checkpoint have 2 data files \u003c1, \u003e, the 2st checkpoint have 1 data files // \u003c2, \u003e. Snapshot for checkpoint#1 interrupted because of network/disk failure etc, while we don't expect // any data loss in iceberg table. So we keep the finished files \u003c1, \u003e in memory and retry to commit // iceberg table when the next checkpoint happen. private final NavigableMap\u003cLong, byte[]\u003e dataFilesPerCheckpoint = Maps.newTreeMap(); // The completed files cache for current checkpoint. Once the snapshot barrier received, it will be flushed to the // 'dataFilesPerCheckpoint'. private final List\u003cWriteResult\u003e writeResultsOfCurrentCkpt = Lists.newArrayList(); private transient ListState\u003cSortedMap\u003cLong, byte[]\u003e\u003e checkpointsState; ... } @Override public void processElement(StreamRecord\u003cWriteResult\u003e element) { this.writeResultsOfCurrentCkpt.add(element.getValue()); } 上游的当前checkpoint的WriteResult一个writeResultsOfCurrentCkpt中。在SnapshotState的时候writeResultsOfCurrentCkpt -\u003e dataFilesPerCheckpoint -\u003e checkpointsState提交。之后通过notifyCheckpointComplete通知Ckpt完成，并将其提交。\npublic void snapshotState(StateSnapshotContext context) throws Exception { super.snapshotState(context); long checkpointId = context.getCheckpointId(); LOG.info(\"Start to flush snapshot state to state backend, table: {}, checkpointId: {}\", table, checkpointId); // Update the checkpoint state. dataFilesPerCheckpoint.put(checkpointId, writeToManifest(checkpointId)); // Reset the snapshot state to the latest state. checkpointsState.clear(); checkpointsState.add(dataFilesPerCheckpoint); jobIdState.clear(); jobIdState.add(flinkJobId); // Clear the local buffer for current checkpoint. writeResultsOfCurrentCkpt.clear(); } @Override public void notifyCheckpointComplete(long checkpointId) throws Exception { super.notifyCheckpointComplete(checkpointId); // It's possible that we have the following events: // 1. snapshotState(ckpId); // 2. snapshotState(ckpId+1); // 3. notifyCheckpointComplete(ckpId+1); // 4. notifyCheckpointComplete(ckpId); // For step#4, we don't need to commit iceberg table again because in step#3 we've committed all the files, // Besides, we need to maintain the max-committed-checkpoint-id to be increasing. if (checkpointId \u003e maxCommittedCheckpointId) { commitUpToCheckpoint(dataFilesPerCheckpoint, flinkJobId, checkpointId); this.maxCommittedCheckpointId = checkpointId; } } 提交逻辑在commitUpToCheckpoint函数中。Iceberg抽象除了SnapshotUpdate接口处理Snapshot的变更。Iceberg使用乐观策略处理提交时的Snapshot并发冲突。当发生并发提交冲突时，会重试commit操作。每次commit都会基于当前最新的metadata产生一个新的Snapshot 对象，将其添加到新的Metadata中，最后尝试通过TableOperation.commit进行提交。\npublic void commit() { // this is always set to the latest commit attempt's snapshot id. AtomicLong newSnapshotId = new AtomicLong(-1L); try { Tasks.foreach(ops) .retry(base.propertyAsInt(COMMIT_NUM_RETRIES, COMMIT_NUM_RETRIES_DEFAULT)) .exponentialBackoff( base.propertyAsInt(COMMIT_MIN_RETRY_WAIT_MS, COMMIT_MIN_RETRY_WAIT_MS_DEFAULT), base.propertyAsInt(COMMIT_MAX_RETRY_WAIT_MS, COMMIT_MAX_RETRY_WAIT_MS_DEFAULT), base.propertyAsInt(COMMIT_TOTAL_RETRY_TIME_MS, COMMIT_TOTAL_RETRY_TIME_MS_DEFAULT), 2.0 /* exponential */) .onlyRetryOn(CommitFailedException.class) .run(taskOps -\u003e { Snapshot newSnapshot = apply(); // generate a new snapshot based on new added data file and manifest,manifest list newSnapshotId.set(newSnapshot.snapshotId()); TableMetadata.Builder update = TableMetadata.buildFrom(base); if (base.snapshot(newSnapshot.snapshotId()) != null) { // this is a rollback operation update.setBranchSnapshot(newSnapshot.snapshotId(), SnapshotRef.MAIN_BRANCH); } else if (stageOnly) { update.addSnapshot(newSnapshot); } else { update.setBranchSnapshot(newSnapshot, SnapshotRef.MAIN_BRANCH); } TableMetadata updated = update.build(); if (updated.changes().isEmpty()) { // do not commit if the metadata has not changed. for example, this may happen when setting the current // snapshot to an ID that is already current. note that this check uses identity. return; } // if the table UUID is missing, add it here. the UUID will be re-created each time this operation retries // to ensure that if a concurrent operation assigns the UUID, this operation will not fail. taskOps.commit(base, updated.withUUID()); // commit table metadata, may cause commit failure }); } catch (CommitStateUnknownException commitStateUnknownException) { throw commitStateUnknownException; } catch (RuntimeException e) { Exceptions.suppressAndThrow(e, this::cleanAll); } try { LOG.info(\"Committed snapshot {} ({})\", newSnapshotId.get(), getClass().getSimpleName()); // at this point, the commit must have succeeded. after a refresh, the snapshot is loaded by // id in case another commit was added between this commit and the refresh. Snapshot saved = ops.refresh().snapshot(newSnapshotId.get()); if (saved != null) { cleanUncommitted(Sets.newHashSet(saved.allManifests(ops.io()))); // also clean up unused manifest lists created by multiple attempts for (String manifestList : manifestLists) { if (!saved.manifestListLocation().equals(manifestList)) { deleteFile(manifestList); } } } else { // saved may not be present if the latest metadata couldn't be loaded due to eventual // consistency problems in refresh. in that case, don't clean up. LOG.warn(\"Failed to load committed snapshot, skipping manifest clean-up\"); } } catch (Throwable e) { LOG.warn(\"Failed to load committed table metadata or during cleanup, skipping further cleanup\", e); } try { notifyListeners(); } catch (Throwable e) { LOG.warn(\"Failed to notify event listeners\", e); } } private void commitUpToCheckpoint(NavigableMap\u003cLong, byte[]\u003e deltaManifestsMap, String newFlinkJobId, long checkpointId) throws IOException { NavigableMap\u003cLong, byte[]\u003e pendingMap = deltaManifestsMap.headMap(checkpointId, true); List\u003cManifestFile\u003e manifests = Lists.newArrayList(); NavigableMap\u003cLong, WriteResult\u003e pendingResults = Maps.newTreeMap(); for (Map.Entry\u003cLong, byte[]\u003e e : pendingMap.entrySet()) { if (Arrays.equals(EMPTY_MANIFEST_DATA, e.getValue())) { // Skip the empty flink manifest. continue; } DeltaManifests deltaManifests = SimpleVersionedSerialization .readVersionAndDeSerialize(DeltaManifestsSerializer.INSTANCE, e.getValue()); pendingResults.put(e.getKey(), FlinkManifestUtil.readCompletedFiles(deltaManifests, table.io())); manifests.addAll(deltaManifests.manifests()); } int totalFiles = pendingResults.values().stream() .mapToInt(r -\u003e r.dataFiles().length + r.deleteFiles().length).sum(); continuousEmptyCheckpoints = totalFiles == 0 ? continuousEmptyCheckpoints + 1 : 0; if (totalFiles != 0 || continuousEmptyCheckpoints % maxContinuousEmptyCommits == 0) { if (replacePartitions) { replacePartitions(pendingResults, newFlinkJobId, checkpointId); } else { commitDeltaTxn(pendingResults, newFlinkJobId, checkpointId); } continuousEmptyCheckpoints = 0; } pendingMap.clear(); // Delete the committed manifests. for (ManifestFile manifest : manifests) { try { table.io().deleteFile(manifest.path()); } catch (Exception e) { // The flink manifests cleaning failure shouldn't abort the completed checkpoint. String details = MoreObjects.toStringHelper(this) .add(\"flinkJobId\", newFlinkJobId) .add(\"checkpointId\", checkpointId) .add(\"manifestPath\", manifest.path()) .toString(); LOG.warn(\"The iceberg transaction has been committed, but we failed to clean the temporary flink manifests: {}\", details, e); } } } public void commit(TableMetadata base, TableMetadata metadata) { // if the metadata is already out of date, reject it if (base != current()) { if (base != null) { throw new CommitFailedException(\"Cannot commit: stale table metadata\"); } else { // when current is non-null, the table exists. but when base is null, the commit is trying to create the table throw new AlreadyExistsException(\"Table already exists: %s\", tableName()); } } // if the metadata is not changed, return early if (base == metadata) { LOG.info(\"Nothing to commit.\"); return; } long start = System.currentTimeMillis(); doCommit(base, metadata); deleteRemovedMetadataFiles(base, metadata); requestRefresh(); LOG.info(\"Successfully committed to table {} in {} ms\", tableName(), System.currentTimeMillis() - start); } 写入问题 就以上写入以及提交流程，最大的问题有两个：\nLots of Small File 对于流式写入，每次都会生成新的文件。这就会产生大量的小文件。小文件在对象存储其实支持比较好。但是大量的小文件可能会带来Iceberg 元数据读取和更新的额外开销，因为这些数据文件的信息都需要靠iceberg元数据文件中维护，大量的小文件可能导致元数据文件的膨胀，导致读取元数据文件时的处理时间增加。如何解决？\nIceberg Rewrite Action：支持Rewrite Data 和 Metadata 需要Flink / Spark Action 触发 snapshot 过期删除, 支持配置 import org.apache.iceberg.flink.actions.Actions; TableLoader tableLoader = TableLoader.fromHadoopTable(\"hdfs://nn:8020/warehouse/path\"); Table table = tableLoader.loadTable(); RewriteDataFilesActionResult result = Actions.forTable(table) .rewriteDataFiles() .execute(); https://iceberg.apache.org/docs/latest/flink/https://iceberg.apache.org/docs/latest/maintenance/\n高并发写入时的性能问题 Iceberg的写入会导致产生新的snapshot，并使用乐观并法策略处理并法冲突，冲突的提交将被重试。高并发写入场景下，并发冲突会导致很多提交snapshot的请求被重试，会有性能损失。\n在准备提交snapshot前，iceberg会读取以前的快照然后创建新的快照，这个过程十分耗时，并且耗时会随着元数据增加而增加。\n如何解决？\nBatch Commit : 引入缓存层或者一个额外的服务，批量提交到数据湖，降低提交操作并发度。同时缓存层也许可以对多次的数据文件进行compact https://zhuanlan.zhihu.com/p/472617094https://www.infoq.cn/article/hfft7c7ahoomgayjsouz\nFlink Iceberg Connector不支持隐藏分区，也不支持分区字段预处理。 ",
   "wordCount" : "3379",
   "inLanguage": "zh",
   "datePublished": "2022-10-10T10:43:38+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -231,13 +236,13 @@ if (!doNotTrack) {
       ·
       
       
-      <a href="https://noneback.github.io/zh/tags/big-data/">big data</a>
+      <a href="https://noneback.github.io/zh/tags/big-data/">Big Data</a>
       
-      <a href="https://noneback.github.io/zh/tags/lake-house/">lake house</a>
+      <a href="https://noneback.github.io/zh/tags/lake-house/">Lake House</a>
       
-      <a href="https://noneback.github.io/zh/tags/stream-compute/">stream compute</a>
+      <a href="https://noneback.github.io/zh/tags/stream-compute/">Stream Compute</a>
       
-      <a href="https://noneback.github.io/zh/tags/storage/">storage</a>
+      <a href="https://noneback.github.io/zh/tags/storage/">Storage</a>
       
     </small>
   
@@ -261,391 +266,390 @@ if (!doNotTrack) {
   <section class="blog-content"><p>Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。</p>
 <h2 id="写入提交流程总览">写入提交流程总览</h2>
 <p>Flink 通过 <code>RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream</code>，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest + snapshot + metadata，数据文件对外部可见）</p>
-<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1655962006990-826460c7-b6fc-4efe-a8e0-65cc080ffea9.png#clientId=uc8a9769d-f729-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=242&amp;id=u2b3c9cf7&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=483&amp;originWidth=1080&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=95146&amp;status=done&amp;style=none&amp;taskId=ufe2588e9-b29d-40dc-8f25-4bbe725336d&amp;title=&amp;width=540" alt="image.png"></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">   <span style="color:#66d9ef">private</span> <span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> DataStreamSink<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">chainIcebergOperators</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
-      Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkArgument</span><span style="color:#f92672">(</span>inputCreator <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">,</span>
-          <span style="color:#e6db74">&#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;</span><span style="color:#f92672">);</span>
-      Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkNotNull</span><span style="color:#f92672">(</span>tableLoader<span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Table loader shouldn&#39;t be null&#34;</span><span style="color:#f92672">);</span>
-
-      DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> rowDataInput <span style="color:#f92672">=</span> inputCreator<span style="color:#f92672">.</span><span style="color:#a6e22e">apply</span><span style="color:#f92672">(</span>uidPrefix<span style="color:#f92672">);</span>
-
-      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>table <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        tableLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">open</span><span style="color:#f92672">();</span>
-        <span style="color:#66d9ef">try</span> <span style="color:#f92672">(</span>TableLoader loader <span style="color:#f92672">=</span> tableLoader<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-          <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">table</span> <span style="color:#f92672">=</span> loader<span style="color:#f92672">.</span><span style="color:#a6e22e">loadTable</span><span style="color:#f92672">();</span>
-        <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>IOException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-          <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> UncheckedIOException<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Failed to load iceberg table from table loader: &#34;</span> <span style="color:#f92672">+</span> tableLoader<span style="color:#f92672">,</span> e<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span>
-      <span style="color:#f92672">}</span>
-
-      <span style="color:#75715e">// Find out the equality field id list based on the user-provided equality field column names.
-</span><span style="color:#75715e"></span>      List<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> equalityFieldIds <span style="color:#f92672">=</span> checkAndGetEqualityFieldIds<span style="color:#f92672">();</span>
-
-      <span style="color:#75715e">// Convert the requested flink table schema to flink row type.
-</span><span style="color:#75715e"></span>      RowType flinkRowType <span style="color:#f92672">=</span> toFlinkRowType<span style="color:#f92672">(</span>table<span style="color:#f92672">.</span><span style="color:#a6e22e">schema</span><span style="color:#f92672">(),</span> tableSchema<span style="color:#f92672">);</span>
-
-      <span style="color:#75715e">// Distribute the records from input data stream based on the write.distribution-mode and equality fields.
-</span><span style="color:#75715e"></span>      DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> distributeStream <span style="color:#f92672">=</span> distributeDataStream<span style="color:#f92672">(</span>
-          rowDataInput<span style="color:#f92672">,</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">properties</span><span style="color:#f92672">(),</span> equalityFieldIds<span style="color:#f92672">,</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">spec</span><span style="color:#f92672">(),</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">schema</span><span style="color:#f92672">(),</span> flinkRowType<span style="color:#f92672">);</span>
-
-      <span style="color:#75715e">// Add parallel writers that append rows to files
-</span><span style="color:#75715e"></span>      SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writerStream <span style="color:#f92672">=</span> appendWriter<span style="color:#f92672">(</span>distributeStream<span style="color:#f92672">,</span> flinkRowType<span style="color:#f92672">,</span>
-          equalityFieldIds<span style="color:#f92672">);</span>
-
-      <span style="color:#75715e">// Add single-parallelism committer that commits files
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// after successful checkpoint or end of input
-</span><span style="color:#75715e"></span>      SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> committerStream <span style="color:#f92672">=</span> appendCommitter<span style="color:#f92672">(</span>writerStream<span style="color:#f92672">);</span>
-
-      <span style="color:#75715e">// Add dummy discard sink
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">return</span> appendDummySink<span style="color:#f92672">(</span>committerStream<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-</code></pre></div><h2 id="写入流程源码分析">写入流程源码分析</h2>
+<p><img alt="image.png" src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1655962006990-826460c7-b6fc-4efe-a8e0-65cc080ffea9.png#clientId=uc8a9769d-f729-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=242&id=u2b3c9cf7&margin=%5Bobject%20Object%5D&name=image.png&originHeight=483&originWidth=1080&originalType=binary&ratio=1&rotation=0&showTitle=false&size=95146&status=done&style=none&taskId=ufe2588e9-b29d-40dc-8f25-4bbe725336d&title=&width=540"></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>   <span style="color:#66d9ef">private</span> <span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> DataStreamSink<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">chainIcebergOperators</span>() {
+</span></span><span style="display:flex;"><span>      Preconditions.<span style="color:#a6e22e">checkArgument</span>(inputCreator <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>,
+</span></span><span style="display:flex;"><span>          <span style="color:#e6db74">&#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;</span>);
+</span></span><span style="display:flex;"><span>      Preconditions.<span style="color:#a6e22e">checkNotNull</span>(tableLoader, <span style="color:#e6db74">&#34;Table loader shouldn&#39;t be null&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> rowDataInput <span style="color:#f92672">=</span> inputCreator.<span style="color:#a6e22e">apply</span>(uidPrefix);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (table <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>        tableLoader.<span style="color:#a6e22e">open</span>();
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">try</span> (TableLoader loader <span style="color:#f92672">=</span> tableLoader) {
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">table</span> <span style="color:#f92672">=</span> loader.<span style="color:#a6e22e">loadTable</span>();
+</span></span><span style="display:flex;"><span>        } <span style="color:#66d9ef">catch</span> (IOException e) {
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> UncheckedIOException(<span style="color:#e6db74">&#34;Failed to load iceberg table from table loader: &#34;</span> <span style="color:#f92672">+</span> tableLoader, e);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Find out the equality field id list based on the user-provided equality field column names.</span>
+</span></span><span style="display:flex;"><span>      List<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> equalityFieldIds <span style="color:#f92672">=</span> checkAndGetEqualityFieldIds();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Convert the requested flink table schema to flink row type.</span>
+</span></span><span style="display:flex;"><span>      RowType flinkRowType <span style="color:#f92672">=</span> toFlinkRowType(table.<span style="color:#a6e22e">schema</span>(), tableSchema);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Distribute the records from input data stream based on the write.distribution-mode and equality fields.</span>
+</span></span><span style="display:flex;"><span>      DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> distributeStream <span style="color:#f92672">=</span> distributeDataStream(
+</span></span><span style="display:flex;"><span>          rowDataInput, table.<span style="color:#a6e22e">properties</span>(), equalityFieldIds, table.<span style="color:#a6e22e">spec</span>(), table.<span style="color:#a6e22e">schema</span>(), flinkRowType);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Add parallel writers that append rows to files</span>
+</span></span><span style="display:flex;"><span>      SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writerStream <span style="color:#f92672">=</span> appendWriter(distributeStream, flinkRowType,
+</span></span><span style="display:flex;"><span>          equalityFieldIds);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Add single-parallelism committer that commits files</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// after successful checkpoint or end of input</span>
+</span></span><span style="display:flex;"><span>      SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> committerStream <span style="color:#f92672">=</span> appendCommitter(writerStream);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Add dummy discard sink</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">return</span> appendDummySink(committerStream);
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><h2 id="写入流程源码分析">写入流程源码分析</h2>
 <h3 id="writestream">WriteStream</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">   <span style="color:#66d9ef">private</span> SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">appendWriter</span><span style="color:#f92672">(</span>DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> input<span style="color:#f92672">,</span> RowType flinkRowType<span style="color:#f92672">,</span>
-                                                                 List<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> equalityFieldIds<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-
-      <span style="color:#75715e">// Fallback to use upsert mode parsed from table properties if don&#39;t specify in job level.
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">boolean</span> upsertMode <span style="color:#f92672">=</span> upsert <span style="color:#f92672">||</span> PropertyUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">propertyAsBoolean</span><span style="color:#f92672">(</span>table<span style="color:#f92672">.</span><span style="color:#a6e22e">properties</span><span style="color:#f92672">(),</span>
-          UPSERT_ENABLED<span style="color:#f92672">,</span> UPSERT_ENABLED_DEFAULT<span style="color:#f92672">);</span>
-
-      <span style="color:#75715e">// Validate the equality fields and partition fields if we enable the upsert mode.
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>upsertMode<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkState</span><span style="color:#f92672">(!</span>overwrite<span style="color:#f92672">,</span>
-            <span style="color:#e6db74">&#34;OVERWRITE mode shouldn&#39;t be enable when configuring to use UPSERT data stream.&#34;</span><span style="color:#f92672">);</span>
-        Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkState</span><span style="color:#f92672">(!</span>equalityFieldIds<span style="color:#f92672">.</span><span style="color:#a6e22e">isEmpty</span><span style="color:#f92672">(),</span>
-            <span style="color:#e6db74">&#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;</span><span style="color:#f92672">);</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>table<span style="color:#f92672">.</span><span style="color:#a6e22e">spec</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isUnpartitioned</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-          <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>PartitionField partitionField <span style="color:#f92672">:</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">spec</span><span style="color:#f92672">().</span><span style="color:#a6e22e">fields</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-            Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkState</span><span style="color:#f92672">(</span>equalityFieldIds<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>partitionField<span style="color:#f92672">.</span><span style="color:#a6e22e">sourceId</span><span style="color:#f92672">()),</span>
-                <span style="color:#e6db74">&#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;</span><span style="color:#f92672">,</span>
-                partitionField<span style="color:#f92672">,</span> equalityFieldColumns<span style="color:#f92672">);</span>
-          <span style="color:#f92672">}</span>
-        <span style="color:#f92672">}</span>
-      <span style="color:#f92672">}</span>
-
-      IcebergStreamWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> streamWriter <span style="color:#f92672">=</span> createStreamWriter<span style="color:#f92672">(</span>table<span style="color:#f92672">,</span> flinkRowType<span style="color:#f92672">,</span> equalityFieldIds<span style="color:#f92672">,</span> upsertMode<span style="color:#f92672">);</span>
-
-      <span style="color:#66d9ef">int</span> parallelism <span style="color:#f92672">=</span> writeParallelism <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">?</span> input<span style="color:#f92672">.</span><span style="color:#a6e22e">getParallelism</span><span style="color:#f92672">()</span> <span style="color:#f92672">:</span> writeParallelism<span style="color:#f92672">;</span>
-      SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writerStream <span style="color:#f92672">=</span> input
-          <span style="color:#f92672">.</span><span style="color:#a6e22e">transform</span><span style="color:#f92672">(</span>operatorName<span style="color:#f92672">(</span>ICEBERG_STREAM_WRITER_NAME<span style="color:#f92672">),</span> TypeInformation<span style="color:#f92672">.</span><span style="color:#a6e22e">of</span><span style="color:#f92672">(</span>WriteResult<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">),</span> streamWriter<span style="color:#f92672">)</span>
-          <span style="color:#f92672">.</span><span style="color:#a6e22e">setParallelism</span><span style="color:#f92672">(</span>parallelism<span style="color:#f92672">);</span>
-      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>uidPrefix <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        writerStream <span style="color:#f92672">=</span> writerStream<span style="color:#f92672">.</span><span style="color:#a6e22e">uid</span><span style="color:#f92672">(</span>uidPrefix <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;-writer&#34;</span><span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span>
-      <span style="color:#66d9ef">return</span> writerStream<span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span>
-</code></pre></div><p>WriterStream流算子由distriteStream转换而来，以RowData作为输入，WriteResult作为输出，其中转换的逻辑封装在IcebergStreamWriter对象中，处理逻辑见processElement。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> TaskWriter<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> writer<span style="color:#f92672">;</span>
-    <span style="color:#a6e22e">@Override</span>
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processElement</span><span style="color:#f92672">(</span>StreamRecord<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> element<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
-      writer<span style="color:#f92672">.</span><span style="color:#a6e22e">write</span><span style="color:#f92672">(</span>element<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">());</span>
-    <span style="color:#f92672">}</span>
-</code></pre></div><p>IcebergStreamWriter将数据的写入委托给TaskWriterFactory（RowDataTaskWriterFactory）创建的TaskWriter（如PartitionedDeltaWriter，UnpartitionedWriter）执行。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">  <span style="color:#66d9ef">public</span> TaskWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">create</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
-    Preconditions<span style="color:#f92672">.</span><span style="color:#a6e22e">checkNotNull</span><span style="color:#f92672">(</span>outputFileFactory<span style="color:#f92672">,</span>
-        <span style="color:#e6db74">&#34;The outputFileFactory shouldn&#39;t be null if we have invoked the initialize().&#34;</span><span style="color:#f92672">);</span>
-
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>equalityFieldIds <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> equalityFieldIds<span style="color:#f92672">.</span><span style="color:#a6e22e">isEmpty</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-      <span style="color:#75715e">// Initialize a task writer to write INSERT only.
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>spec<span style="color:#f92672">.</span><span style="color:#a6e22e">isUnpartitioned</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> UnpartitionedWriter<span style="color:#f92672">&lt;&gt;(</span>spec<span style="color:#f92672">,</span> format<span style="color:#f92672">,</span> appenderFactory<span style="color:#f92672">,</span> outputFileFactory<span style="color:#f92672">,</span> io<span style="color:#f92672">,</span> targetFileSizeBytes<span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> RowDataPartitionedFanoutWriter<span style="color:#f92672">(</span>spec<span style="color:#f92672">,</span> format<span style="color:#f92672">,</span> appenderFactory<span style="color:#f92672">,</span> outputFileFactory<span style="color:#f92672">,</span>
-            io<span style="color:#f92672">,</span> targetFileSizeBytes<span style="color:#f92672">,</span> schema<span style="color:#f92672">,</span> flinkSchema<span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-      <span style="color:#75715e">// Initialize a task writer to write both INSERT and equality DELETE.
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>spec<span style="color:#f92672">.</span><span style="color:#a6e22e">isUnpartitioned</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> UnpartitionedDeltaWriter<span style="color:#f92672">(</span>spec<span style="color:#f92672">,</span> format<span style="color:#f92672">,</span> appenderFactory<span style="color:#f92672">,</span> outputFileFactory<span style="color:#f92672">,</span> io<span style="color:#f92672">,</span>
-            targetFileSizeBytes<span style="color:#f92672">,</span> schema<span style="color:#f92672">,</span> flinkSchema<span style="color:#f92672">,</span> equalityFieldIds<span style="color:#f92672">,</span> upsert<span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> PartitionedDeltaWriter<span style="color:#f92672">(</span>spec<span style="color:#f92672">,</span> format<span style="color:#f92672">,</span> appenderFactory<span style="color:#f92672">,</span> outputFileFactory<span style="color:#f92672">,</span> io<span style="color:#f92672">,</span>
-            targetFileSizeBytes<span style="color:#f92672">,</span> schema<span style="color:#f92672">,</span> flinkSchema<span style="color:#f92672">,</span> equalityFieldIds<span style="color:#f92672">,</span> upsert<span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span>
-  <span style="color:#f92672">}</span>TaskWriterFactory
-</code></pre></div><p><img src="https://intranetproxy.alipay.com/skylark/lark/__puml/28b7e44c1f87d8cc0e65e87e822ae293.svg#lake_card_v2=eyJ0eXBlIjoicHVtbCIsImNvZGUiOiJAc3RhcnR1bWxcblxuIXRoZW1lIHBsYWluXG50b3AgdG8gYm90dG9tIGRpcmVjdGlvblxuc2tpbnBhcmFtIGxpbmV0eXBlIG9ydGhvXG5cbmNsYXNzIEJhc2VEZWx0YVRhc2tXcml0ZXJcbmNsYXNzIEJhc2VUYXNrV3JpdGVyPFQ-XG5jbGFzcyBQYXJ0aXRpb25lZERlbHRhV3JpdGVyXG5jbGFzcyBQYXJ0aXRpb25lZEZhbm91dFdyaXRlcjxUPlxuY2xhc3MgUGFydGl0aW9uZWRXcml0ZXI8VD5cbmludGVyZmFjZSBUYXNrV3JpdGVyPFQ-IDw8IGludGVyZmFjZSA-PlxuY2xhc3MgVW5wYXJ0aXRpb25lZERlbHRhV3JpdGVyXG5jbGFzcyBVbnBhcnRpdGlvbmVkV3JpdGVyPFQ-XG5cbkJhc2VEZWx0YVRhc2tXcml0ZXIgICAgICAgLVsjMDAwMDgyLHBsYWluXS1eICBCYXNlVGFza1dyaXRlciAgICAgICAgICAgXG5CYXNlVGFza1dyaXRlciAgICAgICAgICAgIC1bIzAwODIwMCxkYXNoZWRdLV4gIFRhc2tXcml0ZXIgICAgICAgICAgICAgICBcblBhcnRpdGlvbmVkRGVsdGFXcml0ZXIgICAgLVsjMDAwMDgyLHBsYWluXS1eICBCYXNlRGVsdGFUYXNrV3JpdGVyICAgICAgXG5QYXJ0aXRpb25lZEZhbm91dFdyaXRlciAgIC1bIzAwMDA4MixwbGFpbl0tXiAgQmFzZVRhc2tXcml0ZXIgICAgICAgICAgIFxuUGFydGl0aW9uZWRXcml0ZXIgICAgICAgICAtWyMwMDAwODIscGxhaW5dLV4gIEJhc2VUYXNrV3JpdGVyICAgICAgICAgICBcblVucGFydGl0aW9uZWREZWx0YVdyaXRlciAgLVsjMDAwMDgyLHBsYWluXS1eICBCYXNlRGVsdGFUYXNrV3JpdGVyICAgICAgXG5VbnBhcnRpdGlvbmVkV3JpdGVyICAgICAgIC1bIzAwMDA4MixwbGFpbl0tXiAgQmFzZVRhc2tXcml0ZXIgICAgICAgICAgIFxuQGVuZHVtbFxuIiwidXJsIjoiaHR0cHM6Ly9pbnRyYW5ldHByb3h5LmFsaXBheS5jb20vc2t5bGFyay9sYXJrL19fcHVtbC8yOGI3ZTQ0YzFmODdkOGNjMGU2NWU4N2U4MjJhZTI5My5zdmciLCJpZCI6IkM2Q1NNIiwibWFyZ2luIjp7InRvcCI6dHJ1ZSwiYm90dG9tIjp0cnVlfSwiaGVpZ2h0IjoyNjEuMTA5Mzc1LCJjYXJkIjoiZGlhZ3JhbSJ9" alt="">TaskWriter又将写入交给RollingWriter（BaseRollingWriter）执行。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">write</span><span style="color:#f92672">(</span>T row<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> IOException <span style="color:#f92672">{</span>
-    PartitionKey partitionKey <span style="color:#f92672">=</span> partition<span style="color:#f92672">(</span>row<span style="color:#f92672">);</span>
-
-    RollingFileWriter writer <span style="color:#f92672">=</span> writers<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>partitionKey<span style="color:#f92672">);</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>writer <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      <span style="color:#75715e">// NOTICE: we need to copy a new partition key here, in case of messing up the keys in writers.
-</span><span style="color:#75715e"></span>      PartitionKey copiedKey <span style="color:#f92672">=</span> partitionKey<span style="color:#f92672">.</span><span style="color:#a6e22e">copy</span><span style="color:#f92672">();</span>
-      writer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> RollingFileWriter<span style="color:#f92672">(</span>copiedKey<span style="color:#f92672">);</span>
-      writers<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>copiedKey<span style="color:#f92672">,</span> writer<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-
-    writer<span style="color:#f92672">.</span><span style="color:#a6e22e">write</span><span style="color:#f92672">(</span>row<span style="color:#f92672">);</span>
-  <span style="color:#f92672">}</span>
-
-</code></pre></div><p>RollingWriter会持有一个OutputFileFactory生成的OutputFile作为写入文件，并根据一些策略自动切换的新的OutputFile文件.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">write</span><span style="color:#f92672">(</span>T record<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> IOException <span style="color:#f92672">{</span>
-      write<span style="color:#f92672">(</span>currentWriter<span style="color:#f92672">,</span> record<span style="color:#f92672">);</span>
-      <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">currentRows</span><span style="color:#f92672">++;</span>
-
-      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>shouldRollToNewFile<span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        closeCurrent<span style="color:#f92672">();</span>
-        openCurrent<span style="color:#f92672">();</span>
-      <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span>
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">openCurrent</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
-      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>partitionKey <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#75715e">// unpartitioned
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">currentFile</span> <span style="color:#f92672">=</span> fileFactory<span style="color:#f92672">.</span><span style="color:#a6e22e">newOutputFile</span><span style="color:#f92672">();</span>
-      <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-        <span style="color:#75715e">// partitioned
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">currentFile</span> <span style="color:#f92672">=</span> fileFactory<span style="color:#f92672">.</span><span style="color:#a6e22e">newOutputFile</span><span style="color:#f92672">(</span>partitionKey<span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span>
-      <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">currentWriter</span> <span style="color:#f92672">=</span> newWriter<span style="color:#f92672">(</span>currentFile<span style="color:#f92672">,</span> partitionKey<span style="color:#f92672">);</span>
-      <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">currentRows</span> <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span>
-</code></pre></div><p>OutputFile的命名规则是</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>   <span style="color:#66d9ef">private</span> SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">appendWriter</span>(DataStream<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> input, RowType flinkRowType,
+</span></span><span style="display:flex;"><span>                                                                 List<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> equalityFieldIds) {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Fallback to use upsert mode parsed from table properties if don&#39;t specify in job level.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">boolean</span> upsertMode <span style="color:#f92672">=</span> upsert <span style="color:#f92672">||</span> PropertyUtil.<span style="color:#a6e22e">propertyAsBoolean</span>(table.<span style="color:#a6e22e">properties</span>(),
+</span></span><span style="display:flex;"><span>          UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Validate the equality fields and partition fields if we enable the upsert mode.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (upsertMode) {
+</span></span><span style="display:flex;"><span>        Preconditions.<span style="color:#a6e22e">checkState</span>(<span style="color:#f92672">!</span>overwrite,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;OVERWRITE mode shouldn&#39;t be enable when configuring to use UPSERT data stream.&#34;</span>);
+</span></span><span style="display:flex;"><span>        Preconditions.<span style="color:#a6e22e">checkState</span>(<span style="color:#f92672">!</span>equalityFieldIds.<span style="color:#a6e22e">isEmpty</span>(),
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>table.<span style="color:#a6e22e">spec</span>().<span style="color:#a6e22e">isUnpartitioned</span>()) {
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">for</span> (PartitionField partitionField : table.<span style="color:#a6e22e">spec</span>().<span style="color:#a6e22e">fields</span>()) {
+</span></span><span style="display:flex;"><span>            Preconditions.<span style="color:#a6e22e">checkState</span>(equalityFieldIds.<span style="color:#a6e22e">contains</span>(partitionField.<span style="color:#a6e22e">sourceId</span>()),
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;</span>,
+</span></span><span style="display:flex;"><span>                partitionField, equalityFieldColumns);
+</span></span><span style="display:flex;"><span>          }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      IcebergStreamWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> streamWriter <span style="color:#f92672">=</span> createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">int</span> parallelism <span style="color:#f92672">=</span> writeParallelism <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">?</span> input.<span style="color:#a6e22e">getParallelism</span>() : writeParallelism;
+</span></span><span style="display:flex;"><span>      SingleOutputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writerStream <span style="color:#f92672">=</span> input
+</span></span><span style="display:flex;"><span>          .<span style="color:#a6e22e">transform</span>(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.<span style="color:#a6e22e">of</span>(WriteResult.<span style="color:#a6e22e">class</span>), streamWriter)
+</span></span><span style="display:flex;"><span>          .<span style="color:#a6e22e">setParallelism</span>(parallelism);
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (uidPrefix <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>        writerStream <span style="color:#f92672">=</span> writerStream.<span style="color:#a6e22e">uid</span>(uidPrefix <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;-writer&#34;</span>);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">return</span> writerStream;
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>WriterStream流算子由distriteStream转换而来，以RowData作为输入，WriteResult作为输出，其中转换的逻辑封装在IcebergStreamWriter对象中，处理逻辑见processElement。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> TaskWriter<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> writer;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">@Override</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processElement</span>(StreamRecord<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> element) <span style="color:#66d9ef">throws</span> Exception {
+</span></span><span style="display:flex;"><span>      writer.<span style="color:#a6e22e">write</span>(element.<span style="color:#a6e22e">getValue</span>());
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>IcebergStreamWriter将数据的写入委托给TaskWriterFactory（RowDataTaskWriterFactory）创建的TaskWriter（如PartitionedDeltaWriter，UnpartitionedWriter）执行。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>  <span style="color:#66d9ef">public</span> TaskWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">create</span>() {
+</span></span><span style="display:flex;"><span>    Preconditions.<span style="color:#a6e22e">checkNotNull</span>(outputFileFactory,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;The outputFileFactory shouldn&#39;t be null if we have invoked the initialize().&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (equalityFieldIds <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> equalityFieldIds.<span style="color:#a6e22e">isEmpty</span>()) {
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Initialize a task writer to write INSERT only.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (spec.<span style="color:#a6e22e">isUnpartitioned</span>()) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> UnpartitionedWriter<span style="color:#f92672">&lt;&gt;</span>(spec, format, appenderFactory, outputFileFactory, io, targetFileSizeBytes);
+</span></span><span style="display:flex;"><span>      } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> RowDataPartitionedFanoutWriter(spec, format, appenderFactory, outputFileFactory,
+</span></span><span style="display:flex;"><span>            io, targetFileSizeBytes, schema, flinkSchema);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Initialize a task writer to write both INSERT and equality DELETE.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (spec.<span style="color:#a6e22e">isUnpartitioned</span>()) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> UnpartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io,
+</span></span><span style="display:flex;"><span>            targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert);
+</span></span><span style="display:flex;"><span>      } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> PartitionedDeltaWriter(spec, format, appenderFactory, outputFileFactory, io,
+</span></span><span style="display:flex;"><span>            targetFileSizeBytes, schema, flinkSchema, equalityFieldIds, upsert);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }TaskWriterFactory
+</span></span></code></pre></div><p><img src="https://intranetproxy.alipay.com/skylark/lark/__puml/28b7e44c1f87d8cc0e65e87e822ae293.svg#lake_card_v2=eyJ0eXBlIjoicHVtbCIsImNvZGUiOiJAc3RhcnR1bWxcblxuIXRoZW1lIHBsYWluXG50b3AgdG8gYm90dG9tIGRpcmVjdGlvblxuc2tpbnBhcmFtIGxpbmV0eXBlIG9ydGhvXG5cbmNsYXNzIEJhc2VEZWx0YVRhc2tXcml0ZXJcbmNsYXNzIEJhc2VUYXNrV3JpdGVyPFQ-XG5jbGFzcyBQYXJ0aXRpb25lZERlbHRhV3JpdGVyXG5jbGFzcyBQYXJ0aXRpb25lZEZhbm91dFdyaXRlcjxUPlxuY2xhc3MgUGFydGl0aW9uZWRXcml0ZXI8VD5cbmludGVyZmFjZSBUYXNrV3JpdGVyPFQ-IDw8IGludGVyZmFjZSA-PlxuY2xhc3MgVW5wYXJ0aXRpb25lZERlbHRhV3JpdGVyXG5jbGFzcyBVbnBhcnRpdGlvbmVkV3JpdGVyPFQ-XG5cbkJhc2VEZWx0YVRhc2tXcml0ZXIgICAgICAgLVsjMDAwMDgyLHBsYWluXS1eICBCYXNlVGFza1dyaXRlciAgICAgICAgICAgXG5CYXNlVGFza1dyaXRlciAgICAgICAgICAgIC1bIzAwODIwMCxkYXNoZWRdLV4gIFRhc2tXcml0ZXIgICAgICAgICAgICAgICBcblBhcnRpdGlvbmVkRGVsdGFXcml0ZXIgICAgLVsjMDAwMDgyLHBsYWluXS1eICBCYXNlRGVsdGFUYXNrV3JpdGVyICAgICAgXG5QYXJ0aXRpb25lZEZhbm91dFdyaXRlciAgIC1bIzAwMDA4MixwbGFpbl0tXiAgQmFzZVRhc2tXcml0ZXIgICAgICAgICAgIFxuUGFydGl0aW9uZWRXcml0ZXIgICAgICAgICAtWyMwMDAwODIscGxhaW5dLV4gIEJhc2VUYXNrV3JpdGVyICAgICAgICAgICBcblVucGFydGl0aW9uZWREZWx0YVdyaXRlciAgLVsjMDAwMDgyLHBsYWluXS1eICBCYXNlRGVsdGFUYXNrV3JpdGVyICAgICAgXG5VbnBhcnRpdGlvbmVkV3JpdGVyICAgICAgIC1bIzAwMDA4MixwbGFpbl0tXiAgQmFzZVRhc2tXcml0ZXIgICAgICAgICAgIFxuQGVuZHVtbFxuIiwidXJsIjoiaHR0cHM6Ly9pbnRyYW5ldHByb3h5LmFsaXBheS5jb20vc2t5bGFyay9sYXJrL19fcHVtbC8yOGI3ZTQ0YzFmODdkOGNjMGU2NWU4N2U4MjJhZTI5My5zdmciLCJpZCI6IkM2Q1NNIiwibWFyZ2luIjp7InRvcCI6dHJ1ZSwiYm90dG9tIjp0cnVlfSwiaGVpZ2h0IjoyNjEuMTA5Mzc1LCJjYXJkIjoiZGlhZ3JhbSJ9">TaskWriter又将写入交给RollingWriter（BaseRollingWriter）执行。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">write</span>(T row) <span style="color:#66d9ef">throws</span> IOException {
+</span></span><span style="display:flex;"><span>    PartitionKey partitionKey <span style="color:#f92672">=</span> partition(row);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    RollingFileWriter writer <span style="color:#f92672">=</span> writers.<span style="color:#a6e22e">get</span>(partitionKey);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (writer <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// NOTICE: we need to copy a new partition key here, in case of messing up the keys in writers.</span>
+</span></span><span style="display:flex;"><span>      PartitionKey copiedKey <span style="color:#f92672">=</span> partitionKey.<span style="color:#a6e22e">copy</span>();
+</span></span><span style="display:flex;"><span>      writer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> RollingFileWriter(copiedKey);
+</span></span><span style="display:flex;"><span>      writers.<span style="color:#a6e22e">put</span>(copiedKey, writer);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    writer.<span style="color:#a6e22e">write</span>(row);
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div><p>RollingWriter会持有一个OutputFileFactory生成的OutputFile作为写入文件，并根据一些策略自动切换的新的OutputFile文件.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">write</span>(T record) <span style="color:#66d9ef">throws</span> IOException {
+</span></span><span style="display:flex;"><span>      write(currentWriter, record);
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">currentRows</span><span style="color:#f92672">++</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (shouldRollToNewFile()) {
+</span></span><span style="display:flex;"><span>        closeCurrent();
+</span></span><span style="display:flex;"><span>        openCurrent();
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">openCurrent</span>() {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (partitionKey <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// unpartitioned</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">currentFile</span> <span style="color:#f92672">=</span> fileFactory.<span style="color:#a6e22e">newOutputFile</span>();
+</span></span><span style="display:flex;"><span>      } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// partitioned</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">currentFile</span> <span style="color:#f92672">=</span> fileFactory.<span style="color:#a6e22e">newOutputFile</span>(partitionKey);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">currentWriter</span> <span style="color:#f92672">=</span> newWriter(currentFile, partitionKey);
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">currentRows</span> <span style="color:#f92672">=</span> 0;
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>OutputFile的命名规则是</p>
 <blockquote>
 <p>LocationProvider.newLocation(partitionId+taskId+operationId+fileCountID+ext)</p>
 </blockquote>
 <p>RollingWriter会把写入交个AppenderFactory构造的DataWriter，对于Flink，默认的DataWriter是ParquetDataWriter。ParquetDataWriter根据不同的数据类型委托给不同的ParquertValueWriter</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">   DataWriter<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">newWriter</span><span style="color:#f92672">(</span>EncryptedOutputFile file<span style="color:#f92672">,</span> StructLike partitionKey<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      <span style="color:#66d9ef">return</span> appenderFactory<span style="color:#f92672">.</span><span style="color:#a6e22e">newDataWriter</span><span style="color:#f92672">(</span>file<span style="color:#f92672">,</span> format<span style="color:#f92672">,</span> partitionKey<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a6e22e">@Override</span>
-<span style="color:#66d9ef">public</span> DataWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">newDataWriter</span><span style="color:#f92672">(</span>EncryptedOutputFile file<span style="color:#f92672">,</span> FileFormat format<span style="color:#f92672">,</span> StructLike partition<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> DataWriter<span style="color:#f92672">&lt;&gt;(</span>
-    newAppender<span style="color:#f92672">(</span>file<span style="color:#f92672">.</span><span style="color:#a6e22e">encryptingOutputFile</span><span style="color:#f92672">(),</span> format<span style="color:#f92672">),</span> format<span style="color:#f92672">,</span>
-    file<span style="color:#f92672">.</span><span style="color:#a6e22e">encryptingOutputFile</span><span style="color:#f92672">().</span><span style="color:#a6e22e">location</span><span style="color:#f92672">(),</span> spec<span style="color:#f92672">,</span> partition<span style="color:#f92672">,</span> file<span style="color:#f92672">.</span><span style="color:#a6e22e">keyMetadata</span><span style="color:#f92672">());</span>
-<span style="color:#f92672">}</span>
-
-<span style="color:#a6e22e">@Override</span>
-  <span style="color:#66d9ef">public</span> FileAppender<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">newAppender</span><span style="color:#f92672">(</span>OutputFile outputFile<span style="color:#f92672">,</span> FileFormat format<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    MetricsConfig metricsConfig <span style="color:#f92672">=</span> MetricsConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">fromProperties</span><span style="color:#f92672">(</span>props<span style="color:#f92672">);</span>
-    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-      <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span>format<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">case</span> AVRO<span style="color:#f92672">:</span>
-          <span style="color:#66d9ef">return</span> Avro<span style="color:#f92672">.</span><span style="color:#a6e22e">writer</span><span style="color:#f92672">...</span>
-        <span style="color:#66d9ef">case</span> ORC<span style="color:#f92672">:</span>
-          <span style="color:#66d9ef">return</span> ORC<span style="color:#f92672">.</span><span style="color:#a6e22e">writer</span><span style="color:#f92672">...</span>
-        <span style="color:#66d9ef">case</span> PARQUET<span style="color:#f92672">:</span>
-          <span style="color:#66d9ef">return</span> Parquet<span style="color:#f92672">.</span><span style="color:#a6e22e">writer</span><span style="color:#f92672">...</span>
-        <span style="color:#66d9ef">default</span><span style="color:#f92672">:</span>
-          <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> UnsupportedOperationException<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Cannot write unknown file format: &#34;</span> <span style="color:#f92672">+</span> format<span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>IOException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> UncheckedIOException<span style="color:#f92672">(</span>e<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-  <span style="color:#f92672">}</span>
-</code></pre></div><h3 id="committerstream">CommitterStream</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>   DataWriter<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">newWriter</span>(EncryptedOutputFile file, StructLike partitionKey) {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">return</span> appenderFactory.<span style="color:#a6e22e">newDataWriter</span>(file, format, partitionKey);
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#a6e22e">@Override</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> DataWriter<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">newDataWriter</span>(EncryptedOutputFile file, FileFormat format, StructLike partition) {
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> DataWriter<span style="color:#f92672">&lt;&gt;</span>(
+</span></span><span style="display:flex;"><span>    newAppender(file.<span style="color:#a6e22e">encryptingOutputFile</span>(), format), format,
+</span></span><span style="display:flex;"><span>    file.<span style="color:#a6e22e">encryptingOutputFile</span>().<span style="color:#a6e22e">location</span>(), spec, partition, file.<span style="color:#a6e22e">keyMetadata</span>());
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">@Override</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">public</span> FileAppender<span style="color:#f92672">&lt;</span>RowData<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">newAppender</span>(OutputFile outputFile, FileFormat format) {
+</span></span><span style="display:flex;"><span>    MetricsConfig metricsConfig <span style="color:#f92672">=</span> MetricsConfig.<span style="color:#a6e22e">fromProperties</span>(props);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span> {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">switch</span> (format) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">case</span> AVRO:
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">return</span> Avro.<span style="color:#a6e22e">writer</span>...
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">case</span> ORC:
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">return</span> ORC.<span style="color:#a6e22e">writer</span>...
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">case</span> PARQUET:
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">return</span> Parquet.<span style="color:#a6e22e">writer</span>...
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">default</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> UnsupportedOperationException(<span style="color:#e6db74">&#34;Cannot write unknown file format: &#34;</span> <span style="color:#f92672">+</span> format);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    } <span style="color:#66d9ef">catch</span> (IOException e) {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> UncheckedIOException(e);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div><h3 id="committerstream">CommitterStream</h3>
 <p>CommitterStream 接受 WriteResult 作为输入，无结果输出。WriteResult包含了WriteStream中产生的数据文件。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteResult</span> <span style="color:#66d9ef">implements</span> Serializable <span style="color:#f92672">{</span>
-  <span style="color:#66d9ef">private</span> DataFile<span style="color:#f92672">[]</span> dataFiles<span style="color:#f92672">;</span>
-  <span style="color:#66d9ef">private</span> DeleteFile<span style="color:#f92672">[]</span> deleteFiles<span style="color:#f92672">;</span>
-  <span style="color:#66d9ef">private</span> CharSequence<span style="color:#f92672">[]</span> referencedDataFiles<span style="color:#f92672">;</span>
-    <span style="color:#f92672">...</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><p>处理数据文件提交的核心逻辑封装在IcebergFilesCommitter.IcebergFlieCommitter用一个List（writeResultsOfCurrentCkpt）维护正在处理的Ckpt的需要提交的文件集合，用一个SortedMap（dataFilesPerCheckpoint）维护了系统当前Snapshot中所有Ckpt中提交的文件信息，用List of SortedMap 维护了系统所有的Snapshot的文件提交信息。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IcebergFilesCommitter</span> <span style="color:#66d9ef">extends</span> AbstractStreamOperator<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span>
-    <span style="color:#66d9ef">implements</span> OneInputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">,</span> Void<span style="color:#f92672">&gt;,</span> BoundedOneInput <span style="color:#f92672">{</span>
-    <span style="color:#f92672">...</span>
-    
-        <span style="color:#75715e">// A sorted map to maintain the completed data files for each pending checkpointId (which have not been committed
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// to iceberg table). We need a sorted map here because there&#39;s possible that few checkpoints snapshot failed, for
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// example: the 1st checkpoint have 2 data files &lt;1, &lt;file0, file1&gt;&gt;, the 2st checkpoint have 1 data files
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// &lt;2, &lt;file3&gt;&gt;. Snapshot for checkpoint#1 interrupted because of network/disk failure etc, while we don&#39;t expect
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// any data loss in iceberg table. So we keep the finished files &lt;1, &lt;file0, file1&gt;&gt; in memory and retry to commit
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// iceberg table when the next checkpoint happen.
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> NavigableMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> dataFilesPerCheckpoint <span style="color:#f92672">=</span> Maps<span style="color:#f92672">.</span><span style="color:#a6e22e">newTreeMap</span><span style="color:#f92672">();</span>
-
-      <span style="color:#75715e">// The completed files cache for current checkpoint. Once the snapshot barrier received, it will be flushed to the
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// &#39;dataFilesPerCheckpoint&#39;.
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> List<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writeResultsOfCurrentCkpt <span style="color:#f92672">=</span> Lists<span style="color:#f92672">.</span><span style="color:#a6e22e">newArrayList</span><span style="color:#f92672">();</span>
-
-      <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> ListState<span style="color:#f92672">&lt;</span>SortedMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;&gt;</span> checkpointsState<span style="color:#f92672">;</span>
-    <span style="color:#f92672">...</span>
-    <span style="color:#f92672">}</span>
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"> <span style="color:#a6e22e">@Override</span>
-  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processElement</span><span style="color:#f92672">(</span>StreamRecord<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> element<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">writeResultsOfCurrentCkpt</span><span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>element<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">());</span>
-  <span style="color:#f92672">}</span>
-</code></pre></div><p>上游的当前checkpoint的WriteResult一个writeResultsOfCurrentCkpt中。在SnapshotState的时候writeResultsOfCurrentCkpt -&gt; dataFilesPerCheckpoint -&gt; checkpointsState提交。之后通过notifyCheckpointComplete通知Ckpt完成，并将其提交。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">snapshotState</span><span style="color:#f92672">(</span>StateSnapshotContext context<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">super</span><span style="color:#f92672">.</span><span style="color:#a6e22e">snapshotState</span><span style="color:#f92672">(</span>context<span style="color:#f92672">);</span>
-    <span style="color:#66d9ef">long</span> checkpointId <span style="color:#f92672">=</span> context<span style="color:#f92672">.</span><span style="color:#a6e22e">getCheckpointId</span><span style="color:#f92672">();</span>
-    LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">info</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Start to flush snapshot state to state backend, table: {}, checkpointId: {}&#34;</span><span style="color:#f92672">,</span> table<span style="color:#f92672">,</span> checkpointId<span style="color:#f92672">);</span>
-
-    <span style="color:#75715e">// Update the checkpoint state.
-</span><span style="color:#75715e"></span>    dataFilesPerCheckpoint<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>checkpointId<span style="color:#f92672">,</span> writeToManifest<span style="color:#f92672">(</span>checkpointId<span style="color:#f92672">));</span>
-    <span style="color:#75715e">// Reset the snapshot state to the latest state.
-</span><span style="color:#75715e"></span>    checkpointsState<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">();</span>
-    checkpointsState<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>dataFilesPerCheckpoint<span style="color:#f92672">);</span>
-
-    jobIdState<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">();</span>
-    jobIdState<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>flinkJobId<span style="color:#f92672">);</span>
-
-    <span style="color:#75715e">// Clear the local buffer for current checkpoint.
-</span><span style="color:#75715e"></span>    writeResultsOfCurrentCkpt<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">();</span>
-  <span style="color:#f92672">}</span>
-
- <span style="color:#a6e22e">@Override</span>
-  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">notifyCheckpointComplete</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> checkpointId<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">super</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notifyCheckpointComplete</span><span style="color:#f92672">(</span>checkpointId<span style="color:#f92672">);</span>
-    <span style="color:#75715e">// It&#39;s possible that we have the following events:
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">//   1. snapshotState(ckpId);
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">//   2. snapshotState(ckpId+1);
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">//   3. notifyCheckpointComplete(ckpId+1);
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">//   4. notifyCheckpointComplete(ckpId);
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// For step#4, we don&#39;t need to commit iceberg table again because in step#3 we&#39;ve committed all the files,
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// Besides, we need to maintain the max-committed-checkpoint-id to be increasing.
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>checkpointId <span style="color:#f92672">&gt;</span> maxCommittedCheckpointId<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      commitUpToCheckpoint<span style="color:#f92672">(</span>dataFilesPerCheckpoint<span style="color:#f92672">,</span> flinkJobId<span style="color:#f92672">,</span> checkpointId<span style="color:#f92672">);</span>
-      <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">maxCommittedCheckpointId</span> <span style="color:#f92672">=</span> checkpointId<span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span>
-  <span style="color:#f92672">}</span>
-</code></pre></div><p>提交逻辑在commitUpToCheckpoint函数中。Iceberg抽象除了SnapshotUpdate接口处理Snapshot的变更。Iceberg使用乐观策略处理提交时的Snapshot并发冲突。当发生并发提交冲突时，会重试commit操作。每次commit都会基于当前最新的metadata产生一个新的Snapshot 对象，将其添加到新的Metadata中，最后尝试通过TableOperation.commit进行提交。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commit</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
-    <span style="color:#75715e">// this is always set to the latest commit attempt&#39;s snapshot id.
-</span><span style="color:#75715e"></span>    AtomicLong newSnapshotId <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicLong<span style="color:#f92672">(-</span>1L<span style="color:#f92672">);</span>
-    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-      Tasks<span style="color:#f92672">.</span><span style="color:#a6e22e">foreach</span><span style="color:#f92672">(</span>ops<span style="color:#f92672">)</span>
-          <span style="color:#f92672">.</span><span style="color:#a6e22e">retry</span><span style="color:#f92672">(</span>base<span style="color:#f92672">.</span><span style="color:#a6e22e">propertyAsInt</span><span style="color:#f92672">(</span>COMMIT_NUM_RETRIES<span style="color:#f92672">,</span> COMMIT_NUM_RETRIES_DEFAULT<span style="color:#f92672">))</span>
-          <span style="color:#f92672">.</span><span style="color:#a6e22e">exponentialBackoff</span><span style="color:#f92672">(</span>
-              base<span style="color:#f92672">.</span><span style="color:#a6e22e">propertyAsInt</span><span style="color:#f92672">(</span>COMMIT_MIN_RETRY_WAIT_MS<span style="color:#f92672">,</span> COMMIT_MIN_RETRY_WAIT_MS_DEFAULT<span style="color:#f92672">),</span>
-              base<span style="color:#f92672">.</span><span style="color:#a6e22e">propertyAsInt</span><span style="color:#f92672">(</span>COMMIT_MAX_RETRY_WAIT_MS<span style="color:#f92672">,</span> COMMIT_MAX_RETRY_WAIT_MS_DEFAULT<span style="color:#f92672">),</span>
-              base<span style="color:#f92672">.</span><span style="color:#a6e22e">propertyAsInt</span><span style="color:#f92672">(</span>COMMIT_TOTAL_RETRY_TIME_MS<span style="color:#f92672">,</span> COMMIT_TOTAL_RETRY_TIME_MS_DEFAULT<span style="color:#f92672">),</span>
-              2<span style="color:#f92672">.</span><span style="color:#a6e22e">0</span> <span style="color:#75715e">/* exponential */</span><span style="color:#f92672">)</span>
-          <span style="color:#f92672">.</span><span style="color:#a6e22e">onlyRetryOn</span><span style="color:#f92672">(</span>CommitFailedException<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">)</span>
-          <span style="color:#f92672">.</span><span style="color:#a6e22e">run</span><span style="color:#f92672">(</span>taskOps <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>
-            Snapshot newSnapshot <span style="color:#f92672">=</span> apply<span style="color:#f92672">();</span> <span style="color:#75715e">// generate a new snapshot based on new added data file and manifest,manifest list
-</span><span style="color:#75715e"></span>            newSnapshotId<span style="color:#f92672">.</span><span style="color:#a6e22e">set</span><span style="color:#f92672">(</span>newSnapshot<span style="color:#f92672">.</span><span style="color:#a6e22e">snapshotId</span><span style="color:#f92672">());</span>
-            TableMetadata<span style="color:#f92672">.</span><span style="color:#a6e22e">Builder</span> update <span style="color:#f92672">=</span> TableMetadata<span style="color:#f92672">.</span><span style="color:#a6e22e">buildFrom</span><span style="color:#f92672">(</span>base<span style="color:#f92672">);</span>
-            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>base<span style="color:#f92672">.</span><span style="color:#a6e22e">snapshot</span><span style="color:#f92672">(</span>newSnapshot<span style="color:#f92672">.</span><span style="color:#a6e22e">snapshotId</span><span style="color:#f92672">())</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-              <span style="color:#75715e">// this is a rollback operation
-</span><span style="color:#75715e"></span>              update<span style="color:#f92672">.</span><span style="color:#a6e22e">setBranchSnapshot</span><span style="color:#f92672">(</span>newSnapshot<span style="color:#f92672">.</span><span style="color:#a6e22e">snapshotId</span><span style="color:#f92672">(),</span> SnapshotRef<span style="color:#f92672">.</span><span style="color:#a6e22e">MAIN_BRANCH</span><span style="color:#f92672">);</span>
-            <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>stageOnly<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-              update<span style="color:#f92672">.</span><span style="color:#a6e22e">addSnapshot</span><span style="color:#f92672">(</span>newSnapshot<span style="color:#f92672">);</span>
-            <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-              update<span style="color:#f92672">.</span><span style="color:#a6e22e">setBranchSnapshot</span><span style="color:#f92672">(</span>newSnapshot<span style="color:#f92672">,</span> SnapshotRef<span style="color:#f92672">.</span><span style="color:#a6e22e">MAIN_BRANCH</span><span style="color:#f92672">);</span>
-            <span style="color:#f92672">}</span>
-
-            TableMetadata updated <span style="color:#f92672">=</span> update<span style="color:#f92672">.</span><span style="color:#a6e22e">build</span><span style="color:#f92672">();</span>
-            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>updated<span style="color:#f92672">.</span><span style="color:#a6e22e">changes</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isEmpty</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-              <span style="color:#75715e">// do not commit if the metadata has not changed. for example, this may happen when setting the current
-</span><span style="color:#75715e"></span>              <span style="color:#75715e">// snapshot to an ID that is already current. note that this check uses identity.
-</span><span style="color:#75715e"></span>              <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
-            <span style="color:#f92672">}</span>
-
-            <span style="color:#75715e">// if the table UUID is missing, add it here. the UUID will be re-created each time this operation retries
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">// to ensure that if a concurrent operation assigns the UUID, this operation will not fail.
-</span><span style="color:#75715e"></span>            taskOps<span style="color:#f92672">.</span><span style="color:#a6e22e">commit</span><span style="color:#f92672">(</span>base<span style="color:#f92672">,</span> updated<span style="color:#f92672">.</span><span style="color:#a6e22e">withUUID</span><span style="color:#f92672">());</span> <span style="color:#75715e">// commit table metadata, may cause commit failure
-</span><span style="color:#75715e"></span>          <span style="color:#f92672">});</span>
-
-    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>CommitStateUnknownException commitStateUnknownException<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      <span style="color:#66d9ef">throw</span> commitStateUnknownException<span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>RuntimeException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      Exceptions<span style="color:#f92672">.</span><span style="color:#a6e22e">suppressAndThrow</span><span style="color:#f92672">(</span>e<span style="color:#f92672">,</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">::</span>cleanAll<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-
-    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-      LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">info</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Committed snapshot {} ({})&#34;</span><span style="color:#f92672">,</span> newSnapshotId<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(),</span> getClass<span style="color:#f92672">().</span><span style="color:#a6e22e">getSimpleName</span><span style="color:#f92672">());</span>
-
-      <span style="color:#75715e">// at this point, the commit must have succeeded. after a refresh, the snapshot is loaded by
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// id in case another commit was added between this commit and the refresh.
-</span><span style="color:#75715e"></span>      Snapshot saved <span style="color:#f92672">=</span> ops<span style="color:#f92672">.</span><span style="color:#a6e22e">refresh</span><span style="color:#f92672">().</span><span style="color:#a6e22e">snapshot</span><span style="color:#f92672">(</span>newSnapshotId<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">());</span>
-      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>saved <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        cleanUncommitted<span style="color:#f92672">(</span>Sets<span style="color:#f92672">.</span><span style="color:#a6e22e">newHashSet</span><span style="color:#f92672">(</span>saved<span style="color:#f92672">.</span><span style="color:#a6e22e">allManifests</span><span style="color:#f92672">(</span>ops<span style="color:#f92672">.</span><span style="color:#a6e22e">io</span><span style="color:#f92672">())));</span>
-        <span style="color:#75715e">// also clean up unused manifest lists created by multiple attempts
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>String manifestList <span style="color:#f92672">:</span> manifestLists<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-          <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>saved<span style="color:#f92672">.</span><span style="color:#a6e22e">manifestListLocation</span><span style="color:#f92672">().</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>manifestList<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
-            deleteFile<span style="color:#f92672">(</span>manifestList<span style="color:#f92672">);</span>
-          <span style="color:#f92672">}</span>
-        <span style="color:#f92672">}</span>
-      <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-        <span style="color:#75715e">// saved may not be present if the latest metadata couldn&#39;t be loaded due to eventual
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">// consistency problems in refresh. in that case, don&#39;t clean up.
-</span><span style="color:#75715e"></span>        LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">warn</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Failed to load committed snapshot, skipping manifest clean-up&#34;</span><span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span>
-
-    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Throwable e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">warn</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Failed to load committed table metadata or during cleanup, skipping further cleanup&#34;</span><span style="color:#f92672">,</span> e<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-
-    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-      notifyListeners<span style="color:#f92672">();</span>
-    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Throwable e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">warn</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Failed to notify event listeners&#34;</span><span style="color:#f92672">,</span> e<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-  <span style="color:#f92672">}</span>
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commitUpToCheckpoint</span><span style="color:#f92672">(</span>NavigableMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> deltaManifestsMap<span style="color:#f92672">,</span>
-                                    String newFlinkJobId<span style="color:#f92672">,</span>
-                                    <span style="color:#66d9ef">long</span> checkpointId<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> IOException <span style="color:#f92672">{</span>
-    NavigableMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> pendingMap <span style="color:#f92672">=</span> deltaManifestsMap<span style="color:#f92672">.</span><span style="color:#a6e22e">headMap</span><span style="color:#f92672">(</span>checkpointId<span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
-    List<span style="color:#f92672">&lt;</span>ManifestFile<span style="color:#f92672">&gt;</span> manifests <span style="color:#f92672">=</span> Lists<span style="color:#f92672">.</span><span style="color:#a6e22e">newArrayList</span><span style="color:#f92672">();</span>
-    NavigableMap<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> WriteResult<span style="color:#f92672">&gt;</span> pendingResults <span style="color:#f92672">=</span> Maps<span style="color:#f92672">.</span><span style="color:#a6e22e">newTreeMap</span><span style="color:#f92672">();</span>
-    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>Map<span style="color:#f92672">.</span><span style="color:#a6e22e">Entry</span><span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> e <span style="color:#f92672">:</span> pendingMap<span style="color:#f92672">.</span><span style="color:#a6e22e">entrySet</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>Arrays<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>EMPTY_MANIFEST_DATA<span style="color:#f92672">,</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">()))</span> <span style="color:#f92672">{</span>
-        <span style="color:#75715e">// Skip the empty flink manifest.
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
-      <span style="color:#f92672">}</span>
-
-      DeltaManifests deltaManifests <span style="color:#f92672">=</span> SimpleVersionedSerialization
-          <span style="color:#f92672">.</span><span style="color:#a6e22e">readVersionAndDeSerialize</span><span style="color:#f92672">(</span>DeltaManifestsSerializer<span style="color:#f92672">.</span><span style="color:#a6e22e">INSTANCE</span><span style="color:#f92672">,</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">());</span>
-      pendingResults<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>e<span style="color:#f92672">.</span><span style="color:#a6e22e">getKey</span><span style="color:#f92672">(),</span> FlinkManifestUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">readCompletedFiles</span><span style="color:#f92672">(</span>deltaManifests<span style="color:#f92672">,</span> table<span style="color:#f92672">.</span><span style="color:#a6e22e">io</span><span style="color:#f92672">()));</span>
-      manifests<span style="color:#f92672">.</span><span style="color:#a6e22e">addAll</span><span style="color:#f92672">(</span>deltaManifests<span style="color:#f92672">.</span><span style="color:#a6e22e">manifests</span><span style="color:#f92672">());</span>
-    <span style="color:#f92672">}</span>
-
-    <span style="color:#66d9ef">int</span> totalFiles <span style="color:#f92672">=</span> pendingResults<span style="color:#f92672">.</span><span style="color:#a6e22e">values</span><span style="color:#f92672">().</span><span style="color:#a6e22e">stream</span><span style="color:#f92672">()</span>
-        <span style="color:#f92672">.</span><span style="color:#a6e22e">mapToInt</span><span style="color:#f92672">(</span>r <span style="color:#f92672">-&gt;</span> r<span style="color:#f92672">.</span><span style="color:#a6e22e">dataFiles</span><span style="color:#f92672">().</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">+</span> r<span style="color:#f92672">.</span><span style="color:#a6e22e">deleteFiles</span><span style="color:#f92672">().</span><span style="color:#a6e22e">length</span><span style="color:#f92672">).</span><span style="color:#a6e22e">sum</span><span style="color:#f92672">();</span>
-    continuousEmptyCheckpoints <span style="color:#f92672">=</span> totalFiles <span style="color:#f92672">==</span> 0 <span style="color:#f92672">?</span> continuousEmptyCheckpoints <span style="color:#f92672">+</span> 1 <span style="color:#f92672">:</span> 0<span style="color:#f92672">;</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>totalFiles <span style="color:#f92672">!=</span> 0 <span style="color:#f92672">||</span> continuousEmptyCheckpoints <span style="color:#f92672">%</span> maxContinuousEmptyCommits <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>replacePartitions<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        replacePartitions<span style="color:#f92672">(</span>pendingResults<span style="color:#f92672">,</span> newFlinkJobId<span style="color:#f92672">,</span> checkpointId<span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-        commitDeltaTxn<span style="color:#f92672">(</span>pendingResults<span style="color:#f92672">,</span> newFlinkJobId<span style="color:#f92672">,</span> checkpointId<span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span>
-      continuousEmptyCheckpoints <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span>
-    pendingMap<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">();</span>
-
-    <span style="color:#75715e">// Delete the committed manifests.
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>ManifestFile manifest <span style="color:#f92672">:</span> manifests<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-        table<span style="color:#f92672">.</span><span style="color:#a6e22e">io</span><span style="color:#f92672">().</span><span style="color:#a6e22e">deleteFile</span><span style="color:#f92672">(</span>manifest<span style="color:#f92672">.</span><span style="color:#a6e22e">path</span><span style="color:#f92672">());</span>
-      <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Exception e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#75715e">// The flink manifests cleaning failure shouldn&#39;t abort the completed checkpoint.
-</span><span style="color:#75715e"></span>        String details <span style="color:#f92672">=</span> MoreObjects<span style="color:#f92672">.</span><span style="color:#a6e22e">toStringHelper</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">)</span>
-            <span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;flinkJobId&#34;</span><span style="color:#f92672">,</span> newFlinkJobId<span style="color:#f92672">)</span>
-            <span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;checkpointId&#34;</span><span style="color:#f92672">,</span> checkpointId<span style="color:#f92672">)</span>
-            <span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;manifestPath&#34;</span><span style="color:#f92672">,</span> manifest<span style="color:#f92672">.</span><span style="color:#a6e22e">path</span><span style="color:#f92672">())</span>
-            <span style="color:#f92672">.</span><span style="color:#a6e22e">toString</span><span style="color:#f92672">();</span>
-        LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">warn</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;The iceberg transaction has been committed, but we failed to clean the temporary flink manifests: {}&#34;</span><span style="color:#f92672">,</span>
-            details<span style="color:#f92672">,</span> e<span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span>
-  <span style="color:#f92672">}</span>
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commit</span><span style="color:#f92672">(</span>TableMetadata base<span style="color:#f92672">,</span> TableMetadata metadata<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    <span style="color:#75715e">// if the metadata is already out of date, reject it
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>base <span style="color:#f92672">!=</span> current<span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>base <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> CommitFailedException<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Cannot commit: stale table metadata&#34;</span><span style="color:#f92672">);</span>
-      <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-        <span style="color:#75715e">// when current is non-null, the table exists. but when base is null, the commit is trying to create the table
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> AlreadyExistsException<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Table already exists: %s&#34;</span><span style="color:#f92672">,</span> tableName<span style="color:#f92672">());</span>
-      <span style="color:#f92672">}</span>
-    <span style="color:#f92672">}</span>
-    <span style="color:#75715e">// if the metadata is not changed, return early
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>base <span style="color:#f92672">==</span> metadata<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-      LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">info</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Nothing to commit.&#34;</span><span style="color:#f92672">);</span>
-      <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span>
-
-    <span style="color:#66d9ef">long</span> start <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
-    doCommit<span style="color:#f92672">(</span>base<span style="color:#f92672">,</span> metadata<span style="color:#f92672">);</span>
-    deleteRemovedMetadataFiles<span style="color:#f92672">(</span>base<span style="color:#f92672">,</span> metadata<span style="color:#f92672">);</span>
-    requestRefresh<span style="color:#f92672">();</span>
-
-    LOG<span style="color:#f92672">.</span><span style="color:#a6e22e">info</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Successfully committed to table {} in {} ms&#34;</span><span style="color:#f92672">,</span>
-        tableName<span style="color:#f92672">(),</span>
-        System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> start<span style="color:#f92672">);</span>
-  <span style="color:#f92672">}</span>
-</code></pre></div><h2 id="写入问题">写入问题</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteResult</span> <span style="color:#66d9ef">implements</span> Serializable {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">private</span> DataFile<span style="color:#f92672">[]</span> dataFiles;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">private</span> DeleteFile<span style="color:#f92672">[]</span> deleteFiles;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">private</span> CharSequence<span style="color:#f92672">[]</span> referencedDataFiles;
+</span></span><span style="display:flex;"><span>    ...
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>处理数据文件提交的核心逻辑封装在IcebergFilesCommitter.IcebergFlieCommitter用一个List（writeResultsOfCurrentCkpt）维护正在处理的Ckpt的需要提交的文件集合，用一个SortedMap（dataFilesPerCheckpoint）维护了系统当前Snapshot中所有Ckpt中提交的文件信息，用List of SortedMap 维护了系统所有的Snapshot的文件提交信息。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IcebergFilesCommitter</span> <span style="color:#66d9ef">extends</span> AbstractStreamOperator<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">implements</span> OneInputStreamOperator<span style="color:#f92672">&lt;</span>WriteResult, Void<span style="color:#f92672">&gt;</span>, BoundedOneInput {
+</span></span><span style="display:flex;"><span>    ...
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// A sorted map to maintain the completed data files for each pending checkpointId (which have not been committed</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// to iceberg table). We need a sorted map here because there&#39;s possible that few checkpoints snapshot failed, for</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// example: the 1st checkpoint have 2 data files &lt;1, &lt;file0, file1&gt;&gt;, the 2st checkpoint have 1 data files</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// &lt;2, &lt;file3&gt;&gt;. Snapshot for checkpoint#1 interrupted because of network/disk failure etc, while we don&#39;t expect</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// any data loss in iceberg table. So we keep the finished files &lt;1, &lt;file0, file1&gt;&gt; in memory and retry to commit</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// iceberg table when the next checkpoint happen.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> NavigableMap<span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> dataFilesPerCheckpoint <span style="color:#f92672">=</span> Maps.<span style="color:#a6e22e">newTreeMap</span>();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// The completed files cache for current checkpoint. Once the snapshot barrier received, it will be flushed to the</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// &#39;dataFilesPerCheckpoint&#39;.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> List<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> writeResultsOfCurrentCkpt <span style="color:#f92672">=</span> Lists.<span style="color:#a6e22e">newArrayList</span>();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> ListState<span style="color:#f92672">&lt;</span>SortedMap<span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;&gt;</span> checkpointsState;
+</span></span><span style="display:flex;"><span>    ...
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span> <span style="color:#a6e22e">@Override</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processElement</span>(StreamRecord<span style="color:#f92672">&lt;</span>WriteResult<span style="color:#f92672">&gt;</span> element) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">writeResultsOfCurrentCkpt</span>.<span style="color:#a6e22e">add</span>(element.<span style="color:#a6e22e">getValue</span>());
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div><p>上游的当前checkpoint的WriteResult一个writeResultsOfCurrentCkpt中。在SnapshotState的时候writeResultsOfCurrentCkpt -&gt; dataFilesPerCheckpoint -&gt; checkpointsState提交。之后通过notifyCheckpointComplete通知Ckpt完成，并将其提交。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">snapshotState</span>(StateSnapshotContext context) <span style="color:#66d9ef">throws</span> Exception {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">super</span>.<span style="color:#a6e22e">snapshotState</span>(context);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> checkpointId <span style="color:#f92672">=</span> context.<span style="color:#a6e22e">getCheckpointId</span>();
+</span></span><span style="display:flex;"><span>    LOG.<span style="color:#a6e22e">info</span>(<span style="color:#e6db74">&#34;Start to flush snapshot state to state backend, table: {}, checkpointId: {}&#34;</span>, table, checkpointId);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Update the checkpoint state.</span>
+</span></span><span style="display:flex;"><span>    dataFilesPerCheckpoint.<span style="color:#a6e22e">put</span>(checkpointId, writeToManifest(checkpointId));
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Reset the snapshot state to the latest state.</span>
+</span></span><span style="display:flex;"><span>    checkpointsState.<span style="color:#a6e22e">clear</span>();
+</span></span><span style="display:flex;"><span>    checkpointsState.<span style="color:#a6e22e">add</span>(dataFilesPerCheckpoint);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    jobIdState.<span style="color:#a6e22e">clear</span>();
+</span></span><span style="display:flex;"><span>    jobIdState.<span style="color:#a6e22e">add</span>(flinkJobId);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Clear the local buffer for current checkpoint.</span>
+</span></span><span style="display:flex;"><span>    writeResultsOfCurrentCkpt.<span style="color:#a6e22e">clear</span>();
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">@Override</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">notifyCheckpointComplete</span>(<span style="color:#66d9ef">long</span> checkpointId) <span style="color:#66d9ef">throws</span> Exception {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">super</span>.<span style="color:#a6e22e">notifyCheckpointComplete</span>(checkpointId);
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// It&#39;s possible that we have the following events:</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//   1. snapshotState(ckpId);</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//   2. snapshotState(ckpId+1);</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//   3. notifyCheckpointComplete(ckpId+1);</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//   4. notifyCheckpointComplete(ckpId);</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// For step#4, we don&#39;t need to commit iceberg table again because in step#3 we&#39;ve committed all the files,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Besides, we need to maintain the max-committed-checkpoint-id to be increasing.</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (checkpointId <span style="color:#f92672">&gt;</span> maxCommittedCheckpointId) {
+</span></span><span style="display:flex;"><span>      commitUpToCheckpoint(dataFilesPerCheckpoint, flinkJobId, checkpointId);
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">maxCommittedCheckpointId</span> <span style="color:#f92672">=</span> checkpointId;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div><p>提交逻辑在commitUpToCheckpoint函数中。Iceberg抽象除了SnapshotUpdate接口处理Snapshot的变更。Iceberg使用乐观策略处理提交时的Snapshot并发冲突。当发生并发提交冲突时，会重试commit操作。每次commit都会基于当前最新的metadata产生一个新的Snapshot 对象，将其添加到新的Metadata中，最后尝试通过TableOperation.commit进行提交。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commit</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// this is always set to the latest commit attempt&#39;s snapshot id.</span>
+</span></span><span style="display:flex;"><span>    AtomicLong newSnapshotId <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicLong(<span style="color:#f92672">-</span>1L);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span> {
+</span></span><span style="display:flex;"><span>      Tasks.<span style="color:#a6e22e">foreach</span>(ops)
+</span></span><span style="display:flex;"><span>          .<span style="color:#a6e22e">retry</span>(base.<span style="color:#a6e22e">propertyAsInt</span>(COMMIT_NUM_RETRIES, COMMIT_NUM_RETRIES_DEFAULT))
+</span></span><span style="display:flex;"><span>          .<span style="color:#a6e22e">exponentialBackoff</span>(
+</span></span><span style="display:flex;"><span>              base.<span style="color:#a6e22e">propertyAsInt</span>(COMMIT_MIN_RETRY_WAIT_MS, COMMIT_MIN_RETRY_WAIT_MS_DEFAULT),
+</span></span><span style="display:flex;"><span>              base.<span style="color:#a6e22e">propertyAsInt</span>(COMMIT_MAX_RETRY_WAIT_MS, COMMIT_MAX_RETRY_WAIT_MS_DEFAULT),
+</span></span><span style="display:flex;"><span>              base.<span style="color:#a6e22e">propertyAsInt</span>(COMMIT_TOTAL_RETRY_TIME_MS, COMMIT_TOTAL_RETRY_TIME_MS_DEFAULT),
+</span></span><span style="display:flex;"><span>              2.<span style="color:#a6e22e">0</span> <span style="color:#75715e">/* exponential */</span>)
+</span></span><span style="display:flex;"><span>          .<span style="color:#a6e22e">onlyRetryOn</span>(CommitFailedException.<span style="color:#a6e22e">class</span>)
+</span></span><span style="display:flex;"><span>          .<span style="color:#a6e22e">run</span>(taskOps <span style="color:#f92672">-&gt;</span> {
+</span></span><span style="display:flex;"><span>            Snapshot newSnapshot <span style="color:#f92672">=</span> apply(); <span style="color:#75715e">// generate a new snapshot based on new added data file and manifest,manifest list</span>
+</span></span><span style="display:flex;"><span>            newSnapshotId.<span style="color:#a6e22e">set</span>(newSnapshot.<span style="color:#a6e22e">snapshotId</span>());
+</span></span><span style="display:flex;"><span>            TableMetadata.<span style="color:#a6e22e">Builder</span> update <span style="color:#f92672">=</span> TableMetadata.<span style="color:#a6e22e">buildFrom</span>(base);
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (base.<span style="color:#a6e22e">snapshot</span>(newSnapshot.<span style="color:#a6e22e">snapshotId</span>()) <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>              <span style="color:#75715e">// this is a rollback operation</span>
+</span></span><span style="display:flex;"><span>              update.<span style="color:#a6e22e">setBranchSnapshot</span>(newSnapshot.<span style="color:#a6e22e">snapshotId</span>(), SnapshotRef.<span style="color:#a6e22e">MAIN_BRANCH</span>);
+</span></span><span style="display:flex;"><span>            } <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (stageOnly) {
+</span></span><span style="display:flex;"><span>              update.<span style="color:#a6e22e">addSnapshot</span>(newSnapshot);
+</span></span><span style="display:flex;"><span>            } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>              update.<span style="color:#a6e22e">setBranchSnapshot</span>(newSnapshot, SnapshotRef.<span style="color:#a6e22e">MAIN_BRANCH</span>);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            TableMetadata updated <span style="color:#f92672">=</span> update.<span style="color:#a6e22e">build</span>();
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (updated.<span style="color:#a6e22e">changes</span>().<span style="color:#a6e22e">isEmpty</span>()) {
+</span></span><span style="display:flex;"><span>              <span style="color:#75715e">// do not commit if the metadata has not changed. for example, this may happen when setting the current</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#75715e">// snapshot to an ID that is already current. note that this check uses identity.</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// if the table UUID is missing, add it here. the UUID will be re-created each time this operation retries</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// to ensure that if a concurrent operation assigns the UUID, this operation will not fail.</span>
+</span></span><span style="display:flex;"><span>            taskOps.<span style="color:#a6e22e">commit</span>(base, updated.<span style="color:#a6e22e">withUUID</span>()); <span style="color:#75715e">// commit table metadata, may cause commit failure</span>
+</span></span><span style="display:flex;"><span>          });
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    } <span style="color:#66d9ef">catch</span> (CommitStateUnknownException commitStateUnknownException) {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">throw</span> commitStateUnknownException;
+</span></span><span style="display:flex;"><span>    } <span style="color:#66d9ef">catch</span> (RuntimeException e) {
+</span></span><span style="display:flex;"><span>      Exceptions.<span style="color:#a6e22e">suppressAndThrow</span>(e, <span style="color:#66d9ef">this</span>::cleanAll);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span> {
+</span></span><span style="display:flex;"><span>      LOG.<span style="color:#a6e22e">info</span>(<span style="color:#e6db74">&#34;Committed snapshot {} ({})&#34;</span>, newSnapshotId.<span style="color:#a6e22e">get</span>(), getClass().<span style="color:#a6e22e">getSimpleName</span>());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// at this point, the commit must have succeeded. after a refresh, the snapshot is loaded by</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// id in case another commit was added between this commit and the refresh.</span>
+</span></span><span style="display:flex;"><span>      Snapshot saved <span style="color:#f92672">=</span> ops.<span style="color:#a6e22e">refresh</span>().<span style="color:#a6e22e">snapshot</span>(newSnapshotId.<span style="color:#a6e22e">get</span>());
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (saved <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>        cleanUncommitted(Sets.<span style="color:#a6e22e">newHashSet</span>(saved.<span style="color:#a6e22e">allManifests</span>(ops.<span style="color:#a6e22e">io</span>())));
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// also clean up unused manifest lists created by multiple attempts</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> (String manifestList : manifestLists) {
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>saved.<span style="color:#a6e22e">manifestListLocation</span>().<span style="color:#a6e22e">equals</span>(manifestList)) {
+</span></span><span style="display:flex;"><span>            deleteFile(manifestList);
+</span></span><span style="display:flex;"><span>          }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>      } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// saved may not be present if the latest metadata couldn&#39;t be loaded due to eventual</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// consistency problems in refresh. in that case, don&#39;t clean up.</span>
+</span></span><span style="display:flex;"><span>        LOG.<span style="color:#a6e22e">warn</span>(<span style="color:#e6db74">&#34;Failed to load committed snapshot, skipping manifest clean-up&#34;</span>);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    } <span style="color:#66d9ef">catch</span> (Throwable e) {
+</span></span><span style="display:flex;"><span>      LOG.<span style="color:#a6e22e">warn</span>(<span style="color:#e6db74">&#34;Failed to load committed table metadata or during cleanup, skipping further cleanup&#34;</span>, e);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span> {
+</span></span><span style="display:flex;"><span>      notifyListeners();
+</span></span><span style="display:flex;"><span>    } <span style="color:#66d9ef">catch</span> (Throwable e) {
+</span></span><span style="display:flex;"><span>      LOG.<span style="color:#a6e22e">warn</span>(<span style="color:#e6db74">&#34;Failed to notify event listeners&#34;</span>, e);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commitUpToCheckpoint</span>(NavigableMap<span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> deltaManifestsMap,
+</span></span><span style="display:flex;"><span>                                    String newFlinkJobId,
+</span></span><span style="display:flex;"><span>                                    <span style="color:#66d9ef">long</span> checkpointId) <span style="color:#66d9ef">throws</span> IOException {
+</span></span><span style="display:flex;"><span>    NavigableMap<span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> pendingMap <span style="color:#f92672">=</span> deltaManifestsMap.<span style="color:#a6e22e">headMap</span>(checkpointId, <span style="color:#66d9ef">true</span>);
+</span></span><span style="display:flex;"><span>    List<span style="color:#f92672">&lt;</span>ManifestFile<span style="color:#f92672">&gt;</span> manifests <span style="color:#f92672">=</span> Lists.<span style="color:#a6e22e">newArrayList</span>();
+</span></span><span style="display:flex;"><span>    NavigableMap<span style="color:#f92672">&lt;</span>Long, WriteResult<span style="color:#f92672">&gt;</span> pendingResults <span style="color:#f92672">=</span> Maps.<span style="color:#a6e22e">newTreeMap</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (Map.<span style="color:#a6e22e">Entry</span><span style="color:#f92672">&lt;</span>Long, <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]&gt;</span> e : pendingMap.<span style="color:#a6e22e">entrySet</span>()) {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (Arrays.<span style="color:#a6e22e">equals</span>(EMPTY_MANIFEST_DATA, e.<span style="color:#a6e22e">getValue</span>())) {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// Skip the empty flink manifest.</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">continue</span>;
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      DeltaManifests deltaManifests <span style="color:#f92672">=</span> SimpleVersionedSerialization
+</span></span><span style="display:flex;"><span>          .<span style="color:#a6e22e">readVersionAndDeSerialize</span>(DeltaManifestsSerializer.<span style="color:#a6e22e">INSTANCE</span>, e.<span style="color:#a6e22e">getValue</span>());
+</span></span><span style="display:flex;"><span>      pendingResults.<span style="color:#a6e22e">put</span>(e.<span style="color:#a6e22e">getKey</span>(), FlinkManifestUtil.<span style="color:#a6e22e">readCompletedFiles</span>(deltaManifests, table.<span style="color:#a6e22e">io</span>()));
+</span></span><span style="display:flex;"><span>      manifests.<span style="color:#a6e22e">addAll</span>(deltaManifests.<span style="color:#a6e22e">manifests</span>());
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> totalFiles <span style="color:#f92672">=</span> pendingResults.<span style="color:#a6e22e">values</span>().<span style="color:#a6e22e">stream</span>()
+</span></span><span style="display:flex;"><span>        .<span style="color:#a6e22e">mapToInt</span>(r <span style="color:#f92672">-&gt;</span> r.<span style="color:#a6e22e">dataFiles</span>().<span style="color:#a6e22e">length</span> <span style="color:#f92672">+</span> r.<span style="color:#a6e22e">deleteFiles</span>().<span style="color:#a6e22e">length</span>).<span style="color:#a6e22e">sum</span>();
+</span></span><span style="display:flex;"><span>    continuousEmptyCheckpoints <span style="color:#f92672">=</span> totalFiles <span style="color:#f92672">==</span> 0 <span style="color:#f92672">?</span> continuousEmptyCheckpoints <span style="color:#f92672">+</span> 1 : 0;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (totalFiles <span style="color:#f92672">!=</span> 0 <span style="color:#f92672">||</span> continuousEmptyCheckpoints <span style="color:#f92672">%</span> maxContinuousEmptyCommits <span style="color:#f92672">==</span> 0) {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (replacePartitions) {
+</span></span><span style="display:flex;"><span>        replacePartitions(pendingResults, newFlinkJobId, checkpointId);
+</span></span><span style="display:flex;"><span>      } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        commitDeltaTxn(pendingResults, newFlinkJobId, checkpointId);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>      continuousEmptyCheckpoints <span style="color:#f92672">=</span> 0;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    pendingMap.<span style="color:#a6e22e">clear</span>();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Delete the committed manifests.</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (ManifestFile manifest : manifests) {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">try</span> {
+</span></span><span style="display:flex;"><span>        table.<span style="color:#a6e22e">io</span>().<span style="color:#a6e22e">deleteFile</span>(manifest.<span style="color:#a6e22e">path</span>());
+</span></span><span style="display:flex;"><span>      } <span style="color:#66d9ef">catch</span> (Exception e) {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// The flink manifests cleaning failure shouldn&#39;t abort the completed checkpoint.</span>
+</span></span><span style="display:flex;"><span>        String details <span style="color:#f92672">=</span> MoreObjects.<span style="color:#a6e22e">toStringHelper</span>(<span style="color:#66d9ef">this</span>)
+</span></span><span style="display:flex;"><span>            .<span style="color:#a6e22e">add</span>(<span style="color:#e6db74">&#34;flinkJobId&#34;</span>, newFlinkJobId)
+</span></span><span style="display:flex;"><span>            .<span style="color:#a6e22e">add</span>(<span style="color:#e6db74">&#34;checkpointId&#34;</span>, checkpointId)
+</span></span><span style="display:flex;"><span>            .<span style="color:#a6e22e">add</span>(<span style="color:#e6db74">&#34;manifestPath&#34;</span>, manifest.<span style="color:#a6e22e">path</span>())
+</span></span><span style="display:flex;"><span>            .<span style="color:#a6e22e">toString</span>();
+</span></span><span style="display:flex;"><span>        LOG.<span style="color:#a6e22e">warn</span>(<span style="color:#e6db74">&#34;The iceberg transaction has been committed, but we failed to clean the temporary flink manifests: {}&#34;</span>,
+</span></span><span style="display:flex;"><span>            details, e);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">commit</span>(TableMetadata base, TableMetadata metadata) {
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// if the metadata is already out of date, reject it</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (base <span style="color:#f92672">!=</span> current()) {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (base <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> CommitFailedException(<span style="color:#e6db74">&#34;Cannot commit: stale table metadata&#34;</span>);
+</span></span><span style="display:flex;"><span>      } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// when current is non-null, the table exists. but when base is null, the commit is trying to create the table</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> AlreadyExistsException(<span style="color:#e6db74">&#34;Table already exists: %s&#34;</span>, tableName());
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// if the metadata is not changed, return early</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (base <span style="color:#f92672">==</span> metadata) {
+</span></span><span style="display:flex;"><span>      LOG.<span style="color:#a6e22e">info</span>(<span style="color:#e6db74">&#34;Nothing to commit.&#34;</span>);
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> start <span style="color:#f92672">=</span> System.<span style="color:#a6e22e">currentTimeMillis</span>();
+</span></span><span style="display:flex;"><span>    doCommit(base, metadata);
+</span></span><span style="display:flex;"><span>    deleteRemovedMetadataFiles(base, metadata);
+</span></span><span style="display:flex;"><span>    requestRefresh();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    LOG.<span style="color:#a6e22e">info</span>(<span style="color:#e6db74">&#34;Successfully committed to table {} in {} ms&#34;</span>,
+</span></span><span style="display:flex;"><span>        tableName(),
+</span></span><span style="display:flex;"><span>        System.<span style="color:#a6e22e">currentTimeMillis</span>() <span style="color:#f92672">-</span> start);
+</span></span><span style="display:flex;"><span>  }
+</span></span></code></pre></div><h2 id="写入问题">写入问题</h2>
 <p>就以上写入以及提交流程，最大的问题有两个：</p>
 <ol>
 <li>Lots of Small File</li>
@@ -655,14 +659,14 @@ if (!doNotTrack) {
 <li>Iceberg Rewrite Action：支持Rewrite Data 和 Metadata 需要Flink / Spark Action 触发</li>
 <li>snapshot 过期删除, 支持配置</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">import</span> org.apache.iceberg.flink.actions.Actions<span style="color:#f92672">;</span>
-
-TableLoader tableLoader <span style="color:#f92672">=</span> TableLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">fromHadoopTable</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;hdfs://nn:8020/warehouse/path&#34;</span><span style="color:#f92672">);</span>
-Table table <span style="color:#f92672">=</span> tableLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">loadTable</span><span style="color:#f92672">();</span>
-RewriteDataFilesActionResult result <span style="color:#f92672">=</span> Actions<span style="color:#f92672">.</span><span style="color:#a6e22e">forTable</span><span style="color:#f92672">(</span>table<span style="color:#f92672">)</span>
-        <span style="color:#f92672">.</span><span style="color:#a6e22e">rewriteDataFiles</span><span style="color:#f92672">()</span>
-        <span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">();</span>
-</code></pre></div><p><a href="https://iceberg.apache.org/docs/latest/flink/">https://iceberg.apache.org/docs/latest/flink/</a><a href="https://iceberg.apache.org/docs/latest/maintenance/">https://iceberg.apache.org/docs/latest/maintenance/</a></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#f92672">import</span> org.apache.iceberg.flink.actions.Actions;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>TableLoader tableLoader <span style="color:#f92672">=</span> TableLoader.<span style="color:#a6e22e">fromHadoopTable</span>(<span style="color:#e6db74">&#34;hdfs://nn:8020/warehouse/path&#34;</span>);
+</span></span><span style="display:flex;"><span>Table table <span style="color:#f92672">=</span> tableLoader.<span style="color:#a6e22e">loadTable</span>();
+</span></span><span style="display:flex;"><span>RewriteDataFilesActionResult result <span style="color:#f92672">=</span> Actions.<span style="color:#a6e22e">forTable</span>(table)
+</span></span><span style="display:flex;"><span>        .<span style="color:#a6e22e">rewriteDataFiles</span>()
+</span></span><span style="display:flex;"><span>        .<span style="color:#a6e22e">execute</span>();
+</span></span></code></pre></div><p><a href="https://iceberg.apache.org/docs/latest/flink/">https://iceberg.apache.org/docs/latest/flink/</a><a href="https://iceberg.apache.org/docs/latest/maintenance/">https://iceberg.apache.org/docs/latest/maintenance/</a></p>
 <ol start="2">
 <li>高并发写入时的性能问题</li>
 </ol>
@@ -736,7 +740,7 @@ RewriteDataFilesActionResult result <span style="color:#f92672">=</span> Actions
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -813,4 +817,4 @@ RewriteDataFilesActionResult result <span style="color:#f92672">=</span> Actions
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

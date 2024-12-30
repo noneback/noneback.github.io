@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/chainreplication/</link>
     <description>Recent content in ChainReplication on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 08 Feb 2023 23:05:57 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/chainreplication/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -16,7 +17,7 @@
       <description>&lt;p&gt;This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&amp;rsquo;s best to refer directly to the original paper.&lt;/p&gt;
 &lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34; alt=&#34;Chain Replication&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Chain Replication&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;The design of the algorithm is both simple and elegant. CR splits the replication workload across all nodes in the chain, with each node responsible for forwarding updates to its successor. Write requests are propagated from the head node to the tail, while read requests are served by the tail node.&lt;/p&gt;
 &lt;p&gt;To maintain relationships between nodes in the chain, Chain Replication introduces a Master service responsible for managing node configurations and handling node failures.&lt;/p&gt;
 &lt;h2 id=&#34;failure-handling&#34;&gt;Failure Handling&lt;/h2&gt;

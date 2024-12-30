@@ -10,7 +10,7 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
     <link rel="canonical" href="https://noneback.github.io/blog/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -38,8 +38,7 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 <meta property="article:modified_time" content="2021-05-02T13:47:30+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="CPU False Sharing"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="CPU False Sharing"/>
 <meta name="twitter:description" content="The motivation for this post comes from an interview question I was asked: What is CPU false sharing?
 CPU Cache Let&rsquo;s start by discussing CPU cache.
 CPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor&rsquo;s frequency."/>
@@ -49,16 +48,16 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "CPU False Sharing",
       "item": "https://noneback.github.io/blog/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/"
     }
@@ -75,7 +74,7 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
   "keywords": [
     "CPU", "Cache"
   ],
-  "articleBody": "The motivation for this post comes from an interview question I was asked: What is CPU false sharing?\nCPU Cache Let’s start by discussing CPU cache.\nCPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor’s frequency.\nThe effectiveness of caching relies on the principle of temporal and spatial locality.\nWhen the processor issues a memory access request, it first checks if the requested data is in the cache. If it is (a cache hit), it directly returns the data without accessing main memory. If it isn’t (a cache miss), it loads the data from main memory into the cache before returning it to the processor.\nCPU Cache Architecture There are usually three levels of cache between the CPU and main memory. The closer the cache is to the CPU, the faster it is but the smaller its capacity. When accessing data, the CPU first checks L1, then L2, and finally L3. If the data isn’t in any of these caches, it must be fetched from main memory.\n L1 is close to the CPU core that uses it. L1 and L2 caches can only be used by a single CPU core. L3 can be shared by all CPU cores in a socket.  CPU Cache Line Caches operate on the basis of cache lines, which are the smallest unit of data transfer between the cache and main memory, typically 64 bytes. A cache line effectively references a block of memory (64 bytes).\nLoading a cache line has the advantage that if the required data is located close to each other, it can be accessed without reloading the cache.\nHowever, it can also lead to a problem known as CPU false sharing.\nCPU False Sharing Consider this scenario:\n We have a long variable a, which is not part of an array but is a standalone variable, and there’s another long variable b right next to it. When a is loaded, b is also loaded into the cache line for free. Now, a thread on one CPU core modifies a, while another thread on a different CPU core reads b. When a is modified, both a and b are loaded into the cache line of the modifying core, and after updating a, all other cache lines containing a become invalid, since they no longer hold the latest value of a. When the other core reads b, it finds that the cache line is invalid and must reload it from main memory.  Because the cache operates at the level of cache lines, invalidating a’s cache line also invalidates b, and vice versa.\nThis causes a problem:\nb and a are completely unrelated, but each time a is updated, b has to be reloaded from main memory due to a cache miss, slowing down the process.\nCPU false sharing: When multiple threads modify independent variables that share the same cache line, they unintentionally affect each other’s performance. This is known as false sharing.\nAvoiding CPU False Sharing  Ensure that memory for different variables is not placed adjacently. Align variables during compilation to avoid false sharing. See data structure alignment.  References  Discussion: What is CPU False Sharing Wikipedia - CPU Cache  ",
+  "articleBody": "The motivation for this post comes from an interview question I was asked: What is CPU false sharing?\nCPU Cache Let’s start by discussing CPU cache.\nCPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor’s frequency.\nThe effectiveness of caching relies on the principle of temporal and spatial locality.\nWhen the processor issues a memory access request, it first checks if the requested data is in the cache. If it is (a cache hit), it directly returns the data without accessing main memory. If it isn’t (a cache miss), it loads the data from main memory into the cache before returning it to the processor.\nCPU Cache Architecture There are usually three levels of cache between the CPU and main memory. The closer the cache is to the CPU, the faster it is but the smaller its capacity. When accessing data, the CPU first checks L1, then L2, and finally L3. If the data isn’t in any of these caches, it must be fetched from main memory.\nL1 is close to the CPU core that uses it. L1 and L2 caches can only be used by a single CPU core. L3 can be shared by all CPU cores in a socket. CPU Cache Line Caches operate on the basis of cache lines, which are the smallest unit of data transfer between the cache and main memory, typically 64 bytes. A cache line effectively references a block of memory (64 bytes).\nLoading a cache line has the advantage that if the required data is located close to each other, it can be accessed without reloading the cache.\nHowever, it can also lead to a problem known as CPU false sharing.\nCPU False Sharing Consider this scenario:\nWe have a long variable a, which is not part of an array but is a standalone variable, and there’s another long variable b right next to it. When a is loaded, b is also loaded into the cache line for free. Now, a thread on one CPU core modifies a, while another thread on a different CPU core reads b. When a is modified, both a and b are loaded into the cache line of the modifying core, and after updating a, all other cache lines containing a become invalid, since they no longer hold the latest value of a. When the other core reads b, it finds that the cache line is invalid and must reload it from main memory. Because the cache operates at the level of cache lines, invalidating a’s cache line also invalidates b, and vice versa.\nThis causes a problem:\nb and a are completely unrelated, but each time a is updated, b has to be reloaded from main memory due to a cache miss, slowing down the process.\nCPU false sharing: When multiple threads modify independent variables that share the same cache line, they unintentionally affect each other’s performance. This is known as false sharing.\nAvoiding CPU False Sharing Ensure that memory for different variables is not placed adjacently. Align variables during compilation to avoid false sharing. See data structure alignment. References Discussion: What is CPU False Sharing Wikipedia - CPU Cache ",
   "wordCount" : "566",
   "inLanguage": "en",
   "datePublished": "2021-05-02T13:47:30+08:00",
@@ -150,10 +149,10 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -215,11 +214,11 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -272,7 +271,7 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 <p>When the processor issues a memory access request, it first checks if the requested data is in the cache. If it is (a cache hit), it directly returns the data without accessing main memory. If it isn&rsquo;t (a cache miss), it loads the data from main memory into the cache before returning it to the processor.</p>
 <h2 id="cpu-cache-architecture">CPU Cache Architecture</h2>
 <p>There are usually three levels of cache between the CPU and main memory. The closer the cache is to the CPU, the faster it is but the smaller its capacity. When accessing data, the CPU first checks <strong>L1</strong>, then <strong>L2</strong>, and finally <strong>L3</strong>. If the data isn&rsquo;t in any of these caches, it must be fetched from main memory.</p>
-<p><img src="https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png" alt="Cache Architecture"></p>
+<p><img alt="Cache Architecture" src="https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png"></p>
 <ul>
 <li><strong>L1</strong> is close to the CPU core that uses it. L1 and L2 caches can only be used by a single CPU core.</li>
 <li><strong>L3</strong> can be shared by all CPU cores in a socket.</li>
@@ -290,7 +289,7 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 <li>When the other core reads <code>b</code>, it finds that the cache line is invalid and must reload it from main memory.</li>
 </ul>
 <p>Because the cache operates at the level of cache lines, invalidating <code>a</code>&rsquo;s cache line also invalidates <code>b</code>, and vice versa.</p>
-<p><img src="https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg" alt="False Sharing"></p>
+<p><img alt="False Sharing" src="https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg"></p>
 <p>This causes a problem:</p>
 <p><code>b</code> and <code>a</code> are completely unrelated, but each time <code>a</code> is updated, <code>b</code> has to be reloaded from main memory due to a cache miss, slowing down the process.</p>
 <p><strong>CPU false sharing</strong>: When multiple threads modify independent variables that share the same cache line, they unintentionally affect each other&rsquo;s performance. This is known as false sharing.</p>
@@ -360,7 +359,7 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -437,4 +436,4 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

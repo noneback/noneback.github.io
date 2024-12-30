@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/leveldb/</link>
     <description>Recent content in LevelDB on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Tue, 10 May 2022 17:14:14 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/leveldb/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -16,55 +17,55 @@
       <description>&lt;p&gt;LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是&lt;strong&gt;step by step&lt;/strong&gt;的源码阅读教程，而是仅仅作为我的学习笔记，简单记录我的问题与思考。&lt;/p&gt;
 &lt;h2 id=&#34;主流程&#34;&gt;主流程&lt;/h2&gt;
 &lt;p&gt;LevelDB主要的写入逻辑其实比较简单。首先将写入操作封装到WriteBatch中，之后再执行写入。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;Status DB&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Put(&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; WriteOptions&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; opt, &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Slice&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; key, &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Slice&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; value) {
-  WriteBatch batch;
-  batch.Put(key, value);
-  &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Write&lt;/span&gt;(opt, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;batch);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;writebatch&#34;&gt;WriteBatch&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Status DB&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Put(&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; WriteOptions&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; opt, &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Slice&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; key, &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Slice&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; value) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  WriteBatch batch;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  batch.Put(key, value);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Write&lt;/span&gt;(opt, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;batch);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;writebatch&#34;&gt;WriteBatch&lt;/h3&gt;
 &lt;p&gt;WriteBatch是对一组更新操作的封装，这一组操作会&lt;strong&gt;原子性&lt;/strong&gt;的应用到状态机上。使用一块内存将用户的更新操作保存。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;InMemory Format:
 &lt;code&gt;| seq_num: 8 bytes | count: 4 bytes | list of records{ type + key + value}&lt;/code&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;WriteBatch&lt;/span&gt; {
-  ...
-  &lt;span style=&#34;color:#75715e&#34;&gt;// See comment in write_batch.cc for the format of rep_;
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// WriteBatch::rep_ :=
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    sequence: fixed64
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    count: fixed32
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    data: record[count]
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// record :=
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    kTypeValue varstring varstring         |
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    kTypeDeletion varstring
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// varstring :=
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    len: varint32
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    data: uint8[len]
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string rep_;  
-}
-&lt;span style=&#34;color:#75715e&#34;&gt;// some opt
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; WriteBatch&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Put(&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Slice&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; key, &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Slice&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; value) {
-  WriteBatchInternal&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;SetCount(&lt;span style=&#34;color:#66d9ef&#34;&gt;this&lt;/span&gt;, WriteBatchInternal&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Count(&lt;span style=&#34;color:#66d9ef&#34;&gt;this&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;);
-  rep_.push_back(&lt;span style=&#34;color:#66d9ef&#34;&gt;static_cast&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;char&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt;(kTypeValue));
-  PutLengthPrefixedSlice(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;rep_, key);
-  PutLengthPrefixedSlice(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;rep_, value);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;写入流程&#34;&gt;写入流程&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;WriteBatch&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  ...
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// See comment in write_batch.cc for the format of rep_;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// WriteBatch::rep_ :=
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    sequence: fixed64
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    count: fixed32
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    data: record[count]
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// record :=
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    kTypeValue varstring varstring         |
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    kTypeDeletion varstring
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// varstring :=
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    len: varint32
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//    data: uint8[len]
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string rep_;  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// some opt
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; WriteBatch&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Put(&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Slice&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; key, &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Slice&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; value) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  WriteBatchInternal&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;SetCount(&lt;span style=&#34;color:#66d9ef&#34;&gt;this&lt;/span&gt;, WriteBatchInternal&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Count(&lt;span style=&#34;color:#66d9ef&#34;&gt;this&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  rep_.push_back(&lt;span style=&#34;color:#66d9ef&#34;&gt;static_cast&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;char&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt;(kTypeValue));
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  PutLengthPrefixedSlice(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;rep_, key);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  PutLengthPrefixedSlice(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;rep_, value);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;写入流程&#34;&gt;写入流程&lt;/h2&gt;
 &lt;p&gt;写入操作主要有四步：&lt;/p&gt;
 &lt;h3 id=&#34;初始化writer&#34;&gt;初始化Writer&lt;/h3&gt;
 &lt;p&gt;Writer实际上就是一次写入操作需要的全部信息。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Information kept for every waiting writer
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;DBImpl&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Writer {
-  &lt;span style=&#34;color:#66d9ef&#34;&gt;explicit&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Writer&lt;/span&gt;(port&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Mutex&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; mu)
-      &lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; batch(&lt;span style=&#34;color:#66d9ef&#34;&gt;nullptr&lt;/span&gt;), sync(false), done(false), cv(mu) {}
-
-  Status status;
-  WriteBatch&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; batch;
-  &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; sync;
-  &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; done;
-  port&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;CondVar cv;
-};
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;writer调度&#34;&gt;Writer调度&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Information kept for every waiting writer
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;DBImpl&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Writer {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;explicit&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Writer&lt;/span&gt;(port&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Mutex&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; mu)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; batch(&lt;span style=&#34;color:#66d9ef&#34;&gt;nullptr&lt;/span&gt;), sync(false), done(false), cv(mu) {}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  Status status;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  WriteBatch&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; batch;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; sync;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; done;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  port&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;CondVar cv;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;};
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;writer调度&#34;&gt;Writer调度&lt;/h3&gt;
 &lt;p&gt;​    LevelDB的写入其实是一种多生产者单消费者的模式，多线程生产Writer，单线程消费Writer。每个Writer由一个线程产生，但可以被多个线程消费。
 ​    在LevelDB内部维护了一个Writer队列，每个线程的写入删除等更新操作会先将Writer追加到队列末尾，并用锁保证队列的数据安全。Writer被放入队列之后会进入等待，直到出现在队列头部（被调度）或者已完成（被其他线程处理）才会被唤醒。&lt;/p&gt;
 &lt;blockquote&gt;
@@ -90,16 +91,16 @@
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h4 id=&#34;wal&#34;&gt;WAL&lt;/h4&gt;
-&lt;p&gt;WAL文件被拆分为Blocks, Blocks由Record组成。格式如下图：&lt;img src=&#34;https://s2.loli.net/2022/08/15/KTuf85zaIsvoLEW.jpg&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;WAL文件被拆分为Blocks, Blocks由Record组成。格式如下图：&lt;img alt=&#34;img&#34; src=&#34;https://s2.loli.net/2022/08/15/KTuf85zaIsvoLEW.jpg&#34;&gt;&lt;/p&gt;
 &lt;h5 id=&#34;wal-record-encoding&#34;&gt;WAL Record Encoding&lt;/h5&gt;
 &lt;blockquote&gt;
 &lt;p&gt;&lt;code&gt;| Header{ checksum(4 bytes) + len(2 bytes) + type(1 bytes)} | Data |&lt;/code&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;其中Record主要有五类：Zero，Full，First，Middle，Last。其中Zero是预留给预分配文件。由于有个KV可能长度过长，需要由若干个Chunk记录，于是有了其他四种类型。&lt;/p&gt;
-&lt;h5 id=&#34;写入的流程imghttpss2lolinet202208153tokslnhjumig9yjpg&#34;&gt;写入的流程&lt;img src=&#34;https://s2.loli.net/2022/08/15/3TOkslnhjuMIg9Y.jpg&#34; alt=&#34;img&#34;&gt;&lt;/h5&gt;
+&lt;h5 id=&#34;写入的流程imghttpss2lolinet202208153tokslnhjumig9yjpg&#34;&gt;写入的流程&lt;img alt=&#34;img&#34; src=&#34;https://s2.loli.net/2022/08/15/3TOkslnhjuMIg9Y.jpg&#34;&gt;&lt;/h5&gt;
 &lt;h4 id=&#34;memtable&#34;&gt;memtable&lt;/h4&gt;
 &lt;p&gt;memtable的核心设计有两个：跳表以及KV在跳表中的编码。跳表保证了插入数据的有序性，具体的实现思路可以参考我的另一篇博客。&lt;/p&gt;
-&lt;p&gt;memtable的Key的编码之后的Key称之为&lt;code&gt;Internal Key&lt;/code&gt;,其编码为&lt;code&gt;| Original Key(varstring) + seq num(7 by) + type(1 byte) |&lt;/code&gt;&lt;img src=&#34;https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;memtable的Key的编码之后的Key称之为&lt;code&gt;Internal Key&lt;/code&gt;,其编码为&lt;code&gt;| Original Key(varstring) + seq num(7 by) + type(1 byte) |&lt;/code&gt;&lt;img alt=&#34;img&#34; src=&#34;https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;SeqNum 是在每次更新操作时生成的一个递增的序号，作为逻辑时钟标记操作的新旧。基于SeqNum可以实现基于快照（版本号）的读取。&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -121,15 +122,15 @@
 &lt;h2 id=&#34;预备知识&#34;&gt;预备知识&lt;/h2&gt;
 &lt;h3 id=&#34;数据库文件&#34;&gt;数据库文件&lt;/h3&gt;
 &lt;p&gt;编码和命名等等等设计的相关的细节暂时不论（我也没看到那部分），先专注与文件的意义与作用&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;├── 000005.ldb
-├── 000008.ldb  // sst or ldb 都是 sst文件
-├── 000009.log  // WAL
-├── CURRENT  // 记录了使用的manifest文件的名字也用于表示数据库存在
-├── LOCK  // 空文件，用于保证只有一个db实例操作数据库
-├── LOG  // level打印的日志
-├── LOG.old 
-└── MANIFEST-000007   // descriptor_file, 元数据文件
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;值得深究的问题，之后也许会写相关博客，暂时先抛出：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── 000005.ldb
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── 000008.ldb  // sst or ldb 都是 sst文件
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── 000009.log  // WAL
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── CURRENT  // 记录了使用的manifest文件的名字也用于表示数据库存在
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── LOCK  // 空文件，用于保证只有一个db实例操作数据库
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── LOG  // level打印的日志
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── LOG.old 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;└── MANIFEST-000007   // descriptor_file, 元数据文件
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;值得深究的问题，之后也许会写相关博客，暂时先抛出：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;LOCK怎么保证只有一个DB实例持有数据库&lt;/li&gt;
 &lt;/ul&gt;
@@ -193,74 +194,74 @@
 &lt;p&gt;与启动流程相关的主要是sst级别的MVCC，主要有&lt;code&gt;Version&lt;/code&gt;，&lt;code&gt;VersionEdit&lt;/code&gt;，&lt;code&gt;VersionSet&lt;/code&gt;三个数据结构。&lt;/p&gt;
 &lt;h5 id=&#34;version&#34;&gt;Version&lt;/h5&gt;
 &lt;p&gt;每次启动时或者Compact之后最新的数据状态。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Version&lt;/span&gt; {  
-    VersionSet&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; vset_;  &lt;span style=&#34;color:#75715e&#34;&gt;// VersionSet to which this Version belongs
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      Version&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; next_;     &lt;span style=&#34;color:#75715e&#34;&gt;// Next version in linked list
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      Version&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; prev_;     &lt;span style=&#34;color:#75715e&#34;&gt;// Previous version in linked list
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; refs_;          &lt;span style=&#34;color:#75715e&#34;&gt;// Number of live refs to this version
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
-      &lt;span style=&#34;color:#75715e&#34;&gt;// List of files and meta per level
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;FileMetaData&lt;span style=&#34;color:#f92672&#34;&gt;*&amp;gt;&lt;/span&gt; files_[config&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;kNumLevels];
-
-      &lt;span style=&#34;color:#75715e&#34;&gt;// Next file to compact based on seek stats. （allowed_seek耗尽导致的compact）
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      FileMetaData&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; file_to_compact_;
-      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; file_to_compact_level_;
-
-      &lt;span style=&#34;color:#75715e&#34;&gt;// Level that should be compacted next and its compaction score.
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// Score &amp;lt; 1 means compaction is not strictly needed.  These fields
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// are initialized by Finalize().
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;double&lt;/span&gt; compaction_score_;  &lt;span style=&#34;color:#75715e&#34;&gt;// score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; compaction_level_;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h5 id=&#34;versionset&#34;&gt;VersionSet&lt;/h5&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Version&lt;/span&gt; {  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    VersionSet&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; vset_;  &lt;span style=&#34;color:#75715e&#34;&gt;// VersionSet to which this Version belongs
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      Version&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; next_;     &lt;span style=&#34;color:#75715e&#34;&gt;// Next version in linked list
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      Version&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; prev_;     &lt;span style=&#34;color:#75715e&#34;&gt;// Previous version in linked list
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; refs_;          &lt;span style=&#34;color:#75715e&#34;&gt;// Number of live refs to this version
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// List of files and meta per level
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;FileMetaData&lt;span style=&#34;color:#f92672&#34;&gt;*&amp;gt;&lt;/span&gt; files_[config&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;kNumLevels];
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// Next file to compact based on seek stats. （allowed_seek耗尽导致的compact）
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      FileMetaData&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; file_to_compact_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; file_to_compact_level_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// Level that should be compacted next and its compaction score.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// Score &amp;lt; 1 means compaction is not strictly needed.  These fields
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// are initialized by Finalize().
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;double&lt;/span&gt; compaction_score_;  &lt;span style=&#34;color:#75715e&#34;&gt;// score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; compaction_level_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h5 id=&#34;versionset&#34;&gt;VersionSet&lt;/h5&gt;
 &lt;p&gt;管理整个db的当前运行时状态。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;VersionSet&lt;/span&gt; {
-    Env&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; env_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string dbname_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Options&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; options_;
-    TableCache&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; table_cache_;  
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; InternalKeyComparator icmp_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; next_file_number_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; manifest_file_number_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; last_sequence_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; log_number_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; prev_log_number_;  &lt;span style=&#34;color:#75715e&#34;&gt;// 0 or backing store for memtable being compacted
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;// Opened lazily
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    WritableFile&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; descriptor_file_; &lt;span style=&#34;color:#75715e&#34;&gt;// descriptor_ is for manifest file
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    log&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Writer&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; descriptor_log_; &lt;span style=&#34;color:#75715e&#34;&gt;// descriptor_ is for manifest file
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    Version dummy_versions_;  &lt;span style=&#34;color:#75715e&#34;&gt;// Head of circular doubly-linked list of versions. 正在使用的version的链表
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    Version&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; current_;        &lt;span style=&#34;color:#75715e&#34;&gt;// == dummy_versions_.prev_
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;// Per-level key at which the next compaction at that level should start.
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;// Either an empty string, or a valid InternalKey.
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string compact_pointer_[config&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;kNumLevels];
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h5 id=&#34;versionedit&#34;&gt;VersionEdit&lt;/h5&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;VersionSet&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    Env&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; env_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string dbname_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Options&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; options_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    TableCache&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; table_cache_;  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; InternalKeyComparator icmp_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; next_file_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; manifest_file_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; last_sequence_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; log_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; prev_log_number_;  &lt;span style=&#34;color:#75715e&#34;&gt;// 0 or backing store for memtable being compacted
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;// Opened lazily
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    WritableFile&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; descriptor_file_; &lt;span style=&#34;color:#75715e&#34;&gt;// descriptor_ is for manifest file
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    log&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Writer&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; descriptor_log_; &lt;span style=&#34;color:#75715e&#34;&gt;// descriptor_ is for manifest file
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    Version dummy_versions_;  &lt;span style=&#34;color:#75715e&#34;&gt;// Head of circular doubly-linked list of versions. 正在使用的version的链表
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    Version&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; current_;        &lt;span style=&#34;color:#75715e&#34;&gt;// == dummy_versions_.prev_
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;// Per-level key at which the next compaction at that level should start.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;// Either an empty string, or a valid InternalKey.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string compact_pointer_[config&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;kNumLevels];
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h5 id=&#34;versionedit&#34;&gt;VersionEdit&lt;/h5&gt;
 &lt;p&gt;元数据变更行为的数据与操作的封装。这样的封装可以缩小Version切换的时间窗口。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;VersionEdit&lt;/span&gt; {
-  &lt;span style=&#34;color:#75715e&#34;&gt;/** other code */&lt;/span&gt;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;typedef&lt;/span&gt; std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;set&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; DeletedFileSet;
-
-    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string comparator_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; log_number_;  
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; prev_log_number_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; next_file_number_;
-    SequenceNumber last_sequence_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_comparator_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_log_number_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_prev_log_number_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_next_file_number_;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_last_sequence_;
-
-    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, InternalKey&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; compact_pointers_;
-    DeletedFileSet deleted_files_;
-    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, FileMetaData&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; new_files_;
-};
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;manifest-content&#34;&gt;Manifest Content&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;VersionEdit&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;/** other code */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;typedef&lt;/span&gt; std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;set&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; DeletedFileSet;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string comparator_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; log_number_;  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; prev_log_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; next_file_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    SequenceNumber last_sequence_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_comparator_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_log_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_prev_log_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_next_file_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_last_sequence_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, InternalKey&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; compact_pointers_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    DeletedFileSet deleted_files_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, FileMetaData&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; new_files_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;};
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;manifest-content&#34;&gt;Manifest Content&lt;/h4&gt;
 &lt;p&gt;上文我们说到Manifest是leveldb的元数据文件，保存了数据库需要持久化的状态。leveldb在启动流程中，可能需要通过已有的数据文件回复原有db的状态。除此之外，但出现版本变更时，leveldb会生成VersionEdit, VersionEdit记录的元数据变动也需要及时持久化到manifest中，以此保证leveldb MVCC多版本状态的Crush Safe。所以Manifest的中编码布局十分重要。&lt;/p&gt;
 &lt;p&gt;在Manifest内部，元数据状态机编码成&lt;code&gt;SnapshotSessionRecord +list of SessionRecords&lt;/code&gt;，本质上是&lt;code&gt;初始状态 + list of Applied VersionEdit&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/11/AUusMjdYROz874v.jpg&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s2.loli.net/2022/04/11/AUusMjdYROz874v.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;一个Manifest内部包含若干条Session Record，&lt;strong&gt;其中第一条Session Record&lt;/strong&gt;记载了当时leveldb的&lt;em&gt;全量版本信息&lt;/em&gt;，其余若干条Session Record仅记录每次更迭的变化情况。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;一个Session Record可能包含以下字段：&lt;/p&gt;
@@ -275,14 +276,14 @@
 &lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;h5 id=&#34;menifest写入版本变更&#34;&gt;Menifest写入版本变更&lt;/h5&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/14/7tlwEMPGgXHIp6s.jpg&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s2.loli.net/2022/04/14/7tlwEMPGgXHIp6s.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;对于leveldb来说，增减某些sstable文件需要作为一个&lt;strong&gt;原子性操作&lt;/strong&gt;，状态变更前后需要保持&lt;strong&gt;数据库的一致性&lt;/strong&gt;。&lt;/p&gt;
 &lt;h6 id=&#34;原子性&#34;&gt;原子性&lt;/h6&gt;
 &lt;p&gt;&lt;strong&gt;原子性&lt;/strong&gt;体现在：整个操作的完成标志为manifest文件中完整的写入了一条session record，在此之前，即便某些文件写入失败导致进程退出，数据库重启启动时，仍然能够恢复到崩溃之前正确的状态，而将这些无用的sstable文件删除，重新进行compaction动作。&lt;/p&gt;
 &lt;h6 id=&#34;一致性&#34;&gt;一致性&lt;/h6&gt;
 &lt;p&gt;&lt;strong&gt;一致性&lt;/strong&gt;体现在：leveldb状态变更的操作都是以version更新为标记，而version更新是整个流程的最后一步，因此数据库必然都是从一个一致性的状态变更到另外一个一致性的状态。&lt;/p&gt;
 &lt;h5 id=&#34;从manifest中恢复db&#34;&gt;从Manifest中恢复DB&lt;/h5&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/14/Jk5eyRzUWowi4YH.jpg&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s2.loli.net/2022/04/14/Jk5eyRzUWowi4YH.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;随着leveldb运行时间的增长，一个manifest中包含的session record会越来越多，故leveldb在每次启动时都会重新创建一个manifest文件，并将第一条session record中记录当前version的快照状态。&lt;/p&gt;
 &lt;p&gt;其他过期的manifest文件会在下次启动的recover流程中进行删除。&lt;/p&gt;
 &lt;blockquote&gt;

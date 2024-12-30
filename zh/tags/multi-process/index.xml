@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Multi-process on NoneBack</title>
+    <title>Multi-Process on NoneBack</title>
     <link>https://noneback.github.io/zh/tags/multi-process/</link>
-    <description>Recent content in Multi-process on NoneBack created by </description>
+    <description>Recent content in Multi-Process on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Fri, 01 Nov 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/multi-process/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -98,7 +99,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 &lt;p&gt;( 4) 有一套严格的数学理论和分析方法 , 支持对系统模型的各种性质的分析和性能评价 。&lt;/p&gt;
 &lt;p&gt;Petri网是一种适合于描述异步并发现象的系统模型，&lt;strong&gt;它既有严格的数学定义，又有直观的图形表示，借由它可以很好的表示程序的运行过程以及状态（并发 、冲突 、同步 、异 步 、死锁 、饥饿 、溢出等 )&lt;/strong&gt;。通过对网图的分析、同步合成和共享合成，将串行进程并行化 , 中间过程运用从粗到细的逐步精炼思想 , 最终获得一个高效、 正确的并行程序。&lt;/p&gt;
 &lt;p&gt;demo:&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2019/11/16/Hbn7Ns3p1mIoRQS.png&#34; alt=&#34;image.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image.png&#34; src=&#34;https://i.loli.net/2019/11/16/Hbn7Ns3p1mIoRQS.png&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;进程的互斥&#34;&gt;进程的互斥&lt;/h2&gt;
 &lt;h3 id=&#34;引入-1&#34;&gt;引入&lt;/h3&gt;
 &lt;p&gt;“进程互斥“与“进程同步“本质上都是在围绕同一个话题在讨论，即如果保证多进程对**共享资源（如，内存数据、打印机、摄像头）**访问的可控性、有效性和正确性；&lt;/p&gt;
@@ -118,13 +119,13 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 &lt;p&gt;下面介绍历史上对进程互斥的实现方法：&lt;/p&gt;
 &lt;h4 id=&#34;软件实现&#34;&gt;软件实现&lt;/h4&gt;
 &lt;h5 id=&#34;单标志法&#34;&gt;&lt;strong&gt;单标志法&lt;/strong&gt;&lt;/h5&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic2.zhimg.com/v2-666ba65ca1ce4d8c806080b5761eb945_r.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic2.zhimg.com/v2-666ba65ca1ce4d8c806080b5761eb945_r.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;问题&lt;/strong&gt;：&lt;strong&gt;违背“空闲让进”的原则&lt;/strong&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;单标志法在一些情况下确实能达到互斥访问的效果，但是这个算法也存在很大的缺陷，比如上面的turn初始为0，如果P0进程一直还未曾执行过临界区代码，那么临界资源就不会被P0占用，并处于空闲状态，但是这种情况下，P1进程也只能看着临界资源空闲也没法占有，因为P1在第5部被while循环“卡住”了。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h5 id=&#34;双标志先检查法&#34;&gt;&lt;strong&gt;双标志先检查法&lt;/strong&gt;&lt;/h5&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic4.zhimg.com/v2-04898290158b27354c469cb3239fa5af_r.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic4.zhimg.com/v2-04898290158b27354c469cb3239fa5af_r.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;问题：双标志先检查法的算法设计中忽视并发进程存在异步性。 违反“忙则等待”原则&lt;/strong&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;具体来说，如果上图中的P0进程和P1进程在交替运行后，分别执行完了第1步和第5步，并且还未曾执行第2步和第6步，这种情况在不可预知的异步性下，是完全有可能发生的，但是如果真发生这种执行状况，那么P0和P1就都可以进入临界区了，原本想到达的互斥效果，就失败了；&lt;/p&gt;
@@ -133,19 +134,19 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 &lt;p&gt;&lt;strong&gt;这个算法错误的根本原因在于：&lt;strong&gt;进入区的“检查”（while轮训）和“上锁”（设置flag）&lt;strong&gt;两个处理不是一气呵成的&lt;/strong&gt;；“检查”后，“上锁”前的这个时间间隙&lt;/strong&gt;有可能会发生进程切换&lt;/strong&gt;，导致其他进程“有机可乘”；当然，如果“检查”和“上锁”是一个&lt;strong&gt;不可分割的原子操作&lt;/strong&gt;，那么这个算法的问题就可以解决 了**；**&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h5 id=&#34;双标志后检查法&#34;&gt;&lt;strong&gt;双标志后检查法&lt;/strong&gt;&lt;/h5&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic4.zhimg.com/80/v2-57ea9f1fcdf4344193396e2469f9626f_hd.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic4.zhimg.com/80/v2-57ea9f1fcdf4344193396e2469f9626f_hd.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;问题：与双标志先检查法一样，忽略了并发进程的异步性。&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;因此，双标志后检查法虽然解决了“忙则等待”的问题，但是又违背了“空闲让进”和“有限等待”原则，会因各进程都长期无法访问临界资源而产生“饥饿”现象；&lt;/strong&gt;&lt;/p&gt;
 &lt;h5 id=&#34;peterson算法&#34;&gt;&lt;strong&gt;Peterson算法&lt;/strong&gt;&lt;/h5&gt;
 &lt;p&gt;从Peterson算法的while条件的设计，可以看出，它综合了单标志算法和双标志检查算法的优点，做到了兼顾“公平性”和“互斥性”；&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic2.zhimg.com/80/v2-15e35419601d3ccc467c96254de2df21_hd.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic2.zhimg.com/80/v2-15e35419601d3ccc467c96254de2df21_hd.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;问题：依然没有遵循让权等待的原则。&lt;/strong&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;事实上运用进程同步一些的机制（信号量，管程等）也能实现临界资源的互斥，在此不多说。&lt;/strong&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h4 id=&#34;硬件实现&#34;&gt;硬件实现&lt;/h4&gt;
 &lt;h5 id=&#34;中断屏蔽方法&#34;&gt;&lt;strong&gt;中断屏蔽方法&lt;/strong&gt;&lt;/h5&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic4.zhimg.com/v2-3dfee50c51e0af4fe7c10048c5a82943_r.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic4.zhimg.com/v2-3dfee50c51e0af4fe7c10048c5a82943_r.jpg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;缺点：&lt;/p&gt;
 &lt;ul&gt;
@@ -159,22 +160,22 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 所谓“硬件实现”，可以理解为TSL看似是一堆指令的集合，但是这一堆指令可以在硬件上只需要一个时钟周期就可完成，所以这一堆指令是不会被中断，不会被破坏的；&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;TSL指令逻辑的C语言描述，注意&lt;strong&gt;这里只是描述，真实的执行过程就是一个瞬间的硬件操作&lt;/strong&gt;而已；&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//lock 表示当前临界区是否被加锁
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TestAndSet&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;lock){
-	&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; old&lt;span style=&#34;color:#f92672&#34;&gt;=*&lt;/span&gt;lock;
-	&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;lock&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;true;
-	&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; old;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//lock 表示当前临界区是否被加锁
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TestAndSet&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;lock){
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; old&lt;span style=&#34;color:#f92672&#34;&gt;=*&lt;/span&gt;lock;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;lock&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;true;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; old;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
 &lt;p&gt;这段描述的核心就是&lt;strong&gt;共享变量lock&lt;/strong&gt;，对于多个进程竞争临界资源时，这个共享的lock变量，是全局的、独一无二的；&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;下面来分析一下这段描述：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// 将TestAndSet 配合 while一起使用
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt;(TestAndSet(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;lock)) ;
-&lt;span style=&#34;color:#75715e&#34;&gt;//临界区代码
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;lock&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;false;
-&lt;span style=&#34;color:#75715e&#34;&gt;//剩余区代码
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// 将TestAndSet 配合 while一起使用
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt;(TestAndSet(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;lock)) ;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//临界区代码
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;lock&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;false;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//剩余区代码
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
 &lt;p&gt;while会陷入死循环，直到lock出现过一次false，就跳出循环接着往下执行，并且跳出循环后，lock最终还是被设成true；&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;因为TestAndSet()函数是&lt;strong&gt;硬件实现的&lt;/strong&gt;，属于&lt;strong&gt;原子操作&lt;/strong&gt;，所以当&lt;strong&gt;进程共享的变量lock被其他进程修改成false之后&lt;/strong&gt;，TestAndSet能保证当前进程对lock**“瞬间”**上锁。&lt;/p&gt;
@@ -190,22 +191,22 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 &lt;blockquote&gt;
 &lt;p&gt;Swap指令和上面的TSL指令一样，也是通过&lt;strong&gt;硬件实现&lt;/strong&gt;的，执行过程不允许被中断，只能一气呵成&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//swap指令的作用是交换两个变量的值。
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Swap&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;a , &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;b){
-	&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; temp&lt;span style=&#34;color:#f92672&#34;&gt;=*&lt;/span&gt;a;
-	&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;a&lt;span style=&#34;color:#f92672&#34;&gt;=*&lt;/span&gt;b;
-	&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;b&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;temp;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//lock表示当前临界区是否被加锁。
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; old&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;true;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt;(old&lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt;true){
-	Swap(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;lock,&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;old);
-}
-&lt;span style=&#34;color:#75715e&#34;&gt;//临界区代码
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;lock&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;false;
-&lt;span style=&#34;color:#75715e&#34;&gt;//剩余区代码
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//swap指令的作用是交换两个变量的值。
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Swap&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;a , &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;b){
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; temp&lt;span style=&#34;color:#f92672&#34;&gt;=*&lt;/span&gt;a;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;a&lt;span style=&#34;color:#f92672&#34;&gt;=*&lt;/span&gt;b;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;b&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;temp;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;与TSL指令类似，它能保证a、b两个变量在**“瞬间”**一定被交换成功。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//lock表示当前临界区是否被加锁。
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; old&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;true;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt;(old&lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt;true){
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	Swap(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;lock,&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;old);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//临界区代码
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;lock&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;false;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//剩余区代码
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;while会陷入死循环，直到lock出现一次false，old就被换成false，并跳出循环，跳出循环后，lock自身变成了old的true，即实现了**“瞬间”**上锁；&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;这个**“瞬间”**过程的慢动作回放如下：&lt;/p&gt;
 &lt;ol&gt;
@@ -215,7 +216,7 @@ signal(c):若C队列为空，继续原进程，否则唤醒队列第一个等待
 &lt;/ol&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;&lt;strong&gt;关于TSL和Swap：&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://pic3.zhimg.com/80/v2-9861c75cc6a86f5291e947f6879c50de_hd.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://pic3.zhimg.com/80/v2-9861c75cc6a86f5291e947f6879c50de_hd.jpg&#34;&gt;&lt;/p&gt;
 </description>
     </item>
     

@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -32,8 +32,7 @@ if (!doNotTrack) {
 <meta property="og:url" content="https://noneback.github.io/zh/blog/" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Blogs"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Blogs"/>
 <meta name="twitter:description" content=""/>
 
 
@@ -41,10 +40,10 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/zh/blog/"
     }
@@ -68,10 +67,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -151,6 +150,29 @@ if (!doNotTrack) {
       
         <article>
           <div class="blog-card">
+              <h3><a href="/zh/blog/zh/prometheus-tsdb/">Prometheus--TSDB</a></h3>
+              <p>
+  <small>
+    2024年12月31日&nbsp;· 5811 字&nbsp;· 12 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/prometheus/">Prometheus</a>
+      
+      <a href="https://noneback.github.io/zh/tags/tsdb/">TSDB</a>
+      
+    </small>
+  
+<p>
+              最近晋升，顺便总结一些以前的工作。工作里大规模数据库可观测系统占了很大一部分，不过这个和云原生监控系统Prometheus还是很不一样的。现
+          </div>
+        </article>
+      
+        <article>
+          <div class="blog-card">
               <h3><a href="/zh/blog/zh/borg/">Borg: Large-scale cluster management at Google with Borg</a></h3>
               <p>
   <small>
@@ -161,11 +183,11 @@ if (!doNotTrack) {
       ·
       
       
-      <a href="https://noneback.github.io/zh/tags/borg/">borg</a>
+      <a href="https://noneback.github.io/zh/tags/borg/">Borg</a>
       
-      <a href="https://noneback.github.io/zh/tags/k8s/">k8s</a>
+      <a href="https://noneback.github.io/zh/tags/k8s/">K8s</a>
       
-      <a href="https://noneback.github.io/zh/tags/cluster-management/">cluster management</a>
+      <a href="https://noneback.github.io/zh/tags/cluster-management/">Cluster Management</a>
       
     </small>
   
@@ -211,7 +233,7 @@ if (!doNotTrack) {
       
       <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
       
-      <a href="https://noneback.github.io/zh/tags/storage/">storage</a>
+      <a href="https://noneback.github.io/zh/tags/storage/">Storage</a>
       
     </small>
   
@@ -230,7 +252,7 @@ Dynamo实践上，在原有hash ring上引入了虚拟节点，比较优雅的�
 Dynamo的设计目标是提供一个高可用的KV Store，保证<strong>always writable</strong>，同时只保证最终的一致性。这样的目标使得Dynamo把解决数据冲突之类的操作放到了读操作中，<strong>以保证写永远不会被拒绝</strong>。
 总的来说，问题有两个。一个是数据更新冲突问题，显然多client并发的读写同一个Key很容易遇到这样的问题，因为Dynamo只能提供最终一致性，Dynamo Ring 上多个节点的数据不一定一致。二是节点数据空洞的问题。因为Dynamo使用的是NMR这类的gossip算法，这类理论上会出现所有节点上都不包含完整数据集的情况，需要同步副本之间的数据。
 前者使用版本时钟来标记数据版本，后续在读操作的时候进行读修复合并数据版本；后者有熵逆过程来处理，使用MerkleTree来<strong>快速检测副本之间的不一致性，以及最小化转移的数据量。</strong>
-<img src="https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png" alt="">
+<img src="https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png">
 论文中的这个表格可以清楚的看出Dynamo设计开发需要考虑的方面以及在技术上的选择。剩下这些论文中感觉语焉不详，可以参考原文。</p>
 <h2 id="参考">参考</h2>
 <p><a href="https://www.raychase.net/2396">Dynamo 的实现技术和去中心化</a></p>
@@ -274,41 +296,16 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证<strong>always 
 <li>事务的实现。由于存储底座对上层提供的单一文件视图，所以对与Aurora来说，其事务的实现几乎与单机事务算法相同，并能提供相同的事务语义。NewSQL的事务一般是基于2PC的分布式事务实现。</li>
 <li>后台加速前台处理。类似LevelDB的思路，尽可能将存储节点的一些操作异步化（比如日志Apply），提升前台用户感知性能。这些异步的操作通过维护各种xxLSN来记录当前节点的后台处理进度，比如VLSN，commit-LSN等等</li>
 </ul>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png"></p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png"></p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png"></p>
 <p>有趣的是，PolarDB虽然是参考Aurora进行的设计，但它的架构设计认为网络并非瓶颈，而是经过OS的各种系统调用拖慢了整体速度。在彼时阿里云存储底座并不稳定的条件下，所以才有了它架构中的PolarStore，用各种硬件以及FUSE等存储技术越过或者优化系统调用，而如今盘古在稳定性和性能上都做的很不错的情况下，弱化PolarStore这个组件也成为了正常的选择。我认为说的不无道理。</p>
 <p>另外，为什么他们选择用NWR而不是用Raft之类的一致性协议？目前看上去，NWR在网络上，一次请求的网络比Raft少一轮，可能是这个原因</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png"></p>
 <h1 id="参考">参考</h1>
 <p><a href="https://zhuanlan.zhihu.com/p/319806107">https://zhuanlan.zhihu.com/p/319806107</a></p>
 <p><a href="http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt">http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt</a></p>
 <p><a href="https://keys961.github.io/2020/05/05/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB-Aurora/">论文阅读-Amazon Aurora: Design Considerations for High Throughput Cloud-Native Relational Database - keys961 | keys961 Blog</a></p>
-          </div>
-        </article>
-      
-        <article>
-          <div class="blog-card">
-              <h3><a href="/zh/blog/zh/mit6.824-chainreplication/">MIT6.824-ChainReplication</a></h3>
-              <p>
-  <small>
-    2023年2月8日&nbsp;· 740 字&nbsp;· 2 分钟</small>
-
-  <small>
-      
-      ·
-      
-      
-      <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
-      
-      <a href="https://noneback.github.io/zh/tags/mit6.824/">MIT6.824</a>
-      
-      <a href="https://noneback.github.io/zh/tags/chainreplication/">ChainReplication</a>
-      
-    </small>
-  
-<p>
-              只是简单写写，有一些具体一点的设计建议去读一下原文。 简介 简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式
           </div>
         </article>
       </div>
@@ -324,7 +321,7 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证<strong>always 
 </div>
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -401,4 +398,4 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证<strong>always 
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

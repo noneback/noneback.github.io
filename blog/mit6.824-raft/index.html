@@ -9,7 +9,7 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
     <link rel="canonical" href="https://noneback.github.io/blog/mit6.824-raft/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -36,8 +36,7 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
 <meta property="article:modified_time" content="2022-02-21T01:26:46+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824-Raft"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-Raft"/>
 <meta name="twitter:description" content="Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.
 Algorithm Overview The basis of consensus algorithms is the replicated state machine, which means that executing the same deterministic commands in the same order will eventually lead to a consistent state."/>
 
@@ -46,16 +45,16 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "MIT6.824-Raft",
       "item": "https://noneback.github.io/blog/mit6.824-raft/"
     }
@@ -72,7 +71,7 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
   "keywords": [
     "Raft", "Paper Reading", "Consensu", "Distributed System", "MIT6.824"
   ],
-  "articleBody": "Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.\nAlgorithm Overview The basis of consensus algorithms is the replicated state machine, which means that executing the same deterministic commands in the same order will eventually lead to a consistent state. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.\nThe core content of the Raft algorithm can be divided into three parts: $Leader Election + Log Replication + Safety$.\nInitially, all nodes in the cluster start as Followers. If a Follower does not receive a heartbeat from the Leader within a certain period, it becomes a Candidate and triggers an election, requesting votes from the other Followers. The Candidate that receives a majority of votes becomes the Leader.\nRaft is a strong leader and strongly consistent distributed consensus algorithm. It uses Terms as a logical clock, and only one Leader can exist in each term. The Leader needs to send heartbeats periodically to maintain its status and to handle log replication.\nWhen replicating logs, the Leader first replicates the log to other Followers. Once a majority of the Followers successfully replicate the log, the Leader commits the log.\nSafety mainly consists of five parts, with two core elements relevant to the implementation. One is the leader’s append-only rule, which means it cannot modify committed logs. The other is election safety, preventing split-brain scenarios and ensuring that the new Leader has the most up-to-date log.\nFor more details, please refer to the original paper.\nImplementation Ideas The implementation largely follows an excellent blog post (see references), and many algorithm details are also provided in Figure 2 of the original paper, so I will only focus on aspects that need attention when implementing each function.\nLeader Election Triggering Election + Handling Election Results The election is initiated by launching multiple goroutines to send RPC requests to other nodes in the background. Therefore, when handling RPC responses, it is necessary to confirm that the current node is a Candidate and that the request is not outdated, i.e., rf.state == Candidate \u0026\u0026 req.Term == rf.currentTerm. If the election is successful, the node should immediately send heartbeats to notify other nodes of the election result.\nIf a failed response is received with resp.Term  rf.currentTerm, the node should switch to the Follower state, update the term, and reset voting information.\n In fact, whenever the term is updated, the voting information needs to be reset. If the votedFor information is not reset, some tests will fail.\n Request Vote RPC First, filter outdated requests with req.Term and ignore duplicate voting requests for the current term. Then, follow the algorithm’s logic to process the request. Note that if the node successfully grants the vote, it should reset the election timer.\n Resetting the election timeout only when granting a vote helps with liveness in leader elections under unstable network conditions.\n State Transition When switching roles, be mindful of handling the state of different timers (stop or reset). When switching to Leader, reset the values of matchIndex and nextIndex.\nLog Replication Log replication is the core of the Raft algorithm, and it requires careful attention.\nMy implementation uses multiple replicator and applier threads for asynchronous replication and application.\nLog Replication RPC First, filter outdated requests with req.Term . Then, handle log inconsistencies, log truncation, and duplicate log entries before replicating logs and processing commitIndex.\nTrigger Log Replication + Handle Request Results Determine whether to replicate logs directly or send a snapshot before initiating replication.\nThe key point in handling request results is how to update matchIndex, nextIndex, and commitIndex.\nmatchIndex is used to record the latest log successfully replicated on other nodes, while nextIndex records the next log to be sent to other nodes. commitIndex is updated by sorting matchIndex and determining whether to trigger the applier to update appliedIndex.\nIf the request fails, nextIndex should be decremented, or the node should switch to the Follower state.\nAsynchronous Apply This is essentially a background goroutine controlled by condition variables and uses channels for communication. Each time it is triggered, it sends log[lastApplied:commitIndex] to the upper layer and updates appliedIndex.\nPersistence Persist the updated attributes that need to be saved to disk in a timely manner.\nInstall Snapshot The main components are the Snapshot triggered by the Leader and the corresponding RPC. When applying a Snapshot, determine its freshness and update log[0], appliedIndex, and commitIndex.\nPitfalls Defer The first pitfall is related to the defer keyword in Go. I like to use the defer keyword at the beginning of an RPC to directly print some data from the node: defer Dprintf(\"%+v\", raft.currentTerm). This way, the log can be printed at the end of the call. However, the content to be printed is fixed at the time the defer statement is executed. The correct usage should be defer func(ID int) { Dprintf(\"%+v\", id) }().\nLog Dummy Header It is best to reserve a spot in the log for storing the index and term of the snapshot to avoid a painful refactor of the Snapshot section later.\nLock Refer to the guidance on locking suggestions. Use a single coarse-grained lock rather than multiple locks. Correctness of the algorithm is more important than performance. Avoid holding locks while sending RPCs or using channels, as it may lead to timeouts.\nReferences Raft Wikipedia\nRaft Official Website\nRaft Paper\nMIT6.824 Official\nPotato’s Implementation Doc\n",
+  "articleBody": "Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.\nAlgorithm Overview The basis of consensus algorithms is the replicated state machine, which means that executing the same deterministic commands in the same order will eventually lead to a consistent state. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.\nThe core content of the Raft algorithm can be divided into three parts: $Leader Election + Log Replication + Safety$.\nInitially, all nodes in the cluster start as Followers. If a Follower does not receive a heartbeat from the Leader within a certain period, it becomes a Candidate and triggers an election, requesting votes from the other Followers. The Candidate that receives a majority of votes becomes the Leader.\nRaft is a strong leader and strongly consistent distributed consensus algorithm. It uses Terms as a logical clock, and only one Leader can exist in each term. The Leader needs to send heartbeats periodically to maintain its status and to handle log replication.\nWhen replicating logs, the Leader first replicates the log to other Followers. Once a majority of the Followers successfully replicate the log, the Leader commits the log.\nSafety mainly consists of five parts, with two core elements relevant to the implementation. One is the leader’s append-only rule, which means it cannot modify committed logs. The other is election safety, preventing split-brain scenarios and ensuring that the new Leader has the most up-to-date log.\nFor more details, please refer to the original paper.\nImplementation Ideas The implementation largely follows an excellent blog post (see references), and many algorithm details are also provided in Figure 2 of the original paper, so I will only focus on aspects that need attention when implementing each function.\nLeader Election Triggering Election + Handling Election Results The election is initiated by launching multiple goroutines to send RPC requests to other nodes in the background. Therefore, when handling RPC responses, it is necessary to confirm that the current node is a Candidate and that the request is not outdated, i.e., rf.state == Candidate \u0026\u0026 req.Term == rf.currentTerm. If the election is successful, the node should immediately send heartbeats to notify other nodes of the election result.\nIf a failed response is received with resp.Term \u003e rf.currentTerm, the node should switch to the Follower state, update the term, and reset voting information.\nIn fact, whenever the term is updated, the voting information needs to be reset. If the votedFor information is not reset, some tests will fail.\nRequest Vote RPC First, filter outdated requests with req.Term \u003c rf.currentTerm and ignore duplicate voting requests for the current term. Then, follow the algorithm’s logic to process the request. Note that if the node successfully grants the vote, it should reset the election timer.\nResetting the election timeout only when granting a vote helps with liveness in leader elections under unstable network conditions.\nState Transition When switching roles, be mindful of handling the state of different timers (stop or reset). When switching to Leader, reset the values of matchIndex and nextIndex.\nLog Replication Log replication is the core of the Raft algorithm, and it requires careful attention.\nMy implementation uses multiple replicator and applier threads for asynchronous replication and application.\nLog Replication RPC First, filter outdated requests with req.Term \u003c rf.currentTerm. Then, handle log inconsistencies, log truncation, and duplicate log entries before replicating logs and processing commitIndex.\nTrigger Log Replication + Handle Request Results Determine whether to replicate logs directly or send a snapshot before initiating replication.\nThe key point in handling request results is how to update matchIndex, nextIndex, and commitIndex.\nmatchIndex is used to record the latest log successfully replicated on other nodes, while nextIndex records the next log to be sent to other nodes. commitIndex is updated by sorting matchIndex and determining whether to trigger the applier to update appliedIndex.\nIf the request fails, nextIndex should be decremented, or the node should switch to the Follower state.\nAsynchronous Apply This is essentially a background goroutine controlled by condition variables and uses channels for communication. Each time it is triggered, it sends log[lastApplied:commitIndex] to the upper layer and updates appliedIndex.\nPersistence Persist the updated attributes that need to be saved to disk in a timely manner.\nInstall Snapshot The main components are the Snapshot triggered by the Leader and the corresponding RPC. When applying a Snapshot, determine its freshness and update log[0], appliedIndex, and commitIndex.\nPitfalls Defer The first pitfall is related to the defer keyword in Go. I like to use the defer keyword at the beginning of an RPC to directly print some data from the node: defer Dprintf(\"%+v\", raft.currentTerm). This way, the log can be printed at the end of the call. However, the content to be printed is fixed at the time the defer statement is executed. The correct usage should be defer func(ID int) { Dprintf(\"%+v\", id) }().\nLog Dummy Header It is best to reserve a spot in the log for storing the index and term of the snapshot to avoid a painful refactor of the Snapshot section later.\nLock Refer to the guidance on locking suggestions. Use a single coarse-grained lock rather than multiple locks. Correctness of the algorithm is more important than performance. Avoid holding locks while sending RPCs or using channels, as it may lead to timeouts.\nReferences Raft Wikipedia\nRaft Official Website\nRaft Paper\nMIT6.824 Official\nPotato’s Implementation Doc\n",
   "wordCount" : "953",
   "inLanguage": "en",
   "datePublished": "2022-02-21T01:26:46+08:00",
@@ -147,10 +146,10 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -212,11 +211,11 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -280,7 +279,7 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
 <h2 id="algorithm-overview">Algorithm Overview</h2>
 <p>The basis of consensus algorithms is the replicated state machine, which means that <strong>executing the same deterministic commands in the same order will eventually lead to a consistent state</strong>. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.</p>
 <p>The core content of the Raft algorithm can be divided into three parts: $Leader Election + Log Replication + Safety$.</p>
-<p><img src="https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png" alt="img"></p>
+<p><img alt="img" src="https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png"></p>
 <p>Initially, all nodes in the cluster start as Followers. If a Follower does not receive a heartbeat from the Leader within a certain period, it becomes a Candidate and triggers an election, requesting votes from the other Followers. The Candidate that receives a majority of votes becomes the Leader.</p>
 <p>Raft is a <strong>strong leader</strong> and strongly consistent distributed consensus algorithm. It uses Terms as a logical clock, and only one Leader can exist in each term. The Leader needs to send heartbeats periodically to maintain its status and to handle <strong>log replication</strong>.</p>
 <p>When replicating logs, the Leader first replicates the log to other Followers. Once a majority of the Followers successfully replicate the log, the Leader commits the log.</p>
@@ -387,7 +386,7 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -464,4 +463,4 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

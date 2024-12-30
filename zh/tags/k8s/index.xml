@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>k8s on NoneBack</title>
+    <title>K8s on NoneBack</title>
     <link>https://noneback.github.io/zh/tags/k8s/</link>
-    <description>Recent content in k8s on NoneBack created by </description>
+    <description>Recent content in K8s on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Mon, 19 Feb 2024 11:12:16 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/k8s/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -25,7 +26,7 @@
 &lt;p&gt;部署架构上，一个Borg Cluster由若干Cell组成，一个Cell由若干机器组成。&lt;/p&gt;
 &lt;p&gt;任务调度上，一切机器上有限的物理或者逻辑单元都需要被视为资源，如cpu，mem，io等资源。&lt;/p&gt;
 &lt;h2 id=&#34;系统架构&#34;&gt;系统架构&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Master-Slave架构，由一个BorgMaster和若干Borglet节点组成，调度器是一个独立的服务。&lt;/p&gt;
 &lt;p&gt;BorgMaster是一个逻辑节点，负责与外部以及Borglet的交互，以及集群内状态的维护。利用Paxos实现多副本以及ha容错。&lt;/p&gt;
 &lt;p&gt;Borglet是Cell内没台机器的Borg Proxy。负责启停Task，管理Node的物理资源，上报状态。&lt;/p&gt;

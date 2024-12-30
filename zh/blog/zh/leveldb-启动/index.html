@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/leveldb-%E5%90%AF%E5%8A%A8/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2022-04-09T14:43:25+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="LevelDB 启动"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="LevelDB 启动"/>
 <meta name="twitter:description" content="之前就听LevelDB是所有搞存储的人都会读的一个代码库。最近正好忙完了搞完了毕设的代码，稍微闲了一些，于是也打算看看LevelDB的源码。"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "LevelDB 启动",
       "item": "https://noneback.github.io/zh/blog/zh/leveldb-%E5%90%AF%E5%8A%A8/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "LevelDB", "LSM", "KV"
   ],
-  "articleBody": "之前就听LevelDB是所有搞存储的人都会读的一个代码库。最近正好忙完了搞完了毕设的代码，稍微闲了一些，于是也打算看看LevelDB的源码。\n这是LevelDB源码阅读笔记第一章，有关LevelDB的启动流程。本文并不是step by step的源码阅读教程，而是仅仅作为我的学习笔记，简单记录我的问题与思考。\n带注释的代码库之后应该也会放在github上供大家学习参考。\n预备知识 数据库文件 编码和命名等等等设计的相关的细节暂时不论（我也没看到那部分），先专注与文件的意义与作用\n├── 000005.ldb ├── 000008.ldb // sst or ldb 都是 sst文件 ├── 000009.log // WAL ├── CURRENT // 记录了使用的manifest文件的名字也用于表示数据库存在 ├── LOCK // 空文件，用于保证只有一个db实例操作数据库 ├── LOG // level打印的日志 ├── LOG.old └── MANIFEST-000007 // descriptor_file, 元数据文件 值得深究的问题，之后也许会写相关博客，暂时先抛出：\n LOCK怎么保证只有一个DB实例持有数据库   其实本质上是利用fcntl系统调用，在LOCK文件上设置写锁\n  各种文件的编码问题   之后会有相关博客说说leveldb的编码设计\n DB State Leveldb是一种嵌入式数据库，一般作为一些应用的组件存在（比如用于分布式存储系统中元数据节点的数据落盘）。这些应用可能会crush或者优雅退出，此时会有遗留的leveldb数据文件存在，所以我们一般需要在启动时恢复原先数据库的状态。故而我们需要明确一个db实例的状态信息，以便在使用时确保这些数据crush save，在启动时能及时回复数据状态机。\n那么第一个问题是DB state应该包括什么？leveldb是一个LSM存储引擎，本质上是LSM Tree 数据结构 + 各种读写和存储优化，基于此，结合leveldb的文档，DB state包含的需要持久化信息至少有：\n  每层Level对应相关的sst文件，每个sst文件对应的key range\n key range 主要是为了避免不必要的IO\n   全局逻辑时钟，last_seq_number\n 数据更新都有个seq_num 标记更新操作的新旧, 并与排序相关\n   compaction相关的参数 (file_to_compact, score, point)\n compact 相关, 以便在crush之后出发compaction\n   cmp name\n db初始化后，数据的排序逻辑就确定了，不允许被更改，用此名字作为凭证\n   log_number, next_file_number\n wal的编号 和 下一个可用的file编号\n   deleted_files 和 add_files\n compaction 或者 ref == 0 等原因导致的需要删除和添加的sst文件\n   具体实现上，每次leveldb的元数据变更行为（一般由Compact导致）都会被记录在VersionEdit这个数据结构之中，所以leveldb的DB State实际上是初始状态 + list of Applied VersionEdit。\n版本控制 既然说到了VersionEdit, 那就顺带说一说启动流程里有关LevelDB的版本控制相关的设计，主要涉及Version, VersionEdit,VersionSet三种数据结构。\n为什么需要版本控制？简单来说就是leveldb使用了MVCC机制来避免使用大锁来提高性能。\n命令记录级别的快照读是通过sequence_number来实现的，所有操作都会附带当前的sequence_number，以此判断当前操作允许读取的数据，大于命令seq_number的记录对于操作将不可见。\nsst文件级别的MVCC是通过Version链实现的，主要为了避免以下场景的冲突：正在读取某个文件时，而后台major compaction试图删除此文件。\n相关数据结构 与启动流程相关的主要是sst级别的MVCC，主要有Version，VersionEdit，VersionSet三个数据结构。\nVersion 每次启动时或者Compact之后最新的数据状态。\nclass Version { VersionSet* vset_; // VersionSet to which this Version belongs  Version* next_; // Next version in linked list  Version* prev_; // Previous version in linked list  int refs_; // Number of live refs to this version  // List of files and meta per level  std::vectorFileMetaData* files_[config::kNumLevels]; // Next file to compact based on seek stats. （allowed_seek耗尽导致的compact）  FileMetaData* file_to_compact_; int file_to_compact_level_; // Level that should be compacted next and its compaction score.  // Score  // are initialized by Finalize().  double compaction_score_; // score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact  int compaction_level_; } VersionSet 管理整个db的当前运行时状态。\nclass VersionSet { Env* const env_; const std::string dbname_; const Options* const options_; TableCache* const table_cache_; const InternalKeyComparator icmp_; uint64_t next_file_number_; uint64_t manifest_file_number_; uint64_t last_sequence_; uint64_t log_number_; uint64_t prev_log_number_; // 0 or backing store for memtable being compacted  // Opened lazily  WritableFile* descriptor_file_; // descriptor_ is for manifest file  log::Writer* descriptor_log_; // descriptor_ is for manifest file  Version dummy_versions_; // Head of circular doubly-linked list of versions. 正在使用的version的链表  Version* current_; // == dummy_versions_.prev_  // Per-level key at which the next compaction at that level should start.  // Either an empty string, or a valid InternalKey.  std::string compact_pointer_[config::kNumLevels]; } VersionEdit 元数据变更行为的数据与操作的封装。这样的封装可以缩小Version切换的时间窗口。\nclass VersionEdit { /** other code */ typedef std::setstd::pairint, uint64_t DeletedFileSet; std::string comparator_; uint64_t log_number_; uint64_t prev_log_number_; uint64_t next_file_number_; SequenceNumber last_sequence_; bool has_comparator_; bool has_log_number_; bool has_prev_log_number_; bool has_next_file_number_; bool has_last_sequence_; std::vectorstd::pairint, InternalKey compact_pointers_; DeletedFileSet deleted_files_; std::vectorstd::pairint, FileMetaData new_files_; }; Manifest Content 上文我们说到Manifest是leveldb的元数据文件，保存了数据库需要持久化的状态。leveldb在启动流程中，可能需要通过已有的数据文件回复原有db的状态。除此之外，但出现版本变更时，leveldb会生成VersionEdit, VersionEdit记录的元数据变动也需要及时持久化到manifest中，以此保证leveldb MVCC多版本状态的Crush Safe。所以Manifest的中编码布局十分重要。\n在Manifest内部，元数据状态机编码成SnapshotSessionRecord +list of SessionRecords，本质上是初始状态 + list of Applied VersionEdit。\n一个Manifest内部包含若干条Session Record，其中第一条Session Record记载了当时leveldb的全量版本信息，其余若干条Session Record仅记录每次更迭的变化情况。\n 一个Session Record可能包含以下字段：\n Comparer的名称； 最新的WAL文件编号； 下一个可以使用的文件编号； 数据库已经持久化数据项中最大的sequence number； 新增的文件信息； 删除的文件信息； compaction记录信息   Menifest写入版本变更 对于leveldb来说，增减某些sstable文件需要作为一个原子性操作，状态变更前后需要保持数据库的一致性。\n原子性 原子性体现在：整个操作的完成标志为manifest文件中完整的写入了一条session record，在此之前，即便某些文件写入失败导致进程退出，数据库重启启动时，仍然能够恢复到崩溃之前正确的状态，而将这些无用的sstable文件删除，重新进行compaction动作。\n一致性 一致性体现在：leveldb状态变更的操作都是以version更新为标记，而version更新是整个流程的最后一步，因此数据库必然都是从一个一致性的状态变更到另外一个一致性的状态。\n从Manifest中恢复DB 随着leveldb运行时间的增长，一个manifest中包含的session record会越来越多，故leveldb在每次启动时都会重新创建一个manifest文件，并将第一条session record中记录当前version的快照状态。\n其他过期的manifest文件会在下次启动的recover流程中进行删除。\n leveldb通过这种方式，来控制manifest文件的大小，但是数据库本身没有重启，manifest还是会一直增长。\n DB State恢复流程  检查上锁情况，创建数据目录 检查lockfile，判断是否有其他db实例 检查Current file是否存在 从manifest中恢复记录的元数据 从wal里回复last_seq_number和file_number  主体的Open流程  新建默认DB，VersionEdit实例 加锁 从manifest和wal中恢复元数据 如果新db实例没有memtable,新建memtable和wal file 将VersionEdit apply, 并落盘到manifest中 尝试删除无用文件 尝试进行compact  参考 leveldb-files\nleveldb-handbook\nleveldb-doc\nleveldb 实现解析\nmy note for leveldb\n",
+  "articleBody": " 之前就听LevelDB是所有搞存储的人都会读的一个代码库。最近正好忙完了搞完了毕设的代码，稍微闲了一些，于是也打算看看LevelDB的源码。\n这是LevelDB源码阅读笔记第一章，有关LevelDB的启动流程。本文并不是step by step的源码阅读教程，而是仅仅作为我的学习笔记，简单记录我的问题与思考。\n带注释的代码库之后应该也会放在github上供大家学习参考。\n预备知识 数据库文件 编码和命名等等等设计的相关的细节暂时不论（我也没看到那部分），先专注与文件的意义与作用\n├── 000005.ldb ├── 000008.ldb // sst or ldb 都是 sst文件 ├── 000009.log // WAL ├── CURRENT // 记录了使用的manifest文件的名字也用于表示数据库存在 ├── LOCK // 空文件，用于保证只有一个db实例操作数据库 ├── LOG // level打印的日志 ├── LOG.old └── MANIFEST-000007 // descriptor_file, 元数据文件 值得深究的问题，之后也许会写相关博客，暂时先抛出：\nLOCK怎么保证只有一个DB实例持有数据库 其实本质上是利用fcntl系统调用，在LOCK文件上设置写锁\n各种文件的编码问题 之后会有相关博客说说leveldb的编码设计\nDB State Leveldb是一种嵌入式数据库，一般作为一些应用的组件存在（比如用于分布式存储系统中元数据节点的数据落盘）。这些应用可能会crush或者优雅退出，此时会有遗留的leveldb数据文件存在，所以我们一般需要在启动时恢复原先数据库的状态。故而我们需要明确一个db实例的状态信息，以便在使用时确保这些数据crush save，在启动时能及时回复数据状态机。\n那么第一个问题是DB state应该包括什么？leveldb是一个LSM存储引擎，本质上是LSM Tree 数据结构 + 各种读写和存储优化，基于此，结合leveldb的文档，DB state包含的需要持久化信息至少有：\n每层Level对应相关的sst文件，每个sst文件对应的key range\nkey range 主要是为了避免不必要的IO\n全局逻辑时钟，last_seq_number\n数据更新都有个seq_num 标记更新操作的新旧, 并与排序相关\ncompaction相关的参数 (file_to_compact, score, point)\ncompact 相关, 以便在crush之后出发compaction\ncmp name\ndb初始化后，数据的排序逻辑就确定了，不允许被更改，用此名字作为凭证\nlog_number, next_file_number\nwal的编号 和 下一个可用的file编号\ndeleted_files 和 add_files\ncompaction 或者 ref == 0 等原因导致的需要删除和添加的sst文件\n具体实现上，每次leveldb的元数据变更行为（一般由Compact导致）都会被记录在VersionEdit这个数据结构之中，所以leveldb的DB State实际上是初始状态 + list of Applied VersionEdit。\n版本控制 既然说到了VersionEdit, 那就顺带说一说启动流程里有关LevelDB的版本控制相关的设计，主要涉及Version, VersionEdit,VersionSet三种数据结构。\n为什么需要版本控制？简单来说就是leveldb使用了MVCC机制来避免使用大锁来提高性能。\n命令记录级别的快照读是通过sequence_number来实现的，所有操作都会附带当前的sequence_number，以此判断当前操作允许读取的数据，大于命令seq_number的记录对于操作将不可见。\nsst文件级别的MVCC是通过Version链实现的，主要为了避免以下场景的冲突：正在读取某个文件时，而后台major compaction试图删除此文件。\n相关数据结构 与启动流程相关的主要是sst级别的MVCC，主要有Version，VersionEdit，VersionSet三个数据结构。\nVersion 每次启动时或者Compact之后最新的数据状态。\nclass Version { VersionSet* vset_; // VersionSet to which this Version belongs Version* next_; // Next version in linked list Version* prev_; // Previous version in linked list int refs_; // Number of live refs to this version // List of files and meta per level std::vector\u003cFileMetaData*\u003e files_[config::kNumLevels]; // Next file to compact based on seek stats. （allowed_seek耗尽导致的compact） FileMetaData* file_to_compact_; int file_to_compact_level_; // Level that should be compacted next and its compaction score. // Score \u003c 1 means compaction is not strictly needed. These fields // are initialized by Finalize(). double compaction_score_; // score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact int compaction_level_; } VersionSet 管理整个db的当前运行时状态。\nclass VersionSet { Env* const env_; const std::string dbname_; const Options* const options_; TableCache* const table_cache_; const InternalKeyComparator icmp_; uint64_t next_file_number_; uint64_t manifest_file_number_; uint64_t last_sequence_; uint64_t log_number_; uint64_t prev_log_number_; // 0 or backing store for memtable being compacted // Opened lazily WritableFile* descriptor_file_; // descriptor_ is for manifest file log::Writer* descriptor_log_; // descriptor_ is for manifest file Version dummy_versions_; // Head of circular doubly-linked list of versions. 正在使用的version的链表 Version* current_; // == dummy_versions_.prev_ // Per-level key at which the next compaction at that level should start. // Either an empty string, or a valid InternalKey. std::string compact_pointer_[config::kNumLevels]; } VersionEdit 元数据变更行为的数据与操作的封装。这样的封装可以缩小Version切换的时间窗口。\nclass VersionEdit { /** other code */ typedef std::set\u003cstd::pair\u003cint, uint64_t\u003e\u003e DeletedFileSet; std::string comparator_; uint64_t log_number_; uint64_t prev_log_number_; uint64_t next_file_number_; SequenceNumber last_sequence_; bool has_comparator_; bool has_log_number_; bool has_prev_log_number_; bool has_next_file_number_; bool has_last_sequence_; std::vector\u003cstd::pair\u003cint, InternalKey\u003e\u003e compact_pointers_; DeletedFileSet deleted_files_; std::vector\u003cstd::pair\u003cint, FileMetaData\u003e\u003e new_files_; }; Manifest Content 上文我们说到Manifest是leveldb的元数据文件，保存了数据库需要持久化的状态。leveldb在启动流程中，可能需要通过已有的数据文件回复原有db的状态。除此之外，但出现版本变更时，leveldb会生成VersionEdit, VersionEdit记录的元数据变动也需要及时持久化到manifest中，以此保证leveldb MVCC多版本状态的Crush Safe。所以Manifest的中编码布局十分重要。\n在Manifest内部，元数据状态机编码成SnapshotSessionRecord +list of SessionRecords，本质上是初始状态 + list of Applied VersionEdit。\n一个Manifest内部包含若干条Session Record，其中第一条Session Record记载了当时leveldb的全量版本信息，其余若干条Session Record仅记录每次更迭的变化情况。\n一个Session Record可能包含以下字段：\nComparer的名称； 最新的WAL文件编号； 下一个可以使用的文件编号； 数据库已经持久化数据项中最大的sequence number； 新增的文件信息； 删除的文件信息； compaction记录信息 Menifest写入版本变更 对于leveldb来说，增减某些sstable文件需要作为一个原子性操作，状态变更前后需要保持数据库的一致性。\n原子性 原子性体现在：整个操作的完成标志为manifest文件中完整的写入了一条session record，在此之前，即便某些文件写入失败导致进程退出，数据库重启启动时，仍然能够恢复到崩溃之前正确的状态，而将这些无用的sstable文件删除，重新进行compaction动作。\n一致性 一致性体现在：leveldb状态变更的操作都是以version更新为标记，而version更新是整个流程的最后一步，因此数据库必然都是从一个一致性的状态变更到另外一个一致性的状态。\n从Manifest中恢复DB 随着leveldb运行时间的增长，一个manifest中包含的session record会越来越多，故leveldb在每次启动时都会重新创建一个manifest文件，并将第一条session record中记录当前version的快照状态。\n其他过期的manifest文件会在下次启动的recover流程中进行删除。\nleveldb通过这种方式，来控制manifest文件的大小，但是数据库本身没有重启，manifest还是会一直增长。\nDB State恢复流程 检查上锁情况，创建数据目录 检查lockfile，判断是否有其他db实例 检查Current file是否存在 从manifest中恢复记录的元数据 从wal里回复last_seq_number和file_number 主体的Open流程 新建默认DB，VersionEdit实例 加锁 从manifest和wal中恢复元数据 如果新db实例没有memtable,新建memtable和wal file 将VersionEdit apply, 并落盘到manifest中 尝试删除无用文件 尝试进行compact 参考 leveldb-files\nleveldb-handbook\nleveldb-doc\nleveldb 实现解析\nmy note for leveldb\n",
   "wordCount" : "3152",
   "inLanguage": "zh",
   "datePublished": "2022-04-09T14:43:25+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -263,15 +268,15 @@ if (!doNotTrack) {
 <h2 id="预备知识">预备知识</h2>
 <h3 id="数据库文件">数据库文件</h3>
 <p>编码和命名等等等设计的相关的细节暂时不论（我也没看到那部分），先专注与文件的意义与作用</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">├── 000005.ldb
-├── 000008.ldb  // sst or ldb 都是 sst文件
-├── 000009.log  // WAL
-├── CURRENT  // 记录了使用的manifest文件的名字也用于表示数据库存在
-├── LOCK  // 空文件，用于保证只有一个db实例操作数据库
-├── LOG  // level打印的日志
-├── LOG.old 
-└── MANIFEST-000007   // descriptor_file, 元数据文件
-</code></pre></div><p>值得深究的问题，之后也许会写相关博客，暂时先抛出：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>├── 000005.ldb
+</span></span><span style="display:flex;"><span>├── 000008.ldb  // sst or ldb 都是 sst文件
+</span></span><span style="display:flex;"><span>├── 000009.log  // WAL
+</span></span><span style="display:flex;"><span>├── CURRENT  // 记录了使用的manifest文件的名字也用于表示数据库存在
+</span></span><span style="display:flex;"><span>├── LOCK  // 空文件，用于保证只有一个db实例操作数据库
+</span></span><span style="display:flex;"><span>├── LOG  // level打印的日志
+</span></span><span style="display:flex;"><span>├── LOG.old 
+</span></span><span style="display:flex;"><span>└── MANIFEST-000007   // descriptor_file, 元数据文件
+</span></span></code></pre></div><p>值得深究的问题，之后也许会写相关博客，暂时先抛出：</p>
 <ul>
 <li>LOCK怎么保证只有一个DB实例持有数据库</li>
 </ul>
@@ -335,74 +340,74 @@ if (!doNotTrack) {
 <p>与启动流程相关的主要是sst级别的MVCC，主要有<code>Version</code>，<code>VersionEdit</code>，<code>VersionSet</code>三个数据结构。</p>
 <h5 id="version">Version</h5>
 <p>每次启动时或者Compact之后最新的数据状态。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Version</span> {  
-    VersionSet<span style="color:#f92672">*</span> vset_;  <span style="color:#75715e">// VersionSet to which this Version belongs
-</span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> next_;     <span style="color:#75715e">// Next version in linked list
-</span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> prev_;     <span style="color:#75715e">// Previous version in linked list
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> refs_;          <span style="color:#75715e">// Number of live refs to this version
-</span><span style="color:#75715e"></span>
-      <span style="color:#75715e">// List of files and meta per level
-</span><span style="color:#75715e"></span>      std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>FileMetaData<span style="color:#f92672">*&gt;</span> files_[config<span style="color:#f92672">::</span>kNumLevels];
-
-      <span style="color:#75715e">// Next file to compact based on seek stats. （allowed_seek耗尽导致的compact）
-</span><span style="color:#75715e"></span>      FileMetaData<span style="color:#f92672">*</span> file_to_compact_;
-      <span style="color:#66d9ef">int</span> file_to_compact_level_;
-
-      <span style="color:#75715e">// Level that should be compacted next and its compaction score.
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// Score &lt; 1 means compaction is not strictly needed.  These fields
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// are initialized by Finalize().
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">double</span> compaction_score_;  <span style="color:#75715e">// score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> compaction_level_;
-}
-</code></pre></div><h5 id="versionset">VersionSet</h5>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Version</span> {  
+</span></span><span style="display:flex;"><span>    VersionSet<span style="color:#f92672">*</span> vset_;  <span style="color:#75715e">// VersionSet to which this Version belongs
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> next_;     <span style="color:#75715e">// Next version in linked list
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> prev_;     <span style="color:#75715e">// Previous version in linked list
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> refs_;          <span style="color:#75715e">// Number of live refs to this version
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// List of files and meta per level
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>FileMetaData<span style="color:#f92672">*&gt;</span> files_[config<span style="color:#f92672">::</span>kNumLevels];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Next file to compact based on seek stats. （allowed_seek耗尽导致的compact）
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      FileMetaData<span style="color:#f92672">*</span> file_to_compact_;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">int</span> file_to_compact_level_;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Level that should be compacted next and its compaction score.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#75715e">// Score &lt; 1 means compaction is not strictly needed.  These fields
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#75715e">// are initialized by Finalize().
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#66d9ef">double</span> compaction_score_;  <span style="color:#75715e">// score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> compaction_level_;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h5 id="versionset">VersionSet</h5>
 <p>管理整个db的当前运行时状态。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionSet</span> {
-    Env<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> env_;
-    <span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>string dbname_;
-    <span style="color:#66d9ef">const</span> Options<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> options_;
-    TableCache<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> table_cache_;  
-    <span style="color:#66d9ef">const</span> InternalKeyComparator icmp_;
-    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
-    <span style="color:#66d9ef">uint64_t</span> manifest_file_number_;
-    <span style="color:#66d9ef">uint64_t</span> last_sequence_;
-    <span style="color:#66d9ef">uint64_t</span> log_number_;
-    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;  <span style="color:#75715e">// 0 or backing store for memtable being compacted
-</span><span style="color:#75715e"></span>
-    <span style="color:#75715e">// Opened lazily
-</span><span style="color:#75715e"></span>    WritableFile<span style="color:#f92672">*</span> descriptor_file_; <span style="color:#75715e">// descriptor_ is for manifest file
-</span><span style="color:#75715e"></span>    log<span style="color:#f92672">::</span>Writer<span style="color:#f92672">*</span> descriptor_log_; <span style="color:#75715e">// descriptor_ is for manifest file
-</span><span style="color:#75715e"></span>    Version dummy_versions_;  <span style="color:#75715e">// Head of circular doubly-linked list of versions. 正在使用的version的链表
-</span><span style="color:#75715e"></span>    Version<span style="color:#f92672">*</span> current_;        <span style="color:#75715e">// == dummy_versions_.prev_
-</span><span style="color:#75715e"></span>
-    <span style="color:#75715e">// Per-level key at which the next compaction at that level should start.
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// Either an empty string, or a valid InternalKey.
-</span><span style="color:#75715e"></span>    std<span style="color:#f92672">::</span>string compact_pointer_[config<span style="color:#f92672">::</span>kNumLevels];
-}
-</code></pre></div><h5 id="versionedit">VersionEdit</h5>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionSet</span> {
+</span></span><span style="display:flex;"><span>    Env<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> env_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>string dbname_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> Options<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> options_;
+</span></span><span style="display:flex;"><span>    TableCache<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> table_cache_;  
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> InternalKeyComparator icmp_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> manifest_file_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> last_sequence_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> log_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;  <span style="color:#75715e">// 0 or backing store for memtable being compacted
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Opened lazily
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    WritableFile<span style="color:#f92672">*</span> descriptor_file_; <span style="color:#75715e">// descriptor_ is for manifest file
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    log<span style="color:#f92672">::</span>Writer<span style="color:#f92672">*</span> descriptor_log_; <span style="color:#75715e">// descriptor_ is for manifest file
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    Version dummy_versions_;  <span style="color:#75715e">// Head of circular doubly-linked list of versions. 正在使用的version的链表
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    Version<span style="color:#f92672">*</span> current_;        <span style="color:#75715e">// == dummy_versions_.prev_
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Per-level key at which the next compaction at that level should start.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// Either an empty string, or a valid InternalKey.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    std<span style="color:#f92672">::</span>string compact_pointer_[config<span style="color:#f92672">::</span>kNumLevels];
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h5 id="versionedit">VersionEdit</h5>
 <p>元数据变更行为的数据与操作的封装。这样的封装可以缩小Version切换的时间窗口。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionEdit</span> {
-  <span style="color:#75715e">/** other code */</span>
-    <span style="color:#66d9ef">typedef</span> std<span style="color:#f92672">::</span>set<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">uint64_t</span><span style="color:#f92672">&gt;&gt;</span> DeletedFileSet;
-
-    std<span style="color:#f92672">::</span>string comparator_;
-    <span style="color:#66d9ef">uint64_t</span> log_number_;  
-    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;
-    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
-    SequenceNumber last_sequence_;
-    <span style="color:#66d9ef">bool</span> has_comparator_;
-    <span style="color:#66d9ef">bool</span> has_log_number_;
-    <span style="color:#66d9ef">bool</span> has_prev_log_number_;
-    <span style="color:#66d9ef">bool</span> has_next_file_number_;
-    <span style="color:#66d9ef">bool</span> has_last_sequence_;
-
-    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, InternalKey<span style="color:#f92672">&gt;&gt;</span> compact_pointers_;
-    DeletedFileSet deleted_files_;
-    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, FileMetaData<span style="color:#f92672">&gt;&gt;</span> new_files_;
-};
-</code></pre></div><h4 id="manifest-content">Manifest Content</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionEdit</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">/** other code */</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">typedef</span> std<span style="color:#f92672">::</span>set<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">uint64_t</span><span style="color:#f92672">&gt;&gt;</span> DeletedFileSet;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>string comparator_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> log_number_;  
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
+</span></span><span style="display:flex;"><span>    SequenceNumber last_sequence_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_comparator_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_log_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_prev_log_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_next_file_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_last_sequence_;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, InternalKey<span style="color:#f92672">&gt;&gt;</span> compact_pointers_;
+</span></span><span style="display:flex;"><span>    DeletedFileSet deleted_files_;
+</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, FileMetaData<span style="color:#f92672">&gt;&gt;</span> new_files_;
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><h4 id="manifest-content">Manifest Content</h4>
 <p>上文我们说到Manifest是leveldb的元数据文件，保存了数据库需要持久化的状态。leveldb在启动流程中，可能需要通过已有的数据文件回复原有db的状态。除此之外，但出现版本变更时，leveldb会生成VersionEdit, VersionEdit记录的元数据变动也需要及时持久化到manifest中，以此保证leveldb MVCC多版本状态的Crush Safe。所以Manifest的中编码布局十分重要。</p>
 <p>在Manifest内部，元数据状态机编码成<code>SnapshotSessionRecord +list of SessionRecords</code>，本质上是<code>初始状态 + list of Applied VersionEdit</code>。</p>
-<p><img src="https://s2.loli.net/2022/04/11/AUusMjdYROz874v.jpg" alt="img"></p>
+<p><img alt="img" src="https://s2.loli.net/2022/04/11/AUusMjdYROz874v.jpg"></p>
 <p>一个Manifest内部包含若干条Session Record，<strong>其中第一条Session Record</strong>记载了当时leveldb的<em>全量版本信息</em>，其余若干条Session Record仅记录每次更迭的变化情况。</p>
 <blockquote>
 <p>一个Session Record可能包含以下字段：</p>
@@ -417,14 +422,14 @@ if (!doNotTrack) {
 </ul>
 </blockquote>
 <h5 id="menifest写入版本变更">Menifest写入版本变更</h5>
-<p><img src="https://s2.loli.net/2022/04/14/7tlwEMPGgXHIp6s.jpg" alt="img"></p>
+<p><img alt="img" src="https://s2.loli.net/2022/04/14/7tlwEMPGgXHIp6s.jpg"></p>
 <p>对于leveldb来说，增减某些sstable文件需要作为一个<strong>原子性操作</strong>，状态变更前后需要保持<strong>数据库的一致性</strong>。</p>
 <h6 id="原子性">原子性</h6>
 <p><strong>原子性</strong>体现在：整个操作的完成标志为manifest文件中完整的写入了一条session record，在此之前，即便某些文件写入失败导致进程退出，数据库重启启动时，仍然能够恢复到崩溃之前正确的状态，而将这些无用的sstable文件删除，重新进行compaction动作。</p>
 <h6 id="一致性">一致性</h6>
 <p><strong>一致性</strong>体现在：leveldb状态变更的操作都是以version更新为标记，而version更新是整个流程的最后一步，因此数据库必然都是从一个一致性的状态变更到另外一个一致性的状态。</p>
 <h5 id="从manifest中恢复db">从Manifest中恢复DB</h5>
-<p><img src="https://s2.loli.net/2022/04/14/Jk5eyRzUWowi4YH.jpg" alt="img"></p>
+<p><img alt="img" src="https://s2.loli.net/2022/04/14/Jk5eyRzUWowi4YH.jpg"></p>
 <p>随着leveldb运行时间的增长，一个manifest中包含的session record会越来越多，故leveldb在每次启动时都会重新创建一个manifest文件，并将第一条session record中记录当前version的快照状态。</p>
 <p>其他过期的manifest文件会在下次启动的recover流程中进行删除。</p>
 <blockquote>
@@ -510,7 +515,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -587,4 +592,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

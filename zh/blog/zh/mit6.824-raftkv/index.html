@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mit6.824-raftkv/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2022-04-15T10:49:57+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824-RaftKV"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-RaftKV"/>
 <meta name="twitter:description" content="之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "MIT6.824-RaftKV",
       "item": "https://noneback.github.io/zh/blog/zh/mit6.824-raftkv/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "Raft", "Distributed System", "Consensu", "MIT6.824"
   ],
-  "articleBody": "之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。\n实验相关 Lab03的内容是在Raft基础上构建一个分布式KV服务。我们需要实现此服务的Server和Client。\nRaftKV的结构和各个模块的交互如图所示：\n相比于上个实验难度低了不少，实现上可以参考这篇大佬的实现，我就不多写了。\nRaft 相关 接下来说说Raft中有关客户端交互有关的内容。\n路由与线性化语义 想要在Raft之上构建允许客户端访问的服务，首先要解决路由和线性化语义的问题。\n路由 Raft是一个Strong Leader的共识算法，读写请求一般都需要通过Leader执行。客户端反问Raft集群时，一般会随机访问集群中一个节点，如果它不是Leader, 那么它会将保存的leader信息返回给客户端，客户端会将请求重定向到Leader节点重试。\n线性化语义 此为，目前的Raft只支持At Least Once的语义，对于客户端的一次请求，Raft状态机可能会应用多次命令，而这样的语义特别不适用于基于共识的系统。\n为了实现线性化语义，很显然，我们需要让发出的请求实现幂等。\n一个基本的思路是客户端给每个请求分配UID, 而服务端利用这个UID维护一个Session,对成功请求的Response进行缓存。当有重复的请求到达服务端时，它可以直接利用Session缓存的Response相应，这样就实现了请求幂等。\n当然这带来了Session管理的问题，但这个并非本文重点。\n只读优化 解决了上面两个问题之后，我们得到了一个可用的基于Raft的服务。\n但我们会发现，无论是读或是写请求，我们的应用都需要经过Leader 发起一次AppendEntries的通信，在收到了Quorum成功的ACK，以及附加的落盘操作，在Log Committed再之后才能将结果返回给客户端。\n写操作会改变数据状态机，所以对于写请求这些是必要的。但读操作并不会改变状态机，我们可以对只读请求进行一些优化，让只读请求绕过Raft日志，以便减少同步写操作带来的磁盘IO开销。\n问题在于，如果没有其他的措施，绕过Raft日志的只读查询结果可能是过时的。\n 比如，旧集群Leader和一个选出新Leader的集群发生了分区，此时客户端在旧Leader上的查询结果可能会过时。\n Raft论文中提到了Read Index和Lease Read两种方法来绕过Raft日志，优化只读请求。\nRead Index Read Index方案需要解决几个问题：\n 旧任期遗留的已提交的日志   如old leader提交Log后，没来的及发送心跳就崩溃了。此时其他节点选中为新Leader，但根据Raft论文，新leader并不会主动提交旧leader时的日志。\n为了解决这个问题，我们需要在新Leader当选后提交一个no-op日志，将旧Log提交。\n  CommitIndex和AppliedIndex的间隔   引入readIndex变量，领导者将当前commitIndex保存在局部变量readIndx，以此作为查询时AppliedIndex的界限，当只读请求到来时，需要先将Log应用到readIndex记录的位置，之后Leader才能查询状态机，提供读服务。\n  在提供只读服务时候保证Leader不发生切换   为了解决这个问题，我们在收到读请求后，Leader会先进行心跳，并需要收到Quorum数量的Ack，保证在此时不存在其他任期更大的Leader，保证readIndex是集群中的最大提交索引。\n 具体的流程以及Batch和Follower Read的优化可以参考Raft作者的博士论文，在此不再赘述。\nLease Read Read Index的方案其实只优化了磁盘IO的开销，它依旧需要进行一轮集群的网络通信。但实际上，这部分开销也是可以进行优化的，于是就有了Lease Read的方案。\nLease Read方案的核心思路是利用一次Leader Election至少需要经过一轮ElectionTimeout时间。在此期间，系统不会进行重新选举。这样就避免了提供只读服务时Leader切换的问题。所以我们可以利用时钟优化网络IO。\n实现 在实现上，为了让时钟代替网络信息交互，我们需要额外提供一种租约机制。一旦Quorum数量的集群认可了领导者的Heartbeat，Leader可以认为在ElectionTimeout期间没有其他人能成为Leader，它可以相应的延长其租约。但Leader持有租约时，它可以直接服务只读查询而不需要额外的网络通信。\n但其实服务器中间可能会存在时钟偏移，这样Follower就无法保证在Leader持有租约时不会超时。这就引出了Lease Read的关键设计：用什么策略延长租期呢？\n论文中，假设$ClokcDrift$是有界的，每次心跳成功更新租约时，租约延长到$start + \\frac{ElectionTimeout}{ClockDriftBound}$ 。\n$ClokcDriftBound$代表了集群时钟漂移的界限，但是这个界限的发现和维护十分困难，因为导致时钟漂移的原因有很多，并且具有实时性。\n 如GC，虚拟机调度，云服务机器扩缩容等\n 实践上，一般会牺牲一定的安全性来换取LeaseRead的性能。一般使用$StatrTime +ElectionTimeout - \\Delta{t}$来延长租期。$\\Delta{t}$是一个正数，这就使得每次延长租约的时间小于ElectionTimeout，在网络IO开销和安全性之间Trade Off。\n总结 Raft构建服务时，首先需要设计好访问服务以及路由和幂等机制。\n对于只读操作，优化手段主要有两种，Read Index 和 Lease Read。其中前者优化了读操作时的磁盘IO，后者利用时钟优化了网络IO。\n参考 Implimetation doc\nRaft Paper\nMIT6.824 Official\nConsensus: Bridging Theory and Practice - zh\nTikv lease-read\n",
+  "articleBody": "之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。\n实验相关 Lab03的内容是在Raft基础上构建一个分布式KV服务。我们需要实现此服务的Server和Client。\nRaftKV的结构和各个模块的交互如图所示：\n相比于上个实验难度低了不少，实现上可以参考这篇大佬的实现，我就不多写了。\nRaft 相关 接下来说说Raft中有关客户端交互有关的内容。\n路由与线性化语义 想要在Raft之上构建允许客户端访问的服务，首先要解决路由和线性化语义的问题。\n路由 Raft是一个Strong Leader的共识算法，读写请求一般都需要通过Leader执行。客户端反问Raft集群时，一般会随机访问集群中一个节点，如果它不是Leader, 那么它会将保存的leader信息返回给客户端，客户端会将请求重定向到Leader节点重试。\n线性化语义 此为，目前的Raft只支持At Least Once的语义，对于客户端的一次请求，Raft状态机可能会应用多次命令，而这样的语义特别不适用于基于共识的系统。\n为了实现线性化语义，很显然，我们需要让发出的请求实现幂等。\n一个基本的思路是客户端给每个请求分配UID, 而服务端利用这个UID维护一个Session,对成功请求的Response进行缓存。当有重复的请求到达服务端时，它可以直接利用Session缓存的Response相应，这样就实现了请求幂等。\n当然这带来了Session管理的问题，但这个并非本文重点。\n只读优化 解决了上面两个问题之后，我们得到了一个可用的基于Raft的服务。\n但我们会发现，无论是读或是写请求，我们的应用都需要经过Leader 发起一次AppendEntries的通信，在收到了Quorum成功的ACK，以及附加的落盘操作，在Log Committed再之后才能将结果返回给客户端。\n写操作会改变数据状态机，所以对于写请求这些是必要的。但读操作并不会改变状态机，我们可以对只读请求进行一些优化，让只读请求绕过Raft日志，以便减少同步写操作带来的磁盘IO开销。\n问题在于，如果没有其他的措施，绕过Raft日志的只读查询结果可能是过时的。\n比如，旧集群Leader和一个选出新Leader的集群发生了分区，此时客户端在旧Leader上的查询结果可能会过时。\nRaft论文中提到了Read Index和Lease Read两种方法来绕过Raft日志，优化只读请求。\nRead Index Read Index方案需要解决几个问题：\n旧任期遗留的已提交的日志 如old leader提交Log后，没来的及发送心跳就崩溃了。此时其他节点选中为新Leader，但根据Raft论文，新leader并不会主动提交旧leader时的日志。\n为了解决这个问题，我们需要在新Leader当选后提交一个no-op日志，将旧Log提交。\nCommitIndex和AppliedIndex的间隔 引入readIndex变量，领导者将当前commitIndex保存在局部变量readIndx，以此作为查询时AppliedIndex的界限，当只读请求到来时，需要先将Log应用到readIndex记录的位置，之后Leader才能查询状态机，提供读服务。\n在提供只读服务时候保证Leader不发生切换 为了解决这个问题，我们在收到读请求后，Leader会先进行心跳，并需要收到Quorum数量的Ack，保证在此时不存在其他任期更大的Leader，保证readIndex是集群中的最大提交索引。\n具体的流程以及Batch和Follower Read的优化可以参考Raft作者的博士论文，在此不再赘述。\nLease Read Read Index的方案其实只优化了磁盘IO的开销，它依旧需要进行一轮集群的网络通信。但实际上，这部分开销也是可以进行优化的，于是就有了Lease Read的方案。\nLease Read方案的核心思路是利用一次Leader Election至少需要经过一轮ElectionTimeout时间。在此期间，系统不会进行重新选举。这样就避免了提供只读服务时Leader切换的问题。所以我们可以利用时钟优化网络IO。\n实现 在实现上，为了让时钟代替网络信息交互，我们需要额外提供一种租约机制。一旦Quorum数量的集群认可了领导者的Heartbeat，Leader可以认为在ElectionTimeout期间没有其他人能成为Leader，它可以相应的延长其租约。但Leader持有租约时，它可以直接服务只读查询而不需要额外的网络通信。\n但其实服务器中间可能会存在时钟偏移，这样Follower就无法保证在Leader持有租约时不会超时。这就引出了Lease Read的关键设计：用什么策略延长租期呢？\n论文中，假设$ClokcDrift$是有界的，每次心跳成功更新租约时，租约延长到$start + \\frac{ElectionTimeout}{ClockDriftBound}$ 。\n$ClokcDriftBound$代表了集群时钟漂移的界限，但是这个界限的发现和维护十分困难，因为导致时钟漂移的原因有很多，并且具有实时性。\n如GC，虚拟机调度，云服务机器扩缩容等\n实践上，一般会牺牲一定的安全性来换取LeaseRead的性能。一般使用$StatrTime +ElectionTimeout - \\Delta{t}$来延长租期。$\\Delta{t}$是一个正数，这就使得每次延长租约的时间小于ElectionTimeout，在网络IO开销和安全性之间Trade Off。\n总结 Raft构建服务时，首先需要设计好访问服务以及路由和幂等机制。\n对于只读操作，优化手段主要有两种，Read Index 和 Lease Read。其中前者优化了读操作时的磁盘IO，后者利用时钟优化了网络IO。\n参考 Implimetation doc\nRaft Paper\nMIT6.824 Official\nConsensus: Bridging Theory and Practice - zh\nTikv lease-read\n",
   "wordCount" : "2336",
   "inLanguage": "zh",
   "datePublished": "2022-04-15T10:49:57+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -263,7 +268,7 @@ if (!doNotTrack) {
 <h2 id="实验相关">实验相关</h2>
 <p>Lab03的内容是在Raft基础上构建一个分布式KV服务。我们需要实现此服务的Server和Client。</p>
 <p>RaftKV的结构和各个模块的交互如图所示：</p>
-<p><img src="https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png" alt="image-20220429211429808"></p>
+<p><img alt="image-20220429211429808" src="https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png"></p>
 <p>相比于上个实验难度低了不少，实现上可以参考这篇大佬的<a href="https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md">实现</a>，我就不多写了。</p>
 <h2 id="raft-相关">Raft 相关</h2>
 <p>接下来说说Raft中有关客户端交互有关的内容。</p>
@@ -384,7 +389,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -461,4 +466,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

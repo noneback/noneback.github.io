@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/gfs/</link>
     <description>Recent content in GFS on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 09 Sep 2021 00:44:24 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/gfs/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -92,14 +93,14 @@
 &lt;p&gt;此处Master和Chunk Server实际上都是逻辑上的概念，实际上对应的只是用户态的一个进程，而非指具体物理机器。&lt;/p&gt;
 &lt;p&gt;单Master设计简化了GFS的设计，但有一定的单点故障的风险，属于设计上的trade_off&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gu6y6qm5t0j61i40nojuk02.jpg&#34; alt=&#34; image-20210906153847451&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34; image-20210906153847451&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gu6y6qm5t0j61i40nojuk02.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;GFS通过lib的形式提供给业务方使用、接入GFS。&lt;/p&gt;
 &lt;p&gt;文件数据最终以chunk为单位保存在chunk server的磁盘中，并且chunk以replica的形式提供可靠服务。&lt;/p&gt;
 &lt;p&gt;master管理着GFS上所有的元数据（目录树，mapping，chunk metadata，etc）以及相关系统行为（监控，GC，snapshot，etc）。&lt;/p&gt;
 &lt;p&gt;用户通过Client，以filename + offset访问Master获取chunk元信息，再根据原信息访问对应chunk server获取具体的数据，执行操作。&lt;/p&gt;
 &lt;!-- raw HTML omitted --&gt;
 &lt;!-- raw HTML omitted --&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gu9234vb9nj61ej0u0gq702.jpg&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gu9234vb9nj61ej0u0gq702.jpg&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;组件设计&#34;&gt;组件设计&lt;/h2&gt;
 &lt;h3 id=&#34;client&#34;&gt;Client&lt;/h3&gt;
 &lt;p&gt;Client在GFS中实际上只是使用了GFS SDK/LIB的一个应用进程。GFS提供SDK/LIB让业务方接入GFS，并尽可能的屏蔽底层细节，让业务方对GFS无感知。&lt;/p&gt;
@@ -146,14 +147,13 @@
 &lt;/ul&gt;
 &lt;blockquote&gt;
 &lt;p&gt;chunk handler是一个数据结构，包含&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ChunkHandler&lt;/span&gt; {
-  list of &lt;span style=&#34;color:#a6e22e&#34;&gt;ChunkLocation&lt;/span&gt;(v);&lt;span style=&#34;color:#75715e&#34;&gt;// 标识replica所在的机器
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  version(nv);         &lt;span style=&#34;color:#75715e&#34;&gt;// 数据的逻辑时钟，标记数据版本
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  primary(v);       &lt;span style=&#34;color:#75715e&#34;&gt;// 用于标记primary chunk，用于分配操作顺序
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  lease &lt;span style=&#34;color:#a6e22e&#34;&gt;expire&lt;/span&gt;(v);     &lt;span style=&#34;color:#75715e&#34;&gt;// 租约过期时间，防止ChunkServer长期持有primary
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;}
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ChunkHandler&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  list of &lt;span style=&#34;color:#a6e22e&#34;&gt;ChunkLocation&lt;/span&gt;(v);&lt;span style=&#34;color:#75715e&#34;&gt;// 标识replica所在的机器
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  version(nv);         &lt;span style=&#34;color:#75715e&#34;&gt;// 数据的逻辑时钟，标记数据版本
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  primary(v);       &lt;span style=&#34;color:#75715e&#34;&gt;// 用于标记primary chunk，用于分配操作顺序
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  lease &lt;span style=&#34;color:#a6e22e&#34;&gt;expire&lt;/span&gt;(v);     &lt;span style=&#34;color:#75715e&#34;&gt;// 租约过期时间，防止ChunkServer长期持有primary
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/blockquote&gt;
 &lt;p&gt;此处的映射实际上就是Master需要维护的数据结构（元信息），其中有一部分是需要持久化保证重启不丢失，以nv（non-volatile)标记。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Table1适合使用HashMap作为索引结构去查询，Table2则更适合使用B+Tree等数据结构做索引，因为其应该会设计范围查询。&lt;/p&gt;
@@ -215,7 +215,7 @@
 &lt;p&gt;解耦的好处是数据流可以基于网络拓扑规划，提高机器带宽利用率，避免网路欧瓶颈和高延时。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;数据流实际上是以Pipeline的形式推送到所有相关的ChunkServer中的。推送到机器上后，保存在LRU缓存中，再由此机器推送到其他机器，充分利用每一台机器的资源。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gu94bb7jxjj60v90u0tak02.jpg&#34; alt=&#34;image-20210908124156337&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20210908124156337&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gu94bb7jxjj60v90u0tak02.jpg&#34;&gt;&lt;/p&gt;
 &lt;h3 id=&#34;数据安全性&#34;&gt;数据安全性&lt;/h3&gt;
 &lt;h4 id=&#34;数据完整性&#34;&gt;数据完整性&lt;/h4&gt;
 &lt;p&gt;GFS把Chunk分割为64KB大小的Block，每个Block对应一个32位的Chucksum，用于校验数据的完整性。&lt;/p&gt;
@@ -226,7 +226,7 @@
 &lt;h4 id=&#34;冗余存储&#34;&gt;冗余存储&lt;/h4&gt;
 &lt;p&gt;Chunk多副本异架异地存储，单副本丢失不会影响系统可用性。&lt;/p&gt;
 &lt;h4 id=&#34;一致性&#34;&gt;一致性&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&#34;https://spongecaptain.cool/images/img_paper/image-20200719211636393.png&#34; alt=&#34;image-20210908130412123&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20210908130412123&#34; src=&#34;https://spongecaptain.cool/images/img_paper/image-20200719211636393.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;我暂时没法很好的理解GFS的一致性模型，于是选择将原文奉上：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;“ &lt;strong&gt;The state of a file region after a data mutation depends on the type of mutation&lt;/strong&gt;, whether it succeeds or fails, and whether there are concurrent mutations.&lt;/p&gt;

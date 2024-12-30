@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/mysql/</link>
     <description>Recent content in MySQL on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Sun, 21 Mar 2021 20:41:33 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/mysql/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -25,8 +26,8 @@
 &lt;p&gt;In the InnoDB engine, the table&amp;rsquo;s data is organized using the primary key index. Each table must have a primary key, which constructs the B+ tree, resulting in a primary key index. &lt;strong&gt;The primary key index is a clustered index&lt;/strong&gt;, and all other &lt;strong&gt;secondary indexes are non-clustered indexes&lt;/strong&gt;.&lt;/p&gt;
 &lt;h3 id=&#34;composite-index&#34;&gt;Composite Index&lt;/h3&gt;
 &lt;p&gt;A composite index is an index composed of multiple fields.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-sql&#34; data-lang=&#34;sql&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;create&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;index&lt;/span&gt; index_name &lt;span style=&#34;color:#66d9ef&#34;&gt;on&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;table_name&lt;/span&gt; (col_1, col_2...)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Compared to a single-field index, the main difference is that it follows the &lt;strong&gt;leftmost prefix matching principle&lt;/strong&gt;.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sql&#34; data-lang=&#34;sql&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;create&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;index&lt;/span&gt; index_name &lt;span style=&#34;color:#66d9ef&#34;&gt;on&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;table_name&lt;/span&gt; (col_1, col_2...)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Compared to a single-field index, the main difference is that it follows the &lt;strong&gt;leftmost prefix matching principle&lt;/strong&gt;.&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;Leftmost Prefix Matching Principle&lt;/strong&gt;: When using a composite index, the index values are sorted according to the fields in the index from left to right.&lt;/p&gt;
 &lt;/blockquote&gt;

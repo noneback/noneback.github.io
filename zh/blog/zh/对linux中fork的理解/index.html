@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2021-02-18T15:56:31+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Linux中的Fork"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Linux中的Fork"/>
 <meta name="twitter:description" content="这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。 前言 最近最学习操作系统，在《operating system conce"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "Linux中的Fork",
       "item": "https://noneback.github.io/zh/blog/zh/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/"
     }
@@ -63,8 +68,8 @@ if (!doNotTrack) {
   "keywords": [
     "Linux", "OS", "SysCall"
   ],
-  "articleBody": "这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。\n前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码:\n#include #include #include int main(){ pid_t pid; pid=fork(); if(pid0){ //create process failed  printf(\"Failed\\n\"); exit(-1); }else if(pid==0){ //child process;  printf (\"Child pid %d\\n\",getpid()); execlp(\"/bin/ls\",\"ls\",NULL); }else{ //parent process;  printf(\"Parent pid %d\\n\",getpid()); wait(NULL); printf (\"Child complete\\n\"); return 0; } } 查阅了些资料，看了几回才稍微看懂一点fork()的用法，于是写下这篇博客记录一下。\nfork()函数介绍 简介：建立一个新的进程\n表头文件：\n#include 定义函数：\npid_t vfork(void); 函数说明：\n vfork()会产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。Linux 使用copy-on-write(COW)技术，只有当其中一进程试图修改欲复制的空间时才会做真正的复制动作，由于这些继承的信息是复制而来，并非指相同的内存空间，因此子进程对这些变量的修改和父进程并不会同步。此外，子进程不会继承父进程的文件锁定和未处理的信号。注意，Linux不保证子进程会比父进程先执行或晚执行，因此编写程序时要留意 死锁或竞争条件的发生。\n 返回值：\n 如果vfork()成功则在父进程会返回新建立的子进程代码(PID)，而在新建立的子进程中则返回0。如果vfork 失败则直接返回-1，失败原因存于errno中。\n 错误代码：\n EAGAIN 内存不足。ENOMEM 内存不足，无法配置核心所需的数据结构空间。\n 函数使用分析 首先我们看看开头代码的运行结果：\nLinux中进程是通过链表进行组织的，所以本文中使用 ParentProcess-ChildrenProcess的格式展示。\n下面开始上面分析结果：\n  首先，fork()函数会调用两次，第一次在父进程中返回，返回子进程的pid(一般大于零），第二次是在子进程中调用，返回0;当fork()失败时，返回一个负数。\n  父进程开使执行，调用fork()，返回一个子进程pid(0)，执行打印Parent pid 25974,然后等待子进程。\n  子进程在父进程调用fork()后开始执行，在子进程中fork()返回０（并不是实际意义上的调用之后返回，而是在子进程中直接返回了０,在后面在解释），执行父进程fork()后面的语句，即execlp(\"/bin/ls\",“ls”,NULL)，即调用ls，打印当前目录的文件，子进程结束。\n  父进程接受信号，结束主进程。\n  理解fork的执行 现在我们来看看这一段代码：\n/* * @Description: In User Settings Edit * @Author: NoneBack * @Date: 2019-09-30 01:00:29 * @LastEditTime: 2019-09-30 22:52:24 * @LastEditors: NoneBack */ #include #include int main(void) { int i = 0; printf(\"i son/pa ppid pid fpid\\n\"); // ppid指当前进程的父进程pid  // pid指当前进程的pid,  // fpid指fork返回给当前进程的值  for (i = 0; i  2; i++) { pid_t fpid = fork(); if (fpid == 0) printf(\"%d child %4d %4d %4d\\n\", i, getppid(), getpid(), fpid); else printf(\"%d parent %4d %4d %4d\\n\", i, getppid(), getpid(), fpid); wait(NULL); //等待子进程  } return 0; } 下面是它的执行结果：\n下面我们来看看为什么会有这样的结果：\n１．首先父进程中，i=0时，打印0 parent 26826 26917 26918，随后父进程等待子进程执行。\n子进程接着拷贝父进程（连同ＰＣ），接着父进程中i=0时fork()之后的代码运行，打印0 child 26917 26918 0，此时子进程在i=0时的fork()返回０。\n子进程i=1时候的fork()接着生成一个孙子进程，并返回其pid,子进程打印1 parent 26917 26918 26919，生成的孙子进程中从i=1的fork()出接着执行，此处的fork()返回０，打印1 child 26918 26919 0。第一个子进程结束。\n２.父进程中i=1时，执行fork()，生成子进程，打　印1 parent 26826 26917 26920。\n子进程接着执行1=1时，fork()之后的代码,打印1 child 26917 26920 0。进程结束。\n至于为什么父进程是１,这是另一方面的知识，暂且不管。\nFork里的COW机制 一开始便说了，fork执行之后,产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。这里的复制使用了COW（Copy on Write）机制。\n什么是Copy On Write COW本质上是一种Lazy Copy的思想。\n 写入时复制（英语：Copy-on-write，简称COW）是一种计算机程序设计领域的优化策略。\n其核心思想是，如果有多个调用者（callers）同时请求相同资源（如内存或磁盘上的数据存储），他们会共同获取相同的指针指向相同的资源，直到某个调用者试图修改资源的内容时，系统才会真正复制一份专用副本（private copy）给该调用者，而其他调用者所见到的最初的资源仍然保持不变。这过程对其他的调用者都是透明的（transparently）。\n此作法主要的优点是如果调用者没有修改该资源，就不会有副本（private copy）被建立，因此多个调用者只是读取操作时可以共享同一份资源。\n 在使用fork创建子进程时，只有当有进程需要修改的时候才会真正的执行数据的拷贝，之后再在进程自己的数据段修改数据。否则，如果进程只有读请求的话，实际上不需要不执行资源的复制，只需要在不同进程之间维护对资源的引用即可。\nfork中COW技术实现原理 fork()之后，kernel把父进程中所有的内存页的权限都设为read-only，然后子进程的地址空间指向父进程。当父子进程都只读内存时，相安无事。\n当其中某个进程写内存时，CPU硬件检测到内存页是read-only的，于是触发页异常中断（page-fault），陷入kernel的一个中断例程。\n中断例程中，kernel就会把触发的异常的页复制一份，于是父子进程各自持有独立的一份，之后进程再修改对应的数据。\n总结 fork()会返回两次，第一次在父进程中返回fork()出的子进程的pid,第二此在子进程中返回０，接着从fork()处之后的代码开始执行。\nfork()会产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。\n复制资源的核心是COW思想。\n好处\n COW技术可减少分配和复制大量资源时带来的瞬间延时。 COW技术可减少不必要的资源分配。比如fork进程时，并不是所有的页面都需要复制，父进程的代码段和只读数据段都不被允许修改，所以无需复制。  缺点\n 如果在fork()之后，父子进程都还需要继续进行写操作，那么会产生大量的分页错误(页异常中断page-fault)，这样就得不偿失。  参考 vfork\nfork函数详解\n",
-  "wordCount" : "2619",
+  "articleBody": "这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。\n前言 最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码:\n#include #include #include int main(){ pid_t pid; pid=fork(); if(pid\u003c0){ //create process failed printf(\"Failed\\n\"); exit(-1); }else if(pid==0){ //child process; printf (\"Child pid %d\\n\",getpid()); execlp(\"/bin/ls\",\"ls\",NULL); }else{ //parent process; printf(\"Parent pid %d\\n\",getpid()); wait(NULL); printf (\"Child complete\\n\"); return 0; } } 查阅了些资料，看了几回才稍微看懂一点fork()的用法，于是写下这篇博客记录一下。\nfork()函数介绍 简介：建立一个新的进程\n表头文件：\n#include 定义函数：\npid_t vfork(void); 函数说明：\nvfork()会产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。Linux 使用copy-on-write(COW)技术，只有当其中一进程试图修改欲复制的空间时才会做真正的复制动作，由于这些继承的信息是复制而来，并非指相同的内存空间，因此子进程对这些变量的修改和父进程并不会同步。此外，子进程不会继承父进程的文件锁定和未处理的信号。注意，Linux不保证子进程会比父进程先执行或晚执行，因此编写程序时要留意 死锁或竞争条件的发生。\n返回值：\n如果vfork()成功则在父进程会返回新建立的子进程代码(PID)，而在新建立的子进程中则返回0。如果vfork 失败则直接返回-1，失败原因存于errno中。\n错误代码：\nEAGAIN 内存不足。ENOMEM 内存不足，无法配置核心所需的数据结构空间。\n函数使用分析 首先我们看看开头代码的运行结果：\nLinux中进程是通过链表进行组织的，所以本文中使用 ParentProcess-\u003eChildrenProcess的格式展示。\n下面开始上面分析结果：\n首先，fork()函数会调用两次，第一次在父进程中返回，返回子进程的pid(一般大于零），第二次是在子进程中调用，返回0;当fork()失败时，返回一个负数。\n父进程开使执行，调用fork()，返回一个子进程pid(\u003e0)，执行打印Parent pid 25974,然后等待子进程。\n子进程在父进程调用fork()后开始执行，在子进程中fork()返回０（并不是实际意义上的调用之后返回，而是在子进程中直接返回了０,在后面在解释），执行父进程fork()后面的语句，即execlp(\"/bin/ls\",“ls”,NULL)，即调用ls，打印当前目录的文件，子进程结束。\n父进程接受信号，结束主进程。\n理解fork的执行 现在我们来看看这一段代码：\n/* * @Description: In User Settings Edit * @Author: NoneBack * @Date: 2019-09-30 01:00:29 * @LastEditTime: 2019-09-30 22:52:24 * @LastEditors: NoneBack */ #include #include int main(void) { int i = 0; printf(\"i son/pa ppid pid fpid\\n\"); // ppid指当前进程的父进程pid // pid指当前进程的pid, // fpid指fork返回给当前进程的值 for (i = 0; i \u003c 2; i++) { pid_t fpid = fork(); if (fpid == 0) printf(\"%d child %4d %4d %4d\\n\", i, getppid(), getpid(), fpid); else printf(\"%d parent %4d %4d %4d\\n\", i, getppid(), getpid(), fpid); wait(NULL); //等待子进程 } return 0; } 下面是它的执行结果：\n下面我们来看看为什么会有这样的结果：\n１．首先父进程中，i=0时，打印0 parent 26826 26917 26918，随后父进程等待子进程执行。\n子进程接着拷贝父进程（连同ＰＣ），接着父进程中i=0时fork()之后的代码运行，打印0 child 26917 26918 0，此时子进程在i=0时的fork()返回０。\n子进程i=1时候的fork()接着生成一个孙子进程，并返回其pid,子进程打印1 parent 26917 26918 26919，生成的孙子进程中从i=1的fork()出接着执行，此处的fork()返回０，打印1 child 26918 26919 0。第一个子进程结束。\n２.父进程中i=1时，执行fork()，生成子进程，打　印1 parent 26826 26917 26920。\n子进程接着执行1=1时，fork()之后的代码,打印1 child 26917 26920 0。进程结束。\n至于为什么父进程是１,这是另一方面的知识，暂且不管。\nFork里的COW机制 一开始便说了，fork执行之后,产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。这里的复制使用了COW（Copy on Write）机制。\n什么是Copy On Write COW本质上是一种Lazy Copy的思想。\n写入时复制（英语：Copy-on-write，简称COW）是一种计算机程序设计领域的优化策略。\n其核心思想是，如果有多个调用者（callers）同时请求相同资源（如内存或磁盘上的数据存储），他们会共同获取相同的指针指向相同的资源，直到某个调用者试图修改资源的内容时，系统才会真正复制一份专用副本（private copy）给该调用者，而其他调用者所见到的最初的资源仍然保持不变。这过程对其他的调用者都是透明的（transparently）。\n此作法主要的优点是如果调用者没有修改该资源，就不会有副本（private copy）被建立，因此多个调用者只是读取操作时可以共享同一份资源。\n在使用fork创建子进程时，只有当有进程需要修改的时候才会真正的执行数据的拷贝，之后再在进程自己的数据段修改数据。否则，如果进程只有读请求的话，实际上不需要不执行资源的复制，只需要在不同进程之间维护对资源的引用即可。\nfork中COW技术实现原理 fork()之后，kernel把父进程中所有的内存页的权限都设为read-only，然后子进程的地址空间指向父进程。当父子进程都只读内存时，相安无事。\n当其中某个进程写内存时，CPU硬件检测到内存页是read-only的，于是触发页异常中断（page-fault），陷入kernel的一个中断例程。\n中断例程中，kernel就会把触发的异常的页复制一份，于是父子进程各自持有独立的一份，之后进程再修改对应的数据。\n总结 fork()会返回两次，第一次在父进程中返回fork()出的子进程的pid,第二此在子进程中返回０，接着从fork()处之后的代码开始执行。\nfork()会产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。\n复制资源的核心是COW思想。\n好处\nCOW技术可减少分配和复制大量资源时带来的瞬间延时。 COW技术可减少不必要的资源分配。比如fork进程时，并不是所有的页面都需要复制，父进程的代码段和只读数据段都不被允许修改，所以无需复制。 缺点\n如果在fork()之后，父子进程都还需要继续进行写操作，那么会产生大量的分页错误(页异常中断page-fault)，这样就得不偿失。 参考 vfork\nfork函数详解\n",
+  "wordCount" : "2610",
   "inLanguage": "zh",
   "datePublished": "2021-02-18T15:56:31+08:00",
   "dateModified": "2021-02-18T15:56:31+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -224,7 +229,7 @@ if (!doNotTrack) {
 
   <p>
   <small>
-    2021年2月18日&nbsp;· 2619 字&nbsp;· 6 分钟</small>
+    2021年2月18日&nbsp;· 2610 字&nbsp;· 6 分钟</small>
 
   <small>
       
@@ -261,36 +266,36 @@ if (!doNotTrack) {
   <section class="blog-content"><p>这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。</p>
 <h2 id="前言"><strong>前言</strong></h2>
 <p>最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/types.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(){
-  pid_t pid;
-  pid<span style="color:#f92672">=</span>fork();
-  <span style="color:#66d9ef">if</span>(pid<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0</span>){
-    <span style="color:#75715e">//create process failed
-</span><span style="color:#75715e"></span>    printf(<span style="color:#e6db74">&#34;Failed</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
-    exit(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>);
-  }<span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span>(pid<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>){
-    <span style="color:#75715e">//child process;
-</span><span style="color:#75715e"></span>    printf (<span style="color:#e6db74">&#34;Child pid %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,getpid());
-    execlp(<span style="color:#e6db74">&#34;/bin/ls&#34;</span>,<span style="color:#e6db74">&#34;ls&#34;</span>,NULL);
-  }<span style="color:#66d9ef">else</span>{
-  <span style="color:#75715e">//parent process;
-</span><span style="color:#75715e"></span>  printf(<span style="color:#e6db74">&#34;Parent pid %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,getpid());
-  wait(NULL);
-  printf (<span style="color:#e6db74">&#34;Child complete</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
-  <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
-  }
-}
-</code></pre></div><p>查阅了些资料，看了几回才稍微看懂一点fork()的用法，于是写下这篇博客记录一下。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/types.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(){
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">pid_t</span> pid;
+</span></span><span style="display:flex;"><span>  pid<span style="color:#f92672">=</span><span style="color:#a6e22e">fork</span>();
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">if</span>(pid<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//create process failed
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;Failed</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">exit</span>(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span>  }<span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span>(pid<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>){
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//child process;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">printf</span> (<span style="color:#e6db74">&#34;Child pid %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,<span style="color:#a6e22e">getpid</span>());
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">execlp</span>(<span style="color:#e6db74">&#34;/bin/ls&#34;</span>,<span style="color:#e6db74">&#34;ls&#34;</span>,NULL);
+</span></span><span style="display:flex;"><span>  }<span style="color:#66d9ef">else</span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//parent process;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;Parent pid %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,<span style="color:#a6e22e">getpid</span>());
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">wait</span>(NULL);
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">printf</span> (<span style="color:#e6db74">&#34;Child complete</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>查阅了些资料，看了几回才稍微看懂一点fork()的用法，于是写下这篇博客记录一下。</p>
 <h2 id="fork函数介绍">fork()函数介绍</h2>
 <p>简介：建立一个新的进程</p>
 <p>表头文件：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;uistd.h&gt;</span><span style="color:#75715e">
-</span></code></pre></div><p>定义函数：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">pid_t <span style="color:#a6e22e">vfork</span>(<span style="color:#66d9ef">void</span>);
-</code></pre></div><p>函数说明：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;uistd.h&gt;</span><span style="color:#75715e">
+</span></span></span></code></pre></div><p>定义函数：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">pid_t</span> <span style="color:#a6e22e">vfork</span>(<span style="color:#66d9ef">void</span>);
+</span></span></code></pre></div><p>函数说明：</p>
 <blockquote>
 <p>vfork()会产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。Linux 使用copy-on-write(COW)技术，只有当其中一进程试图修改欲复制的空间时才会做真正的复制动作，由于这些继承的信息是复制而来，并非指相同的内存空间，因此子进程对这些变量的修改和父进程并不会同步。此外，子进程不会继承父进程的文件锁定和未处理的信号。注意，Linux不保证子进程会比父进程先执行或晚执行，因此编写程序时要留意
 死锁或竞争条件的发生。</p>
@@ -305,7 +310,7 @@ if (!doNotTrack) {
 </blockquote>
 <h2 id="函数使用分析"><strong>函数使用分析</strong></h2>
 <p>首先我们看看开头代码的运行结果：</p>
-<p><img src="https://i.loli.net/2019/09/30/6kj5yDTvsin42gd.jpg" alt=""></p>
+<p><img src="https://i.loli.net/2019/09/30/6kj5yDTvsin42gd.jpg"></p>
 <p>Linux中进程是通过链表进行组织的，所以本文中使用 ParentProcess-&gt;ChildrenProcess的格式展示。</p>
 <p>下面开始上面分析结果：</p>
 <ol>
@@ -324,34 +329,33 @@ if (!doNotTrack) {
 </ol>
 <h2 id="理解fork的执行">理解fork的执行</h2>
 <p>现在我们来看看这一段代码：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">/*
-</span><span style="color:#75715e"> * @Description: In User Settings Edit
-</span><span style="color:#75715e"> * @Author: NoneBack
-</span><span style="color:#75715e"> * @Date: 2019-09-30 01:00:29
-</span><span style="color:#75715e"> * @LastEditTime: 2019-09-30 22:52:24
-</span><span style="color:#75715e"> * @LastEditors: NoneBack
-</span><span style="color:#75715e"> */</span>
-<span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">void</span>) {
-  <span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
-  printf(<span style="color:#e6db74">&#34;i son/pa ppid pid  fpid</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
-  <span style="color:#75715e">// ppid指当前进程的父进程pid
-</span><span style="color:#75715e"></span>  <span style="color:#75715e">// pid指当前进程的pid,
-</span><span style="color:#75715e"></span>  <span style="color:#75715e">// fpid指fork返回给当前进程的值
-</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">for</span> (i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">2</span>; i<span style="color:#f92672">++</span>) {
-    pid_t fpid <span style="color:#f92672">=</span> fork();
-    <span style="color:#66d9ef">if</span> (fpid <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
-      printf(<span style="color:#e6db74">&#34;%d child  %4d %4d %4d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, i, getppid(), getpid(), fpid);
-    <span style="color:#66d9ef">else</span>
-      printf(<span style="color:#e6db74">&#34;%d parent %4d %4d %4d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, i, getppid(), getpid(), fpid);
-    wait(NULL); <span style="color:#75715e">//等待子进程
-</span><span style="color:#75715e"></span>  }
-  <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
-}
-
-</code></pre></div><p>下面是它的执行结果：</p>
-<p><img src="https://i.loli.net/2019/09/30/1ikRMdFGDxwXA3t.jpg" alt="选区_010.jpg"></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">/*
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> * @Description: In User Settings Edit
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> * @Author: NoneBack
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> * @Date: 2019-09-30 01:00:29
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> * @LastEditTime: 2019-09-30 22:52:24
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> * @LastEditors: NoneBack
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">void</span>) {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;i son/pa ppid pid  fpid</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// ppid指当前进程的父进程pid
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// pid指当前进程的pid,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// fpid指fork返回给当前进程的值
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">for</span> (i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">2</span>; i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">pid_t</span> fpid <span style="color:#f92672">=</span> <span style="color:#a6e22e">fork</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (fpid <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;%d child  %4d %4d %4d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, i, <span style="color:#a6e22e">getppid</span>(), <span style="color:#a6e22e">getpid</span>(), fpid);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;%d parent %4d %4d %4d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, i, <span style="color:#a6e22e">getppid</span>(), <span style="color:#a6e22e">getpid</span>(), fpid);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">wait</span>(NULL); <span style="color:#75715e">//等待子进程
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>下面是它的执行结果：</p>
+<p><img alt="选区_010.jpg" src="https://i.loli.net/2019/09/30/1ikRMdFGDxwXA3t.jpg"></p>
 <p>下面我们来看看为什么会有这样的结果：</p>
 <p>１．首先父进程中，i=0时，打印<code>0 parent 26826 26917 26918</code>，随后父进程等待子进程执行。</p>
 <p>子进程接着拷贝父进程（连同ＰＣ），接着父进程中i=0时fork()之后的代码运行，打印<code>0 child  26917 26918    0</code>，此时子进程在i=0时的fork()返回０。</p>
@@ -445,7 +449,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -522,4 +526,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

@@ -6,12 +6,12 @@
     <meta name="description" content="Ladder@Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.
 Research Focus: ORC file encoding, file organization, and indexing support.
 File Layout An ORC file can be divided into three main sections:
- Header: Identifies the file type.">
+Header: Identifies the file type.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/apacheorc%E8%B0%83%E7%A0%94/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -33,35 +33,34 @@ if (!doNotTrack) {
 <meta property="og:description" content="Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.
 Research Focus: ORC file encoding, file organization, and indexing support.
 File Layout An ORC file can be divided into three main sections:
- Header: Identifies the file type." />
+Header: Identifies the file type." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/blog/apacheorc%E8%B0%83%E7%A0%94/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2022-10-05T19:56:01+08:00" />
 <meta property="article:modified_time" content="2022-06-05T19:56:01+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Apache-ORC Quick Investigation"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Apache-ORC Quick Investigation"/>
 <meta name="twitter:description" content="Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.
 Research Focus: ORC file encoding, file organization, and indexing support.
 File Layout An ORC file can be divided into three main sections:
- Header: Identifies the file type."/>
+Header: Identifies the file type."/>
 
 
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "Apache-ORC Quick Investigation",
       "item": "https://noneback.github.io/blog/apacheorc%E8%B0%83%E7%A0%94/"
     }
@@ -74,12 +73,12 @@ File Layout An ORC file can be divided into three main sections:
   "@type": "BlogPosting",
   "headline": "Apache-ORC Quick Investigation",
   "name": "Apache-ORC Quick Investigation",
-  "description": "Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.\nResearch Focus: ORC file encoding, file organization, and indexing support.\nFile Layout An ORC file can be divided into three main sections:\n Header: Identifies the file type.",
+  "description": "Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.\nResearch Focus: ORC file encoding, file organization, and indexing support.\nFile Layout An ORC file can be divided into three main sections:\nHeader: Identifies the file type.",
   "keywords": [
     "data lake", "big data", "storage"
   ],
-  "articleBody": "Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.\nResearch Focus: ORC file encoding, file organization, and indexing support.\nFile Layout An ORC file can be divided into three main sections:\n Header: Identifies the file type. Body: Contains row data and indexes, as shown below. Tail: Contains top-level file information.   ORC Specification v1\n File Tail Since distributed storage generally supports only append-only semantics, the ORC file maintains a tail section for top-level file information.\nThe tail contains:\n Postscript: Contains essential information for parsing the footer and metadata, such as the length of each section and compression method. Footer: Stores schema information, row count, column statistics, and more. Stripe Statistics and Metadata: Includes column-level statistics.  Postscript The postscript is uncompressed and contains:\n Footer length Compression type Metadata length File identifier (“ORC”)  Footer The footer includes the schema, row count, column-level statistics, and a list of stripes that make up the file body.\nmessage Footer { optional uint64 headerLength = 1; optional uint64 contentLength = 2; repeated StripeInformation stripes = 3; repeated Type types = 4; repeated UserMetadataItem metadata = 5; optional uint64 numberOfRows = 6; repeated ColumnStatistics statistics = 7; optional uint32 rowIndexStride = 8; optional uint32 writer = 9; optional Encryption encryption = 10; optional uint64 stripeStatisticsLength = 11;} Stripe Information: Data in the body is organized into multiple stripes. Stripes contain row indexes, row data, and stripe footers, which are stored column-wise.  message StripeInformation { optional uint64 offset = 1; optional uint64 indexLength = 2; optional uint64 dataLength = 3; optional uint64 footerLength = 4; optional uint64 numberOfRows = 5;} Type Information: ORC uses a tree structure to represent nested data types, and the type schema must remain consistent.  create table Foobar ( myInt int, myMap mapstring, structmyString : string, myDouble: double, myTime timestamp );  Column Statistics: Simple statistics for each column are available to support coarse-grained filtering.  Stripes The body of an ORC file is split into stripes, which are large chunks of data (typically ~200MB) that contain:\n Index Data Row Data Stripe Footer  The Stripe Footer holds column encoding details and stream-related information, such as compression and encryption methods.\nIndex Support ORC supports three levels of indexing:\n   Level Location Data Content     File Level File Footer Column-level statistics for the entire file   Stripe Level File Footer Column-level statistics for each stripe   Row Level Beginning of Stripe Statistics for each row group and their start position    Row Level Index The row-level index contains Row Group Index and Bloom Filter Index.\nRow Group Index Indexes for primitive types are represented by ROW_INDEX streams, with each row group containing a RowIndexEntry.\n Default row group size: 10,000 rows\n message RowIndex { repeated RowIndexEntry entry = 1;}message RowIndexEntry { repeated uint64 positions = 1 [packed=true]; optional ColumnStatistics statistics = 2;}Bloom Filter Index Each column has a BLOOM_FILTER stream to help speed up searches.\nmessage BloomFilter { optional uint32 numHashFunctions = 1; repeated fixed64 bitset = 2;}Data Access Path  Postscript - Footer - Retrieve Stripe Information - Stripe Footer - Stripe Index - Row Group - Column  References  An Introduction to Big Data Formats - Nexla ORC Documentation ORC Specification ORC Article by Tencent  ",
-  "wordCount" : "557",
+  "articleBody": "Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.\nResearch Focus: ORC file encoding, file organization, and indexing support.\nFile Layout An ORC file can be divided into three main sections:\nHeader: Identifies the file type. Body: Contains row data and indexes, as shown below. Tail: Contains top-level file information. ORC Specification v1\nFile Tail Since distributed storage generally supports only append-only semantics, the ORC file maintains a tail section for top-level file information.\nThe tail contains:\nPostscript: Contains essential information for parsing the footer and metadata, such as the length of each section and compression method. Footer: Stores schema information, row count, column statistics, and more. Stripe Statistics and Metadata: Includes column-level statistics. Postscript The postscript is uncompressed and contains:\nFooter length Compression type Metadata length File identifier (“ORC”) Footer The footer includes the schema, row count, column-level statistics, and a list of stripes that make up the file body.\nmessage Footer { optional uint64 headerLength = 1; optional uint64 contentLength = 2; repeated StripeInformation stripes = 3; repeated Type types = 4; repeated UserMetadataItem metadata = 5; optional uint64 numberOfRows = 6; repeated ColumnStatistics statistics = 7; optional uint32 rowIndexStride = 8; optional uint32 writer = 9; optional Encryption encryption = 10; optional uint64 stripeStatisticsLength = 11; } Stripe Information: Data in the body is organized into multiple stripes. Stripes contain row indexes, row data, and stripe footers, which are stored column-wise. message StripeInformation { optional uint64 offset = 1; optional uint64 indexLength = 2; optional uint64 dataLength = 3; optional uint64 footerLength = 4; optional uint64 numberOfRows = 5; } Type Information: ORC uses a tree structure to represent nested data types, and the type schema must remain consistent. create table Foobar ( myInt int, myMap map\u003cstring, struct\u003cmyString : string, myDouble: double\u003e\u003e, myTime timestamp ); Column Statistics: Simple statistics for each column are available to support coarse-grained filtering. Stripes The body of an ORC file is split into stripes, which are large chunks of data (typically ~200MB) that contain:\nIndex Data Row Data Stripe Footer The Stripe Footer holds column encoding details and stream-related information, such as compression and encryption methods.\nIndex Support ORC supports three levels of indexing:\nLevel Location Data Content File Level File Footer Column-level statistics for the entire file Stripe Level File Footer Column-level statistics for each stripe Row Level Beginning of Stripe Statistics for each row group and their start position Row Level Index The row-level index contains Row Group Index and Bloom Filter Index.\nRow Group Index Indexes for primitive types are represented by ROW_INDEX streams, with each row group containing a RowIndexEntry.\nDefault row group size: 10,000 rows\nmessage RowIndex { repeated RowIndexEntry entry = 1; } message RowIndexEntry { repeated uint64 positions = 1 [packed=true]; optional ColumnStatistics statistics = 2; } Bloom Filter Index Each column has a BLOOM_FILTER stream to help speed up searches.\nmessage BloomFilter { optional uint32 numHashFunctions = 1; repeated fixed64 bitset = 2; } Data Access Path Postscript -\u003e Footer -\u003e Retrieve Stripe Information -\u003e Stripe Footer -\u003e Stripe Index -\u003e Row Group -\u003e Column References An Introduction to Big Data Formats - Nexla ORC Documentation ORC Specification ORC Article by Tencent ",
+  "wordCount" : "565",
   "inLanguage": "en",
   "datePublished": "2022-10-05T19:56:01+08:00",
   "dateModified": "2022-06-05T19:56:01+08:00",
@@ -153,10 +152,10 @@ File Layout An ORC file can be divided into three main sections:
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -218,11 +217,11 @@ File Layout An ORC file can be divided into three main sections:
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -239,18 +238,18 @@ File Layout An ORC file can be divided into three main sections:
 
   <p>
   <small>
-    October 5, 2022&nbsp;· 557 words&nbsp;· 3 min</small>
+    October 5, 2022&nbsp;· 565 words&nbsp;· 3 min</small>
 
   <small>
       
       ·
       
       
-      <a href="https://noneback.github.io/tags/column-store/">column store</a>
+      <a href="https://noneback.github.io/tags/column-store/">Column Store</a>
       
-      <a href="https://noneback.github.io/tags/big-data/">big data</a>
+      <a href="https://noneback.github.io/tags/big-data/">Big Data</a>
       
-      <a href="https://noneback.github.io/tags/storage/">storage</a>
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
     </small>
   
@@ -288,7 +287,7 @@ File Layout An ORC file can be divided into three main sections:
 <blockquote>
 <p>ORC Specification v1</p>
 </blockquote>
-<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1654164675197-b3513a38-dee1-4fea-a582-1e800542dc06.png#clientId=ubff13205-800f-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;id=udfb74091&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=567&amp;originWidth=580&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=134693&amp;status=done&amp;style=none&amp;taskId=u3792c89f-94b1-497c-81db-a5f9ae97297&amp;title=" alt="File Layout"></p>
+<p><img alt="File Layout" src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1654164675197-b3513a38-dee1-4fea-a582-1e800542dc06.png#clientId=ubff13205-800f-4&crop=0&crop=0&crop=1&crop=1&from=paste&id=udfb74091&margin=%5Bobject%20Object%5D&name=image.png&originHeight=567&originWidth=580&originalType=binary&ratio=1&rotation=0&showTitle=false&size=134693&status=done&style=none&taskId=u3792c89f-94b1-497c-81db-a5f9ae97297&title="></p>
 <h3 id="file-tail">File Tail</h3>
 <p>Since distributed storage generally supports only append-only semantics, the ORC file maintains a tail section for top-level file information.</p>
 <p>The tail contains:</p>
@@ -307,38 +306,38 @@ File Layout An ORC file can be divided into three main sections:
 </ul>
 <h4 id="footer">Footer</h4>
 <p>The footer includes the schema, row count, column-level statistics, and a list of stripes that make up the file body.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-protobuf" data-lang="protobuf"><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">Footer</span> {<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> headerLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> contentLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> StripeInformation stripes <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> Type types <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> UserMetadataItem metadata <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> numberOfRows <span style="color:#f92672">=</span> <span style="color:#ae81ff">6</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> ColumnStatistics statistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">7</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> rowIndexStride <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> writer <span style="color:#f92672">=</span> <span style="color:#ae81ff">9</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> Encryption encryption <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> stripeStatisticsLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">11</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></code></pre></div><ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">Footer</span> {<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> headerLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> contentLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> StripeInformation stripes <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> Type types <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> UserMetadataItem metadata <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> numberOfRows <span style="color:#f92672">=</span> <span style="color:#ae81ff">6</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> ColumnStatistics statistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">7</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> rowIndexStride <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> writer <span style="color:#f92672">=</span> <span style="color:#ae81ff">9</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> Encryption encryption <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> stripeStatisticsLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">11</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><ul>
 <li><strong>Stripe Information</strong>: Data in the body is organized into multiple <strong>stripes</strong>. Stripes contain row indexes, row data, and stripe footers, which are stored column-wise.</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-protobuf" data-lang="protobuf"><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">StripeInformation</span> {<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> offset <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> indexLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> dataLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> footerLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> numberOfRows <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></code></pre></div><ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">StripeInformation</span> {<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> offset <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> indexLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> dataLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> footerLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> numberOfRows <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><ul>
 <li><strong>Type Information</strong>: ORC uses a tree structure to represent nested data types, and the type schema must remain consistent.</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">table</span> Foobar (
-  myInt int,
-  myMap <span style="color:#66d9ef">map</span><span style="color:#f92672">&lt;</span>string, struct<span style="color:#f92672">&lt;</span>myString : string, myDouble: double<span style="color:#f92672">&gt;&gt;</span>,
-  myTime <span style="color:#66d9ef">timestamp</span>
-);
-</code></pre></div><ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">table</span> Foobar (
+</span></span><span style="display:flex;"><span>  myInt int,
+</span></span><span style="display:flex;"><span>  myMap <span style="color:#66d9ef">map</span><span style="color:#f92672">&lt;</span>string, struct<span style="color:#f92672">&lt;</span>myString : string, myDouble: double<span style="color:#f92672">&gt;&gt;</span>,
+</span></span><span style="display:flex;"><span>  myTime <span style="color:#66d9ef">timestamp</span>
+</span></span><span style="display:flex;"><span>);
+</span></span></code></pre></div><ul>
 <li><strong>Column Statistics</strong>: Simple statistics for each column are available to support coarse-grained filtering.</li>
 </ul>
 <h2 id="stripes">Stripes</h2>
@@ -384,21 +383,21 @@ File Layout An ORC file can be divided into three main sections:
 <blockquote>
 <p>Default row group size: 10,000 rows</p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-protobuf" data-lang="protobuf"><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">RowIndex</span> {<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> RowIndexEntry entry <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">RowIndexEntry</span> {<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">uint64</span> positions <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> [<span style="color:#66d9ef">packed</span><span style="color:#f92672">=</span><span style="color:#66d9ef">true</span>];<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> ColumnStatistics statistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></code></pre></div><h4 id="bloom-filter-index">Bloom Filter Index</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">RowIndex</span> {<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> RowIndexEntry entry <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">RowIndexEntry</span> {<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">uint64</span> positions <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> [<span style="color:#66d9ef">packed</span><span style="color:#f92672">=</span><span style="color:#66d9ef">true</span>];<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> ColumnStatistics statistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><h4 id="bloom-filter-index">Bloom Filter Index</h4>
 <p>Each column has a <strong>BLOOM_FILTER</strong> stream to help speed up searches.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-protobuf" data-lang="protobuf"><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">BloomFilter</span> {<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> numHashFunctions <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">fixed64</span> bitset <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></code></pre></div><h2 id="data-access-path">Data Access Path</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">BloomFilter</span> {<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> numHashFunctions <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">fixed64</span> bitset <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><h2 id="data-access-path">Data Access Path</h2>
 <ul>
 <li><strong>Postscript</strong> -&gt; <strong>Footer</strong> -&gt; Retrieve Stripe Information -&gt; <strong>Stripe Footer</strong> -&gt; <strong>Stripe Index</strong> -&gt; <strong>Row Group</strong> -&gt; <strong>Column</strong></li>
 </ul>
@@ -465,7 +464,7 @@ File Layout An ORC file can be divided into three main sections:
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -542,4 +541,4 @@ File Layout An ORC file can be divided into three main sections:
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

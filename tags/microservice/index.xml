@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>microservice on NoneBack</title>
+    <title>Microservice on NoneBack</title>
     <link>https://noneback.github.io/tags/microservice/</link>
-    <description>Recent content in microservice on NoneBack created by </description>
+    <description>Recent content in Microservice on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 20 May 2021 23:55:11 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/microservice/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -39,13 +40,13 @@
 &lt;p&gt;&lt;strong&gt;Third-Party Payments&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;In a microservice architecture, payment and orders are independent services. The order payment status depends on a notification from the financial service, which, in turn, depends on notifications from a third-party payment service.&lt;/p&gt;
 &lt;p&gt;A classic scenario is illustrated below:&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34; src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;From the diagram, there are two calls: the third-party payment service calling the payment service, and the payment service calling the order service. Both calls can encounter &lt;strong&gt;timeouts&lt;/strong&gt;. Without distributed transactions, the actual payment status and the final payment status visible to the user may become &lt;strong&gt;inconsistent&lt;/strong&gt;.&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h1 id=&#34;implementation-approaches&#34;&gt;Implementation Approaches&lt;/h1&gt;
 &lt;h2 id=&#34;two-phase-commit-2pc&#34;&gt;Two-Phase Commit (2PC)&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34; src=&#34;https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;A transaction commit is divided into two phases:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
@@ -92,7 +93,7 @@
 &lt;h2 id=&#34;local-message-table&#34;&gt;Local Message Table&lt;/h2&gt;
 &lt;p&gt;The transaction initiator maintains a &lt;strong&gt;local message table&lt;/strong&gt;, and operations on the business table and the message table are within the same local transaction. Asynchronously, a &lt;strong&gt;scheduled task&lt;/strong&gt; scans the message table and delivers the message downstream.&lt;/p&gt;
 &lt;p&gt;The broad concept of the local message table also allows downstream notification through methods other than message delivery, such as RPC calls.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34; alt=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34; src=&#34;https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png&#34;&gt;&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;The initiator executes a local transaction, operating both the business table and the local message table.&lt;/li&gt;
 &lt;li&gt;A scheduled task scans pending local messages (in the message table) and sends them to the message queue:
@@ -161,7 +162,7 @@
 &lt;h3 id=&#34;classic-scenario&#34;&gt;Classic Scenario&lt;/h3&gt;
 &lt;p&gt;&lt;strong&gt;Payment Callback&lt;/strong&gt;:&lt;/p&gt;
 &lt;p&gt;The payment service receives a successful payment notification from a third-party service, updates the payment status of the order, and synchronously notifies the order service. If this synchronous notification fails, an asynchronous script will keep retrying the order service interface.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34; alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34; src=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://xiaomi-info.github.io/2020/01/02/distributed-transaction/&#34;&gt;Distributed Transactions: All You Need to Know&lt;/a&gt;&lt;/p&gt;
 </description>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh"><head>
-	<meta name="generator" content="Hugo 0.92.2" />
+	<meta name="generator" content="Hugo 0.123.7">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NoneBack</title>
     <meta charset="utf-8">
@@ -9,7 +9,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -33,8 +33,7 @@ if (!doNotTrack) {
 <meta property="og:url" content="https://noneback.github.io/zh/" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="NoneBack"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="NoneBack"/>
 <meta name="twitter:description" content=""/>
 
 <script type="application/ld+json">
@@ -42,7 +41,7 @@ if (!doNotTrack) {
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "NoneBack",
-  "url": "https://noneback.github.io",
+  "url": "https://noneback.github.io/",
   "description": "",
   "thumbnailUrl": "https://noneback.github.io/favicon.ico",
   "sameAs": [
@@ -67,10 +66,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -167,6 +166,27 @@ if (!doNotTrack) {
 <div class="featured-list">
   
     <article class="featured-single">
+        <h4><a href="/zh/blog/zh/prometheus-tsdb/">Prometheus--TSDB</a></h4>
+        <p>
+  <small>
+    2024年12月31日&nbsp;· 5811 字&nbsp;· 12 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/prometheus/">Prometheus</a>
+      
+      <a href="https://noneback.github.io/zh/tags/tsdb/">TSDB</a>
+      
+    </small>
+  
+<p>
+        最近晋升，顺便总结一些以前的工作。工作里大规模数据库可观测系统占了很大一部分，不过这个和云原生监控系统Prometheus还是很不一样的。现
+    </article>
+  
+    <article class="featured-single">
         <h4><a href="/zh/blog/zh/borg/">Borg: Large-scale cluster management at Google with Borg</a></h4>
         <p>
   <small>
@@ -177,11 +197,11 @@ if (!doNotTrack) {
       ·
       
       
-      <a href="https://noneback.github.io/zh/tags/borg/">borg</a>
+      <a href="https://noneback.github.io/zh/tags/borg/">Borg</a>
       
-      <a href="https://noneback.github.io/zh/tags/k8s/">k8s</a>
+      <a href="https://noneback.github.io/zh/tags/k8s/">K8s</a>
       
-      <a href="https://noneback.github.io/zh/tags/cluster-management/">cluster management</a>
+      <a href="https://noneback.github.io/zh/tags/cluster-management/">Cluster Management</a>
       
     </small>
   
@@ -244,12 +264,12 @@ if (!doNotTrack) {
 <li>事务的实现。由于存储底座对上层提供的单一文件视图，所以对与Aurora来说，其事务的实现几乎与单机事务算法相同，并能提供相同的事务语义。NewSQL的事务一般是基于2PC的分布式事务实现。</li>
 <li>后台加速前台处理。类似LevelDB的思路，尽可能将存储节点的一些操作异步化（比如日志Apply），提升前台用户感知性能。这些异步的操作通过维护各种xxLSN来记录当前节点的后台处理进度，比如VLSN，commit-LSN等等</li>
 </ul>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png"></p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png"></p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png"></p>
 <p>有趣的是，PolarDB虽然是参考Aurora进行的设计，但它的架构设计认为网络并非瓶颈，而是经过OS的各种系统调用拖慢了整体速度。在彼时阿里云存储底座并不稳定的条件下，所以才有了它架构中的PolarStore，用各种硬件以及FUSE等存储技术越过或者优化系统调用，而如今盘古在稳定性和性能上都做的很不错的情况下，弱化PolarStore这个组件也成为了正常的选择。我认为说的不无道理。</p>
 <p>另外，为什么他们选择用NWR而不是用Raft之类的一致性协议？目前看上去，NWR在网络上，一次请求的网络比Raft少一轮，可能是这个原因</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png"></p>
 <h1 id="参考">参考</h1>
 <p><a href="https://zhuanlan.zhihu.com/p/319806107">https://zhuanlan.zhihu.com/p/319806107</a></p>
 <p><a href="http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt">http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt</a></p>
@@ -283,7 +303,7 @@ if (!doNotTrack) {
         <h4><a href="/zh/blog/zh/mit6.824-zookeeper/">MIT6.824-ZooKeeper</a></h4>
         <p>
   <small>
-    2023年1月3日&nbsp;· 1455 字&nbsp;· 3 分钟</small>
+    2023年1月3日&nbsp;· 933 字&nbsp;· 2 分钟</small>
 
   <small>
       
@@ -306,7 +326,7 @@ if (!doNotTrack) {
         <h4><a href="/zh/blog/zh/leveldb-write/">LevelDB Write</a></h4>
         <p>
   <small>
-    2022年5月10日&nbsp;· 1387 字&nbsp;· 3 分钟</small>
+    2022年5月10日&nbsp;· 1385 字&nbsp;· 3 分钟</small>
 
   <small>
       
@@ -600,7 +620,7 @@ if (!doNotTrack) {
     </article>
   
     <article class="featured-single">
-        <h4><a href="/zh/blog/zh/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93-%E5%89%8D%E7%AB%AF/">实现简单的SQL数据库--前端</a></h4>
+        <h4><a href="/zh/blog/zh/%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95%E7%9A%84%E6%95%B0%E6%8D%AE%E5%BA%93--%E5%89%8D%E7%AB%AF/">实现简单的SQL数据库--前端</a></h4>
         <p>
   <small>
     2020年11月10日&nbsp;· 1697 字&nbsp;· 4 分钟</small>
@@ -612,7 +632,7 @@ if (!doNotTrack) {
       
       <a href="https://noneback.github.io/zh/tags/sql/">SQL</a>
       
-      <a href="https://noneback.github.io/zh/tags/parsing/">parsing</a>
+      <a href="https://noneback.github.io/zh/tags/parsing/">Parsing</a>
       
       <a href="https://noneback.github.io/zh/tags/db/">DB</a>
       
@@ -628,7 +648,7 @@ if (!doNotTrack) {
         <h4><a href="/zh/blog/zh/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/">基于朴素贝叶斯的中文垃圾电子邮件分类</a></h4>
         <p>
   <small>
-    2020年5月6日&nbsp;· 1672 字&nbsp;· 4 分钟</small>
+    2020年5月6日&nbsp;· 1684 字&nbsp;· 4 分钟</small>
 
   <small>
       
@@ -650,7 +670,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -727,4 +747,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

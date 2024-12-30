@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mit6.824-raft/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2022-02-21T01:26:46+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824-Raft"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-Raft"/>
 <meta name="twitter:description" content="这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "MIT6.824-Raft",
       "item": "https://noneback.github.io/zh/blog/zh/mit6.824-raft/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "Raft", "Paper Reading", "Consensu", "Distributed System", "MIT6.824"
   ],
-  "articleBody": "这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内容，于是简单记录一下。\n算法简介 共识算法的基础是复制状态机，即按照相同顺序执行相同的确定性指令最终必然达到一致状态。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。\nRaft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。\n集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。\nRaft是一种强领导人的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理复制提交日志。\n复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。\n安全性主要有五个部分，与实现相关的最核心的内容我认为有两个。一个是领导人只追加原则，不允许修改已提交的日志；另一个是选举安全性，避免脑裂问题，同时保证新Leader拥有比较新的日志。\n剩下的其他内容请参考论文原文。\n实现思路 实现的思路大体上是参考了一篇大佬的博文（见参考），算法的细节很多也在原Paper的Figure2中，故而以下只讲一下实现各个功能时需要注意的地方。\n领导人选举 发起选举+选举结果处理 发起选举是会开启多个goroutine后台发送RPC请求到其他结点，所以处理RPC response的时候需要确定当前结点为Candidate，以及请求未过期，即rf.state == Candidate \u0026\u0026 req.Term == rf.currentTerm。选举成功需要立即发送心跳，通知其他结点选举结果。\n如果发现失败的Responseresp.Term  rf.currentTerm,此时需要切换到Follower状态，更新任期，并重置投票信息。\n 实际上一旦更新了任期，就需要重置投票信息。如果不重置votedFor信息，会有一些测试通过不了\n 请求投票RPC 前置逻辑过滤过期req.Term 以及当前任期的重复投票请求。之后再按照算法描述的逻辑处理，注意如果成功投票，需要重置选举计时器。\n 在 grant 投票时才重置选举超时时间，这样有助于网络不稳定条件下选主的 liveness 问题\n 状态切换 注意在切换角色时处理不同的计时器状态(stop or reset)，切换到Leader时需要重置matchIndex以及nextIndex的值。\n日志复制 Raft算法的核心，需要注意的地方最多。\n我的实现是使用多个replicator和applier线程异步复制和apply的方式。\n日志复制RPC 前置逻辑过滤掉req.Term 过期的请求。之后处理日志不一致以及日志被压缩以及重复日志的情况，之后复制日志再处理commitIndex。\n发起日志复制+请求结果处理 发起日志复制需要判断是直接复制日志或者发送快照。\n请求结果处理重点是如何处理matchIndex和nextIndex以及commitIndex。\nmatchIndex用来记录其他节点成功复制的最新日志，nextIndex是记录发送给其他节点的下一个日志。commitIndex通过排序matchIndex来更新。再决定是否需要触发applier更新appliedIndex。\n请求失败则可以回退nextIndex或者切换到Follower状态。\n异步Apply 实际上就是一个后台goroutine，通过条件变量控制，使用Channel通信。每次触发会把log[lastApplied:commitIndex]发送给上层，并更新appliedIndex。\n持久化 在需要持久化状态的属性更新时及时的刷盘。\n安装快照 主要就是Leader触发的Snapshot以及RPC。应用Snapshot的时候需要先判断其新旧以及更新log[0]和appliedIndex以及commitIndex。\n坑 Defer 首先是Golang的defer关键字。我比较喜欢在RPC开头使用defer关键字直接打印出结点的一些数据：defer Dprintf(\"%+v\", raft.currentTerm)，这样在调用结束时能打印出log，但实际上，在运行到defer这一行的代码时，打印的内容已经固定。正确的使用方式应该是defer func(ID int) { Dprintf(\"%+v\", id) }()\nLog Dummy Header Log处最好预留一个位置用于存放快照保存的Index和Term，不然Snapshot那部分的重构很痛苦。\nLock 参看guidance的用锁建议。使用一个大锁，而不是用多个锁。算法的正确性比性能重要。在发送RPC以及使用Channel时不要加锁，不然可能会超时。\n参考 Raft wikepedia\nRaft Official Website\nRaft Paper\nMIT6.824 Official\nPotato’s Implimentation Doc\n",
+  "articleBody": "这个寒假可算把搁置许久的Lab02给做完了。之前一直被卡在Test 2B的一个case里，寒假时候重新看看大佬们的实现思路，可算是完成了所有内容，于是简单记录一下。\n算法简介 共识算法的基础是复制状态机，即按照相同顺序执行相同的确定性指令最终必然达到一致状态。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。\nRaft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。\n集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。\nRaft是一种强领导人的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理复制提交日志。\n复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。\n安全性主要有五个部分，与实现相关的最核心的内容我认为有两个。一个是领导人只追加原则，不允许修改已提交的日志；另一个是选举安全性，避免脑裂问题，同时保证新Leader拥有比较新的日志。\n剩下的其他内容请参考论文原文。\n实现思路 实现的思路大体上是参考了一篇大佬的博文（见参考），算法的细节很多也在原Paper的Figure2中，故而以下只讲一下实现各个功能时需要注意的地方。\n领导人选举 发起选举+选举结果处理 发起选举是会开启多个goroutine后台发送RPC请求到其他结点，所以处理RPC response的时候需要确定当前结点为Candidate，以及请求未过期，即rf.state == Candidate \u0026\u0026 req.Term == rf.currentTerm。选举成功需要立即发送心跳，通知其他结点选举结果。\n如果发现失败的Responseresp.Term \u003e rf.currentTerm,此时需要切换到Follower状态，更新任期，并重置投票信息。\n实际上一旦更新了任期，就需要重置投票信息。如果不重置votedFor信息，会有一些测试通过不了\n请求投票RPC 前置逻辑过滤过期req.Term \u003c rf.currentTerm以及当前任期的重复投票请求。之后再按照算法描述的逻辑处理，注意如果成功投票，需要重置选举计时器。\n在 grant 投票时才重置选举超时时间，这样有助于网络不稳定条件下选主的 liveness 问题\n状态切换 注意在切换角色时处理不同的计时器状态(stop or reset)，切换到Leader时需要重置matchIndex以及nextIndex的值。\n日志复制 Raft算法的核心，需要注意的地方最多。\n我的实现是使用多个replicator和applier线程异步复制和apply的方式。\n日志复制RPC 前置逻辑过滤掉req.Term \u003c rf.currentTerm过期的请求。之后处理日志不一致以及日志被压缩以及重复日志的情况，之后复制日志再处理commitIndex。\n发起日志复制+请求结果处理 发起日志复制需要判断是直接复制日志或者发送快照。\n请求结果处理重点是如何处理matchIndex和nextIndex以及commitIndex。\nmatchIndex用来记录其他节点成功复制的最新日志，nextIndex是记录发送给其他节点的下一个日志。commitIndex通过排序matchIndex来更新。再决定是否需要触发applier更新appliedIndex。\n请求失败则可以回退nextIndex或者切换到Follower状态。\n异步Apply 实际上就是一个后台goroutine，通过条件变量控制，使用Channel通信。每次触发会把log[lastApplied:commitIndex]发送给上层，并更新appliedIndex。\n持久化 在需要持久化状态的属性更新时及时的刷盘。\n安装快照 主要就是Leader触发的Snapshot以及RPC。应用Snapshot的时候需要先判断其新旧以及更新log[0]和appliedIndex以及commitIndex。\n坑 Defer 首先是Golang的defer关键字。我比较喜欢在RPC开头使用defer关键字直接打印出结点的一些数据：defer Dprintf(\"%+v\", raft.currentTerm)，这样在调用结束时能打印出log，但实际上，在运行到defer这一行的代码时，打印的内容已经固定。正确的使用方式应该是defer func(ID int) { Dprintf(\"%+v\", id) }()\nLog Dummy Header Log处最好预留一个位置用于存放快照保存的Index和Term，不然Snapshot那部分的重构很痛苦。\nLock 参看guidance的用锁建议。使用一个大锁，而不是用多个锁。算法的正确性比性能重要。在发送RPC以及使用Channel时不要加锁，不然可能会超时。\n参考 Raft wikepedia\nRaft Official Website\nRaft Paper\nMIT6.824 Official\nPotato’s Implimentation Doc\n",
   "wordCount" : "1988",
   "inLanguage": "zh",
   "datePublished": "2022-02-21T01:26:46+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -271,7 +276,7 @@ if (!doNotTrack) {
 <h2 id="算法简介">算法简介</h2>
 <p>共识算法的基础是复制状态机，即<strong>按照相同顺序执行相同的确定性指令最终必然达到一致状态</strong>。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。</p>
 <p>Raft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。</p>
-<p><img src="https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png" alt="img"></p>
+<p><img alt="img" src="https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png"></p>
 <p>集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。</p>
 <p>Raft是一种<strong>强领导人</strong>的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理<strong>复制提交</strong>日志。</p>
 <p>复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。</p>
@@ -378,7 +383,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -455,4 +460,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

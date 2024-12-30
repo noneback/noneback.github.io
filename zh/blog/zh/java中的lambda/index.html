@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/java%E4%B8%AD%E7%9A%84lambda/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2019-11-01T00:00:00+00:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Java中的lambda表达式"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Java中的lambda表达式"/>
 <meta name="twitter:description" content="lambda表达式 Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "Java中的lambda表达式",
       "item": "https://noneback.github.io/zh/blog/zh/java%E4%B8%AD%E7%9A%84lambda/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "JAVA"
   ],
-  "articleBody": "lambda表达式 Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中）。使用 Lambda 表达式可以使代码变的更加简洁紧凑。\n语法 lambda 表达式的语法格式如下：\n(parameters) - expression 或 (parameters) -{ statements; } 以下是lambda表达式的重要特征:\n **可选类型声明：**不需要声明参数类型，编译器可以统一识别参数值。 **可选的参数圆括号：**一个参数无需定义圆括号，但多个参数需要定义圆括号。 **可选的大括号：**如果主体包含了一个语句，就不需要使用大括号。 **可选的返回关键字：**如果主体只有一个表达式返回值则编译器会自动返回值，大括号需要指定明表达式返回了一个数值。  Lambda 表达式的结构 让我们了解一下 Lambda 表达式的结构。\n 一个 Lambda 表达式可以有零个或多个参数 参数的类型既可以明确声明，也可以根据上下文来推断。例如：(int a)与(a)效果相同 所有参数需包含在圆括号内，参数之间用逗号相隔。例如：(a, b) 或 (int a, int b) 或 (String a, int b, float c) 空圆括号代表参数集为空。例如：() - 42 当只有一个参数，且其类型可推导时，圆括号（）可省略。例如：a - return a*a Lambda 表达式的主体可包含零条或多条语句 如果 Lambda 表达式的主体只有一条语句，花括号{}可省略。匿名函数的返回类型与该主体表达式一致 如果 Lambda 表达式的主体包含一条以上语句，则表达式必须包含在花括号{}中（形成代码块）。匿名函数的返回类型与代码块的返回类型一致，若没有返回则为空  lambda实例 Lambda 表达式的简单例子:\n// 1. 不需要参数,返回值为 5 () - 5 // 2. 接收一个参数(数字类型),返回其2倍的值 x - 2 * x // 3. 接受2个参数(数字),并返回他们的差值 (x, y) - x – y // 4. 接收2个int型整数,返回他们的和 (int x, int y) - x + y // 5. 接受一个 string 对象,并在控制台打印,不返回任何值(看起来像是返回void) (String s) - System.out.print(s) lambda表达式的实现原理 在 Java 中，Lambda 表达式是对象，他们必须依附于一类特别的对象类型——函数式接口(functional interface)。函数式接口是只包含一个抽象方法声明的接口。当你试图传入lambda表达式的时候，实际上它是将你传入的表达式隐式的转换并赋值给一个函数式接口，再通过其调用函数。\n如：\n@FunctionalInterface interface Inner { void print(int num); } public static void wapper(int num, Inner func) { func.print(num); } wapper(10, e - { for (int i = 0; i  e; i++) { System.out.print(\"HelloWorld\\t\"); } }); 和下面的写法等价 Inner innerFunc = (int e) - { for (int i = 0; i  e; i++) { System.out.print(\"HelloWorld\\t\"); } }; wapper(10, innerFunc); ",
+  "articleBody": "lambda表达式 Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中）。使用 Lambda 表达式可以使代码变的更加简洁紧凑。\n语法 lambda 表达式的语法格式如下：\n(parameters) -\u003e expression 或 (parameters) -\u003e{ statements; } 以下是lambda表达式的重要特征:\n**可选类型声明：**不需要声明参数类型，编译器可以统一识别参数值。 **可选的参数圆括号：**一个参数无需定义圆括号，但多个参数需要定义圆括号。 **可选的大括号：**如果主体包含了一个语句，就不需要使用大括号。 **可选的返回关键字：**如果主体只有一个表达式返回值则编译器会自动返回值，大括号需要指定明表达式返回了一个数值。 Lambda 表达式的结构 让我们了解一下 Lambda 表达式的结构。\n一个 Lambda 表达式可以有零个或多个参数 参数的类型既可以明确声明，也可以根据上下文来推断。例如：(int a)与(a)效果相同 所有参数需包含在圆括号内，参数之间用逗号相隔。例如：(a, b) 或 (int a, int b) 或 (String a, int b, float c) 空圆括号代表参数集为空。例如：() -\u003e 42 当只有一个参数，且其类型可推导时，圆括号（）可省略。例如：a -\u003e return a*a Lambda 表达式的主体可包含零条或多条语句 如果 Lambda 表达式的主体只有一条语句，花括号{}可省略。匿名函数的返回类型与该主体表达式一致 如果 Lambda 表达式的主体包含一条以上语句，则表达式必须包含在花括号{}中（形成代码块）。匿名函数的返回类型与代码块的返回类型一致，若没有返回则为空 lambda实例 Lambda 表达式的简单例子:\n// 1. 不需要参数,返回值为 5 () -\u003e 5 // 2. 接收一个参数(数字类型),返回其2倍的值 x -\u003e 2 * x // 3. 接受2个参数(数字),并返回他们的差值 (x, y) -\u003e x – y // 4. 接收2个int型整数,返回他们的和 (int x, int y) -\u003e x + y // 5. 接受一个 string 对象,并在控制台打印,不返回任何值(看起来像是返回void) (String s) -\u003e System.out.print(s) lambda表达式的实现原理 在 Java 中，Lambda 表达式是对象，他们必须依附于一类特别的对象类型——函数式接口(functional interface)。函数式接口是只包含一个抽象方法声明的接口。当你试图传入lambda表达式的时候，实际上它是将你传入的表达式隐式的转换并赋值给一个函数式接口，再通过其调用函数。\n如：\n@FunctionalInterface interface Inner { void print(int num); } public static void wapper(int num, Inner func) { func.print(num); } wapper(10, e -\u003e { for (int i = 0; i \u003c e; i++) { System.out.print(\"HelloWorld\\t\"); } }); 和下面的写法等价 Inner innerFunc = (int e) -\u003e { for (int i = 0; i \u003c e; i++) { System.out.print(\"HelloWorld\\t\"); } }; wapper(10, innerFunc); ",
   "wordCount" : "976",
   "inLanguage": "zh",
   "datePublished": "2019-11-01T00:00:00Z",
@@ -103,10 +108,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -168,11 +173,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -221,8 +226,8 @@ if (!doNotTrack) {
 <p>Lambda 表达式，也可称为闭包，它是推动 Java 8 发布的最重要新特性。Lambda 允许把函数作为一个方法的参数（函数作为参数传递进方法中）。使用 Lambda 表达式可以使代码变的更加简洁紧凑。</p>
 <h2 id="语法">语法</h2>
 <p>lambda 表达式的语法格式如下：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">(</span>parameters<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> expression <span style="color:#a6e22e">或</span> <span style="color:#f92672">(</span>parameters<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;{</span> statements<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
-</code></pre></div><p>以下是lambda表达式的重要特征:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>(parameters) <span style="color:#f92672">-&gt;</span> expression <span style="color:#a6e22e">或</span> (parameters) <span style="color:#f92672">-&gt;</span>{ statements; }
+</span></span></code></pre></div><p>以下是lambda表达式的重要特征:</p>
 <ul>
 <li>**可选类型声明：**不需要声明参数类型，编译器可以统一识别参数值。</li>
 <li>**可选的参数圆括号：**一个参数无需定义圆括号，但多个参数需要定义圆括号。</li>
@@ -243,48 +248,46 @@ if (!doNotTrack) {
 </ul>
 <h3 id="lambda实例">lambda实例</h3>
 <p>Lambda 表达式的简单例子:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 1. 不需要参数,返回值为 5  
-</span><span style="color:#75715e"></span><span style="color:#f92672">()</span> <span style="color:#f92672">-&gt;</span> 5  
-  
-<span style="color:#75715e">// 2. 接收一个参数(数字类型),返回其2倍的值  
-</span><span style="color:#75715e"></span>x <span style="color:#f92672">-&gt;</span> 2 <span style="color:#f92672">*</span> x  
-  
-<span style="color:#75715e">// 3. 接受2个参数(数字),并返回他们的差值  
-</span><span style="color:#75715e"></span><span style="color:#f92672">(</span>x<span style="color:#f92672">,</span> y<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> x <span style="color:#960050;background-color:#1e0010">–</span> y  
-  
-<span style="color:#75715e">// 4. 接收2个int型整数,返回他们的和  
-</span><span style="color:#75715e"></span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> x<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> y<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> x <span style="color:#f92672">+</span> y  
-  
-<span style="color:#75715e">// 5. 接受一个 string 对象,并在控制台打印,不返回任何值(看起来像是返回void)  
-</span><span style="color:#75715e"></span><span style="color:#f92672">(</span>String s<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">print</span><span style="color:#f92672">(</span>s<span style="color:#f92672">)</span>
-</code></pre></div><h2 id="lambda表达式的实现原理">lambda表达式的实现原理</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#75715e">// 1. 不需要参数,返回值为 5  </span>
+</span></span><span style="display:flex;"><span>() <span style="color:#f92672">-&gt;</span> 5  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 2. 接收一个参数(数字类型),返回其2倍的值  </span>
+</span></span><span style="display:flex;"><span>x <span style="color:#f92672">-&gt;</span> 2 <span style="color:#f92672">*</span> x  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 3. 接受2个参数(数字),并返回他们的差值  </span>
+</span></span><span style="display:flex;"><span>(x, y) <span style="color:#f92672">-&gt;</span> x <span style="color:#960050;background-color:#1e0010">–</span> y  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 4. 接收2个int型整数,返回他们的和  </span>
+</span></span><span style="display:flex;"><span>(<span style="color:#66d9ef">int</span> x, <span style="color:#66d9ef">int</span> y) <span style="color:#f92672">-&gt;</span> x <span style="color:#f92672">+</span> y  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 5. 接受一个 string 对象,并在控制台打印,不返回任何值(看起来像是返回void)  </span>
+</span></span><span style="display:flex;"><span>(String s) <span style="color:#f92672">-&gt;</span> System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">print</span>(s)
+</span></span></code></pre></div><h2 id="lambda表达式的实现原理">lambda表达式的实现原理</h2>
 <p>在 Java 中，Lambda 表达式是对象，他们必须依附于一类特别的对象类型——<a href="https://www.runoob.com/java/java8-functional-interfaces.html">函数式接口(functional interface)</a>。函数式接口是只包含一个抽象方法声明的接口。当你试图传入lambda表达式的时候，实际上它是将你传入的表达式隐式的转换并赋值给一个函数式接口，再通过其调用函数。</p>
 <p>如：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"> <span style="color:#a6e22e">@FunctionalInterface</span>
-<span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">Inner</span> <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">print</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> num<span style="color:#f92672">);</span>
-<span style="color:#f92672">}</span>
-
-<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">wapper</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> num<span style="color:#f92672">,</span> Inner func<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        func<span style="color:#f92672">.</span><span style="color:#a6e22e">print</span><span style="color:#f92672">(</span>num<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">wapper<span style="color:#f92672">(</span>10<span style="color:#f92672">,</span> e <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> e<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
-                System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">print</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;HelloWorld\t&#34;</span><span style="color:#f92672">);</span>
-            <span style="color:#f92672">}</span>
-        <span style="color:#f92672">});</span>
-
-和下面的写法等价
-    
- Inner innerFunc <span style="color:#f92672">=</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> e<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> e<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
-                System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">print</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;HelloWorld\t&#34;</span><span style="color:#f92672">);</span>
-            <span style="color:#f92672">}</span>
-        <span style="color:#f92672">};</span>
-        wapper<span style="color:#f92672">(</span>10<span style="color:#f92672">,</span> innerFunc<span style="color:#f92672">);</span>
-
-
-</code></pre></div></section>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span> <span style="color:#a6e22e">@FunctionalInterface</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">Inner</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">print</span>(<span style="color:#66d9ef">int</span> num);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">wapper</span>(<span style="color:#66d9ef">int</span> num, Inner func) {
+</span></span><span style="display:flex;"><span>        func.<span style="color:#a6e22e">print</span>(num);
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>wapper(10, e <span style="color:#f92672">-&gt;</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0; i <span style="color:#f92672">&lt;</span> e; i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>                System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">print</span>(<span style="color:#e6db74">&#34;HelloWorld\t&#34;</span>);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        });
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>和下面的写法等价
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span> Inner innerFunc <span style="color:#f92672">=</span> (<span style="color:#66d9ef">int</span> e) <span style="color:#f92672">-&gt;</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0; i <span style="color:#f92672">&lt;</span> e; i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>                System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">print</span>(<span style="color:#e6db74">&#34;HelloWorld\t&#34;</span>);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        };
+</span></span><span style="display:flex;"><span>        wapper(10, innerFunc);
+</span></span></code></pre></div></section>
 
   
   
@@ -340,7 +343,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -417,4 +420,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

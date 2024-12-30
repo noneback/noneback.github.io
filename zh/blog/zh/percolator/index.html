@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/percolator/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2023-09-28T10:43:23+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications "/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications "/>
 <meta name="twitter:description" content="好久没学习了，学点想学的。本次内容是分布式事务Percolator, 不翻译论文，没有算法细节，只记录自己的理解。 Percolator 和 2PC 2PC 两阶段提交协议中包含"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications ",
       "item": "https://noneback.github.io/zh/blog/zh/percolator/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "Percolator", "Distributed System", "Transaction"
   ],
-  "articleBody": "好久没学习了，学点想学的。本次内容是分布式事务Percolator, 不翻译论文，没有算法细节，只记录自己的理解。\nPercolator 和 2PC 2PC 两阶段提交协议中包含两种角色，Coordinator和Participant。协调者负责整个协议的推进，使得多个参与者最终达到一致的决议。参与者响应协调者的请求，根据协调者的请求完成 prepare 操作及 commit/abort 操作。\n 2PC协议保证事务的原子性(ACD)，并未对隔离性(I)做任何实现，依赖单机事务(ACD)。Coordinator，显然是关键路径，可能成为单点瓶颈，或者宕机问题阻塞事务流程。\n  协调者 参与者 QUERY TO COMMIT -------------------------------- VOTE YES/NO prepare*/abort* ACKNOWLEDGMENT commit*/abort* Percolator 本身其实算一种经过优化的二阶段提交的实现，比如：\n 对锁的使用进行优化，引入Primary-Secondary二级锁，去除了对Coordinator的依赖。 提供了完整的ACID事务语义实现，并且支持MVCC（依赖时间戳服务）  Percolator协议细节 Percolator系统主要有三部分组成：\n  Client，发起事务的客户端，Client 是整个协议的控制中心，是两阶段提交的协调者（Coordinator）。\n  TO，Time Observer，分配时间戳，提供全局唯一且递增的时间戳，实现MVCC\n  Bigtable，提供单机单行事务，数据存储在Bigtable中，包含数据本身以及附带的一些属性。\n lock + write + data: for transaction，lock表示cell被事务持有，write表示数据的可见性\nnotify + ack: for watcher or notifier\n   从外部看，Percolator以SDK的提供给业务方使用。提供事务以及R/W。模型类似于 Begin Txn → Sets of RW Operations → Commit or About or Rollback其中Bigtable最为持久化组件屏蔽了底层Tablet Server Data Sharding的细节，事务中的每一个写操作或者读后写（统称为Write）操作都视为分布式事务的参与者，而这些操作最后可能会分派到多个Tablet Server节点上。\n算法流程 一个事务的所有 Write 在提交之前都会先缓存在 Client，然后在提交阶段一次性写入；Percolator 的事务提交是标准的两阶段提交，分为 Prewrite 和 Commit 。\nPrewrite  从TO获取一个时间戳，作为事务的开始时间。 给数据上锁，标记数据被当前事务占有。上锁失败则表示数据被其他事物占有，当前事物失败。   上锁过程利用了Primary-Secondary机制，选择一个 Write 作为 primary，其它 Write 则是 secondary。Secondary的锁记录指向Primary。\n 显然，Prewrite阶段的数据对其他事务均不可见。\nCommit  尝试对Prewrite中的数据进行Commit。Commit的时候先对Primary记录进行Commit，Primary记录的提交时间将作为整个事务的提交时间。首先对记录的锁记录进行检测，如果锁不存在，则表示Prewrite阶段的锁被其他事物清理，则事物执行失败。如果存在，则写记录中的write列，表示数据对系统可见。   异步网络之中，单节点故障，网络延迟很常见。算法需要在发现这些故障的时候，清理掉这些锁记录，避免死锁。所以，在Commit阶段，如果锁不存在，则表示事务的参与者发生了问题当前事务需要被清理。\n  提交成功之后对锁记录进行清理。显然，锁清理也是可以异步的。  这些设计使得算法去除了中心化Coordinator的依赖。因为过去需要依赖这个中心服务来维护事务各个参与者的信息。而在本算法中，利用Primary-Secondary二级锁以及Write列就可以实现。Write列表示数据对外的可见性以及数据版本链条。Lock列表示数据被事务持有。Primary-Secondary记录了参与者的逻辑从属关系。这样的设计使得Primary记录的提交变成了整个事务的提交点。一但Primary被提交，所有的Secondary记录可以通过检查对应Primary记录的Write列来进行异步提交。\nSnapshot Isolation 两阶段提交解决的是事务的原子性。在此基础上，Percolator还提供了Snapshot Isolation的隔离性。简而言之，Snapshot Isolation要求提交的事务不能导致数据冲突，事务的读操作满足Snapshot Read。利用事务开始时间以及Primary记录的提交时间，可以维护一个事务之间的全序关系，这些问题自然就可以解决了。\n异步网络的死锁问题 之前提到，异步网络之中，单节点故障，网络延迟很常见。算法需要在发现这些故障的时候，清理掉这些锁记录，避免死锁。故障检测的策略可以很简单，比如超时，故障会导致当前事务失败；节点故障又恢复正常，当时的事务已经失败，则此时需要对节点上相关锁记录进行清理。锁的清理可以异步化，比如在Prewrite上锁时，当发现记录Lock列非空，则去检测其Primary锁是否为空，Primary非空，则表示这个事务为完成，可以清理；为空则表示事务提交，则去找到事务提交时间，并把数据提交，再清理锁记录（RollForward）。\n通知机制 通知机制对于异步系统的状态观测和联动很重要。但不是本文重点。\nPercolator在TiDB上的使用 基于我们上文的分析，我们可以得出这样的结论：Percolator是一种优化过的2PC分布式事务实现，实现的基础是支持单机事务的存储引擎。\n让我们来简单看看TiDB的的基于Percolator算法实现分布式事务。\nTiDB和TiKV架构如上。TiDB关系表里的数据最终都被映射到了TiKV中的KV中。TiKV是一个基于Raft+RocksDB的分布式KV。RocksDB是一个支持事务操作的KV。\n所以TiDB的事务的执行路径可以是这样：对关系表的事务操作转为对一组KV的事务操作，再基于Percolator去执行，以此实现关系表的事务操作。\n 当然不可能提供和单机TP数据库一样的事务语义和性能保证。但Share Nothing架构也有自己的优点，所以这个也许并不重要。\n 参考 两阶段提交的工程实践\nPolarDB 数据库内核月报\npercolator：在线增量处理系统 中文翻译\npercolator：在线增量处理系统 中文翻译 | 一只小小鸟\n二阶段提交 - 维基百科，自由的百科全书\nPercolator 和 TiDB 事务算法\n两阶段提交 | OceanBase 学习指南\nTiDB 整体架构\n",
+  "articleBody": "好久没学习了，学点想学的。本次内容是分布式事务Percolator, 不翻译论文，没有算法细节，只记录自己的理解。\nPercolator 和 2PC 2PC 两阶段提交协议中包含两种角色，Coordinator和Participant。协调者负责整个协议的推进，使得多个参与者最终达到一致的决议。参与者响应协调者的请求，根据协调者的请求完成 prepare 操作及 commit/abort 操作。\n2PC协议保证事务的原子性(ACD)，并未对隔离性(I)做任何实现，依赖单机事务(ACD)。Coordinator，显然是关键路径，可能成为单点瓶颈，或者宕机问题阻塞事务流程。\n协调者 参与者 QUERY TO COMMIT --------------------------------\u003e VOTE YES/NO prepare*/abort* \u003c------------------------------- commit*/abort* COMMIT/ROLLBACK --------------------------------\u003e ACKNOWLEDGMENT commit*/abort* \u003c-------------------------------- end Percolator 本身其实算一种经过优化的二阶段提交的实现，比如：\n对锁的使用进行优化，引入Primary-Secondary二级锁，去除了对Coordinator的依赖。 提供了完整的ACID事务语义实现，并且支持MVCC（依赖时间戳服务） Percolator协议细节 Percolator系统主要有三部分组成：\nClient，发起事务的客户端，Client 是整个协议的控制中心，是两阶段提交的协调者（Coordinator）。\nTO，Time Observer，分配时间戳，提供全局唯一且递增的时间戳，实现MVCC\nBigtable，提供单机单行事务，数据存储在Bigtable中，包含数据本身以及附带的一些属性。\nlock + write + data: for transaction，lock表示cell被事务持有，write表示数据的可见性\nnotify + ack: for watcher or notifier\n从外部看，Percolator以SDK的提供给业务方使用。提供事务以及R/W。模型类似于 Begin Txn → Sets of RW Operations → Commit or About or Rollback其中Bigtable最为持久化组件屏蔽了底层Tablet Server Data Sharding的细节，事务中的每一个写操作或者读后写（统称为Write）操作都视为分布式事务的参与者，而这些操作最后可能会分派到多个Tablet Server节点上。\n算法流程 一个事务的所有 Write 在提交之前都会先缓存在 Client，然后在提交阶段一次性写入；Percolator 的事务提交是标准的两阶段提交，分为 Prewrite 和 Commit 。\nPrewrite 从TO获取一个时间戳，作为事务的开始时间。 给数据上锁，标记数据被当前事务占有。上锁失败则表示数据被其他事物占有，当前事物失败。 上锁过程利用了Primary-Secondary机制，选择一个 Write 作为 primary，其它 Write 则是 secondary。Secondary的锁记录指向Primary。\n显然，Prewrite阶段的数据对其他事务均不可见。\nCommit 尝试对Prewrite中的数据进行Commit。Commit的时候先对Primary记录进行Commit，Primary记录的提交时间将作为整个事务的提交时间。首先对记录的锁记录进行检测，如果锁不存在，则表示Prewrite阶段的锁被其他事物清理，则事物执行失败。如果存在，则写记录中的write列，表示数据对系统可见。 异步网络之中，单节点故障，网络延迟很常见。算法需要在发现这些故障的时候，清理掉这些锁记录，避免死锁。所以，在Commit阶段，如果锁不存在，则表示事务的参与者发生了问题当前事务需要被清理。\n提交成功之后对锁记录进行清理。显然，锁清理也是可以异步的。 这些设计使得算法去除了中心化Coordinator的依赖。因为过去需要依赖这个中心服务来维护事务各个参与者的信息。而在本算法中，利用Primary-Secondary二级锁以及Write列就可以实现。Write列表示数据对外的可见性以及数据版本链条。Lock列表示数据被事务持有。Primary-Secondary记录了参与者的逻辑从属关系。这样的设计使得Primary记录的提交变成了整个事务的提交点。一但Primary被提交，所有的Secondary记录可以通过检查对应Primary记录的Write列来进行异步提交。\nSnapshot Isolation 两阶段提交解决的是事务的原子性。在此基础上，Percolator还提供了Snapshot Isolation的隔离性。简而言之，Snapshot Isolation要求提交的事务不能导致数据冲突，事务的读操作满足Snapshot Read。利用事务开始时间以及Primary记录的提交时间，可以维护一个事务之间的全序关系，这些问题自然就可以解决了。\n异步网络的死锁问题 之前提到，异步网络之中，单节点故障，网络延迟很常见。算法需要在发现这些故障的时候，清理掉这些锁记录，避免死锁。故障检测的策略可以很简单，比如超时，故障会导致当前事务失败；节点故障又恢复正常，当时的事务已经失败，则此时需要对节点上相关锁记录进行清理。锁的清理可以异步化，比如在Prewrite上锁时，当发现记录Lock列非空，则去检测其Primary锁是否为空，Primary非空，则表示这个事务为完成，可以清理；为空则表示事务提交，则去找到事务提交时间，并把数据提交，再清理锁记录（RollForward）。\n通知机制 通知机制对于异步系统的状态观测和联动很重要。但不是本文重点。\nPercolator在TiDB上的使用 基于我们上文的分析，我们可以得出这样的结论：Percolator是一种优化过的2PC分布式事务实现，实现的基础是支持单机事务的存储引擎。\n让我们来简单看看TiDB的的基于Percolator算法实现分布式事务。\nTiDB和TiKV架构如上。TiDB关系表里的数据最终都被映射到了TiKV中的KV中。TiKV是一个基于Raft+RocksDB的分布式KV。RocksDB是一个支持事务操作的KV。\n所以TiDB的事务的执行路径可以是这样：对关系表的事务操作转为对一组KV的事务操作，再基于Percolator去执行，以此实现关系表的事务操作。\n当然不可能提供和单机TP数据库一样的事务语义和性能保证。但Share Nothing架构也有自己的优点，所以这个也许并不重要。\n参考 两阶段提交的工程实践\nPolarDB 数据库内核月报\npercolator：在线增量处理系统 中文翻译\npercolator：在线增量处理系统 中文翻译 | 一只小小鸟\n二阶段提交 - 维基百科，自由的百科全书\nPercolator 和 TiDB 事务算法\n两阶段提交 | OceanBase 学习指南\nTiDB 整体架构\n",
   "wordCount" : "2513",
   "inLanguage": "zh",
   "datePublished": "2023-09-28T10:43:23+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -279,7 +284,6 @@ commit*/abort*                COMMIT/ROLLBACK
                               ACKNOWLEDGMENT        commit*/abort*
                 &lt;--------------------------------
 end
-
 </code></pre><h3 id="percolator">Percolator</h3>
 <p>本身其实算一种经过优化的二阶段提交的实现，比如：</p>
 <ul>
@@ -300,7 +304,7 @@ end
 <blockquote>
 <p><code>lock + write + data</code>: for transaction，lock表示cell被事务持有，write表示数据的可见性</p>
 <p><code>notify + ack</code>: for watcher or notifier</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png"></p>
 </blockquote>
 </li>
 </ul>
@@ -314,7 +318,7 @@ end
 </ol>
 <blockquote>
 <p>上锁过程利用了Primary-Secondary机制，选择一个 Write 作为 primary，其它 Write 则是 secondary。Secondary的锁记录指向Primary。</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png" src="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png"></p>
 </blockquote>
 <p>显然，Prewrite阶段的数据对其他事务均不可见。</p>
 <h4 id="commit">Commit</h4>
@@ -337,9 +341,9 @@ end
 <h2 id="percolator在tidb上的使用">Percolator在TiDB上的使用</h2>
 <p>基于我们上文的分析，我们可以得出这样的结论：Percolator是一种优化过的2PC分布式事务实现，实现的基础是支持单机事务的存储引擎。</p>
 <p>让我们来简单看看TiDB的的基于Percolator算法实现分布式事务。</p>
-<p><img src="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png" alt="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png"></p>
+<p><img alt="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png" src="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png"></p>
 <p>TiDB和TiKV架构如上。TiDB关系表里的数据最终都被映射到了TiKV中的KV中。TiKV是一个基于Raft+RocksDB的分布式KV。RocksDB是一个支持事务操作的KV。</p>
-<p><img src="https://download.pingcap.com/images/docs/tikv-rocksdb.png" alt="https://download.pingcap.com/images/docs/tikv-rocksdb.png"></p>
+<p><img alt="https://download.pingcap.com/images/docs/tikv-rocksdb.png" src="https://download.pingcap.com/images/docs/tikv-rocksdb.png"></p>
 <p>所以TiDB的事务的执行路径可以是这样：对关系表的事务操作转为对一组KV的事务操作，再基于Percolator去执行，以此实现关系表的事务操作。</p>
 <blockquote>
 <p>当然不可能提供和单机TP数据库一样的事务语义和性能保证。但Share Nothing架构也有自己的优点，所以这个也许并不重要。</p>
@@ -409,7 +413,7 @@ end
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -486,4 +490,4 @@ end
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

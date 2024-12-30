@@ -10,7 +10,7 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
     <link rel="canonical" href="https://noneback.github.io/blog/leveldb-%E5%90%AF%E5%8A%A8/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -38,8 +38,7 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
 <meta property="article:modified_time" content="2022-04-09T14:43:25+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="LevelDB Startup"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="LevelDB Startup"/>
 <meta name="twitter:description" content="This is the first chapter of my notes on reading the LevelDB source code, focusing on the startup process of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.
 A code repository with annotations will be shared on GitHub later for those interested in studying it.
 Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and naming details of these files (as I haven&rsquo;t reached that part yet)."/>
@@ -49,16 +48,16 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "LevelDB Startup",
       "item": "https://noneback.github.io/blog/leveldb-%E5%90%AF%E5%8A%A8/"
     }
@@ -75,7 +74,7 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
   "keywords": [
     "LevelDB", "LSM", "KV"
   ],
-  "articleBody": "This is the first chapter of my notes on reading the LevelDB source code, focusing on the startup process of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.\nA code repository with annotations will be shared on GitHub later for those interested in studying it.\nPrerequisites Database Files For now, I won’t delve into the encoding and naming details of these files (as I haven’t reached that part yet). I’ll focus on the meaning and role of each file.\n├── 000005.ldb ├── 000008.ldb // sst or ldb are both sst files ├── 000009.log // WAL ├── CURRENT // Records the name of the manifest file in use, also indicates the presence of the database ├── LOCK // Empty file, ensures only one DB instance operates on the database ├── LOG // Logs printed by LevelDB ├── LOG.old └── MANIFEST-000007 // descriptor_file, metadata file Some questions worth exploring, which I may write about later:\n How does LOCK ensure only one DB instance holds the database?   Essentially, it uses the fcntl system call to set a write lock on the LOCK file.\n  Encoding issues of various files   I’ll discuss LevelDB’s encoding design in a future blog.\n DB State LevelDB is an embedded database, often used as a component in other applications (e.g., for metadata nodes in distributed storage systems). These applications may crash or exit gracefully, leaving LevelDB data files behind. Thus, it’s necessary to restore the previous database state during startup to ensure data integrity.\nSo, what should the DB state include? LevelDB is an LSM-based storage engine, essentially an LSM Tree data structure + various read/write and storage optimizations. Based on this and LevelDB’s documentation, the DB state includes at least the following persistent information:\n The SST files for each level and the key range covered by each SST file  The key range helps avoid unnecessary I/O.\n  Global logical clock, last_seq_number  Each data update has a seq_num that marks the recency of the update and is related to ordering.\n  Compaction-related parameters (file_to_compact, score, point)  Compaction parameters are used to trigger compaction after a crash.\n  Comparator name  Once the DB is initialized, the data sorting logic is fixed and cannot be changed. The comparator name serves as a credential.\n  log_number, next_file_number  WAL number and the next available file number.\n  deleted_files and add_files  SST files to be deleted or added due to compaction or reference count reaching zero.\n   In practice, each metadata change in LevelDB (usually caused by compaction) is recorded in a VersionEdit data structure. Thus, the DB state in LevelDB is essentially initial state + list of applied VersionEdits.\nVersion Control Since we mentioned VersionEdit, let’s also discuss the version control in LevelDB’s startup process, which mainly involves three data structures: Version, VersionEdit, and VersionSet.\nWhy is version control needed? In short, LevelDB uses the Multi-Version Concurrency Control (MVCC) mechanism to avoid using a big lock and improve performance.\nSnapshot reads at the command level are implemented via sequence_number. Each operation is assigned the current sequence_number, which is used to determine the data visible to that operation. Records with a sequence_number greater than that of the command are invisible to the operation.\nMVCC at the SST file level is implemented using a version chain, primarily to avoid conflicts in the following scenario: when reading a file while a background major compaction tries to delete that file.\nRelated Data Structures The main data structures related to SST-level MVCC are Version, VersionEdit, and VersionSet.\nVersion Represents the latest data state after startup or compaction.\nclass Version { VersionSet* vset_; // VersionSet to which this Version belongs  Version* next_; // Next version in linked list  Version* prev_; // Previous version in linked list  int refs_; // Number of live refs to this version  // List of files and metadata per level  std::vectorFileMetaData* files_[config::kNumLevels]; // Next file to compact based on seek stats (compaction due to allowed_seek exhaustion)  FileMetaData* file_to_compact_; int file_to_compact_level_; // Level that should be compacted next and its compaction score.  // Score  // are initialized by Finalize().  double compaction_score_; // Score represents data imbalance; higher score indicates greater imbalance and compaction need.  int compaction_level_; } VersionSet Manages the current runtime state of the entire DB.\nclass VersionSet { Env* const env_; const std::string dbname_; const Options* const options_; TableCache* const table_cache_; const InternalKeyComparator icmp_; uint64_t next_file_number_; uint64_t manifest_file_number_; uint64_t last_sequence_; uint64_t log_number_; uint64_t prev_log_number_; // 0 or backing store for memtable being compacted  // Opened lazily  WritableFile* descriptor_file_; // descriptor_ is for manifest file  log::Writer* descriptor_log_; // descriptor_ is for manifest file  Version dummy_versions_; // Head of circular doubly-linked list of versions.  Version* current_; // == dummy_versions_.prev_  // Per-level key at which the next compaction at that level should start.  // Either an empty string, or a valid InternalKey.  std::string compact_pointer_[config::kNumLevels]; } VersionEdit Encapsulates metadata changes. This encapsulation reduces the window for version switching.\nclass VersionEdit { /** other code */ typedef std::setstd::pairint, uint64_t DeletedFileSet; std::string comparator_; uint64_t log_number_; uint64_t prev_log_number_; uint64_t next_file_number_; SequenceNumber last_sequence_; bool has_comparator_; bool has_log_number_; bool has_prev_log_number_; bool has_next_file_number_; bool has_last_sequence_; std::vectorstd::pairint, InternalKey compact_pointers_; DeletedFileSet deleted_files_; std::vectorstd::pairint, FileMetaData new_files_; }; Manifest Content As mentioned earlier, the manifest is LevelDB’s metadata file that stores the persistent state of the database. During startup, LevelDB may need to restore the previous DB state using existing data files. Additionally, when a version changes, LevelDB generates a VersionEdit. The metadata changes recorded by VersionEdit need to be persisted to the manifest to ensure LevelDB’s MVCC multi-version state is crash-safe. Thus, the encoding layout inside the manifest is crucial.\nInternally, metadata is encoded as SnapshotSessionRecord + list of SessionRecords, essentially initial state + list of applied VersionEdits.\nA manifest contains several session records. The first session record stores the full version information of LevelDB at that time, while subsequent session records only record incremental changes.\n A session record may contain the following fields:\n Comparer name Latest WAL file number Next available file number The largest sequence number among the data persisted by the DB Information on new files Information on deleted files Compaction record information   Writing Version Changes to the Manifest For LevelDB, adding or deleting some SSTable files needs to be an atomic operation to maintain database consistency before and after the state change.\nAtomicity Atomicity means that the operation is complete only when a session record is fully written to the manifest. If the process crashes before completion, the database can be restored to a correct state on restart, and those useless SSTable files will be deleted with compaction resumed.\nConsistency Consistency is ensured by marking state changes with version updates, which occur at the very end of the process. Thus, the database always transitions from one consistent state to another.\nRestoring DB from the Manifest As LevelDB runs, the number of session records in a manifest grows. Therefore, each time LevelDB restarts, a new manifest is created, and the first session record captures a snapshot of the current version state.\nOutdated manifests are deleted during the recovery process at the next startup.\n LevelDB uses this method to control the size of the manifest file. However, if the database is not restarted, the manifest will keep growing.\n DB State Recovery Process  Check lock status and create data directory. Check lockfile to determine if another DB instance exists. Check if the CURRENT file exists. Restore metadata from the manifest. Recover last_seq_number and file_number from the WAL.  Main Open Process  Create default DB and VersionEdit instances. Acquire lock. Restore metadata from manifest and WAL. If the new DB instance does not have a memtable, create one along with a WAL file. Apply VersionEdit and persist it to the manifest. Attempt to delete obsolete files. Attempt to compact data.  References  LevelDB files LevelDB handbook LevelDB documentation LevelDB implementation analysis My notes on LevelDB  ",
+  "articleBody": "This is the first chapter of my notes on reading the LevelDB source code, focusing on the startup process of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.\nA code repository with annotations will be shared on GitHub later for those interested in studying it.\nPrerequisites Database Files For now, I won’t delve into the encoding and naming details of these files (as I haven’t reached that part yet). I’ll focus on the meaning and role of each file.\n├── 000005.ldb ├── 000008.ldb // sst or ldb are both sst files ├── 000009.log // WAL ├── CURRENT // Records the name of the manifest file in use, also indicates the presence of the database ├── LOCK // Empty file, ensures only one DB instance operates on the database ├── LOG // Logs printed by LevelDB ├── LOG.old └── MANIFEST-000007 // descriptor_file, metadata file Some questions worth exploring, which I may write about later:\nHow does LOCK ensure only one DB instance holds the database? Essentially, it uses the fcntl system call to set a write lock on the LOCK file.\nEncoding issues of various files I’ll discuss LevelDB’s encoding design in a future blog.\nDB State LevelDB is an embedded database, often used as a component in other applications (e.g., for metadata nodes in distributed storage systems). These applications may crash or exit gracefully, leaving LevelDB data files behind. Thus, it’s necessary to restore the previous database state during startup to ensure data integrity.\nSo, what should the DB state include? LevelDB is an LSM-based storage engine, essentially an LSM Tree data structure + various read/write and storage optimizations. Based on this and LevelDB’s documentation, the DB state includes at least the following persistent information:\nThe SST files for each level and the key range covered by each SST file The key range helps avoid unnecessary I/O.\nGlobal logical clock, last_seq_number Each data update has a seq_num that marks the recency of the update and is related to ordering.\nCompaction-related parameters (file_to_compact, score, point) Compaction parameters are used to trigger compaction after a crash.\nComparator name Once the DB is initialized, the data sorting logic is fixed and cannot be changed. The comparator name serves as a credential.\nlog_number, next_file_number WAL number and the next available file number.\ndeleted_files and add_files SST files to be deleted or added due to compaction or reference count reaching zero.\nIn practice, each metadata change in LevelDB (usually caused by compaction) is recorded in a VersionEdit data structure. Thus, the DB state in LevelDB is essentially initial state + list of applied VersionEdits.\nVersion Control Since we mentioned VersionEdit, let’s also discuss the version control in LevelDB’s startup process, which mainly involves three data structures: Version, VersionEdit, and VersionSet.\nWhy is version control needed? In short, LevelDB uses the Multi-Version Concurrency Control (MVCC) mechanism to avoid using a big lock and improve performance.\nSnapshot reads at the command level are implemented via sequence_number. Each operation is assigned the current sequence_number, which is used to determine the data visible to that operation. Records with a sequence_number greater than that of the command are invisible to the operation.\nMVCC at the SST file level is implemented using a version chain, primarily to avoid conflicts in the following scenario: when reading a file while a background major compaction tries to delete that file.\nRelated Data Structures The main data structures related to SST-level MVCC are Version, VersionEdit, and VersionSet.\nVersion Represents the latest data state after startup or compaction.\nclass Version { VersionSet* vset_; // VersionSet to which this Version belongs Version* next_; // Next version in linked list Version* prev_; // Previous version in linked list int refs_; // Number of live refs to this version // List of files and metadata per level std::vector\u003cFileMetaData*\u003e files_[config::kNumLevels]; // Next file to compact based on seek stats (compaction due to allowed_seek exhaustion) FileMetaData* file_to_compact_; int file_to_compact_level_; // Level that should be compacted next and its compaction score. // Score \u003c 1 means compaction is not strictly needed. These fields // are initialized by Finalize(). double compaction_score_; // Score represents data imbalance; higher score indicates greater imbalance and compaction need. int compaction_level_; } VersionSet Manages the current runtime state of the entire DB.\nclass VersionSet { Env* const env_; const std::string dbname_; const Options* const options_; TableCache* const table_cache_; const InternalKeyComparator icmp_; uint64_t next_file_number_; uint64_t manifest_file_number_; uint64_t last_sequence_; uint64_t log_number_; uint64_t prev_log_number_; // 0 or backing store for memtable being compacted // Opened lazily WritableFile* descriptor_file_; // descriptor_ is for manifest file log::Writer* descriptor_log_; // descriptor_ is for manifest file Version dummy_versions_; // Head of circular doubly-linked list of versions. Version* current_; // == dummy_versions_.prev_ // Per-level key at which the next compaction at that level should start. // Either an empty string, or a valid InternalKey. std::string compact_pointer_[config::kNumLevels]; } VersionEdit Encapsulates metadata changes. This encapsulation reduces the window for version switching.\nclass VersionEdit { /** other code */ typedef std::set\u003cstd::pair\u003cint, uint64_t\u003e\u003e DeletedFileSet; std::string comparator_; uint64_t log_number_; uint64_t prev_log_number_; uint64_t next_file_number_; SequenceNumber last_sequence_; bool has_comparator_; bool has_log_number_; bool has_prev_log_number_; bool has_next_file_number_; bool has_last_sequence_; std::vector\u003cstd::pair\u003cint, InternalKey\u003e\u003e compact_pointers_; DeletedFileSet deleted_files_; std::vector\u003cstd::pair\u003cint, FileMetaData\u003e\u003e new_files_; }; Manifest Content As mentioned earlier, the manifest is LevelDB’s metadata file that stores the persistent state of the database. During startup, LevelDB may need to restore the previous DB state using existing data files. Additionally, when a version changes, LevelDB generates a VersionEdit. The metadata changes recorded by VersionEdit need to be persisted to the manifest to ensure LevelDB’s MVCC multi-version state is crash-safe. Thus, the encoding layout inside the manifest is crucial.\nInternally, metadata is encoded as SnapshotSessionRecord + list of SessionRecords, essentially initial state + list of applied VersionEdits.\nA manifest contains several session records. The first session record stores the full version information of LevelDB at that time, while subsequent session records only record incremental changes.\nA session record may contain the following fields:\nComparer name Latest WAL file number Next available file number The largest sequence number among the data persisted by the DB Information on new files Information on deleted files Compaction record information Writing Version Changes to the Manifest For LevelDB, adding or deleting some SSTable files needs to be an atomic operation to maintain database consistency before and after the state change.\nAtomicity Atomicity means that the operation is complete only when a session record is fully written to the manifest. If the process crashes before completion, the database can be restored to a correct state on restart, and those useless SSTable files will be deleted with compaction resumed.\nConsistency Consistency is ensured by marking state changes with version updates, which occur at the very end of the process. Thus, the database always transitions from one consistent state to another.\nRestoring DB from the Manifest As LevelDB runs, the number of session records in a manifest grows. Therefore, each time LevelDB restarts, a new manifest is created, and the first session record captures a snapshot of the current version state.\nOutdated manifests are deleted during the recovery process at the next startup.\nLevelDB uses this method to control the size of the manifest file. However, if the database is not restarted, the manifest will keep growing.\nDB State Recovery Process Check lock status and create data directory. Check lockfile to determine if another DB instance exists. Check if the CURRENT file exists. Restore metadata from the manifest. Recover last_seq_number and file_number from the WAL. Main Open Process Create default DB and VersionEdit instances. Acquire lock. Restore metadata from manifest and WAL. If the new DB instance does not have a memtable, create one along with a WAL file. Apply VersionEdit and persist it to the manifest. Attempt to delete obsolete files. Attempt to compact data. References LevelDB files LevelDB handbook LevelDB documentation LevelDB implementation analysis My notes on LevelDB ",
   "wordCount" : "1312",
   "inLanguage": "en",
   "datePublished": "2022-04-09T14:43:25+08:00",
@@ -150,10 +149,10 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -215,11 +214,11 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -273,15 +272,15 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
 <h2 id="prerequisites">Prerequisites</h2>
 <h3 id="database-files">Database Files</h3>
 <p>For now, I won&rsquo;t delve into the encoding and naming details of these files (as I haven&rsquo;t reached that part yet). I&rsquo;ll focus on the meaning and role of each file.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">├── 000005.ldb
-├── 000008.ldb  // sst or ldb are both sst files
-├── 000009.log  // WAL
-├── CURRENT  // Records the name of the manifest file in use, also indicates the presence of the database
-├── LOCK  // Empty file, ensures only one DB instance operates on the database
-├── LOG  // Logs printed by LevelDB
-├── LOG.old 
-└── MANIFEST-000007   // descriptor_file, metadata file
-</code></pre></div><p>Some questions worth exploring, which I may write about later:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>├── 000005.ldb
+</span></span><span style="display:flex;"><span>├── 000008.ldb  // sst or ldb are both sst files
+</span></span><span style="display:flex;"><span>├── 000009.log  // WAL
+</span></span><span style="display:flex;"><span>├── CURRENT  // Records the name of the manifest file in use, also indicates the presence of the database
+</span></span><span style="display:flex;"><span>├── LOCK  // Empty file, ensures only one DB instance operates on the database
+</span></span><span style="display:flex;"><span>├── LOG  // Logs printed by LevelDB
+</span></span><span style="display:flex;"><span>├── LOG.old 
+</span></span><span style="display:flex;"><span>└── MANIFEST-000007   // descriptor_file, metadata file
+</span></span></code></pre></div><p>Some questions worth exploring, which I may write about later:</p>
 <ul>
 <li>How does LOCK ensure only one DB instance holds the database?</li>
 </ul>
@@ -339,74 +338,74 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
 <p>The main data structures related to SST-level MVCC are <code>Version</code>, <code>VersionEdit</code>, and <code>VersionSet</code>.</p>
 <h5 id="version">Version</h5>
 <p>Represents the latest data state after startup or compaction.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Version</span> {  
-    VersionSet<span style="color:#f92672">*</span> vset_;  <span style="color:#75715e">// VersionSet to which this Version belongs
-</span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> next_;     <span style="color:#75715e">// Next version in linked list
-</span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> prev_;     <span style="color:#75715e">// Previous version in linked list
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> refs_;          <span style="color:#75715e">// Number of live refs to this version
-</span><span style="color:#75715e"></span>
-      <span style="color:#75715e">// List of files and metadata per level
-</span><span style="color:#75715e"></span>      std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>FileMetaData<span style="color:#f92672">*&gt;</span> files_[config<span style="color:#f92672">::</span>kNumLevels];
-
-      <span style="color:#75715e">// Next file to compact based on seek stats (compaction due to allowed_seek exhaustion)
-</span><span style="color:#75715e"></span>      FileMetaData<span style="color:#f92672">*</span> file_to_compact_;
-      <span style="color:#66d9ef">int</span> file_to_compact_level_;
-
-      <span style="color:#75715e">// Level that should be compacted next and its compaction score.
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// Score &lt; 1 means compaction is not strictly needed. These fields
-</span><span style="color:#75715e"></span>      <span style="color:#75715e">// are initialized by Finalize().
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">double</span> compaction_score_;  <span style="color:#75715e">// Score represents data imbalance; higher score indicates greater imbalance and compaction need.
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> compaction_level_;
-}
-</code></pre></div><h5 id="versionset">VersionSet</h5>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Version</span> {  
+</span></span><span style="display:flex;"><span>    VersionSet<span style="color:#f92672">*</span> vset_;  <span style="color:#75715e">// VersionSet to which this Version belongs
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> next_;     <span style="color:#75715e">// Next version in linked list
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> prev_;     <span style="color:#75715e">// Previous version in linked list
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> refs_;          <span style="color:#75715e">// Number of live refs to this version
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// List of files and metadata per level
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>FileMetaData<span style="color:#f92672">*&gt;</span> files_[config<span style="color:#f92672">::</span>kNumLevels];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Next file to compact based on seek stats (compaction due to allowed_seek exhaustion)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      FileMetaData<span style="color:#f92672">*</span> file_to_compact_;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">int</span> file_to_compact_level_;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Level that should be compacted next and its compaction score.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#75715e">// Score &lt; 1 means compaction is not strictly needed. These fields
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#75715e">// are initialized by Finalize().
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#66d9ef">double</span> compaction_score_;  <span style="color:#75715e">// Score represents data imbalance; higher score indicates greater imbalance and compaction need.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> compaction_level_;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h5 id="versionset">VersionSet</h5>
 <p>Manages the current runtime state of the entire DB.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionSet</span> {
-    Env<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> env_;
-    <span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>string dbname_;
-    <span style="color:#66d9ef">const</span> Options<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> options_;
-    TableCache<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> table_cache_;  
-    <span style="color:#66d9ef">const</span> InternalKeyComparator icmp_;
-    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
-    <span style="color:#66d9ef">uint64_t</span> manifest_file_number_;
-    <span style="color:#66d9ef">uint64_t</span> last_sequence_;
-    <span style="color:#66d9ef">uint64_t</span> log_number_;
-    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;  <span style="color:#75715e">// 0 or backing store for memtable being compacted
-</span><span style="color:#75715e"></span>
-    <span style="color:#75715e">// Opened lazily
-</span><span style="color:#75715e"></span>    WritableFile<span style="color:#f92672">*</span> descriptor_file_; <span style="color:#75715e">// descriptor_ is for manifest file
-</span><span style="color:#75715e"></span>    log<span style="color:#f92672">::</span>Writer<span style="color:#f92672">*</span> descriptor_log_; <span style="color:#75715e">// descriptor_ is for manifest file
-</span><span style="color:#75715e"></span>    Version dummy_versions_;  <span style="color:#75715e">// Head of circular doubly-linked list of versions.
-</span><span style="color:#75715e"></span>    Version<span style="color:#f92672">*</span> current_;        <span style="color:#75715e">// == dummy_versions_.prev_
-</span><span style="color:#75715e"></span>
-    <span style="color:#75715e">// Per-level key at which the next compaction at that level should start.
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// Either an empty string, or a valid InternalKey.
-</span><span style="color:#75715e"></span>    std<span style="color:#f92672">::</span>string compact_pointer_[config<span style="color:#f92672">::</span>kNumLevels];
-}
-</code></pre></div><h5 id="versionedit">VersionEdit</h5>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionSet</span> {
+</span></span><span style="display:flex;"><span>    Env<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> env_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>string dbname_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> Options<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> options_;
+</span></span><span style="display:flex;"><span>    TableCache<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> table_cache_;  
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> InternalKeyComparator icmp_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> manifest_file_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> last_sequence_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> log_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;  <span style="color:#75715e">// 0 or backing store for memtable being compacted
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Opened lazily
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    WritableFile<span style="color:#f92672">*</span> descriptor_file_; <span style="color:#75715e">// descriptor_ is for manifest file
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    log<span style="color:#f92672">::</span>Writer<span style="color:#f92672">*</span> descriptor_log_; <span style="color:#75715e">// descriptor_ is for manifest file
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    Version dummy_versions_;  <span style="color:#75715e">// Head of circular doubly-linked list of versions.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    Version<span style="color:#f92672">*</span> current_;        <span style="color:#75715e">// == dummy_versions_.prev_
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Per-level key at which the next compaction at that level should start.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// Either an empty string, or a valid InternalKey.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    std<span style="color:#f92672">::</span>string compact_pointer_[config<span style="color:#f92672">::</span>kNumLevels];
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h5 id="versionedit">VersionEdit</h5>
 <p>Encapsulates metadata changes. This encapsulation reduces the window for version switching.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionEdit</span> {
-  <span style="color:#75715e">/** other code */</span>
-    <span style="color:#66d9ef">typedef</span> std<span style="color:#f92672">::</span>set<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">uint64_t</span><span style="color:#f92672">&gt;&gt;</span> DeletedFileSet;
-
-    std<span style="color:#f92672">::</span>string comparator_;
-    <span style="color:#66d9ef">uint64_t</span> log_number_;  
-    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;
-    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
-    SequenceNumber last_sequence_;
-    <span style="color:#66d9ef">bool</span> has_comparator_;
-    <span style="color:#66d9ef">bool</span> has_log_number_;
-    <span style="color:#66d9ef">bool</span> has_prev_log_number_;
-    <span style="color:#66d9ef">bool</span> has_next_file_number_;
-    <span style="color:#66d9ef">bool</span> has_last_sequence_;
-
-    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, InternalKey<span style="color:#f92672">&gt;&gt;</span> compact_pointers_;
-    DeletedFileSet deleted_files_;
-    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, FileMetaData<span style="color:#f92672">&gt;&gt;</span> new_files_;
-};
-</code></pre></div><h4 id="manifest-content">Manifest Content</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionEdit</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">/** other code */</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">typedef</span> std<span style="color:#f92672">::</span>set<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">uint64_t</span><span style="color:#f92672">&gt;&gt;</span> DeletedFileSet;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>string comparator_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> log_number_;  
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
+</span></span><span style="display:flex;"><span>    SequenceNumber last_sequence_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_comparator_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_log_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_prev_log_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_next_file_number_;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_last_sequence_;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, InternalKey<span style="color:#f92672">&gt;&gt;</span> compact_pointers_;
+</span></span><span style="display:flex;"><span>    DeletedFileSet deleted_files_;
+</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, FileMetaData<span style="color:#f92672">&gt;&gt;</span> new_files_;
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><h4 id="manifest-content">Manifest Content</h4>
 <p>As mentioned earlier, the manifest is LevelDB&rsquo;s metadata file that stores the persistent state of the database. During startup, LevelDB may need to restore the previous DB state using existing data files. Additionally, when a version changes, LevelDB generates a <code>VersionEdit</code>. The metadata changes recorded by <code>VersionEdit</code> need to be persisted to the manifest to ensure LevelDB&rsquo;s MVCC multi-version state is crash-safe. Thus, the encoding layout inside the manifest is crucial.</p>
 <p>Internally, metadata is encoded as <code>SnapshotSessionRecord + list of SessionRecords</code>, essentially <code>initial state + list of applied VersionEdits</code>.</p>
-<p><img src="https://s2.loli.net/2022/04/11/AUusMjdYROz874v.jpg" alt="Manifest Structure"></p>
+<p><img alt="Manifest Structure" src="https://s2.loli.net/2022/04/11/AUusMjdYROz874v.jpg"></p>
 <p>A manifest contains several session records. <strong>The first session record</strong> stores the <em>full version information</em> of LevelDB at that time, while subsequent session records only record incremental changes.</p>
 <blockquote>
 <p>A session record may contain the following fields:</p>
@@ -421,14 +420,14 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
 </ul>
 </blockquote>
 <h5 id="writing-version-changes-to-the-manifest">Writing Version Changes to the Manifest</h5>
-<p><img src="https://s2.loli.net/2022/04/14/7tlwEMPGgXHIp6s.jpg" alt="Writing to Manifest"></p>
+<p><img alt="Writing to Manifest" src="https://s2.loli.net/2022/04/14/7tlwEMPGgXHIp6s.jpg"></p>
 <p>For LevelDB, adding or deleting some SSTable files needs to be an <strong>atomic operation</strong> to maintain <strong>database consistency</strong> before and after the state change.</p>
 <h6 id="atomicity">Atomicity</h6>
 <p><strong>Atomicity</strong> means that the operation is complete only when a session record is fully written to the manifest. If the process crashes before completion, the database can be restored to a correct state on restart, and those useless SSTable files will be deleted with compaction resumed.</p>
 <h6 id="consistency">Consistency</h6>
 <p><strong>Consistency</strong> is ensured by marking state changes with version updates, which occur at the very end of the process. Thus, the database always transitions from one consistent state to another.</p>
 <h5 id="restoring-db-from-the-manifest">Restoring DB from the Manifest</h5>
-<p><img src="https://s2.loli.net/2022/04/14/Jk5eyRzUWowi4YH.jpg" alt="Restoring DB from Manifest"></p>
+<p><img alt="Restoring DB from Manifest" src="https://s2.loli.net/2022/04/14/Jk5eyRzUWowi4YH.jpg"></p>
 <p>As LevelDB runs, the number of session records in a manifest grows. Therefore, each time LevelDB restarts, a new manifest is created, and the first session record captures a snapshot of the current version state.</p>
 <p>Outdated manifests are deleted during the recovery process at the next startup.</p>
 <blockquote>
@@ -516,7 +515,7 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -593,4 +592,4 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

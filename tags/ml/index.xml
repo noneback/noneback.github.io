@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/ml/</link>
     <description>Recent content in ML on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 06 May 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://noneback.github.io/tags/ml/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -22,24 +23,24 @@
 &lt;h2 id=&#34;training-and-prediction&#34;&gt;Training and Prediction&lt;/h2&gt;
 &lt;p&gt;The training and prediction process involves calculating the probability $P(Spam|word_1, word_2, \dots, word_n)$. When this probability exceeds a certain threshold, the email is classified as spam.&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;Based on the conditional independence assumption of Naive Bayes, and assuming the prior probability $P(s) = P(s&#39;) = 0.5$, we have:&lt;/p&gt;
+&lt;p&gt;Based on the conditional independence assumption of Naive Bayes, and assuming the prior probability $P(s) = P(s&amp;rsquo;) = 0.5$, we have:&lt;/p&gt;
 &lt;p&gt;$P(s|w_1, w_2, \dots, w_n) = \frac{P(s, w_1, w_2, \dots, w_n)}{P(w_1, w_2, \dots, w_n)}$&lt;/p&gt;
-&lt;p&gt;$= \frac{P(w_1, w_2, \dots, w_n | s) P(s)}{P(w_1, w_2, \dots, w_n)} = \frac{P(w_1, w_2, \dots, w_n | s) P(s)}{P(w_1, w_2, \dots, w_n | s) \cdot p(s) + P(w_1, w_2, \dots, w_n | s&#39;) \cdot p(s&#39;)} $&lt;/p&gt;
+&lt;p&gt;$= \frac{P(w_1, w_2, \dots, w_n | s) P(s)}{P(w_1, w_2, \dots, w_n)} = \frac{P(w_1, w_2, \dots, w_n | s) P(s)}{P(w_1, w_2, \dots, w_n | s) \cdot p(s) + P(w_1, w_2, \dots, w_n | s&amp;rsquo;) \cdot p(s&amp;rsquo;)} $&lt;/p&gt;
 &lt;p&gt;Since $P(spam) = P(not\ spam)$, we have&lt;/p&gt;
-&lt;p&gt;$\frac{\prod\limits_{j=1}^n P(w_j | s)}{\prod\limits_{j=1}^n P(w_j | s) + \prod\limits_{j=1}^n P(w_j | s&#39;)}$&lt;/p&gt;
-&lt;p&gt;Further, using Bayes&#39; theorem $P(w_j | s) = \frac{P(s | w_j) \cdot P(w_j)}{P(s)}$, the expression becomes&lt;/p&gt;
-&lt;p&gt;$\frac{\prod\limits_{j=1}^n P(s | w_j)}{\prod\limits_{j=1}^n P(s | w_j) + \prod\limits_{j=1}^n P(s&#39; | w_j)}$&lt;/p&gt;
+&lt;p&gt;$\frac{\prod\limits_{j=1}^n P(w_j | s)}{\prod\limits_{j=1}^n P(w_j | s) + \prod\limits_{j=1}^n P(w_j | s&amp;rsquo;)}$&lt;/p&gt;
+&lt;p&gt;Further, using Bayes&amp;rsquo; theorem $P(w_j | s) = \frac{P(s | w_j) \cdot P(w_j)}{P(s)}$, the expression becomes&lt;/p&gt;
+&lt;p&gt;$\frac{\prod\limits_{j=1}^n P(s | w_j)}{\prod\limits_{j=1}^n P(s | w_j) + \prod\limits_{j=1}^n P(s&amp;rsquo; | w_j)}$&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;Process details:&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;For each email in the test set, perform the same processing, and calculate the top $n$ words with the highest $P(s|w)$. During calculation, if a word appears only in the spam dictionary, set $P(w | s&#39;) = 0.01$; similarly, if a word appears only in the normal dictionary, set $P(w | s) = 0.01$. If the word appears in neither, set $P(s|w) = 0.4$. These assumptions are based on prior research.&lt;/li&gt;
+&lt;li&gt;For each email in the test set, perform the same processing, and calculate the top $n$ words with the highest $P(s|w)$. During calculation, if a word appears only in the spam dictionary, set $P(w | s&amp;rsquo;) = 0.01$; similarly, if a word appears only in the normal dictionary, set $P(w | s) = 0.01$. If the word appears in neither, set $P(s|w) = 0.4$. These assumptions are based on prior research.&lt;/li&gt;
 &lt;li&gt;Use the 15 most important words for each email and calculate the probability using the above formulas. If the probability is greater than the threshold $\alpha$ (typically set to 0.9), classify it as spam; otherwise, classify it as a normal email.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;You can refer to the code for further details.&lt;/p&gt;
 &lt;h2 id=&#34;results&#34;&gt;Results&lt;/h2&gt;
 &lt;p&gt;By adjusting the number of words used for prediction, the best result for this dataset is:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;Selected &lt;span style=&#34;color:#ae81ff&#34;&gt;29&lt;/span&gt; words: &lt;span style=&#34;color:#ae81ff&#34;&gt;0.9642857142857143&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;project-structure&#34;&gt;Project Structure&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Selected &lt;span style=&#34;color:#ae81ff&#34;&gt;29&lt;/span&gt; words: &lt;span style=&#34;color:#ae81ff&#34;&gt;0.9642857142857143&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;project-structure&#34;&gt;Project Structure&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;data&lt;/strong&gt;
 &lt;ul&gt;
@@ -60,124 +61,124 @@
 &lt;li&gt;&lt;strong&gt;utils.py&lt;/strong&gt; (utility functions)&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;code&#34;&gt;Code&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# utils.py&lt;/span&gt;
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; jieba
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; numpy
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; re
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; os
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
-&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; collections &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; defaultdict
-
-spam_file_num &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;7775&lt;/span&gt;
-normal_file_num &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;7063&lt;/span&gt;
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Load stopword list&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_stopwords&lt;/span&gt;():
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; [i&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;strip() &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; open(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./data/中文停用词表.txt&amp;#39;&lt;/span&gt;, encoding&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gbk&amp;#39;&lt;/span&gt;)]
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Read raw email content and process it&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_raw_str_list&lt;/span&gt;(path):
-    stop_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_stopwords()
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path, encoding&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gbk&amp;#39;&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
-        raw_str &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; f&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;read()
-    pattern &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;[^&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\u4E00&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\u9FA5&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;]&amp;#39;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;# Chinese unicode range&lt;/span&gt;
-    regex &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; re&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;compile(pattern)
-    handled_str &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; re&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sub(pattern, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;, raw_str)
-    str_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [word &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; jieba&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;cut(handled_str) &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; stop_list]
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; str_list
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Build vocabulary&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_voca&lt;/span&gt;(path, is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;):
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; is_file_path:
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; read_voca_from_file(path)
-
-    voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; defaultdict(int)
-    file_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [file &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; os&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listdir(path)]
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; file_list:
-        raw_str_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_raw_str_list(path &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; str(file))
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; raw_str &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; raw_str_list:
-            voca[raw_str] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; voca[raw_str] &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; voca
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Save vocabulary to JSON file&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;save_voca2json&lt;/span&gt;(voca, path, sort_by_value&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;, indent_&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;):
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; sort_by_value:
-        sorted_by_value(voca)
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;w+&amp;#39;&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
-        f&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;write(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(voca, ensure_ascii&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;indent_))
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Read vocabulary from JSON file&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;read_voca_from_file&lt;/span&gt;(path):
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
-        voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;load(f)
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; voca
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Sort dictionary by value&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;sorted_by_value&lt;/span&gt;(_dict):
-    _dict &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; dict(sorted(spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;items(), key&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;lambda&lt;/span&gt; x: x[&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;], reverse&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;))
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Calculate P(Spam|word)&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_top_words_prob&lt;/span&gt;(path, spam_voca, normal_voca, words_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):
-    critical_words &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; get_raw_str_list(path):
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
-            p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; spam_voca[word] &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; spam_file_num
-            p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; normal_voca[word] &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; normal_file_num
-            p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p_w_s)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;elif&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
-            p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; spam_voca[word] &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; spam_file_num
-            p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0.01&lt;/span&gt;
-            p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p_w_s)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;elif&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
-            p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0.01&lt;/span&gt;
-            p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; normal_voca[word] &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; normal_file_num
-            p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p_w_s)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
-            p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0.4&lt;/span&gt;
-        critical_words&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append([word, p_s_w])
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; dict(sorted(critical_words[:words_size], key&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;lambda&lt;/span&gt; x: x[&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;], reverse&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;))
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Calculate Bayesian probability&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;caculate_bayes&lt;/span&gt;(words_prob, spam_voca, normal_voca):
-    p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
-    p_s_nw &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word, prob &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; words_prob&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;items():
-        p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;*=&lt;/span&gt; prob
-        p_s_nw &lt;span style=&#34;color:#f92672&#34;&gt;*=&lt;/span&gt; (&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; prob)
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p_s_nw)
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;predict&lt;/span&gt;(bayes, threshold&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.9&lt;/span&gt;):
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; bayes &lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;=&lt;/span&gt; threshold
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Get files and labels&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_files_labels&lt;/span&gt;(dir_path, is_spam&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;):
-    raw_files_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; os&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listdir(dir_path)
-    files_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [dir_path &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; file &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; raw_files_list]
-    labels &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [is_spam &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; _ &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(len(files_list))]
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; files_list, labels
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Predict and print results&lt;/span&gt;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;predict_result&lt;/span&gt;(file_list, y, spam_voca, normal_voca, word_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):
-    ret &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
-    right &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; file_list:
-        words_prob &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_top_words_prob(file, spam_voca, normal_voca, words_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;word_size)
-        bayes &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; caculate_bayes(words_prob, spam_voca, normal_voca)
-        ret&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(predict(bayes))
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(len(ret)):
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; ret[i] &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; y[i]:
-            right &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
-    print(right &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; len(y))
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# main.py&lt;/span&gt;
-&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; utils &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;__main__&amp;#39;&lt;/span&gt;:
-    &lt;span style=&#34;color:#75715e&#34;&gt;# Get vocabulary and save for future use&lt;/span&gt;
-    spam_voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_voca(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./spam_voca.json&amp;#39;&lt;/span&gt;, is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;)
-    normal_voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_voca(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./normal_voca.json&amp;#39;&lt;/span&gt;, is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;)
-    save
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# utils.py&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; jieba
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; numpy
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; re
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; os
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; collections &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; defaultdict
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;spam_file_num &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;7775&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;normal_file_num &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;7063&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Load stopword list&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_stopwords&lt;/span&gt;():
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; [i&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;strip() &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; open(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./data/中文停用词表.txt&amp;#39;&lt;/span&gt;, encoding&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gbk&amp;#39;&lt;/span&gt;)]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Read raw email content and process it&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_raw_str_list&lt;/span&gt;(path):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    stop_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_stopwords()
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path, encoding&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gbk&amp;#39;&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        raw_str &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; f&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;read()
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    pattern &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;[^&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\u4E00&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\u9FA5&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;]&amp;#39;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;# Chinese unicode range&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    regex &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; re&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;compile(pattern)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    handled_str &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; re&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sub(pattern, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;, raw_str)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    str_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [word &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; jieba&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;cut(handled_str) &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; stop_list]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; str_list
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Build vocabulary&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_voca&lt;/span&gt;(path, is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; is_file_path:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; read_voca_from_file(path)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; defaultdict(int)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    file_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [file &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; os&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listdir(path)]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; file_list:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        raw_str_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_raw_str_list(path &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; str(file))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; raw_str &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; raw_str_list:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            voca[raw_str] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; voca[raw_str] &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; voca
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Save vocabulary to JSON file&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;save_voca2json&lt;/span&gt;(voca, path, sort_by_value&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;, indent_&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; sort_by_value:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        sorted_by_value(voca)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;w+&amp;#39;&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        f&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;write(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(voca, ensure_ascii&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;False&lt;/span&gt;, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;indent_))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Read vocabulary from JSON file&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;read_voca_from_file&lt;/span&gt;(path):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;with&lt;/span&gt; open(path) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; f:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;load(f)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; voca
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Sort dictionary by value&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;sorted_by_value&lt;/span&gt;(_dict):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    _dict &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; dict(sorted(spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;items(), key&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;lambda&lt;/span&gt; x: x[&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;], reverse&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Calculate P(Spam|word)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_top_words_prob&lt;/span&gt;(path, spam_voca, normal_voca, words_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    critical_words &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; get_raw_str_list(path):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; spam_voca[word] &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; spam_file_num
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; normal_voca[word] &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; normal_file_num
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p_w_s)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;elif&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; spam_voca[word] &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; spam_file_num
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0.01&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p_w_s)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;elif&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; spam_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys() &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; word &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; normal_voca&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0.01&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; normal_voca[word] &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; normal_file_num
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; p_w_s &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (p_w_n &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p_w_s)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0.4&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        critical_words&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append([word, p_s_w])
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; dict(sorted(critical_words[:words_size], key&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;lambda&lt;/span&gt; x: x[&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;], reverse&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Calculate Bayesian probability&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;caculate_bayes&lt;/span&gt;(words_prob, spam_voca, normal_voca):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    p_s_nw &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; word, prob &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; words_prob&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;items():
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;*=&lt;/span&gt; prob
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        p_s_nw &lt;span style=&#34;color:#f92672&#34;&gt;*=&lt;/span&gt; (&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; prob)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (p_s_w &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p_s_nw)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;predict&lt;/span&gt;(bayes, threshold&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0.9&lt;/span&gt;):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; bayes &lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;=&lt;/span&gt; threshold
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Get files and labels&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_files_labels&lt;/span&gt;(dir_path, is_spam&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    raw_files_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; os&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listdir(dir_path)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    files_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [dir_path &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; file &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; raw_files_list]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    labels &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [is_spam &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; _ &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(len(files_list))]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; files_list, labels
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Predict and print results&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;predict_result&lt;/span&gt;(file_list, y, spam_voca, normal_voca, word_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    ret &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    right &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; file &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; file_list:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        words_prob &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_top_words_prob(file, spam_voca, normal_voca, words_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;word_size)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        bayes &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; caculate_bayes(words_prob, spam_voca, normal_voca)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        ret&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(predict(bayes))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(len(ret)):
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; ret[i] &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; y[i]:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            right &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    print(right &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; len(y))
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# main.py&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; utils &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;__main__&amp;#39;&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;# Get vocabulary and save for future use&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    spam_voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_voca(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./spam_voca.json&amp;#39;&lt;/span&gt;, is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    normal_voca &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_voca(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./normal_voca.json&amp;#39;&lt;/span&gt;, is_file_path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;True&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    save
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     
   </channel>

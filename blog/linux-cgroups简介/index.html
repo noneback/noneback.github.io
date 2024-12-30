@@ -4,13 +4,13 @@
     <title>Linux Cgroups Overview</title>
     <meta charset="utf-8">
     <meta name="description" content="Ladder@Linux Cgroups (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it&rsquo;s easy to limit a process&rsquo;s resource usage and monitor its metrics in real time.
-Three Components of Cgroups   cgroup
+Three Components of Cgroups cgroup
 A mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/linux-cgroups%E7%AE%80%E4%BB%8B/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -30,7 +30,7 @@ if (!doNotTrack) {
 
     <meta property="og:title" content="Linux Cgroups Overview" />
 <meta property="og:description" content="Linux Cgroups (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it&rsquo;s easy to limit a process&rsquo;s resource usage and monitor its metrics in real time.
-Three Components of Cgroups   cgroup
+Three Components of Cgroups cgroup
 A mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/blog/linux-cgroups%E7%AE%80%E4%BB%8B/" /><meta property="article:section" content="blog" />
@@ -38,10 +38,9 @@ A mechanism for managing groups of processes. A cgroup contains a group of proce
 <meta property="article:modified_time" content="2021-06-08T22:26:17+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Linux Cgroups Overview"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Linux Cgroups Overview"/>
 <meta name="twitter:description" content="Linux Cgroups (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it&rsquo;s easy to limit a process&rsquo;s resource usage and monitor its metrics in real time.
-Three Components of Cgroups   cgroup
+Three Components of Cgroups cgroup
 A mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems."/>
 
 
@@ -49,16 +48,16 @@ A mechanism for managing groups of processes. A cgroup contains a group of proce
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "Linux Cgroups Overview",
       "item": "https://noneback.github.io/blog/linux-cgroups%E7%AE%80%E4%BB%8B/"
     }
@@ -71,12 +70,12 @@ A mechanism for managing groups of processes. A cgroup contains a group of proce
   "@type": "BlogPosting",
   "headline": "Linux Cgroups Overview",
   "name": "Linux Cgroups Overview",
-  "description": "Linux Cgroups (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it\u0026rsquo;s easy to limit a process\u0026rsquo;s resource usage and monitor its metrics in real time.\nThree Components of Cgroups   cgroup\nA mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems.",
+  "description": "Linux Cgroups (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it\u0026rsquo;s easy to limit a process\u0026rsquo;s resource usage and monitor its metrics in real time.\nThree Components of Cgroups cgroup\nA mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems.",
   "keywords": [
     "Cgroups", "Linux", "Virtualization", "Docker", "Container"
   ],
-  "articleBody": "Linux Cgroups (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it’s easy to limit a process’s resource usage and monitor its metrics in real time.\nThree Components of Cgroups   cgroup\nA mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems.\n  subsystem\nA module that controls a set of resources.\nEach subsystem is linked to a cgroup that defines the respective limits, and the subsystem imposes these limits on the processes in the cgroup.\n  hierarchy\nA hierarchy is a tree structure that links multiple cgroups. With this tree structure, cgroups can inherit attributes from their parent cgroups.\n Example Scenario: Suppose there is a group of periodic tasks limited by cgroup1 in terms of CPU usage. If one of these tasks is a logging process that also needs to be limited by disk I/O, a new cgroup2 can be created that inherits from cgroup1. cgroup2 will inherit the CPU limit from cgroup1 and add its own disk I/O limitation, without affecting other processes in cgroup1.\n   Relationships Between the Three  When a new hierarchy is created, all processes in the system join the root cgroup of that hierarchy by default. This root cgroup is created automatically with the hierarchy. A subsystem can only be attached to one hierarchy. A hierarchy can have multiple subsystems attached. A process can belong to multiple cgroups in different hierarchies. A child process is in the same cgroup as its parent process but can be moved to a different cgroup later.  Kernel Interface Hierarchies in cgroups are organized in a tree structure. The kernel provides a virtual tree-like file system to configure cgroups, making it intuitive to work with them through a hierarchical directory structure.\n Create a hierarchy and add sub-cgroups:  mkdir cgroup # Create mount point sudo mount -t cgroup -o none,name=cgroup-test cgroup-test ./cgroup-test # Mount hierarchy sudo mkdir cgroup-1 sudo mkdir cgroup-2 tree . ├── cgroup-1 │ ├── cgroup.clone_children │ ├── cgroup.procs │ ├── notify_on_release │ └── tasks ├── cgroup-2 │ ├── cgroup.clone_children │ ├── cgroup.procs │ ├── notify_on_release │ └── tasks ├── cgroup.clone_children ├── cgroup.procs ├── cgroup.sane_behavior ├── notify_on_release ├── release_agent └── tasks Meaning of Different Files\n Add and move processes to a cgroup (move process PID into the corresponding tasks file):  sudo sh -c \"echo $$ ./cgroup-1/tasks\" # Move terminal process to cgroup-1 cat /proc/$$/cgroup  13:name=cgroup-test:/cgroup-1 12:memory:/user.slice/user-1002.slice/session-12331.scope 11:perf_event:/ 10:cpuset:/ 9:freezer:/ 8:blkio:/user.slice 7:rdma:/ 6:hugetlb:/ 5:pids:/user.slice/user-1002.slice/session-12331.scope 4:cpu,cpuacct:/user.slice 3:net_cls,net_prio:/ 2:devices:/user.slice 1:name=systemd:/user.slice/user-1002.slice/session-12331.scope 0::/user.slice/user-1002.slice/session-12331.scope   Limit cgroup resource usage via subsystems:\nFirst, link the hierarchy to a subsystem. By default, the system links the hierarchy to a memory subsystem.\n# Start a memory-intensive stress process without any limitations stress --vm-bytes 200m --vm-keep -m 1 sudo mkdir test-limit-memory \u0026\u0026 cd test-limit-memory # Create a cgroup sudo sh -c \"echo \"100m\"  memory.limit\" # Set max memory usage to 100m sudo sh -c \"echo $$ tasks\" # Move current process to cgroup stress --vm-bytes 200m --vm-keep -m 1   Observation The memory usage of the process is limited by the specified setting.\n",
-  "wordCount" : "543",
+  "articleBody": "Linux Cgroups (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it’s easy to limit a process’s resource usage and monitor its metrics in real time.\nThree Components of Cgroups cgroup\nA mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems.\nsubsystem\nA module that controls a set of resources.\nEach subsystem is linked to a cgroup that defines the respective limits, and the subsystem imposes these limits on the processes in the cgroup.\nhierarchy\nA hierarchy is a tree structure that links multiple cgroups. With this tree structure, cgroups can inherit attributes from their parent cgroups.\nExample Scenario: Suppose there is a group of periodic tasks limited by cgroup1 in terms of CPU usage. If one of these tasks is a logging process that also needs to be limited by disk I/O, a new cgroup2 can be created that inherits from cgroup1. cgroup2 will inherit the CPU limit from cgroup1 and add its own disk I/O limitation, without affecting other processes in cgroup1.\nRelationships Between the Three When a new hierarchy is created, all processes in the system join the root cgroup of that hierarchy by default. This root cgroup is created automatically with the hierarchy. A subsystem can only be attached to one hierarchy. A hierarchy can have multiple subsystems attached. A process can belong to multiple cgroups in different hierarchies. A child process is in the same cgroup as its parent process but can be moved to a different cgroup later. Kernel Interface Hierarchies in cgroups are organized in a tree structure. The kernel provides a virtual tree-like file system to configure cgroups, making it intuitive to work with them through a hierarchical directory structure.\nCreate a hierarchy and add sub-cgroups: mkdir cgroup # Create mount point sudo mount -t cgroup -o none,name=cgroup-test cgroup-test ./cgroup-test # Mount hierarchy sudo mkdir cgroup-1 sudo mkdir cgroup-2 tree . ├── cgroup-1 │ ├── cgroup.clone_children │ ├── cgroup.procs │ ├── notify_on_release │ └── tasks ├── cgroup-2 │ ├── cgroup.clone_children │ ├── cgroup.procs │ ├── notify_on_release │ └── tasks ├── cgroup.clone_children ├── cgroup.procs ├── cgroup.sane_behavior ├── notify_on_release ├── release_agent └── tasks Meaning of Different Files\nAdd and move processes to a cgroup (move process PID into the corresponding tasks file): sudo sh -c \"echo $$ \u003e\u003e ./cgroup-1/tasks\" # Move terminal process to cgroup-1 cat /proc/$$/cgroup \u003e\u003e 13:name=cgroup-test:/cgroup-1 12:memory:/user.slice/user-1002.slice/session-12331.scope 11:perf_event:/ 10:cpuset:/ 9:freezer:/ 8:blkio:/user.slice 7:rdma:/ 6:hugetlb:/ 5:pids:/user.slice/user-1002.slice/session-12331.scope 4:cpu,cpuacct:/user.slice 3:net_cls,net_prio:/ 2:devices:/user.slice 1:name=systemd:/user.slice/user-1002.slice/session-12331.scope 0::/user.slice/user-1002.slice/session-12331.scope Limit cgroup resource usage via subsystems:\nFirst, link the hierarchy to a subsystem. By default, the system links the hierarchy to a memory subsystem.\n# Start a memory-intensive stress process without any limitations stress --vm-bytes 200m --vm-keep -m 1 sudo mkdir test-limit-memory \u0026\u0026 cd test-limit-memory # Create a cgroup sudo sh -c \"echo \"100m\" \u003e memory.limit\" # Set max memory usage to 100m sudo sh -c \"echo $$ \u003e tasks\" # Move current process to cgroup stress --vm-bytes 200m --vm-keep -m 1 Observation The memory usage of the process is limited by the specified setting.\n",
+  "wordCount" : "545",
   "inLanguage": "en",
   "datePublished": "2021-06-08T22:26:17+08:00",
   "dateModified": "2021-06-08T22:26:17+08:00",
@@ -150,10 +149,10 @@ A mechanism for managing groups of processes. A cgroup contains a group of proce
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -215,11 +214,11 @@ A mechanism for managing groups of processes. A cgroup contains a group of proce
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -236,7 +235,7 @@ A mechanism for managing groups of processes. A cgroup contains a group of proce
 
   <p>
   <small>
-    June 8, 2021&nbsp;· 543 words&nbsp;· 3 min</small>
+    June 8, 2021&nbsp;· 545 words&nbsp;· 3 min</small>
 
   <small>
       
@@ -277,7 +276,7 @@ A mechanism for managing groups of processes. A cgroup contains a group of proce
 <li>
 <p><strong>subsystem</strong></p>
 <p>A module that controls a set of resources.</p>
-<p><img src="https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png" alt="Subsystem"></p>
+<p><img alt="Subsystem" src="https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png"></p>
 <p>Each subsystem is linked to a cgroup that defines the respective limits, and the subsystem imposes these limits on the processes in the cgroup.</p>
 </li>
 <li>
@@ -302,63 +301,63 @@ Suppose there is a group of periodic tasks limited by <code>cgroup1</code> in te
 <ul>
 <li>Create a hierarchy and add sub-cgroups:</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir cgroup <span style="color:#75715e"># Create mount point</span>
-sudo mount -t cgroup -o none,name<span style="color:#f92672">=</span>cgroup-test cgroup-test ./cgroup-test <span style="color:#75715e"># Mount hierarchy</span>
-sudo mkdir cgroup-1
-sudo mkdir cgroup-2
-tree
-
-.
-├── cgroup-1
-│   ├── cgroup.clone_children
-│   ├── cgroup.procs
-│   ├── notify_on_release
-│   └── tasks
-├── cgroup-2
-│   ├── cgroup.clone_children
-│   ├── cgroup.procs
-│   ├── notify_on_release
-│   └── tasks
-├── cgroup.clone_children
-├── cgroup.procs
-├── cgroup.sane_behavior
-├── notify_on_release
-├── release_agent
-└── tasks
-</code></pre></div><p><strong>Meaning of Different Files</strong></p>
-<p><img src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png" alt="File Descriptions"></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mkdir cgroup <span style="color:#75715e"># Create mount point</span>
+</span></span><span style="display:flex;"><span>sudo mount -t cgroup -o none,name<span style="color:#f92672">=</span>cgroup-test cgroup-test ./cgroup-test <span style="color:#75715e"># Mount hierarchy</span>
+</span></span><span style="display:flex;"><span>sudo mkdir cgroup-1
+</span></span><span style="display:flex;"><span>sudo mkdir cgroup-2
+</span></span><span style="display:flex;"><span>tree
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.
+</span></span><span style="display:flex;"><span>├── cgroup-1
+</span></span><span style="display:flex;"><span>│   ├── cgroup.clone_children
+</span></span><span style="display:flex;"><span>│   ├── cgroup.procs
+</span></span><span style="display:flex;"><span>│   ├── notify_on_release
+</span></span><span style="display:flex;"><span>│   └── tasks
+</span></span><span style="display:flex;"><span>├── cgroup-2
+</span></span><span style="display:flex;"><span>│   ├── cgroup.clone_children
+</span></span><span style="display:flex;"><span>│   ├── cgroup.procs
+</span></span><span style="display:flex;"><span>│   ├── notify_on_release
+</span></span><span style="display:flex;"><span>│   └── tasks
+</span></span><span style="display:flex;"><span>├── cgroup.clone_children
+</span></span><span style="display:flex;"><span>├── cgroup.procs
+</span></span><span style="display:flex;"><span>├── cgroup.sane_behavior
+</span></span><span style="display:flex;"><span>├── notify_on_release
+</span></span><span style="display:flex;"><span>├── release_agent
+</span></span><span style="display:flex;"><span>└── tasks
+</span></span></code></pre></div><p><strong>Meaning of Different Files</strong></p>
+<p><img alt="File Descriptions" src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png"></p>
 <ul>
 <li>Add and move processes to a cgroup (move process PID into the corresponding <code>tasks</code> file):</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo sh -c <span style="color:#e6db74">&#34;echo </span>$$<span style="color:#e6db74"> &gt;&gt; ./cgroup-1/tasks&#34;</span> <span style="color:#75715e"># Move terminal process to cgroup-1</span>
-cat /proc/$$/cgroup
-
-&gt;&gt; 
-13:name<span style="color:#f92672">=</span>cgroup-test:/cgroup-1
-12:memory:/user.slice/user-1002.slice/session-12331.scope
-11:perf_event:/
-10:cpuset:/
-9:freezer:/
-8:blkio:/user.slice
-7:rdma:/
-6:hugetlb:/
-5:pids:/user.slice/user-1002.slice/session-12331.scope
-4:cpu,cpuacct:/user.slice
-3:net_cls,net_prio:/
-2:devices:/user.slice
-1:name<span style="color:#f92672">=</span>systemd:/user.slice/user-1002.slice/session-12331.scope
-0::/user.slice/user-1002.slice/session-12331.scope
-</code></pre></div><ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo sh -c <span style="color:#e6db74">&#34;echo </span>$$<span style="color:#e6db74"> &gt;&gt; ./cgroup-1/tasks&#34;</span> <span style="color:#75715e"># Move terminal process to cgroup-1</span>
+</span></span><span style="display:flex;"><span>cat /proc/$$/cgroup
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&gt;&gt; 
+</span></span><span style="display:flex;"><span>13:name<span style="color:#f92672">=</span>cgroup-test:/cgroup-1
+</span></span><span style="display:flex;"><span>12:memory:/user.slice/user-1002.slice/session-12331.scope
+</span></span><span style="display:flex;"><span>11:perf_event:/
+</span></span><span style="display:flex;"><span>10:cpuset:/
+</span></span><span style="display:flex;"><span>9:freezer:/
+</span></span><span style="display:flex;"><span>8:blkio:/user.slice
+</span></span><span style="display:flex;"><span>7:rdma:/
+</span></span><span style="display:flex;"><span>6:hugetlb:/
+</span></span><span style="display:flex;"><span>5:pids:/user.slice/user-1002.slice/session-12331.scope
+</span></span><span style="display:flex;"><span>4:cpu,cpuacct:/user.slice
+</span></span><span style="display:flex;"><span>3:net_cls,net_prio:/
+</span></span><span style="display:flex;"><span>2:devices:/user.slice
+</span></span><span style="display:flex;"><span>1:name<span style="color:#f92672">=</span>systemd:/user.slice/user-1002.slice/session-12331.scope
+</span></span><span style="display:flex;"><span>0::/user.slice/user-1002.slice/session-12331.scope
+</span></span></code></pre></div><ul>
 <li>
 <p>Limit cgroup resource usage via subsystems:</p>
 <p>First, link the hierarchy to a subsystem. By default, the system links the hierarchy to a memory subsystem.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># Start a memory-intensive stress process without any limitations</span>
-stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
-sudo mkdir test-limit-memory <span style="color:#f92672">&amp;&amp;</span> cd test-limit-memory <span style="color:#75715e"># Create a cgroup</span>
-sudo sh -c <span style="color:#e6db74">&#34;echo &#34;</span>100m<span style="color:#e6db74">&#34; &gt; memory.limit&#34;</span> <span style="color:#75715e"># Set max memory usage to 100m</span>
-sudo sh -c <span style="color:#e6db74">&#34;echo </span>$$<span style="color:#e6db74"> &gt; tasks&#34;</span> <span style="color:#75715e"># Move current process to cgroup</span>
-stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
-</code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Start a memory-intensive stress process without any limitations</span>
+</span></span><span style="display:flex;"><span>stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>sudo mkdir test-limit-memory <span style="color:#f92672">&amp;&amp;</span> cd test-limit-memory <span style="color:#75715e"># Create a cgroup</span>
+</span></span><span style="display:flex;"><span>sudo sh -c <span style="color:#e6db74">&#34;echo &#34;</span>100m<span style="color:#e6db74">&#34; &gt; memory.limit&#34;</span> <span style="color:#75715e"># Set max memory usage to 100m</span>
+</span></span><span style="display:flex;"><span>sudo sh -c <span style="color:#e6db74">&#34;echo </span>$$<span style="color:#e6db74"> &gt; tasks&#34;</span> <span style="color:#75715e"># Move current process to cgroup</span>
+</span></span><span style="display:flex;"><span>stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
+</span></span></code></pre></div></li>
 </ul>
 <h4 id="observation">Observation</h4>
 <p>The memory usage of the process is limited by the specified setting.</p>
@@ -418,7 +417,7 @@ stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -495,4 +494,4 @@ stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

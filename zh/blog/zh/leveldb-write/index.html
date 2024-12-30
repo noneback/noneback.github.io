@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/leveldb-write/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2022-05-10T17:14:14+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="LevelDB Write"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="LevelDB Write"/>
 <meta name="twitter:description" content="LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是step by step的源码阅读教程，而是仅仅作为我的学习笔记，"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "LevelDB Write",
       "item": "https://noneback.github.io/zh/blog/zh/leveldb-write/"
     }
@@ -63,8 +68,8 @@ if (!doNotTrack) {
   "keywords": [
     "LevelDB", "LSM", "KV"
   ],
-  "articleBody": "LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是step by step的源码阅读教程，而是仅仅作为我的学习笔记，简单记录我的问题与思考。\n主流程 LevelDB主要的写入逻辑其实比较简单。首先将写入操作封装到WriteBatch中，之后再执行写入。\nStatus DB::Put(const WriteOptions\u0026 opt, const Slice\u0026 key, const Slice\u0026 value) { WriteBatch batch; batch.Put(key, value); return Write(opt, \u0026batch); } WriteBatch WriteBatch是对一组更新操作的封装，这一组操作会原子性的应用到状态机上。使用一块内存将用户的更新操作保存。\n InMemory Format: | seq_num: 8 bytes | count: 4 bytes | list of records{ type + key + value}\n class WriteBatch { ... // See comment in write_batch.cc for the format of rep_; // WriteBatch::rep_ := // sequence: fixed64 // count: fixed32 // data: record[count] // record := // kTypeValue varstring varstring | // kTypeDeletion varstring // varstring := // len: varint32 // data: uint8[len]  std::string rep_; } // some opt void WriteBatch::Put(const Slice\u0026 key, const Slice\u0026 value) { WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1); rep_.push_back(static_castchar(kTypeValue)); PutLengthPrefixedSlice(\u0026rep_, key); PutLengthPrefixedSlice(\u0026rep_, value); } 写入流程 写入操作主要有四步：\n初始化Writer Writer实际上就是一次写入操作需要的全部信息。\n// Information kept for every waiting writer struct DBImpl::Writer { explicit Writer(port::Mutex* mu) : batch(nullptr), sync(false), done(false), cv(mu) {} Status status; WriteBatch* batch; bool sync; bool done; port::CondVar cv; }; Writer调度 ​ LevelDB的写入其实是一种多生产者单消费者的模式，多线程生产Writer，单线程消费Writer。每个Writer由一个线程产生，但可以被多个线程消费。 ​ 在LevelDB内部维护了一个Writer队列，每个线程的写入删除等更新操作会先将Writer追加到队列末尾，并用锁保证队列的数据安全。Writer被放入队列之后会进入等待，直到出现在队列头部（被调度）或者已完成（被其他线程处理）才会被唤醒。\n 在消费Writer, 执行具体的更新操作时，LevelDB通过将同类型（根据sync类型）的Writer合并来优化写入任务。\n Writers Batches 写入   首先MakeRoomForWrite确保memtable有足够的空间以及WAL保证写入成功。如果当前的memtable有空间则复用，如果空间不足，则新建memtable和WAL，并将原来的memtable转为immemtable，等待触发compaction（minor compaction 是串行的）。\n  除此之外，函数还会判断L0文件的数量，通过配置以及触发器判断是否需要对写入速率进行限制。其中主要包含两个配置：\n Slowdown Trigger。触发是会让写入线程Sleep，以减缓写入的速度，使得compaction任务得以处理；同时，以此限制Level 0 文件的数量，保证读效率。 StopWritesTrigger。停止写入线程。    BuildBatchGroup则会将队列从头部开始同类型的Writer任务中需要写入的batches合并，只得到一个batch。\n  之后则是将合并之后的Batch先写WAL,再写memtable中。\n  WAL WAL文件被拆分为Blocks, Blocks由Record组成。格式如下图：WAL Record Encoding  | Header{ checksum(4 bytes) + len(2 bytes) + type(1 bytes)} | Data |\n 其中Record主要有五类：Zero，Full，First，Middle，Last。其中Zero是预留给预分配文件。由于有个KV可能长度过长，需要由若干个Chunk记录，于是有了其他四种类型。\n写入的流程 memtable memtable的核心设计有两个：跳表以及KV在跳表中的编码。跳表保证了插入数据的有序性，具体的实现思路可以参考我的另一篇博客。\nmemtable的Key的编码之后的Key称之为Internal Key,其编码为| Original Key(varstring) + seq num(7 by) + type(1 byte) | SeqNum 是在每次更新操作时生成的一个递增的序号，作为逻辑时钟标记操作的新旧。基于SeqNum可以实现基于快照（版本号）的读取。\n Reference LevelDB handbook\n",
-  "wordCount" : "1387",
+  "articleBody": "LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是step by step的源码阅读教程，而是仅仅作为我的学习笔记，简单记录我的问题与思考。\n主流程 LevelDB主要的写入逻辑其实比较简单。首先将写入操作封装到WriteBatch中，之后再执行写入。\nStatus DB::Put(const WriteOptions\u0026 opt, const Slice\u0026 key, const Slice\u0026 value) { WriteBatch batch; batch.Put(key, value); return Write(opt, \u0026batch); } WriteBatch WriteBatch是对一组更新操作的封装，这一组操作会原子性的应用到状态机上。使用一块内存将用户的更新操作保存。\nInMemory Format: | seq_num: 8 bytes | count: 4 bytes | list of records{ type + key + value}\nclass WriteBatch { ... // See comment in write_batch.cc for the format of rep_; // WriteBatch::rep_ := // sequence: fixed64 // count: fixed32 // data: record[count] // record := // kTypeValue varstring varstring | // kTypeDeletion varstring // varstring := // len: varint32 // data: uint8[len] std::string rep_; } // some opt void WriteBatch::Put(const Slice\u0026 key, const Slice\u0026 value) { WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1); rep_.push_back(static_cast\u003cchar\u003e(kTypeValue)); PutLengthPrefixedSlice(\u0026rep_, key); PutLengthPrefixedSlice(\u0026rep_, value); } 写入流程 写入操作主要有四步：\n初始化Writer Writer实际上就是一次写入操作需要的全部信息。\n// Information kept for every waiting writer struct DBImpl::Writer { explicit Writer(port::Mutex* mu) : batch(nullptr), sync(false), done(false), cv(mu) {} Status status; WriteBatch* batch; bool sync; bool done; port::CondVar cv; }; Writer调度 ​ LevelDB的写入其实是一种多生产者单消费者的模式，多线程生产Writer，单线程消费Writer。每个Writer由一个线程产生，但可以被多个线程消费。 ​ 在LevelDB内部维护了一个Writer队列，每个线程的写入删除等更新操作会先将Writer追加到队列末尾，并用锁保证队列的数据安全。Writer被放入队列之后会进入等待，直到出现在队列头部（被调度）或者已完成（被其他线程处理）才会被唤醒。\n在消费Writer, 执行具体的更新操作时，LevelDB通过将同类型（根据sync类型）的Writer合并来优化写入任务。\nWriters Batches 写入 首先MakeRoomForWrite确保memtable有足够的空间以及WAL保证写入成功。如果当前的memtable有空间则复用，如果空间不足，则新建memtable和WAL，并将原来的memtable转为immemtable，等待触发compaction（minor compaction 是串行的）。\n除此之外，函数还会判断L0文件的数量，通过配置以及触发器判断是否需要对写入速率进行限制。其中主要包含两个配置：\nSlowdown Trigger。触发是会让写入线程Sleep，以减缓写入的速度，使得compaction任务得以处理；同时，以此限制Level 0 文件的数量，保证读效率。 StopWritesTrigger。停止写入线程。 BuildBatchGroup则会将队列从头部开始同类型的Writer任务中需要写入的batches合并，只得到一个batch。\n之后则是将合并之后的Batch先写WAL,再写memtable中。\nWAL WAL文件被拆分为Blocks, Blocks由Record组成。格式如下图：\nWAL Record Encoding | Header{ checksum(4 bytes) + len(2 bytes) + type(1 bytes)} | Data |\n其中Record主要有五类：Zero，Full，First，Middle，Last。其中Zero是预留给预分配文件。由于有个KV可能长度过长，需要由若干个Chunk记录，于是有了其他四种类型。\n写入的流程 memtable memtable的核心设计有两个：跳表以及KV在跳表中的编码。跳表保证了插入数据的有序性，具体的实现思路可以参考我的另一篇博客。\nmemtable的Key的编码之后的Key称之为Internal Key,其编码为| Original Key(varstring) + seq num(7 by) + type(1 byte) |\nSeqNum 是在每次更新操作时生成的一个递增的序号，作为逻辑时钟标记操作的新旧。基于SeqNum可以实现基于快照（版本号）的读取。\nReference LevelDB handbook\n",
+  "wordCount" : "1385",
   "inLanguage": "zh",
   "datePublished": "2022-05-10T17:14:14+08:00",
   "dateModified": "2022-05-10T17:14:14+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -224,7 +229,7 @@ if (!doNotTrack) {
 
   <p>
   <small>
-    2022年5月10日&nbsp;· 1387 字&nbsp;· 3 分钟</small>
+    2022年5月10日&nbsp;· 1385 字&nbsp;· 3 分钟</small>
 
   <small>
       
@@ -262,55 +267,55 @@ if (!doNotTrack) {
   <section class="blog-content"><p>LevelDB源码阅读笔记第二章，有关LevelDB的Write流程。本文并不是<strong>step by step</strong>的源码阅读教程，而是仅仅作为我的学习笔记，简单记录我的问题与思考。</p>
 <h2 id="主流程">主流程</h2>
 <p>LevelDB主要的写入逻辑其实比较简单。首先将写入操作封装到WriteBatch中，之后再执行写入。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">Status DB<span style="color:#f92672">::</span>Put(<span style="color:#66d9ef">const</span> WriteOptions<span style="color:#f92672">&amp;</span> opt, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
-  WriteBatch batch;
-  batch.Put(key, value);
-  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">Write</span>(opt, <span style="color:#f92672">&amp;</span>batch);
-}
-</code></pre></div><h3 id="writebatch">WriteBatch</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>Status DB<span style="color:#f92672">::</span>Put(<span style="color:#66d9ef">const</span> WriteOptions<span style="color:#f92672">&amp;</span> opt, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
+</span></span><span style="display:flex;"><span>  WriteBatch batch;
+</span></span><span style="display:flex;"><span>  batch.Put(key, value);
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">Write</span>(opt, <span style="color:#f92672">&amp;</span>batch);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="writebatch">WriteBatch</h3>
 <p>WriteBatch是对一组更新操作的封装，这一组操作会<strong>原子性</strong>的应用到状态机上。使用一块内存将用户的更新操作保存。</p>
 <blockquote>
 <p>InMemory Format:
 <code>| seq_num: 8 bytes | count: 4 bytes | list of records{ type + key + value}</code></p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteBatch</span> {
-  ...
-  <span style="color:#75715e">// See comment in write_batch.cc for the format of rep_;
-</span><span style="color:#75715e">// WriteBatch::rep_ :=
-</span><span style="color:#75715e">//    sequence: fixed64
-</span><span style="color:#75715e">//    count: fixed32
-</span><span style="color:#75715e">//    data: record[count]
-</span><span style="color:#75715e">// record :=
-</span><span style="color:#75715e">//    kTypeValue varstring varstring         |
-</span><span style="color:#75715e">//    kTypeDeletion varstring
-</span><span style="color:#75715e">// varstring :=
-</span><span style="color:#75715e">//    len: varint32
-</span><span style="color:#75715e">//    data: uint8[len]
-</span><span style="color:#75715e"></span>  std<span style="color:#f92672">::</span>string rep_;  
-}
-<span style="color:#75715e">// some opt
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> WriteBatch<span style="color:#f92672">::</span>Put(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
-  WriteBatchInternal<span style="color:#f92672">::</span>SetCount(<span style="color:#66d9ef">this</span>, WriteBatchInternal<span style="color:#f92672">::</span>Count(<span style="color:#66d9ef">this</span>) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>);
-  rep_.push_back(<span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(kTypeValue));
-  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, key);
-  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, value);
-}
-</code></pre></div><h2 id="写入流程">写入流程</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteBatch</span> {
+</span></span><span style="display:flex;"><span>  ...
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// See comment in write_batch.cc for the format of rep_;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// WriteBatch::rep_ :=
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    sequence: fixed64
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    count: fixed32
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    data: record[count]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// record :=
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    kTypeValue varstring varstring         |
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    kTypeDeletion varstring
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// varstring :=
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    len: varint32
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    data: uint8[len]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  std<span style="color:#f92672">::</span>string rep_;  
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// some opt
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> WriteBatch<span style="color:#f92672">::</span>Put(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
+</span></span><span style="display:flex;"><span>  WriteBatchInternal<span style="color:#f92672">::</span>SetCount(<span style="color:#66d9ef">this</span>, WriteBatchInternal<span style="color:#f92672">::</span>Count(<span style="color:#66d9ef">this</span>) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span>  rep_.push_back(<span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(kTypeValue));
+</span></span><span style="display:flex;"><span>  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, key);
+</span></span><span style="display:flex;"><span>  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, value);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="写入流程">写入流程</h2>
 <p>写入操作主要有四步：</p>
 <h3 id="初始化writer">初始化Writer</h3>
 <p>Writer实际上就是一次写入操作需要的全部信息。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">// Information kept for every waiting writer
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">DBImpl</span><span style="color:#f92672">::</span>Writer {
-  <span style="color:#66d9ef">explicit</span> <span style="color:#a6e22e">Writer</span>(port<span style="color:#f92672">::</span>Mutex<span style="color:#f92672">*</span> mu)
-      <span style="color:#f92672">:</span> batch(<span style="color:#66d9ef">nullptr</span>), sync(false), done(false), cv(mu) {}
-
-  Status status;
-  WriteBatch<span style="color:#f92672">*</span> batch;
-  <span style="color:#66d9ef">bool</span> sync;
-  <span style="color:#66d9ef">bool</span> done;
-  port<span style="color:#f92672">::</span>CondVar cv;
-};
-</code></pre></div><h3 id="writer调度">Writer调度</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">// Information kept for every waiting writer
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">DBImpl</span><span style="color:#f92672">::</span>Writer {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">explicit</span> <span style="color:#a6e22e">Writer</span>(port<span style="color:#f92672">::</span>Mutex<span style="color:#f92672">*</span> mu)
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">:</span> batch(<span style="color:#66d9ef">nullptr</span>), sync(false), done(false), cv(mu) {}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Status status;
+</span></span><span style="display:flex;"><span>  WriteBatch<span style="color:#f92672">*</span> batch;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">bool</span> sync;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">bool</span> done;
+</span></span><span style="display:flex;"><span>  port<span style="color:#f92672">::</span>CondVar cv;
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><h3 id="writer调度">Writer调度</h3>
 <p>​    LevelDB的写入其实是一种多生产者单消费者的模式，多线程生产Writer，单线程消费Writer。每个Writer由一个线程产生，但可以被多个线程消费。
 ​    在LevelDB内部维护了一个Writer队列，每个线程的写入删除等更新操作会先将Writer追加到队列末尾，并用锁保证队列的数据安全。Writer被放入队列之后会进入等待，直到出现在队列头部（被调度）或者已完成（被其他线程处理）才会被唤醒。</p>
 <blockquote>
@@ -336,16 +341,16 @@ if (!doNotTrack) {
 </li>
 </ul>
 <h4 id="wal">WAL</h4>
-<p>WAL文件被拆分为Blocks, Blocks由Record组成。格式如下图：<img src="https://s2.loli.net/2022/08/15/KTuf85zaIsvoLEW.jpg" alt="img"></p>
+<p>WAL文件被拆分为Blocks, Blocks由Record组成。格式如下图：<img alt="img" src="https://s2.loli.net/2022/08/15/KTuf85zaIsvoLEW.jpg"></p>
 <h5 id="wal-record-encoding">WAL Record Encoding</h5>
 <blockquote>
 <p><code>| Header{ checksum(4 bytes) + len(2 bytes) + type(1 bytes)} | Data |</code></p>
 </blockquote>
 <p>其中Record主要有五类：Zero，Full，First，Middle，Last。其中Zero是预留给预分配文件。由于有个KV可能长度过长，需要由若干个Chunk记录，于是有了其他四种类型。</p>
-<h5 id="写入的流程imghttpss2lolinet202208153tokslnhjumig9yjpg">写入的流程<img src="https://s2.loli.net/2022/08/15/3TOkslnhjuMIg9Y.jpg" alt="img"></h5>
+<h5 id="写入的流程imghttpss2lolinet202208153tokslnhjumig9yjpg">写入的流程<img alt="img" src="https://s2.loli.net/2022/08/15/3TOkslnhjuMIg9Y.jpg"></h5>
 <h4 id="memtable">memtable</h4>
 <p>memtable的核心设计有两个：跳表以及KV在跳表中的编码。跳表保证了插入数据的有序性，具体的实现思路可以参考我的另一篇博客。</p>
-<p>memtable的Key的编码之后的Key称之为<code>Internal Key</code>,其编码为<code>| Original Key(varstring) + seq num(7 by) + type(1 byte) |</code><img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt="img"></p>
+<p>memtable的Key的编码之后的Key称之为<code>Internal Key</code>,其编码为<code>| Original Key(varstring) + seq num(7 by) + type(1 byte) |</code><img alt="img" src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg"></p>
 <blockquote>
 <p>SeqNum 是在每次更新操作时生成的一个递增的序号，作为逻辑时钟标记操作的新旧。基于SeqNum可以实现基于快照（版本号）的读取。</p>
 </blockquote>
@@ -407,7 +412,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -484,4 +489,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

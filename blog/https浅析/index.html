@@ -4,12 +4,12 @@
     <title>HTTPS Introduction</title>
     <meta charset="utf-8">
     <meta name="description" content="Ladder@HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.
-Problems with HTTP  Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e.">
+Problems with HTTP Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/https%E6%B5%85%E6%9E%90/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -29,33 +29,32 @@ if (!doNotTrack) {
 
     <meta property="og:title" content="HTTPS Introduction" />
 <meta property="og:description" content="HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.
-Problems with HTTP  Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e." />
+Problems with HTTP Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/blog/https%E6%B5%85%E6%9E%90/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2021-02-21T16:48:55+08:00" />
 <meta property="article:modified_time" content="2021-02-21T16:48:55+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="HTTPS Introduction"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="HTTPS Introduction"/>
 <meta name="twitter:description" content="HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.
-Problems with HTTP  Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e."/>
+Problems with HTTP Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e."/>
 
 
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "HTTPS Introduction",
       "item": "https://noneback.github.io/blog/https%E6%B5%85%E6%9E%90/"
     }
@@ -68,11 +67,11 @@ Problems with HTTP  Communication uses plain text, making it susceptible to eave
   "@type": "BlogPosting",
   "headline": "HTTPS Introduction",
   "name": "HTTPS Introduction",
-  "description": "HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.\nProblems with HTTP  Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e.",
+  "description": "HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.\nProblems with HTTP Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e.",
   "keywords": [
     "HTTPS", "HTTP"
   ],
-  "articleBody": "HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.\nProblems with HTTP  Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e.g., Man-in-the-Middle attacks).  To address these issues, we need:\n Encryption to prevent eavesdropping.  Encrypting either the content or the communication channel can help secure the communication.   Authentication to prevent impersonation attacks.  Certificates are commonly used for identity verification.   Integrity checks to prevent tampering.  Hash functions like MD5 and SHA-1 are often used to ensure data integrity.    HTTPS To solve the above problems comprehensively, we add encryption, authentication, and integrity protection to HTTP, resulting in HTTPS.\n$HTTP + Encryption + Authentication + Integrity Protection = HTTPS$\nHTTPS over SSL HTTPS is not a new protocol; it simply adds SSL or TLS between HTTP and TCP. By doing so, HTTPS provides encryption, certificates, and integrity protection.\n SSL is independent of HTTP, and it can be used with other protocols like SMTP and Telnet to provide encryption.\n Encryption Mechanism HTTPS uses both symmetric (shared key) and asymmetric (public key) encryption to achieve its goals effectively:\n Public key encryption is used to encrypt the shared key (Pre-master secret), ensuring it cannot be intercepted. Once the shared key is established, symmetric encryption is used for communication to ensure better performance.   Key differences:\n Public key encryption: Asymmetric, secure but computationally expensive. Shared key encryption: Symmetric, less secure for key exchange but more efficient for encryption.   Authentication Mechanism Public key encryption requires proof that the public key itself is legitimate and not replaced. HTTPS uses certificates to achieve this authentication.\nCertificates are issued by Certificate Authorities (CAs), who verify the identity of the party requesting the certificate and sign the public key.\n The server sends the signed public key certificate to the client using public key encryption. The client uses the CA’s public key to verify the signature. If verified, it proves:  The CA is trustworthy. The server’s public key is legitimate.   Both parties then use the public key to establish a secure channel.   The CA’s public key is usually pre-installed in browsers.\n Integrity Protection HTTPS ensures message integrity by using message digest algorithms.\nHash Algorithms These algorithms, also known as hash or digest functions, convert input data of any length into a fixed-length output string, such as MD5 and SHA-2.\n A hash algorithm is not an encryption algorithm. It cannot be reversed to obtain the original data, so it can only be used for integrity checking.\n Applications attach a Message Authentication Code (MAC) to messages. The MAC helps detect tampering, thus ensuring the integrity of the communication.\nHTTPS Communication Flow Other Considerations  Due to the overhead of encryption, decryption, and SSL handshake, HTTPS is generally slower and requires more CPU resources than HTTP.  SSL accelerators (dedicated servers) are sometimes used to mitigate this issue.   When a client repeatedly accesses the same HTTPS server, it may not need to perform a complete TLS handshake each time.  The server maintains a session ID for each client and uses it to resume secure sessions, avoiding a full handshake.    References  MDN Web Docs Wikipedia Cxuan’s Blog “Illustrated HTTP/HTTPS”  ",
+  "articleBody": "HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.\nProblems with HTTP Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e.g., Man-in-the-Middle attacks). To address these issues, we need:\nEncryption to prevent eavesdropping. Encrypting either the content or the communication channel can help secure the communication. Authentication to prevent impersonation attacks. Certificates are commonly used for identity verification. Integrity checks to prevent tampering. Hash functions like MD5 and SHA-1 are often used to ensure data integrity. HTTPS To solve the above problems comprehensively, we add encryption, authentication, and integrity protection to HTTP, resulting in HTTPS.\n$HTTP + Encryption + Authentication + Integrity Protection = HTTPS$\nHTTPS over SSL HTTPS is not a new protocol; it simply adds SSL or TLS between HTTP and TCP. By doing so, HTTPS provides encryption, certificates, and integrity protection.\nSSL is independent of HTTP, and it can be used with other protocols like SMTP and Telnet to provide encryption.\nEncryption Mechanism HTTPS uses both symmetric (shared key) and asymmetric (public key) encryption to achieve its goals effectively:\nPublic key encryption is used to encrypt the shared key (Pre-master secret), ensuring it cannot be intercepted. Once the shared key is established, symmetric encryption is used for communication to ensure better performance. Key differences:\nPublic key encryption: Asymmetric, secure but computationally expensive. Shared key encryption: Symmetric, less secure for key exchange but more efficient for encryption. Authentication Mechanism Public key encryption requires proof that the public key itself is legitimate and not replaced. HTTPS uses certificates to achieve this authentication.\nCertificates are issued by Certificate Authorities (CAs), who verify the identity of the party requesting the certificate and sign the public key.\nThe server sends the signed public key certificate to the client using public key encryption. The client uses the CA’s public key to verify the signature. If verified, it proves: The CA is trustworthy. The server’s public key is legitimate. Both parties then use the public key to establish a secure channel. The CA’s public key is usually pre-installed in browsers.\nIntegrity Protection HTTPS ensures message integrity by using message digest algorithms.\nHash Algorithms These algorithms, also known as hash or digest functions, convert input data of any length into a fixed-length output string, such as MD5 and SHA-2.\nA hash algorithm is not an encryption algorithm. It cannot be reversed to obtain the original data, so it can only be used for integrity checking.\nApplications attach a Message Authentication Code (MAC) to messages. The MAC helps detect tampering, thus ensuring the integrity of the communication.\nHTTPS Communication Flow Other Considerations Due to the overhead of encryption, decryption, and SSL handshake, HTTPS is generally slower and requires more CPU resources than HTTP. SSL accelerators (dedicated servers) are sometimes used to mitigate this issue. When a client repeatedly accesses the same HTTPS server, it may not need to perform a complete TLS handshake each time. The server maintains a session ID for each client and uses it to resume secure sessions, avoiding a full handshake. References MDN Web Docs Wikipedia Cxuan’s Blog “Illustrated HTTP/HTTPS” ",
   "wordCount" : "564",
   "inLanguage": "en",
   "datePublished": "2021-02-21T16:48:55+08:00",
@@ -147,10 +146,10 @@ Problems with HTTP  Communication uses plain text, making it susceptible to eave
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -212,11 +211,11 @@ Problems with HTTP  Communication uses plain text, making it susceptible to eave
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -299,7 +298,7 @@ Problems with HTTP  Communication uses plain text, making it susceptible to eave
 <p>$HTTP + Encryption + Authentication + Integrity Protection = HTTPS$</p>
 <h3 id="https-over-ssl">HTTPS over SSL</h3>
 <p>HTTPS is not a new protocol; it simply adds SSL or TLS between HTTP and TCP. By doing so, HTTPS provides encryption, certificates, and integrity protection.</p>
-<p><img src="https://i.loli.net/2021/02/21/cdQk9AGJUCF4MLI.png" alt="HTTPS Layers"></p>
+<p><img alt="HTTPS Layers" src="https://i.loli.net/2021/02/21/cdQk9AGJUCF4MLI.png"></p>
 <blockquote>
 <p>SSL is independent of HTTP, and it can be used with other protocols like SMTP and Telnet to provide encryption.</p>
 </blockquote>
@@ -341,7 +340,7 @@ Problems with HTTP  Communication uses plain text, making it susceptible to eave
 </blockquote>
 <p>Applications attach a <strong>Message Authentication Code (MAC)</strong> to messages. The MAC helps detect tampering, thus ensuring the integrity of the communication.</p>
 <h2 id="https-communication-flow">HTTPS Communication Flow</h2>
-<p><img src="https://i.loli.net/2021/02/21/BWwJxbpPETst5ug.png" alt="HTTPS Communication Flow"></p>
+<p><img alt="HTTPS Communication Flow" src="https://i.loli.net/2021/02/21/BWwJxbpPETst5ug.png"></p>
 <h2 id="other-considerations">Other Considerations</h2>
 <ul>
 <li>Due to the overhead of encryption, decryption, and SSL handshake, HTTPS is generally slower and requires more CPU resources than HTTP.
@@ -418,7 +417,7 @@ Problems with HTTP  Communication uses plain text, making it susceptible to eave
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -495,4 +494,4 @@ Problems with HTTP  Communication uses plain text, making it susceptible to eave
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/linux-cgroups%E7%AE%80%E4%BB%8B/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2021-06-08T22:26:17+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Linux Cgroups简介"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Linux Cgroups简介"/>
 <meta name="twitter:description" content="Linux Cgroups(Control Groups)供了对一组进程及将来子讲程的资源限制、控制和统计的能力。这些资源包括CPU、内存、存储、网络等。通过 Cgroups,可以方"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "Linux Cgroups简介",
       "item": "https://noneback.github.io/zh/blog/zh/linux-cgroups%E7%AE%80%E4%BB%8B/"
     }
@@ -63,8 +68,8 @@ if (!doNotTrack) {
   "keywords": [
     "Cgroups", "Linux", "Virtualization", "Docker", "Container"
   ],
-  "articleBody": "Linux Cgroups(Control Groups)供了对一组进程及将来子讲程的资源限制、控制和统计的能力。这些资源包括CPU、内存、存储、网络等。通过 Cgroups,可以方便地限制某个进程的资源占用,并且可以实时地监控进程的监控和统计信息。\nCgroups中的三个组件   cgroup\n对进程分组管理的一种机制,一个 cgroup包含一组进程,并可以在这个 cgroup 上增加 Linux subsystem的各种参数配置,将一组进程和一组 subsystem的系统参数关联起来\n  subsystem\n一组资源控制的模块\n每个 subsystem会关联到定义了相应限制的 cgroup上,并对这个cgroup中的进程做相应的限制和控制。\n  hierarchy\nhierarchy的功能是把一组 cgroup串成一个树状结构,一个这样的树便是一个hierarchy\n通过这种树状结构, Groups可以做到继承。\n 场景： 系统对一组定时的任条进程通过 cgroup1限制了CPU的使用率,然后其中有一个定时dump日志的进程还需要限制磁盘IO\n 为了避免限制了磁盘IO之后影响到其他进程,就可以创建 cgroup2,但其继承于 cgroup1并制磁盘的1O,这样 cgroup2便继承了 cgroup1中对CPU使用率的限制,并且增加了磁盘IO的限制而不影响到 Cgroup1中的其他进程。\n  三者的相互关系  系统在创建了新的 hierarchy之后,系统中所有的进程都会加入个 hierarchy的 Cgroup 根节点,这个 Cgroup节点是 hierarchy默认创建的 一个subsystem只能附加到一个hierarchy上面 一个hierarchy可以附加多个subsystem 一个进程可以位于多个从属与不同的hierarchy的cgroup中 fork出的子进程是和父进程在同一个cgroup中的。也可以之后移动到其他cgroup中  内核接口 Groups中的hierarchy是一种树状的组织结构, Kernel为了使对Cgroups的配置更直观,是通过一个虚拟的树状文件系统配置 Cgroups的,通过层级的目录拟出 Cgroups\n 创建挂载hierarchy，新建子cgroup  mkdir cgroup # 创建挂载点 sudo mount -t cgroup -o none,name=cgroup-test cgroup-test ./cgroup-test # 挂载hierarchy sudo mkdir cgroup-1 sudo mkdir cgroup-2 tree . ├── cgroup-1 │ ├── cgroup.clone_children │ ├── cgroup.procs │ ├── notify_on_release │ └── tasks ├── cgroup-2 │ ├── cgroup.clone_children │ ├── cgroup.procs │ ├── notify_on_release │ └── tasks ├── cgroup.clone_children ├── cgroup.procs ├── cgroup.sane_behavior ├── notify_on_release ├── release_agent └── tasks 不同文件的含义\n 在cgroup中添加和移动进程（将进程pid移入对应tasks文件中）  sudo sh -c \"echo $$ ./cgroup-1/tasks\" # 将终端进程移入cgroup-1中 cat /proc/$$/cgroup  13:name=cgroup-test:/cgroup-1 12:memory:/user.slice/user-1002.slice/session-12331.scope 11:perf_event:/ 10:cpuset:/ 9:freezer:/ 8:blkio:/user.slice 7:rdma:/ 6:hugetlb:/ 5:pids:/user.slice/user-1002.slice/session-12331.scope 4:cpu,cpuacct:/user.slice 3:net_cls,net_prio:/ 2:devices:/user.slice 1:name=systemd:/user.slice/user-1002.slice/session-12331.scope 0::/user.slice/user-1002.slice/session-12331.scope   通过subsystem限制cgroup中进程的资源\n首先将hierarchy关联到subsystem，系统默认将hierarchy关联到memory hierarchy\n# 首先,在不做限制的情况下,启动一个占用内存的stress进程 stress --vm-bytes 200m --vm-keep -m 1 sudo mkdir test-limit-memory \u0026\u0026 cd test-limit-memory # 创建一个cgroup sudo sh -c \"echo \"100m\"  memory.limit\" # 设置最大cgroup占用为100m sudo sh -c \"echo $$ tasks\" # 将当前进程移入cgroup stress --vm-bytes 200m --vm-keep -m 1   最后可以观测到进程占用的内存被限制了 ",
-  "wordCount" : "1230",
+  "articleBody": "Linux Cgroups(Control Groups)供了对一组进程及将来子讲程的资源限制、控制和统计的能力。这些资源包括CPU、内存、存储、网络等。通过 Cgroups,可以方便地限制某个进程的资源占用,并且可以实时地监控进程的监控和统计信息。\nCgroups中的三个组件 cgroup\n对进程分组管理的一种机制,一个 cgroup包含一组进程,并可以在这个 cgroup 上增加 Linux subsystem的各种参数配置,将一组进程和一组 subsystem的系统参数关联起来\nsubsystem\n一组资源控制的模块\n每个 subsystem会关联到定义了相应限制的 cgroup上,并对这个cgroup中的进程做相应的限制和控制。\nhierarchy\nhierarchy的功能是把一组 cgroup串成一个树状结构,一个这样的树便是一个hierarchy\n通过这种树状结构, Groups可以做到继承。\n场景： 系统对一组定时的任条进程通过 cgroup1限制了CPU的使用率,然后其中有一个定时dump日志的进程还需要限制磁盘IO\n为了避免限制了磁盘IO之后影响到其他进程,就可以创建 cgroup2,但其继承于 cgroup1并制磁盘的1O,这样 cgroup2便继承了 cgroup1中对CPU使用率的限制,并且增加了磁盘IO的限制而不影响到 Cgroup1中的其他进程。\n三者的相互关系 系统在创建了新的 hierarchy之后,系统中所有的进程都会加入个 hierarchy的 Cgroup 根节点,这个 Cgroup节点是 hierarchy默认创建的 一个subsystem只能附加到一个hierarchy上面 一个hierarchy可以附加多个subsystem 一个进程可以位于多个从属与不同的hierarchy的cgroup中 fork出的子进程是和父进程在同一个cgroup中的。也可以之后移动到其他cgroup中 内核接口 Groups中的hierarchy是一种树状的组织结构, Kernel为了使对Cgroups的配置更直观,是通过一个虚拟的树状文件系统配置 Cgroups的,通过层级的目录拟出 Cgroups\n创建挂载hierarchy，新建子cgroup mkdir cgroup # 创建挂载点 sudo mount -t cgroup -o none,name=cgroup-test cgroup-test ./cgroup-test # 挂载hierarchy sudo mkdir cgroup-1 sudo mkdir cgroup-2 tree . ├── cgroup-1 │ ├── cgroup.clone_children │ ├── cgroup.procs │ ├── notify_on_release │ └── tasks ├── cgroup-2 │ ├── cgroup.clone_children │ ├── cgroup.procs │ ├── notify_on_release │ └── tasks ├── cgroup.clone_children ├── cgroup.procs ├── cgroup.sane_behavior ├── notify_on_release ├── release_agent └── tasks 不同文件的含义\n在cgroup中添加和移动进程（将进程pid移入对应tasks文件中） sudo sh -c \"echo $$ \u003e\u003e ./cgroup-1/tasks\" # 将终端进程移入cgroup-1中 cat /proc/$$/cgroup \u003e\u003e 13:name=cgroup-test:/cgroup-1 12:memory:/user.slice/user-1002.slice/session-12331.scope 11:perf_event:/ 10:cpuset:/ 9:freezer:/ 8:blkio:/user.slice 7:rdma:/ 6:hugetlb:/ 5:pids:/user.slice/user-1002.slice/session-12331.scope 4:cpu,cpuacct:/user.slice 3:net_cls,net_prio:/ 2:devices:/user.slice 1:name=systemd:/user.slice/user-1002.slice/session-12331.scope 0::/user.slice/user-1002.slice/session-12331.scope 通过subsystem限制cgroup中进程的资源\n首先将hierarchy关联到subsystem，系统默认将hierarchy关联到memory hierarchy\n# 首先,在不做限制的情况下,启动一个占用内存的stress进程 stress --vm-bytes 200m --vm-keep -m 1 sudo mkdir test-limit-memory \u0026\u0026 cd test-limit-memory # 创建一个cgroup sudo sh -c \"echo \"100m\" \u003e memory.limit\" # 设置最大cgroup占用为100m sudo sh -c \"echo $$ \u003e tasks\" # 将当前进程移入cgroup stress --vm-bytes 200m --vm-keep -m 1 最后可以观测到进程占用的内存被限制了 ",
+  "wordCount" : "1232",
   "inLanguage": "zh",
   "datePublished": "2021-06-08T22:26:17+08:00",
   "dateModified": "2021-06-08T22:26:17+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -224,7 +229,7 @@ if (!doNotTrack) {
 
   <p>
   <small>
-    2021年6月8日&nbsp;· 1230 字&nbsp;· 3 分钟</small>
+    2021年6月8日&nbsp;· 1232 字&nbsp;· 3 分钟</small>
 
   <small>
       
@@ -265,7 +270,7 @@ if (!doNotTrack) {
 <li>
 <p><strong>subsystem</strong></p>
 <p>一组资源控制的模块</p>
-<p><img src="https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png" alt="image.png">
+<p><img alt="image.png" src="https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png">
 每个 subsystem会关联到定义了相应限制的 cgroup上,并对这个cgroup中的进程做相应的限制和控制。</p>
 </li>
 <li>
@@ -292,63 +297,63 @@ if (!doNotTrack) {
 <ul>
 <li>创建挂载hierarchy，新建子cgroup</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir cgroup <span style="color:#75715e"># 创建挂载点</span>
-sudo mount -t cgroup -o none,name<span style="color:#f92672">=</span>cgroup-test cgroup-test ./cgroup-test <span style="color:#75715e"># 挂载hierarchy</span>
-sudo mkdir cgroup-1
-sudo mkdir cgroup-2
-tree
-
-.
-├── cgroup-1
-│   ├── cgroup.clone_children
-│   ├── cgroup.procs
-│   ├── notify_on_release
-│   └── tasks
-├── cgroup-2
-│   ├── cgroup.clone_children
-│   ├── cgroup.procs
-│   ├── notify_on_release
-│   └── tasks
-├── cgroup.clone_children
-├── cgroup.procs
-├── cgroup.sane_behavior
-├── notify_on_release
-├── release_agent
-└── tasks
-</code></pre></div><p><strong>不同文件的含义</strong></p>
-<p><img src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png" alt="image.png"></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mkdir cgroup <span style="color:#75715e"># 创建挂载点</span>
+</span></span><span style="display:flex;"><span>sudo mount -t cgroup -o none,name<span style="color:#f92672">=</span>cgroup-test cgroup-test ./cgroup-test <span style="color:#75715e"># 挂载hierarchy</span>
+</span></span><span style="display:flex;"><span>sudo mkdir cgroup-1
+</span></span><span style="display:flex;"><span>sudo mkdir cgroup-2
+</span></span><span style="display:flex;"><span>tree
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.
+</span></span><span style="display:flex;"><span>├── cgroup-1
+</span></span><span style="display:flex;"><span>│   ├── cgroup.clone_children
+</span></span><span style="display:flex;"><span>│   ├── cgroup.procs
+</span></span><span style="display:flex;"><span>│   ├── notify_on_release
+</span></span><span style="display:flex;"><span>│   └── tasks
+</span></span><span style="display:flex;"><span>├── cgroup-2
+</span></span><span style="display:flex;"><span>│   ├── cgroup.clone_children
+</span></span><span style="display:flex;"><span>│   ├── cgroup.procs
+</span></span><span style="display:flex;"><span>│   ├── notify_on_release
+</span></span><span style="display:flex;"><span>│   └── tasks
+</span></span><span style="display:flex;"><span>├── cgroup.clone_children
+</span></span><span style="display:flex;"><span>├── cgroup.procs
+</span></span><span style="display:flex;"><span>├── cgroup.sane_behavior
+</span></span><span style="display:flex;"><span>├── notify_on_release
+</span></span><span style="display:flex;"><span>├── release_agent
+</span></span><span style="display:flex;"><span>└── tasks
+</span></span></code></pre></div><p><strong>不同文件的含义</strong></p>
+<p><img alt="image.png" src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png"></p>
 <ul>
 <li>在cgroup中添加和移动进程（将进程pid移入对应tasks文件中）</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo sh -c <span style="color:#e6db74">&#34;echo </span>$$<span style="color:#e6db74"> &gt;&gt; ./cgroup-1/tasks&#34;</span> <span style="color:#75715e"># 将终端进程移入cgroup-1中</span>
-cat /proc/$$/cgroup
-
-&gt;&gt; 
-13:name<span style="color:#f92672">=</span>cgroup-test:/cgroup-1
-12:memory:/user.slice/user-1002.slice/session-12331.scope
-11:perf_event:/
-10:cpuset:/
-9:freezer:/
-8:blkio:/user.slice
-7:rdma:/
-6:hugetlb:/
-5:pids:/user.slice/user-1002.slice/session-12331.scope
-4:cpu,cpuacct:/user.slice
-3:net_cls,net_prio:/
-2:devices:/user.slice
-1:name<span style="color:#f92672">=</span>systemd:/user.slice/user-1002.slice/session-12331.scope
-0::/user.slice/user-1002.slice/session-12331.scope
-</code></pre></div><ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo sh -c <span style="color:#e6db74">&#34;echo </span>$$<span style="color:#e6db74"> &gt;&gt; ./cgroup-1/tasks&#34;</span> <span style="color:#75715e"># 将终端进程移入cgroup-1中</span>
+</span></span><span style="display:flex;"><span>cat /proc/$$/cgroup
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&gt;&gt; 
+</span></span><span style="display:flex;"><span>13:name<span style="color:#f92672">=</span>cgroup-test:/cgroup-1
+</span></span><span style="display:flex;"><span>12:memory:/user.slice/user-1002.slice/session-12331.scope
+</span></span><span style="display:flex;"><span>11:perf_event:/
+</span></span><span style="display:flex;"><span>10:cpuset:/
+</span></span><span style="display:flex;"><span>9:freezer:/
+</span></span><span style="display:flex;"><span>8:blkio:/user.slice
+</span></span><span style="display:flex;"><span>7:rdma:/
+</span></span><span style="display:flex;"><span>6:hugetlb:/
+</span></span><span style="display:flex;"><span>5:pids:/user.slice/user-1002.slice/session-12331.scope
+</span></span><span style="display:flex;"><span>4:cpu,cpuacct:/user.slice
+</span></span><span style="display:flex;"><span>3:net_cls,net_prio:/
+</span></span><span style="display:flex;"><span>2:devices:/user.slice
+</span></span><span style="display:flex;"><span>1:name<span style="color:#f92672">=</span>systemd:/user.slice/user-1002.slice/session-12331.scope
+</span></span><span style="display:flex;"><span>0::/user.slice/user-1002.slice/session-12331.scope
+</span></span></code></pre></div><ul>
 <li>
 <p>通过subsystem限制cgroup中进程的资源</p>
 <p>首先将hierarchy关联到subsystem，系统默认将hierarchy关联到memory hierarchy</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 首先,在不做限制的情况下,启动一个占用内存的stress进程</span>
-stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
-sudo mkdir test-limit-memory <span style="color:#f92672">&amp;&amp;</span> cd test-limit-memory <span style="color:#75715e"># 创建一个cgroup</span>
-sudo sh -c <span style="color:#e6db74">&#34;echo &#34;</span>100m<span style="color:#e6db74">&#34; &gt; memory.limit&#34;</span> <span style="color:#75715e"># 设置最大cgroup占用为100m</span>
-sudo sh -c <span style="color:#e6db74">&#34;echo </span>$$<span style="color:#e6db74"> &gt; tasks&#34;</span> <span style="color:#75715e"># 将当前进程移入cgroup</span>
-stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
-</code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># 首先,在不做限制的情况下,启动一个占用内存的stress进程</span>
+</span></span><span style="display:flex;"><span>stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>sudo mkdir test-limit-memory <span style="color:#f92672">&amp;&amp;</span> cd test-limit-memory <span style="color:#75715e"># 创建一个cgroup</span>
+</span></span><span style="display:flex;"><span>sudo sh -c <span style="color:#e6db74">&#34;echo &#34;</span>100m<span style="color:#e6db74">&#34; &gt; memory.limit&#34;</span> <span style="color:#75715e"># 设置最大cgroup占用为100m</span>
+</span></span><span style="display:flex;"><span>sudo sh -c <span style="color:#e6db74">&#34;echo </span>$$<span style="color:#e6db74"> &gt; tasks&#34;</span> <span style="color:#75715e"># 将当前进程移入cgroup</span>
+</span></span><span style="display:flex;"><span>stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
+</span></span></code></pre></div></li>
 </ul>
 <h4 id="最后可以观测到进程占用的内存被限制了">最后可以观测到进程占用的内存被限制了</h4>
 </section>
@@ -407,7 +412,7 @@ stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -484,4 +489,4 @@ stress --vm-bytes 200m --vm-keep -m <span style="color:#ae81ff">1</span>
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

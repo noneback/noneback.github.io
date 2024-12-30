@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/dfs/</link>
     <description>Recent content in DFS on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 06 Oct 2021 22:44:01 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/dfs/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -28,7 +29,7 @@
 &lt;h4 id=&#34;cdn-based-solution&#34;&gt;CDN-based Solution&lt;/h4&gt;
 &lt;p&gt;The core of this solution is to use CDN (Content Delivery Network) to cache hot image data, reducing network transmission.&lt;/p&gt;
 &lt;p&gt;This approach optimizes access to hot images but also has some issues. Firstly, CDN is expensive and has limited capacity. Secondly, image sharing includes many &lt;code&gt;less popular&lt;/code&gt; images, which leads to the long tail effect, slowing down access.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011455343.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011455343.png&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;CDNs are generally used to serve static data and are often pre-warmed before an event, making them unsuitable as an image cache service. Many &lt;code&gt;less popular&lt;/code&gt; images do not enter the CDN, leading to the long tail effect.&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -41,7 +42,7 @@
 &lt;li&gt;Read the content of the file&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;PhotoStore was used as a caching layer to store some metadata like file handles to speed up the addressing process.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011454979.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011454979.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;The NAS-based design did not solve the fundamental issue of excessive metadata that could not be fully cached. When the number of files reaches a certain threshold, disk I/O becomes inevitable.&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;The fundamental issue is the &lt;strong&gt;one-to-one relationship between files and addressing metadata&lt;/strong&gt;, causing the volume of metadata to change with the number of files.&lt;/p&gt;
@@ -52,7 +53,7 @@
 &lt;blockquote&gt;
 &lt;p&gt;Metadata is maintained only for the aggregated file, and the position of small files within the large file is maintained separately.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011456020.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011456020.png&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;implementation&#34;&gt;Implementation&lt;/h2&gt;
 &lt;p&gt;Haystack mainly consists of three components: Haystack Directory, Haystack Cache, and Haystack Store.&lt;/p&gt;
 &lt;h3 id=&#34;file-mapping-and-storage&#34;&gt;File Mapping and Storage&lt;/h3&gt;
@@ -91,14 +92,14 @@
 &lt;p&gt;The Store layer is responsible for data storage operations.&lt;/p&gt;
 &lt;p&gt;The addressing abstraction is: &lt;code&gt;filename + offset =&amp;gt; logical volume id + offset =&amp;gt; data&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;Multiple physical volumes constitute a logical volume. In the Store, small files are encapsulated as &lt;strong&gt;Needles&lt;/strong&gt; managed by physical volumes.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg&#34; alt=&#34;Needle Abstraction&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Needle Abstraction&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Needles represent a way to encapsulate small files and manage volume blocks.&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;Store data is accessed at the Needle level. To speed up addressing, a memory map is used: &lt;code&gt;key/alternate key =&amp;gt; needle&#39;s flag/offset/other attributes&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;These maps are persisted in &lt;strong&gt;Index Files&lt;/strong&gt; on disk to provide a checkpoint for quick metadata recovery after a crash.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg&#34; alt=&#34;Index File&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg&#34; alt=&#34;Volume Mapping&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Index File&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Volume Mapping&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Each volume maintains its own in-memory mapping and index file.&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -152,10 +153,10 @@
 &lt;h2 id=&#34;data-model&#34;&gt;Data Model&lt;/h2&gt;
 &lt;p&gt;Bigtable&amp;rsquo;s data model is No Schema and provides a simple model. It treats all data as strings, with encoding and decoding handled by the application layer.&lt;/p&gt;
 &lt;p&gt;Bigtable is essentially a &lt;strong&gt;sparse, distributed, persistent multidimensional sorted Map&lt;/strong&gt;. The &lt;strong&gt;index&lt;/strong&gt; of the Map is composed of &lt;strong&gt;Row Key, Column Key, and TimeStamp&lt;/strong&gt;, and the &lt;strong&gt;value&lt;/strong&gt; is an unstructured byte array.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Mapping abstraction
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;row&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;column&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;int64&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&amp;gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;// A Row Key is essentially a multi-dimensional structure composed of {Row, Column, Timestamp}.
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The paper describes the data model as follows:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Mapping abstraction
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;row&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;column&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;int64&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&amp;gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// A Row Key is essentially a multi-dimensional structure composed of {Row, Column, Timestamp}.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The paper describes the data model as follows:&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;A Bigtable is a sparse, distributed, persistent multidimensional sorted map.&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -224,30 +225,30 @@ Extra version management increases maintenance overhead, usually handled by limi
 &lt;/blockquote&gt;
 &lt;h3 id=&#34;api&#34;&gt;API&lt;/h3&gt;
 &lt;p&gt;The paper provides an API that highlights the differences from RDBMS.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Writing to Bigtable
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Open the table 
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Table &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;T &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; OpenOrDie(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/bigtable/web/webtable&amp;#34;&lt;/span&gt;);
-&lt;span style=&#34;color:#75715e&#34;&gt;// Write a new anchor and delete an old anchor 
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;RowMutation &lt;span style=&#34;color:#a6e22e&#34;&gt;r1&lt;/span&gt;(T, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
-r1.Set(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.c-span.org&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CNN&amp;#34;&lt;/span&gt;); 
-r1.Delete(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.abc.com&amp;#34;&lt;/span&gt;); 
-Operation op; 
-Apply(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;op, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;r1);
-
-&lt;span style=&#34;color:#75715e&#34;&gt;// Reading from Bigtable
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Scanner &lt;span style=&#34;color:#a6e22e&#34;&gt;scanner&lt;/span&gt;(T); 
-ScanStream &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;stream; 
-stream &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; scanner.FetchColumnFamily(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor&amp;#34;&lt;/span&gt;); 
-stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;SetReturnAllVersions(); 
-scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
-&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (; &lt;span style=&#34;color:#f92672&#34;&gt;!&lt;/span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Done(); stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Next()) { 
-  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%s %s %lld %s&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, 
-         scanner.RowName(), 
-         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;ColumnName(), 
-         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;MicroTimestamp(), 
-         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Value());
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Writing to Bigtable
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Open the table 
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Table &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;T &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; OpenOrDie(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/bigtable/web/webtable&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Write a new anchor and delete an old anchor 
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;RowMutation &lt;span style=&#34;color:#a6e22e&#34;&gt;r1&lt;/span&gt;(T, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;r1.Set(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.c-span.org&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CNN&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;r1.Delete(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.abc.com&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Operation op; 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Apply(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;op, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;r1);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Reading from Bigtable
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Scanner &lt;span style=&#34;color:#a6e22e&#34;&gt;scanner&lt;/span&gt;(T); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ScanStream &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;stream; 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;stream &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; scanner.FetchColumnFamily(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;SetReturnAllVersions(); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (; &lt;span style=&#34;color:#f92672&#34;&gt;!&lt;/span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Done(); stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Next()) { 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%s %s %lld %s&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         scanner.RowName(), 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;ColumnName(), 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;MicroTimestamp(), 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Value());
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
 &lt;h3 id=&#34;external-components&#34;&gt;External Components&lt;/h3&gt;
 &lt;p&gt;Bigtable is built on top of other components in Google&amp;rsquo;s ecosystem, which significantly simplifies Bigtable&amp;rsquo;s design.&lt;/p&gt;
 &lt;h4 id=&#34;gfs&#34;&gt;GFS&lt;/h4&gt;

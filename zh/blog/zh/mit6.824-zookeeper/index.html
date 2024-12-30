@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mit6.824-zookeeper/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2023-01-03T23:49:41+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824-ZooKeeper"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-ZooKeeper"/>
 <meta name="twitter:description" content="本文主要讲了ZooKeeper系统在设计和实践上的考量，如wait-free和lock，一致性的选择，系统提供的API以及特定语义上的抉择，"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "MIT6.824-ZooKeeper",
       "item": "https://noneback.github.io/zh/blog/zh/mit6.824-zookeeper/"
     }
@@ -63,8 +68,8 @@ if (!doNotTrack) {
   "keywords": [
     "ZooKeeper", "Distributed System", "MIT6.824"
   ],
-  "articleBody": "本文主要讲了ZooKeeper系统在设计和实践上的考量，如wait-free和lock，一致性的选择，系统提供的API以及特定语义上的抉择，这样的trade-off是本文的最大启发。\n定位 wait-free,high-performance 的协调分布式应用的系统。通过提供协调原语（特定语义的API与数据模型）支持分布式应用的协调需求。\n设计 关键词 ZK定位中的关键词有两个：高性能，分布式应用协调服务。\nZK的高性能通过WaitFree设计、多副本本地读、Watch机制实现。\n WaitFree应该是将请求异步处理来实现的，这样异步处理可能会导致请求重排序，导致状态机和现实的时序不同，所以ZK提供了FIFO Client Order 顺序保证。同时，这样的异步处理有益于数据的batch pipeline处理，进一步提升性能。 Watch机制，当znode变化是通知Client更新，避免Client操作本地缓存的开销。 多副本本地读，ZK使用ZAB协议实现数据共识，保证写操作满足linearizability。读请求副本本地读，不走ZAB共识协议，但读请求只满足Serializaility，可能会读到之前的结果，但提升了性能。  分布式应用协调服务指的是，ZK提供的数据模型以及API语义，分布式应用可以自由使用来满足诸如Group Membership，Distributed Lock等协调需求。\n数据模型与API ZK为使用者提供znode数据节点的抽象，数据节点通过分层的命名空间组织。ZK提供了Regular + Ephemeral两种znode的节点的创建，每个节点都存储数据，并通过标准的UNIX文件系统路径访问。\n实际上，znodes 不是为通用数据存储设计的。 相反，znodes 映射到客户端应用程序的抽象，通常与用于协调的元数据相对应。\n 也就是说，使用ZK进行协调时，利用好znode关联的元数据，而不是只将znode当做数据存储。比如，znode 将元数据与时间戳(timestamp)和版本计数器( version counter )关联，客户端可以跟踪对 znode 的更改并根据 znode 的版本执行条件更新。\n 这套数据模型本质上是一个简化API的文件系统，只支持完整数据的读写。使用者将在ZK提供的语义下实现分布式应用的协调。\n Regular 和 Ephemeral 的区别在于Ephemeral可以在Session结束时自动删除。\n Client通过API与ZK交互，ZK通过Session管理Clinet连接，在Session中Clinet可以观测到反应其操作的状态变化。\nCAP ZK保证CP，比如在选举leader时，会停止服务，直到选举成功之后才会再次对外提供服务。\n实现 ZK使用多副本实现高可用。\n简单来说，ZK上层使用ZAB协议处理写请求，保证多副本更新的线性一致性，本地处理读请求，读请求保证顺序一致性。下层数据状态机保存到ZK集群机器上的Replicated Database（内存）+ WAL上，并定期snapshot。整个内存数据库通过 Fuzzy Snapshot + WAL Replay的方式保证单机Crash Safe以及重启恢复的速度。\n Fuzzy Snapshot 的优势在于不阻塞在线请求。\n 与Client的交互  更新操作会通知并清除相关znode的Watch。 读请求本地进行，通过zxid定义与写请求的偏序关系，只保证顺序一致性，可能会Read Stale。ZK提供了sync操作，通过 sync + read 一定程度上解决了这个问题。 当Client连接新ZK Server时，会对比两者的最大zxid，落后的ZK Server将不会为Client建立Session。 Client通过心跳维持Session，Server对请求进行幂等处理。  参考 ZooKeeper Paper\nMIT6.824-ZooKeeper FAQ\n",
-  "wordCount" : "1455",
+  "articleBody": "本文主要讲了ZooKeeper系统在设计和实践上的考量，如wait-free和lock，一致性的选择，系统提供的API以及特定语义上的抉择，这样的trade-off是本文的最大启发。\n定位 wait-free,high-performance 的协调分布式应用的系统。通过提供协调原语（特定语义的API与数据模型）支持分布式应用的协调需求。\n设计 关键词 ZK定位中的关键词有两个：高性能，分布式应用协调服务。\nZK的高性能通过WaitFree设计、多副本本地读、Watch机制实现。\nWaitFree应该是将请求异步处理来实现的，这样异步处理可能会导致请求重排序，导致状态机和现实的时序不同，所以ZK提供了FIFO Client Order 顺序保证。同时，这样的异步处理有益于数据的batch pipeline处理，进一步提升性能。 Watch机制，当znode变化是通知Client更新，避免Client操作本地缓存的开销。 多副本本地读，ZK使用ZAB协议实现数据共识，保证写操作满足linearizability。读请求副本本地读，不走ZAB共识协议，但读请求只满足Serializaility，可能会读到之前的结果，但提升了性能。 分布式应用协调服务指的是，ZK提供的数据模型以及API语义，分布式应用可以自由使用来满足诸如Group Membership，Distributed Lock等协调需求。\n数据模型与API ZK为使用者提供znode数据节点的抽象，数据节点通过分层的命名空间组织。ZK提供了Regular + Ephemeral两种znode的节点的创建，每个节点都存储数据，并通过标准的UNIX文件系统路径访问。\n实际上，znodes 不是为通用数据存储设计的。 相反，znodes 映射到客户端应用程序的抽象，通常与用于协调的元数据相对应。\n也就是说，使用ZK进行协调时，利用好znode关联的元数据，而不是只将znode当做数据存储。比如，znode 将元数据与时间戳(timestamp)和版本计数器( version counter )关联，客户端可以跟踪对 znode 的更改并根据 znode 的版本执行条件更新。\n这套数据模型本质上是一个简化API的文件系统，只支持完整数据的读写。使用者将在ZK提供的语义下实现分布式应用的协调。\nRegular 和 Ephemeral 的区别在于Ephemeral可以在Session结束时自动删除。\n",
+  "wordCount" : "933",
   "inLanguage": "zh",
   "datePublished": "2023-01-03T23:49:41+08:00",
   "dateModified": "2023-01-03T23:49:41+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -224,7 +229,7 @@ if (!doNotTrack) {
 
   <p>
   <small>
-    2023年1月3日&nbsp;· 1455 字&nbsp;· 3 分钟</small>
+    2023年1月3日&nbsp;· 933 字&nbsp;· 2 分钟</small>
 
   <small>
       
@@ -285,12 +290,12 @@ if (!doNotTrack) {
 <blockquote>
 <p>Regular 和 Ephemeral 的区别在于Ephemeral可以在Session结束时自动删除。</p>
 </blockquote>
-<p><img src="https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155342Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;x-id=GetObject" alt="img"></p>
+<p><img alt="img" src="https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T155342Z&X-Amz-Expires=86400&X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D\"Untitled.png\"&x-id=GetObject"></p>
 <p>Client通过API与ZK交互，ZK通过Session管理Clinet连接，在Session中Clinet可以观测到反应其操作的状态变化。</p>
 <h2 id="cap">CAP</h2>
 <p>ZK保证CP，比如在选举leader时，会停止服务，直到选举成功之后才会再次对外提供服务。</p>
 <h2 id="实现">实现</h2>
-<p><img src="https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155414Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;x-id=GetObject" alt="img"></p>
+<p><img alt="img" src="https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T155414Z&X-Amz-Expires=86400&X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D\"Untitled.png\"&x-id=GetObject"></p>
 <p>ZK使用多副本实现高可用。</p>
 <p>简单来说，ZK上层使用ZAB协议处理写请求，保证多副本更新的线性一致性，本地处理读请求，读请求保证顺序一致性。下层数据状态机保存到ZK集群机器上的Replicated Database（内存）+ WAL上，并定期snapshot。整个内存数据库通过 Fuzzy Snapshot + WAL Replay的方式保证单机Crash Safe以及重启恢复的速度。</p>
 <blockquote>
@@ -362,7 +367,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -439,4 +444,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

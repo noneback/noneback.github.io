@@ -9,7 +9,7 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
     <link rel="canonical" href="https://noneback.github.io/blog/dynamo/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -36,8 +36,7 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
 <meta property="article:modified_time" content="2023-08-01T16:15:29+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Dynamo: Amazon’s Highly Available Key-value Store"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Dynamo: Amazon’s Highly Available Key-value Store"/>
 <meta name="twitter:description" content="An old paper by AWS, Dynamo has been in the market for a long time, and the architecture has likely evolved since the paper&rsquo;s publication. Despite this, the paper was selected as one of the SIGMOD best papers of the year, and there are still many valuable lessons to learn.
 Design Dynamo is a NoSQL product that provides a key-value storage interface. It emphasizes high availability rather than consistency, which leads to differences in architectural design and technical choices compared to other systems."/>
 
@@ -46,16 +45,16 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "Dynamo: Amazon’s Highly Available Key-value Store",
       "item": "https://noneback.github.io/blog/dynamo/"
     }
@@ -72,7 +71,7 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
   "keywords": [
     "Distributed System", "AWS Dynamo", "Storage"
   ],
-  "articleBody": "An old paper by AWS, Dynamo has been in the market for a long time, and the architecture has likely evolved since the paper’s publication. Despite this, the paper was selected as one of the SIGMOD best papers of the year, and there are still many valuable lessons to learn.\nDesign Dynamo is a NoSQL product that provides a key-value storage interface. It emphasizes high availability rather than consistency, which leads to differences in architectural design and technical choices compared to other systems.\nTechnical Details Dynamo has many aspects that may be considered problematic from a technical perspective, such as the NWR (N-W-R) approach. However, given Dynamo’s long track record in production, these issues may have been resolved over time, though the paper is not explicit about this. For now, let’s discuss some of the aspects I found noteworthy:\nData Partitioning Dynamo uses a consistent hashing algorithm. Traditional consistent hashing employs a hash ring to address the problem of extensive rehashing when nodes are added or removed, but it cannot avoid issues like data skew and performance imbalance caused by heterogeneous machines. In practice, Dynamo introduces virtual nodes into the hash ring, which elegantly solves these problems.\nData Write Challenges Most storage systems ensure a certain level of consistency during writes, trading off lower write performance for reduced read complexity. However, Dynamo takes a different approach.\nDynamo’s design goal is to provide a highly available key-value store that ensures always writable operations while only guaranteeing eventual consistency. To achieve this, Dynamo pushes data conflict resolution to the read operation, ensuring that writes are never rejected.\nThere are two key issues to consider here:\n  Data Conflict Resolution: Concurrent reads and writes to the same key by multiple clients can easily lead to data conflicts. Since Dynamo only provides eventual consistency, data on different nodes in the Dynamo ring might be inconsistent.\n Dynamo uses vector clocks to keep track of data versions and merges them during reads to resolve conflicts.    Replica Data Gaps: Since Dynamo employs the NWR gossip protocol, it is theoretically possible that none of the nodes hold the complete data set, requiring synchronization between replicas.\n Dynamo uses an anti-entropy process to address this, employing Merkle Trees to efficiently detect inconsistencies between replicas and minimize the amount of data transferred.    The table in the paper clearly shows the aspects considered during Dynamo’s development and the corresponding technical choices. For more information, refer to the original paper.\nReferences Dynamo’s Implementation and Decentralization\nDynamo’s Flawed Architecture (Translation) by Tim Yang\nDynamo: A Flawed Architecture | Hacker News\n",
+  "articleBody": "An old paper by AWS, Dynamo has been in the market for a long time, and the architecture has likely evolved since the paper’s publication. Despite this, the paper was selected as one of the SIGMOD best papers of the year, and there are still many valuable lessons to learn.\nDesign Dynamo is a NoSQL product that provides a key-value storage interface. It emphasizes high availability rather than consistency, which leads to differences in architectural design and technical choices compared to other systems.\nTechnical Details Dynamo has many aspects that may be considered problematic from a technical perspective, such as the NWR (N-W-R) approach. However, given Dynamo’s long track record in production, these issues may have been resolved over time, though the paper is not explicit about this. For now, let’s discuss some of the aspects I found noteworthy:\nData Partitioning Dynamo uses a consistent hashing algorithm. Traditional consistent hashing employs a hash ring to address the problem of extensive rehashing when nodes are added or removed, but it cannot avoid issues like data skew and performance imbalance caused by heterogeneous machines. In practice, Dynamo introduces virtual nodes into the hash ring, which elegantly solves these problems.\nData Write Challenges Most storage systems ensure a certain level of consistency during writes, trading off lower write performance for reduced read complexity. However, Dynamo takes a different approach.\nDynamo’s design goal is to provide a highly available key-value store that ensures always writable operations while only guaranteeing eventual consistency. To achieve this, Dynamo pushes data conflict resolution to the read operation, ensuring that writes are never rejected.\nThere are two key issues to consider here:\nData Conflict Resolution: Concurrent reads and writes to the same key by multiple clients can easily lead to data conflicts. Since Dynamo only provides eventual consistency, data on different nodes in the Dynamo ring might be inconsistent.\nDynamo uses vector clocks to keep track of data versions and merges them during reads to resolve conflicts. Replica Data Gaps: Since Dynamo employs the NWR gossip protocol, it is theoretically possible that none of the nodes hold the complete data set, requiring synchronization between replicas.\nDynamo uses an anti-entropy process to address this, employing Merkle Trees to efficiently detect inconsistencies between replicas and minimize the amount of data transferred. The table in the paper clearly shows the aspects considered during Dynamo’s development and the corresponding technical choices. For more information, refer to the original paper.\nReferences Dynamo’s Implementation and Decentralization\nDynamo’s Flawed Architecture (Translation) by Tim Yang\nDynamo: A Flawed Architecture | Hacker News\n",
   "wordCount" : "425",
   "inLanguage": "en",
   "datePublished": "2023-08-01T16:15:29+08:00",
@@ -147,10 +146,10 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -212,11 +211,11 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -242,7 +241,7 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
       
       <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
       
-      <a href="https://noneback.github.io/tags/storage/">storage</a>
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
     </small>
   
@@ -288,7 +287,7 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
 </ul>
 </li>
 </ol>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png" alt="Dynamo Design Considerations"></p>
+<p><img alt="Dynamo Design Considerations" src="https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png"></p>
 <p>The table in the paper clearly shows the aspects considered during Dynamo&rsquo;s development and the corresponding technical choices. For more information, refer to the original paper.</p>
 <h2 id="references">References</h2>
 <p><a href="https://www.raychase.net/2396">Dynamo&rsquo;s Implementation and Decentralization</a></p>
@@ -350,7 +349,7 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -427,4 +426,4 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

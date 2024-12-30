@@ -10,7 +10,7 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
     <link rel="canonical" href="https://noneback.github.io/blog/leveldb-write/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -38,8 +38,7 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
 <meta property="article:modified_time" content="2022-05-10T17:14:14+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="LevelDB Write"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="LevelDB Write"/>
 <meta name="twitter:description" content="This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.
 Main Process The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a WriteBatch, and then it is executed.
 Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&amp; value) { WriteBatch batch; batch."/>
@@ -49,16 +48,16 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "LevelDB Write",
       "item": "https://noneback.github.io/blog/leveldb-write/"
     }
@@ -75,7 +74,7 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
   "keywords": [
     "LevelDB", "LSM", "KV"
   ],
-  "articleBody": "This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.\nMain Process The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a WriteBatch, and then it is executed.\nStatus DB::Put(const WriteOptions\u0026 opt, const Slice\u0026 key, const Slice\u0026 value) { WriteBatch batch; batch.Put(key, value); return Write(opt, \u0026batch); } WriteBatch WriteBatch is an encapsulation of a group of update operations, which are applied atomically to the state machine. A block of memory is used to save the user’s update operations.\n InMemory Format: | seq_num: 8 bytes | count: 4 bytes | list of records{ type + key + value}\n class WriteBatch { ... // See comment in write_batch.cc for the format of rep_; // WriteBatch::rep_ := // sequence: fixed64 // count: fixed32 // data: record[count] // record := // kTypeValue varstring varstring | // kTypeDeletion varstring // varstring := // len: varint32 // data: uint8[len]  std::string rep_; } // some opt void WriteBatch::Put(const Slice\u0026 key, const Slice\u0026 value) { WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1); rep_.push_back(static_castchar(kTypeValue)); PutLengthPrefixedSlice(\u0026rep_, key); PutLengthPrefixedSlice(\u0026rep_, value); } Write Flow The write operation mainly consists of four steps:\nInitializing Writer Writer actually contains all the information needed for a write operation.\n// Information kept for every waiting writer struct DBImpl::Writer { explicit Writer(port::Mutex* mu) : batch(nullptr), sync(false), done(false), cv(mu) {} Status status; WriteBatch* batch; bool sync; bool done; port::CondVar cv; }; Writer Scheduling LevelDB’s write process is a multi-producer, single-consumer model, with multiple threads producing writers and a single thread consuming them. Each writer is produced by one thread but can be consumed by multiple threads.\nInternally, LevelDB maintains a writer queue. Each thread’s write, delete, or update operation appends a writer to the end of the queue, with a lock ensuring data safety. Once a writer is added to the queue, the thread waits until it either reaches the head of the queue (is scheduled) or its operation is completed by another thread.\n When consuming writers and executing the actual update operations, LevelDB optimizes the write task by merging writers of the same type (based on the sync flag).\n Writing Writer Batches  First, MakeRoomForWrite ensures that the memtable has enough space and that the Write-Ahead Log (WAL) can guarantee a successful write. If the current memtable has enough space, it is reused. Otherwise, a new memtable and WAL are created, and the previous memtable is converted to an immutable memtable, awaiting compaction (minor compaction is serialized). The function also checks the number of Level 0 files and decides whether to throttle the write rate based on configurations and triggers. There are two main configurations:  Slowdown Trigger: This trigger causes write threads to sleep, slowing down writes so that compaction tasks can proceed. It also limits the number of Level 0 files to ensure read efficiency. StopWritesTrigger: Stops write threads.   BuildBatchGroup merges batches from writers of the same type starting from the head of the queue into a single batch. The merged batch is then written first to the WAL and then to the memtable.  Write-Ahead Log (WAL) The WAL file is split into blocks, and each block consists of records. The format is as follows:\n | Header{ checksum(4 bytes) + len(2 bytes) + type(1 byte)} | Data |\n The record types are Zero, Full, First, Middle, and Last. Zero is reserved for preallocated files. Since a key-value pair might be too large and needs to be recorded in several chunks, the other four types are used accordingly.\nWrite Flow Memtable The core design of memtable involves two parts: the skip list and the encoding of key-value pairs in the skip list. The skip list ensures the sorted nature of inserted data. For more details, you can refer to my other blog post.\nThe key encoded in memtable is called the Internal Key, which is encoded as follows:\n | Original Key(varstring) + seq num(7 bytes) + type(1 byte) |\n  SeqNum is a monotonically increasing sequence number generated for each update operation, serving as a logical clock to indicate the recency of operations. Based on SeqNum, snapshot-based reads (versioned reads) can be implemented.\n Reference  LevelDB handbook  ",
+  "articleBody": "This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.\nMain Process The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a WriteBatch, and then it is executed.\nStatus DB::Put(const WriteOptions\u0026 opt, const Slice\u0026 key, const Slice\u0026 value) { WriteBatch batch; batch.Put(key, value); return Write(opt, \u0026batch); } WriteBatch WriteBatch is an encapsulation of a group of update operations, which are applied atomically to the state machine. A block of memory is used to save the user’s update operations.\nInMemory Format: | seq_num: 8 bytes | count: 4 bytes | list of records{ type + key + value}\nclass WriteBatch { ... // See comment in write_batch.cc for the format of rep_; // WriteBatch::rep_ := // sequence: fixed64 // count: fixed32 // data: record[count] // record := // kTypeValue varstring varstring | // kTypeDeletion varstring // varstring := // len: varint32 // data: uint8[len] std::string rep_; } // some opt void WriteBatch::Put(const Slice\u0026 key, const Slice\u0026 value) { WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1); rep_.push_back(static_cast\u003cchar\u003e(kTypeValue)); PutLengthPrefixedSlice(\u0026rep_, key); PutLengthPrefixedSlice(\u0026rep_, value); } Write Flow The write operation mainly consists of four steps:\nInitializing Writer Writer actually contains all the information needed for a write operation.\n// Information kept for every waiting writer struct DBImpl::Writer { explicit Writer(port::Mutex* mu) : batch(nullptr), sync(false), done(false), cv(mu) {} Status status; WriteBatch* batch; bool sync; bool done; port::CondVar cv; }; Writer Scheduling LevelDB’s write process is a multi-producer, single-consumer model, with multiple threads producing writers and a single thread consuming them. Each writer is produced by one thread but can be consumed by multiple threads.\nInternally, LevelDB maintains a writer queue. Each thread’s write, delete, or update operation appends a writer to the end of the queue, with a lock ensuring data safety. Once a writer is added to the queue, the thread waits until it either reaches the head of the queue (is scheduled) or its operation is completed by another thread.\nWhen consuming writers and executing the actual update operations, LevelDB optimizes the write task by merging writers of the same type (based on the sync flag).\nWriting Writer Batches First, MakeRoomForWrite ensures that the memtable has enough space and that the Write-Ahead Log (WAL) can guarantee a successful write. If the current memtable has enough space, it is reused. Otherwise, a new memtable and WAL are created, and the previous memtable is converted to an immutable memtable, awaiting compaction (minor compaction is serialized). The function also checks the number of Level 0 files and decides whether to throttle the write rate based on configurations and triggers. There are two main configurations: Slowdown Trigger: This trigger causes write threads to sleep, slowing down writes so that compaction tasks can proceed. It also limits the number of Level 0 files to ensure read efficiency. StopWritesTrigger: Stops write threads. BuildBatchGroup merges batches from writers of the same type starting from the head of the queue into a single batch. The merged batch is then written first to the WAL and then to the memtable. Write-Ahead Log (WAL) The WAL file is split into blocks, and each block consists of records. The format is as follows:\n| Header{ checksum(4 bytes) + len(2 bytes) + type(1 byte)} | Data |\nThe record types are Zero, Full, First, Middle, and Last. Zero is reserved for preallocated files. Since a key-value pair might be too large and needs to be recorded in several chunks, the other four types are used accordingly.\nWrite Flow Memtable The core design of memtable involves two parts: the skip list and the encoding of key-value pairs in the skip list. The skip list ensures the sorted nature of inserted data. For more details, you can refer to my other blog post.\nThe key encoded in memtable is called the Internal Key, which is encoded as follows:\n| Original Key(varstring) + seq num(7 bytes) + type(1 byte) |\nSeqNum is a monotonically increasing sequence number generated for each update operation, serving as a logical clock to indicate the recency of operations. Based on SeqNum, snapshot-based reads (versioned reads) can be implemented.\nReference LevelDB handbook ",
   "wordCount" : "712",
   "inLanguage": "en",
   "datePublished": "2022-05-10T17:14:14+08:00",
@@ -150,10 +149,10 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -215,11 +214,11 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -274,55 +273,55 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
   <section class="blog-content"><p>This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.</p>
 <h2 id="main-process">Main Process</h2>
 <p>The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a <code>WriteBatch</code>, and then it is executed.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">Status DB<span style="color:#f92672">::</span>Put(<span style="color:#66d9ef">const</span> WriteOptions<span style="color:#f92672">&amp;</span> opt, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
-  WriteBatch batch;
-  batch.Put(key, value);
-  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">Write</span>(opt, <span style="color:#f92672">&amp;</span>batch);
-}
-</code></pre></div><h3 id="writebatch">WriteBatch</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>Status DB<span style="color:#f92672">::</span>Put(<span style="color:#66d9ef">const</span> WriteOptions<span style="color:#f92672">&amp;</span> opt, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
+</span></span><span style="display:flex;"><span>  WriteBatch batch;
+</span></span><span style="display:flex;"><span>  batch.Put(key, value);
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">Write</span>(opt, <span style="color:#f92672">&amp;</span>batch);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="writebatch">WriteBatch</h3>
 <p><code>WriteBatch</code> is an encapsulation of a group of update operations, which are applied <strong>atomically</strong> to the state machine. A block of memory is used to save the user&rsquo;s update operations.</p>
 <blockquote>
 <p>InMemory Format:
 <code>| seq_num: 8 bytes | count: 4 bytes | list of records{ type + key + value}</code></p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteBatch</span> {
-  ...
-  <span style="color:#75715e">// See comment in write_batch.cc for the format of rep_;
-</span><span style="color:#75715e">// WriteBatch::rep_ :=
-</span><span style="color:#75715e">//    sequence: fixed64
-</span><span style="color:#75715e">//    count: fixed32
-</span><span style="color:#75715e">//    data: record[count]
-</span><span style="color:#75715e">// record :=
-</span><span style="color:#75715e">//    kTypeValue varstring varstring         |
-</span><span style="color:#75715e">//    kTypeDeletion varstring
-</span><span style="color:#75715e">// varstring :=
-</span><span style="color:#75715e">//    len: varint32
-</span><span style="color:#75715e">//    data: uint8[len]
-</span><span style="color:#75715e"></span>  std<span style="color:#f92672">::</span>string rep_;  
-}
-<span style="color:#75715e">// some opt
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> WriteBatch<span style="color:#f92672">::</span>Put(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
-  WriteBatchInternal<span style="color:#f92672">::</span>SetCount(<span style="color:#66d9ef">this</span>, WriteBatchInternal<span style="color:#f92672">::</span>Count(<span style="color:#66d9ef">this</span>) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>);
-  rep_.push_back(<span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(kTypeValue));
-  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, key);
-  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, value);
-}
-</code></pre></div><h2 id="write-flow">Write Flow</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteBatch</span> {
+</span></span><span style="display:flex;"><span>  ...
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// See comment in write_batch.cc for the format of rep_;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// WriteBatch::rep_ :=
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    sequence: fixed64
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    count: fixed32
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    data: record[count]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// record :=
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    kTypeValue varstring varstring         |
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    kTypeDeletion varstring
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// varstring :=
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    len: varint32
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    data: uint8[len]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  std<span style="color:#f92672">::</span>string rep_;  
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// some opt
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> WriteBatch<span style="color:#f92672">::</span>Put(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
+</span></span><span style="display:flex;"><span>  WriteBatchInternal<span style="color:#f92672">::</span>SetCount(<span style="color:#66d9ef">this</span>, WriteBatchInternal<span style="color:#f92672">::</span>Count(<span style="color:#66d9ef">this</span>) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span>  rep_.push_back(<span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(kTypeValue));
+</span></span><span style="display:flex;"><span>  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, key);
+</span></span><span style="display:flex;"><span>  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, value);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="write-flow">Write Flow</h2>
 <p>The write operation mainly consists of four steps:</p>
 <h3 id="initializing-writer">Initializing Writer</h3>
 <p><code>Writer</code> actually contains all the information needed for a write operation.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">// Information kept for every waiting writer
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">DBImpl</span><span style="color:#f92672">::</span>Writer {
-  <span style="color:#66d9ef">explicit</span> <span style="color:#a6e22e">Writer</span>(port<span style="color:#f92672">::</span>Mutex<span style="color:#f92672">*</span> mu)
-      <span style="color:#f92672">:</span> batch(<span style="color:#66d9ef">nullptr</span>), sync(false), done(false), cv(mu) {}
-
-  Status status;
-  WriteBatch<span style="color:#f92672">*</span> batch;
-  <span style="color:#66d9ef">bool</span> sync;
-  <span style="color:#66d9ef">bool</span> done;
-  port<span style="color:#f92672">::</span>CondVar cv;
-};
-</code></pre></div><h3 id="writer-scheduling">Writer Scheduling</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">// Information kept for every waiting writer
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">DBImpl</span><span style="color:#f92672">::</span>Writer {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">explicit</span> <span style="color:#a6e22e">Writer</span>(port<span style="color:#f92672">::</span>Mutex<span style="color:#f92672">*</span> mu)
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">:</span> batch(<span style="color:#66d9ef">nullptr</span>), sync(false), done(false), cv(mu) {}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Status status;
+</span></span><span style="display:flex;"><span>  WriteBatch<span style="color:#f92672">*</span> batch;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">bool</span> sync;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">bool</span> done;
+</span></span><span style="display:flex;"><span>  port<span style="color:#f92672">::</span>CondVar cv;
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><h3 id="writer-scheduling">Writer Scheduling</h3>
 <p>LevelDB&rsquo;s write process is a multi-producer, single-consumer model, with multiple threads producing writers and a single thread consuming them. Each writer is produced by one thread but can be consumed by multiple threads.</p>
 <p>Internally, LevelDB maintains a writer queue. Each thread&rsquo;s write, delete, or update operation appends a writer to the end of the queue, with a lock ensuring data safety. Once a writer is added to the queue, the thread waits until it either reaches the head of the queue (is scheduled) or its operation is completed by another thread.</p>
 <blockquote>
@@ -347,14 +346,14 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
 </blockquote>
 <p>The record types are <code>Zero</code>, <code>Full</code>, <code>First</code>, <code>Middle</code>, and <code>Last</code>. <code>Zero</code> is reserved for preallocated files. Since a key-value pair might be too large and needs to be recorded in several chunks, the other four types are used accordingly.</p>
 <h5 id="write-flow-1">Write Flow</h5>
-<p><img src="https://s2.loli.net/2022/08/15/3TOkslnhjuMIg9Y.jpg" alt="Write Flow"></p>
+<p><img alt="Write Flow" src="https://s2.loli.net/2022/08/15/3TOkslnhjuMIg9Y.jpg"></p>
 <h4 id="memtable">Memtable</h4>
 <p>The core design of <code>memtable</code> involves two parts: the skip list and the encoding of key-value pairs in the skip list. The skip list ensures the sorted nature of inserted data. For more details, you can refer to my other blog post.</p>
 <p>The key encoded in <code>memtable</code> is called the <code>Internal Key</code>, which is encoded as follows:</p>
 <blockquote>
 <p><code>| Original Key(varstring) + seq num(7 bytes) + type(1 byte) |</code></p>
 </blockquote>
-<p><img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt="Internal Key"></p>
+<p><img alt="Internal Key" src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg"></p>
 <blockquote>
 <p><code>SeqNum</code> is a monotonically increasing sequence number generated for each update operation, serving as a logical clock to indicate the recency of operations. Based on <code>SeqNum</code>, snapshot-based reads (versioned reads) can be implemented.</p>
 </blockquote>
@@ -418,7 +417,7 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -495,4 +494,4 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

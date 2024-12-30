@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/distributed-system/</link>
     <description>Recent content in Distributed System on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 28 Sep 2023 10:43:23 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/distributed-system/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -30,7 +31,6 @@ commit*/abort*                COMMIT/ROLLBACK
                               ACKNOWLEDGMENT        commit*/abort*
                 &amp;lt;--------------------------------
 end
-
 &lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;percolator&#34;&gt;Percolator&lt;/h3&gt;
 &lt;p&gt;本身其实算一种经过优化的二阶段提交的实现，比如：&lt;/p&gt;
 &lt;ul&gt;
@@ -51,7 +51,7 @@ end
 &lt;blockquote&gt;
 &lt;p&gt;&lt;code&gt;lock + write + data&lt;/code&gt;: for transaction，lock表示cell被事务持有，write表示数据的可见性&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;notify + ack&lt;/code&gt;: for watcher or notifier&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
@@ -65,7 +65,7 @@ end
 &lt;/ol&gt;
 &lt;blockquote&gt;
 &lt;p&gt;上锁过程利用了Primary-Secondary机制，选择一个 Write 作为 primary，其它 Write 则是 secondary。Secondary的锁记录指向Primary。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;显然，Prewrite阶段的数据对其他事务均不可见。&lt;/p&gt;
 &lt;h4 id=&#34;commit&#34;&gt;Commit&lt;/h4&gt;
@@ -88,9 +88,9 @@ end
 &lt;h2 id=&#34;percolator在tidb上的使用&#34;&gt;Percolator在TiDB上的使用&lt;/h2&gt;
 &lt;p&gt;基于我们上文的分析，我们可以得出这样的结论：Percolator是一种优化过的2PC分布式事务实现，实现的基础是支持单机事务的存储引擎。&lt;/p&gt;
 &lt;p&gt;让我们来简单看看TiDB的的基于Percolator算法实现分布式事务。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;TiDB和TiKV架构如上。TiDB关系表里的数据最终都被映射到了TiKV中的KV中。TiKV是一个基于Raft+RocksDB的分布式KV。RocksDB是一个支持事务操作的KV。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;所以TiDB的事务的执行路径可以是这样：对关系表的事务操作转为对一组KV的事务操作，再基于Percolator去执行，以此实现关系表的事务操作。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;当然不可能提供和单机TP数据库一样的事务语义和性能保证。但Share Nothing架构也有自己的优点，所以这个也许并不重要。&lt;/p&gt;
@@ -127,7 +127,7 @@ Dynamo实践上，在原有hash ring上引入了虚拟节点，比较优雅的�
 Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;always writable&lt;/strong&gt;，同时只保证最终的一致性。这样的目标使得Dynamo把解决数据冲突之类的操作放到了读操作中，&lt;strong&gt;以保证写永远不会被拒绝&lt;/strong&gt;。
 总的来说，问题有两个。一个是数据更新冲突问题，显然多client并发的读写同一个Key很容易遇到这样的问题，因为Dynamo只能提供最终一致性，Dynamo Ring 上多个节点的数据不一定一致。二是节点数据空洞的问题。因为Dynamo使用的是NMR这类的gossip算法，这类理论上会出现所有节点上都不包含完整数据集的情况，需要同步副本之间的数据。
 前者使用版本时钟来标记数据版本，后续在读操作的时候进行读修复合并数据版本；后者有熵逆过程来处理，使用MerkleTree来&lt;strong&gt;快速检测副本之间的不一致性，以及最小化转移的数据量。&lt;/strong&gt;
-&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png&#34; alt=&#34;&#34;&gt;
+&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png&#34;&gt;
 论文中的这个表格可以清楚的看出Dynamo设计开发需要考虑的方面以及在技术上的选择。剩下这些论文中感觉语焉不详，可以参考原文。&lt;/p&gt;
 &lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://www.raychase.net/2396&#34;&gt;Dynamo 的实现技术和去中心化&lt;/a&gt;&lt;/p&gt;
@@ -153,12 +153,12 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;li&gt;事务的实现。由于存储底座对上层提供的单一文件视图，所以对与Aurora来说，其事务的实现几乎与单机事务算法相同，并能提供相同的事务语义。NewSQL的事务一般是基于2PC的分布式事务实现。&lt;/li&gt;
 &lt;li&gt;后台加速前台处理。类似LevelDB的思路，尽可能将存储节点的一些操作异步化（比如日志Apply），提升前台用户感知性能。这些异步的操作通过维护各种xxLSN来记录当前节点的后台处理进度，比如VLSN，commit-LSN等等&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;有趣的是，PolarDB虽然是参考Aurora进行的设计，但它的架构设计认为网络并非瓶颈，而是经过OS的各种系统调用拖慢了整体速度。在彼时阿里云存储底座并不稳定的条件下，所以才有了它架构中的PolarStore，用各种硬件以及FUSE等存储技术越过或者优化系统调用，而如今盘古在稳定性和性能上都做的很不错的情况下，弱化PolarStore这个组件也成为了正常的选择。我认为说的不无道理。&lt;/p&gt;
 &lt;p&gt;另外，为什么他们选择用NWR而不是用Raft之类的一致性协议？目前看上去，NWR在网络上，一次请求的网络比Raft少一轮，可能是这个原因&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34;&gt;&lt;/p&gt;
 &lt;h1 id=&#34;参考&#34;&gt;参考&lt;/h1&gt;
 &lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/319806107&#34;&gt;https://zhuanlan.zhihu.com/p/319806107&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt&#34;&gt;http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt&lt;/a&gt;&lt;/p&gt;
@@ -174,7 +174,7 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
       <description>&lt;p&gt;只是简单写写，有一些具体一点的设计建议去读一下原文。&lt;/p&gt;
 &lt;h1 id=&#34;简介&#34;&gt;简介&lt;/h1&gt;
 &lt;p&gt;简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来保证服务的可用性。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34; alt=&#34;image-20230208232032286&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20230208232032286&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;算法的设计很简单巧妙。算法通过链式复制将复制的吞吐均分到所有的CR节点上，每个节点只负责对后续节点的复制。写入请求从头部节向后传播，查询请求交由尾部节点响应。&lt;/p&gt;
 &lt;p&gt;为了维护Chain上节点之前的前后关系，CR还引入了一个Master服务，用于管理节点之间的关系，以及处理Node Failure的情况。&lt;/p&gt;
 &lt;h2 id=&#34;故障处理&#34;&gt;故障处理&lt;/h2&gt;
@@ -225,12 +225,12 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;blockquote&gt;
 &lt;p&gt;Regular 和 Ephemeral 的区别在于Ephemeral可以在Session结束时自动删除。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155342Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155342Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D\&#34;Untitled.png\&#34;&amp;x-id=GetObject&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Client通过API与ZK交互，ZK通过Session管理Clinet连接，在Session中Clinet可以观测到反应其操作的状态变化。&lt;/p&gt;
 &lt;h2 id=&#34;cap&#34;&gt;CAP&lt;/h2&gt;
 &lt;p&gt;ZK保证CP，比如在选举leader时，会停止服务，直到选举成功之后才会再次对外提供服务。&lt;/p&gt;
 &lt;h2 id=&#34;实现&#34;&gt;实现&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155414Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155414Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D\&#34;Untitled.png\&#34;&amp;x-id=GetObject&#34;&gt;&lt;/p&gt;
 &lt;p&gt;ZK使用多副本实现高可用。&lt;/p&gt;
 &lt;p&gt;简单来说，ZK上层使用ZAB协议处理写请求，保证多副本更新的线性一致性，本地处理读请求，读请求保证顺序一致性。下层数据状态机保存到ZK集群机器上的Replicated Database（内存）+ WAL上，并定期snapshot。整个内存数据库通过 Fuzzy Snapshot + WAL Replay的方式保证单机Crash Safe以及重启恢复的速度。&lt;/p&gt;
 &lt;blockquote&gt;
@@ -259,7 +259,7 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;h2 id=&#34;实验相关&#34;&gt;实验相关&lt;/h2&gt;
 &lt;p&gt;Lab03的内容是在Raft基础上构建一个分布式KV服务。我们需要实现此服务的Server和Client。&lt;/p&gt;
 &lt;p&gt;RaftKV的结构和各个模块的交互如图所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34; alt=&#34;image-20220429211429808&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20220429211429808&#34; src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;相比于上个实验难度低了不少，实现上可以参考这篇大佬的&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;实现&lt;/a&gt;，我就不多写了。&lt;/p&gt;
 &lt;h2 id=&#34;raft-相关&#34;&gt;Raft 相关&lt;/h2&gt;
 &lt;p&gt;接下来说说Raft中有关客户端交互有关的内容。&lt;/p&gt;
@@ -337,7 +337,7 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;h2 id=&#34;算法简介&#34;&gt;算法简介&lt;/h2&gt;
 &lt;p&gt;共识算法的基础是复制状态机，即&lt;strong&gt;按照相同顺序执行相同的确定性指令最终必然达到一致状态&lt;/strong&gt;。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。&lt;/p&gt;
 &lt;p&gt;Raft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。&lt;/p&gt;
 &lt;p&gt;Raft是一种&lt;strong&gt;强领导人&lt;/strong&gt;的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理&lt;strong&gt;复制提交&lt;/strong&gt;日志。&lt;/p&gt;
 &lt;p&gt;复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。&lt;/p&gt;
@@ -439,7 +439,7 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;/ul&gt;
 &lt;h2 id=&#34;架构设计&#34;&gt;架构设计&lt;/h2&gt;
 &lt;p&gt;整个Kylin系统分为&lt;strong&gt;在线查询&lt;/strong&gt;和&lt;strong&gt;离线构建&lt;/strong&gt;两部分。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34;&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;&lt;strong&gt;离线构建&lt;/strong&gt;：主要有数据源，构建引擎，存储引擎三大抽象。从数据源拉取数据构建Cube在存储到列式存储引擎中。&lt;/p&gt;
@@ -487,7 +487,7 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;h4 id=&#34;基于cdn的方案&#34;&gt;基于CDN的方案&lt;/h4&gt;
 &lt;p&gt;这个方案的核心其实就是利用CDN对热点图片数据进行缓存，减少网络传输。&lt;/p&gt;
 &lt;p&gt;常用的设计，对于热点图片的优化很显著。但问题也很明显，一是CDN价格昂贵容量有限；二是图片分享场景，也会有很多&lt;code&gt;less popular&lt;/code&gt;的图片数据，这就会导致长尾效应，拖慢速度。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guuaefh22gj610g0s4gnh02.jpg&#34; alt=&#34;image-20210926200920113&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20210926200920113&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guuaefh22gj610g0s4gnh02.jpg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;CDN其实一般服务于静态数据的，并且一般都是在活动之前进行预热，并不适合作为一种图片缓存服务使用。很多的&lt;code&gt;less popular&lt;/code&gt;的数据其实并未进入CDN，故而导致长尾效应。&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -500,7 +500,7 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;li&gt;Read the content of the file&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;PhotoStore作为一层缓存使用，缓存一些元数据如file handle等，以加速寻址过程。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guuafar1rpj60u80scmyx02.jpg&#34; alt=&#34;image-20210926201012724&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20210926201012724&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guuafar1rpj60u80scmyx02.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;基于NAS的设计并没有解决&lt;strong&gt;元数据过多导致不适合全量缓存&lt;/strong&gt;这个关键问题，一但文件数量到达临界值，不可避免的需要进行磁盘IO。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;更本质的问题其实是&lt;strong&gt;文件与寻址元数据一一对应的关系&lt;/strong&gt;，使得元数据量随着文件数的变化而变化。&lt;/p&gt;
@@ -511,7 +511,7 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;blockquote&gt;
 &lt;p&gt;只维护聚合后的大文件的元数据，小文件在大文件中的位置需要另外维护映射&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNgy1guv5ytgsmtj60k20jqjsk02.jpg&#34; alt=&#34;image-20210927142131959&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20210927142131959&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNgy1guv5ytgsmtj60k20jqjsk02.jpg&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;实现&#34;&gt;实现&lt;/h2&gt;
 &lt;p&gt;Haystack主要有三个组件，Haystack Directory、Haystack Cache、Haystack Store&lt;/p&gt;
 &lt;h3 id=&#34;文件映射与数据落盘&#34;&gt;文件映射与数据落盘&lt;/h3&gt;
@@ -561,15 +561,15 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;p&gt;Store属于Haystack的存储层，负责数据存储相关操作。&lt;/p&gt;
 &lt;p&gt;首先是它的寻址抽象：&lt;code&gt;filename + offset =&amp;gt;  logical volume id + offset =&amp;gt; data&lt;/code&gt;。&lt;/p&gt;
 &lt;p&gt;多个Physical Volume组成Logical Volume，并作为实际落盘单位进行维护。在Store中，小文件被抽象成&lt;strong&gt;Needle&lt;/strong&gt;，交由Physical Volume进行管理和维护。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg&#34; alt=&#34;image-20211006164409801&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20211006164409801&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Needle实际上是对小文件的一种&lt;strong&gt;封装&lt;/strong&gt;，以及对Volume的&lt;strong&gt;分块&lt;/strong&gt;管理。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5ooyhloxj61150u043702.jpg&#34; alt=&#34;image-20211006164428466&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20211006164428466&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5ooyhloxj61150u043702.jpg&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;Store的数据访问一般是以Needle维度进行的。为了加速文件寻址，一般会在内存中维护一个用于寻址元信息的Map：&lt;code&gt;key/alternate key =&amp;gt; needle&#39;s flag/offset/other attribute&lt;/code&gt;&lt;/p&gt;
 &lt;p&gt;这些Map最后会被持久化到磁盘中的&lt;strong&gt;Index File&lt;/strong&gt;中，做为In-Memory Mapping的一种Checkpoint存在，用于Crash后寻址元数据的快速恢复。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg&#34; alt=&#34;image-20211006172431986&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg&#34; alt=&#34;image-20211006172515258&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20211006172431986&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20211006172515258&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;每个Volume会维护一个自己的In-Memory Mapping和Index File&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -626,10 +626,10 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;h2 id=&#34;数据模型&#34;&gt;数据模型&lt;/h2&gt;
 &lt;p&gt;Bigtable的数据模型属于No Scheme的设计，仅提供了一个简单的数据模型，它将所有的数据视为字符串，数据的编解码交由上层业务方决定。&lt;/p&gt;
 &lt;p&gt;实际上，Bigtable 是一个&lt;strong&gt;稀疏的、分布式的、持久化存储的多维度排序 Map&lt;/strong&gt;。Map的&lt;strong&gt;索引&lt;/strong&gt;是&lt;strong&gt;Row Key，Column Key以及TimeStamp&lt;/strong&gt;。Map中的&lt;strong&gt;每一个Value就是一个无结构的Byte数组&lt;/strong&gt;。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// 映射抽象
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;row&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;column&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;,&lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;int64&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&amp;gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;// 一个Row Key实际上是 {Row , Column, Timestamp} 组成的多维结构。
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gufarm0ykaj615k0d0jts02.jpg&#34; alt=&#34;image-20210913205832997&#34;&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// 映射抽象
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;row&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;column&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;,&lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;int64&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&amp;gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// 一个Row Key实际上是 {Row , Column, Timestamp} 组成的多维结构。
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;img alt=&#34;image-20210913205832997&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gufarm0ykaj615k0d0jts02.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;论文对数据模型原文阐述如下：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;A Bigtable is a sparse, distributed, persistent multidimensional sorted map.&lt;/p&gt;
@@ -700,26 +700,26 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证&lt;strong&gt;a
 &lt;/blockquote&gt;
 &lt;h3 id=&#34;api&#34;&gt;API&lt;/h3&gt;
 &lt;p&gt;原文中的API如下，主要是为了体现和RDB不同的地方。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Writing to Bigtable
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Open the table Table *T = OpenOrDie(&amp;#34;/bigtable/web/webtable&amp;#34;); // Write a new anchor and delete an old anchor 
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;RowMutation &lt;span style=&#34;color:#a6e22e&#34;&gt;r1&lt;/span&gt;(T,   &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
-r1.Set(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.c-span.org&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CNN&amp;#34;&lt;/span&gt;); r1.Delete(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.abc.com&amp;#34;&lt;/span&gt;); 
-Operation op; Apply(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;op, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;r1)
-
-
- &lt;span style=&#34;color:#75715e&#34;&gt;// Reading from Bigtable
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Scanner scanner(T); ScanStream &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;stream; 
-stream &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; scanner.FetchColumnFamily(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor&amp;#34;&lt;/span&gt;); 
-stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;SetReturnAllVersions(); 
-scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
-&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (; &lt;span style=&#34;color:#f92672&#34;&gt;!&lt;/span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Done(); stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Next()) { 
-  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%s %s %lld %s&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, 
-         scanner.RowName(), 
-         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;ColumnName(), 
-         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;MicroTimestamp(), 
-         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Value());
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;架构设计&#34;&gt;架构设计&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Writing to Bigtable
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Open the table Table *T = OpenOrDie(&amp;#34;/bigtable/web/webtable&amp;#34;); // Write a new anchor and delete an old anchor 
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;RowMutation &lt;span style=&#34;color:#a6e22e&#34;&gt;r1&lt;/span&gt;(T,   &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;r1.Set(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.c-span.org&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CNN&amp;#34;&lt;/span&gt;); r1.Delete(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.abc.com&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Operation op; Apply(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;op, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;r1)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;// Reading from Bigtable
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Scanner scanner(T); ScanStream &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;stream; 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;stream &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; scanner.FetchColumnFamily(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;SetReturnAllVersions(); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (; &lt;span style=&#34;color:#f92672&#34;&gt;!&lt;/span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Done(); stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Next()) { 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%s %s %lld %s&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         scanner.RowName(), 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;ColumnName(), 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;MicroTimestamp(), 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Value());
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;架构设计&#34;&gt;架构设计&lt;/h2&gt;
 &lt;h3 id=&#34;外部组件&#34;&gt;外部组件&lt;/h3&gt;
 &lt;p&gt;Bigtable是基于Google内部其他组件之上构建的，这极大的简化了Bigtable的设计。&lt;/p&gt;
 &lt;h4 id=&#34;gfs&#34;&gt;GFS&lt;/h4&gt;
@@ -789,28 +789,28 @@ scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&am
 &lt;p&gt;Tablet逻辑上可以理解为Bigtable的落盘实体，实际上是交由Tablet Server去管理维护，那么这样就需要Bigtable去维护一定的映射关系。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;基于原文描述，可能需要维护的映射：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt; Mapping {
-   Table &lt;span style=&#34;color:#f92672&#34;&gt;=&amp;gt;&lt;/span&gt; list of Tablets &lt;span style=&#34;color:#75715e&#34;&gt;// 
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;   Tablet &lt;span style=&#34;color:#f92672&#34;&gt;=&amp;gt;&lt;/span&gt; Tablet handle
-    
-   &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Tablet&lt;/span&gt; handle {
-     list of Rows &lt;span style=&#34;color:#75715e&#34;&gt;// Tablet contains
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;     Tablet Server &lt;span style=&#34;color:#75715e&#34;&gt;// where Tablet shores
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;     ...
-   list of SSTable &lt;span style=&#34;color:#75715e&#34;&gt;// where the tablet stores in GFS
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;   }
-   
-   &lt;span style=&#34;color:#75715e&#34;&gt;// Indexes
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;   Row or Column Key &lt;span style=&#34;color:#f92672&#34;&gt;=&amp;gt;&lt;/span&gt; Tablet Location &lt;span style=&#34;color:#f92672&#34;&gt;=&amp;gt;&lt;/span&gt; SSTable 
- }
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; Mapping {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;   Table &lt;span style=&#34;color:#f92672&#34;&gt;=&amp;gt;&lt;/span&gt; list of Tablets &lt;span style=&#34;color:#75715e&#34;&gt;// 
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;   Tablet &lt;span style=&#34;color:#f92672&#34;&gt;=&amp;gt;&lt;/span&gt; Tablet handle
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;   &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Tablet&lt;/span&gt; handle {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;     list of Rows &lt;span style=&#34;color:#75715e&#34;&gt;// Tablet contains
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;     Tablet Server &lt;span style=&#34;color:#75715e&#34;&gt;// where Tablet shores
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;     ...
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;   list of SSTable &lt;span style=&#34;color:#75715e&#34;&gt;// where the tablet stores in GFS
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;   }
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;   
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;   &lt;span style=&#34;color:#75715e&#34;&gt;// Indexes
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;   Row or Column Key &lt;span style=&#34;color:#f92672&#34;&gt;=&amp;gt;&lt;/span&gt; Tablet Location &lt;span style=&#34;color:#f92672&#34;&gt;=&amp;gt;&lt;/span&gt; SSTable 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/blockquote&gt;
 &lt;p&gt;Bigtable通过&lt;code&gt;Root Tablet + METADATA Table&lt;/code&gt;进行Tablet寻址。Chubby存储了Root Tablet的位置信息，METADATA Table则由Tablet Server负责维护。&lt;/p&gt;
 &lt;p&gt;Root Tablet中保存了其他METADATA Tablet的位置信息。而METADATA Table的每一个Tablet包含了一系列的User Tablets的位置信息（可以理解为UserTable handle）,  每个Tablet的位置信息保存在METADATA的Row中。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;METADATA Table 中的Row :&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;(TableID,encoding of last row in Tablet) =&amp;gt; Tablet Location&lt;/code&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guhk1wuu1pj60q80ge75k02.jpg&#34; alt=&#34;image-20210915142508074&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20210915142508074&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guhk1wuu1pj60q80ge75k02.jpg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;系统采用了类似B+树的三层结构来维护tablet location信息&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -841,12 +841,12 @@ scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&am
 &lt;/blockquote&gt;
 &lt;h2 id=&#34;compaction&#34;&gt;Compaction&lt;/h2&gt;
 &lt;p&gt;Bigtable对外提供读写服务，并且使用了LSM的结构对写性能进行优化。对于一个写操作，首先通过Chubby中保存的ACL信息，判断用户的权限；通过之后再以WAL的方式顺序写记录操作再CommitLog和Memtable中，并且最后会被持久化到SSTable中；&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guhk6llq76j60uk0lsq4402.jpg&#34; alt=&#34;image-20210915195135522&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20210915195135522&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guhk6llq76j60uk0lsq4402.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;由图中可以看出，memtable是保存在内存中的，无法无限的增加。所以Bigtable在memtable增长到一定大小的时候会进行一次Minor Compaction，将memtable的数据写入一个SSTable中，并写入GFS。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;实际上，memtable在转为SSTable之前会先转换成immutable memtable，并生成新的memtable支持前台写入。这样的中间状态其实是为了Minor Compaction不影响前台写。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guill1zltrj615g0p8adp02.jpg&#34; alt=&#34;image-20210916172932210&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20210916172932210&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1guill1zltrj615g0p8adp02.jpg&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Bigtable在处理写入数据时提出了&lt;strong&gt;Compaction&lt;/strong&gt;概念，加速前台写。所有的前台随机写被转换为顺序写。并在后台的Compact进程中再次对数据进行写入。以读写放大为代价，优化前台感知到的写性能。&lt;/p&gt;
 &lt;p&gt;所谓Compaction，本质上就是对数据的一次再次扫描，在扫描写入过程中，对数据进行合并压缩和GC。&lt;/p&gt;
 &lt;p&gt;一般Compaction以多个不可变数据作为输入，Compact之后会将数据重新写入另一个新的只读有序结构(如SSTable)或者随机写落盘。&lt;/p&gt;
@@ -912,27 +912,27 @@ scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&am
 &lt;li&gt;Map：接受输入数据，生成一组中间键值对&lt;/li&gt;
 &lt;li&gt;Reduce：接受中间键值对作为输入，将所有相同key的数据合并并作为结果输出。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;map(String key, String value)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
-  &lt;span style=&#34;color:#75715e&#34;&gt;// key: document name
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// value: document contents
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each word w in value:
-    EmitIntermediate(w, &lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;“&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;”&lt;/span&gt;);
-
-
-reduce(String key, Iterator values)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
-  &lt;span style=&#34;color:#75715e&#34;&gt;// key: a word
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// values: a list of counts
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
-  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each v in values:
-    result &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; ParseInt(v);
-  Emit(AsString(result));
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;mapreduce执行过程&#34;&gt;MapReduce执行过程&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;map(String key, String value)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// key: document name
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// value: document contents
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each word w in value:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    EmitIntermediate(w, &lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;“&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;”&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;reduce(String key, Iterator values)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// key: a word
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// values: a list of counts
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each v in values:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    result &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; ParseInt(v);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  Emit(AsString(result));
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;mapreduce执行过程&#34;&gt;MapReduce执行过程&lt;/h3&gt;
 &lt;p&gt;Distrubuted MapReduce System采用主从的设计，在MapReduce计算过程中，一般有一个Master，以及若干个Worker。&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Master：负责Map以及Reduce任务的创建、分配、调度等&lt;/li&gt;
 &lt;li&gt;Worker：负责执行Map以及Reduce任务&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png&#34; alt=&#34;Screenshot_20210112_125637&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Screenshot_20210112_125637&#34; src=&#34;https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;更详细的描述为:&lt;/p&gt;
 &lt;p&gt;1.MapReduce的整个执行过程包含M个Map Task 和R个Reduce Task，分为两个执行阶段Map Phase 和Reduce Phase。&lt;/p&gt;
 &lt;p&gt;2.输入的文件被拆分为M个split，计算进入Map Phase阶段，Master分配Map Task给空闲Worker。分配了Task的Worker读取对应的split data，执行Task。直到所有的Map Task都完成，Map Phase结束。利用Partition函数（一般为&lt;code&gt;hash(key) mod R&lt;/code&gt;)得到R组中间键值对，保存在文件中，并将文件路径告知Master，以便Reduce Task的操作。&lt;/p&gt;
@@ -976,99 +976,99 @@ reduce(String key, Iterator values)&lt;span style=&#34;color:#f92672&#34;&gt;:&l
 &lt;h3 id=&#34;主要数据结构&#34;&gt;主要数据结构&lt;/h3&gt;
 &lt;p&gt;数据结构的设计是主要的工作，良好的设计结构有助于功能的实现。此处之展示数据结构相关代码，具体的功能实现见&lt;a href=&#34;https://github.com/noneback/Toys/tree/master/6.824-Lab1-MapReduce&#34;&gt;GitHub&lt;/a&gt;&lt;/p&gt;
 &lt;h4 id=&#34;master-1&#34;&gt;Master&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Master&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#75715e&#34;&gt;// Your definitions here.
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;taskQueue&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;chan&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;tasksContext&lt;/span&gt; []&lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;lock&lt;/span&gt;         &lt;span style=&#34;color:#a6e22e&#34;&gt;sync&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Mutex&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;files&lt;/span&gt;        []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;phase&lt;/span&gt;        &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;done&lt;/span&gt;         &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;     &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;worker-1&#34;&gt;Worker&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;worker&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;mapf&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) []&lt;span style=&#34;color:#a6e22e&#34;&gt;KeyValue&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;reducef&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;nMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;task--taskcontext&#34;&gt;Task &amp;amp; TaskContext&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;       &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;Filename&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;Phase&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;t&lt;/span&gt;         &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;state&lt;/span&gt;     &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;startTime&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Time&lt;/span&gt;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;rpc-args--reply&#34;&gt;Rpc Args &amp;amp; Reply&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;T&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;HasT&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskID&lt;/span&gt;   &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;State&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
-}
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;NReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;NMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;constant--type&#34;&gt;Constant &amp;amp; Type&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
- &lt;span style=&#34;color:#a6e22e&#34;&gt;RUNNING&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;FAILED&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;READY&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;IDEL&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;COMPLETE&lt;/span&gt;
-)
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
- &lt;span style=&#34;color:#a6e22e&#34;&gt;MAX_PROCESSING_TIME&lt;/span&gt; = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;SCHEDULE_INTERVAL&lt;/span&gt;   = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt;
-)
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
- &lt;span style=&#34;color:#a6e22e&#34;&gt;MAP&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;REDUCE&lt;/span&gt;
-)
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;运行与测试&#34;&gt;运行与测试&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Master&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;// Your definitions here.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;taskQueue&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;chan&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;tasksContext&lt;/span&gt; []&lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;lock&lt;/span&gt;         &lt;span style=&#34;color:#a6e22e&#34;&gt;sync&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Mutex&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;files&lt;/span&gt;        []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;phase&lt;/span&gt;        &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;done&lt;/span&gt;         &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;     &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;worker-1&#34;&gt;Worker&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;worker&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;mapf&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) []&lt;span style=&#34;color:#a6e22e&#34;&gt;KeyValue&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;reducef&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;nMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;task--taskcontext&#34;&gt;Task &amp;amp; TaskContext&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;       &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Filename&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Phase&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;t&lt;/span&gt;         &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;state&lt;/span&gt;     &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;startTime&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Time&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;rpc-args--reply&#34;&gt;Rpc Args &amp;amp; Reply&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;T&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;HasT&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskID&lt;/span&gt;   &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;State&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;NReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;NMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;constant--type&#34;&gt;Constant &amp;amp; Type&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RUNNING&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;FAILED&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;READY&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;IDEL&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;COMPLETE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;MAX_PROCESSING_TIME&lt;/span&gt; = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;SCHEDULE_INTERVAL&lt;/span&gt;   = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;MAP&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;REDUCE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;运行与测试&#34;&gt;运行与测试&lt;/h3&gt;
 &lt;h4 id=&#34;运行&#34;&gt;运行&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# In main directory&lt;/span&gt;
-cd ./src/main
-&lt;span style=&#34;color:#75715e&#34;&gt;# Master&lt;/span&gt;
-go run ./mrmaster.go pg*.txt                                              
-&lt;span style=&#34;color:#75715e&#34;&gt;# Worker&lt;/span&gt;
-go build -buildmode&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;plugin ../mrapps/wc.go &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; go run ./mrworker.go ./wc.so 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;测试&#34;&gt;测试&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;cd ./src/main
-
-sh  ./test-mr.sh
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;优化&#34;&gt;优化&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# In main directory&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cd ./src/main
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Master&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;go run ./mrmaster.go pg*.txt                                              
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Worker&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;go build -buildmode&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;plugin ../mrapps/wc.go &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; go run ./mrworker.go ./wc.so 
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;测试&#34;&gt;测试&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cd ./src/main
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sh  ./test-mr.sh
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;优化&#34;&gt;优化&lt;/h2&gt;
 &lt;p&gt;这些优化是在我完成实验之后，回顾自己代码时想到的可以优化的一些设计。&lt;/p&gt;
 &lt;h3 id=&#34;热点问题&#34;&gt;热点问题&lt;/h3&gt;
 &lt;p&gt;这里的热点问题是，可能会有一个热点数据频繁的出现在数据集中。Map阶段的中间结果值K-V形式的，这样会导致在shuffle步骤的时候，一个Key频繁的出现，进而导致有个别机器的磁盘IO和网络IO被大量的占用。&lt;/p&gt;

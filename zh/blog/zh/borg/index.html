@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/borg/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2024-02-19T11:12:16+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Borg: Large-scale cluster management at Google with Borg"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Borg: Large-scale cluster management at Google with Borg"/>
 <meta name="twitter:description" content="Borg 是一个集群管理系统，类似闭源的k8s。 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "Borg: Large-scale cluster management at Google with Borg",
       "item": "https://noneback.github.io/zh/blog/zh/borg/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "borg", "k8s", "google", "paper reading"
   ],
-  "articleBody": "Borg 是一个集群管理系统，类似闭源的k8s。\n 通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提供了可以减少故障恢复时间的运行时特性，以及降低关联故障概率的调度策略。 提供声明式的作业描述语言、域名服务集成、实时作业监控、分析和模拟系统行为的工具。简化用户的使用。  文章本意在介绍系统设计的同时，讲述Google在背后的经验总结。但本文主要关心系统的设计，关注Borg对外提供的服务SLA，关注Borg对负载，资源，调度等方面的抽象。\n系统抽象 工作负载上，主要有两种：一是长期运行的服务，二是批处理任务。分别对应两种类型的Job (prod / non-prod)。Job由若干Task组成，不同的Job拥有不同的优先级。\n部署架构上，一个Borg Cluster由若干Cell组成，一个Cell由若干机器组成。\n任务调度上，一切机器上有限的物理或者逻辑单元都需要被视为资源，如cpu，mem，io等资源。\n系统架构 Master-Slave架构，由一个BorgMaster和若干Borglet节点组成，调度器是一个独立的服务。\nBorgMaster是一个逻辑节点，负责与外部以及Borglet的交互，以及集群内状态的维护。利用Paxos实现多副本以及ha容错。\nBorglet是Cell内没台机器的Borg Proxy。负责启停Task，管理Node的物理资源，上报状态。\nScheduler是负责进行Task调度的服务。使用Master中记录的状态，并基于此异步的去处理Task的调度，并告知Master二次判断。\n资源调度 Scheduler是其中的很重要的核心服务。调度算法的好坏决定了资源的利用率，直接与使用成本关联。\n基本流程 调度算法有两个部分:\n 可行性检查，找到一组可以运行任务的机器 评分，从中选择一个合适的机器。  在可行性检查阶段，调度器会找到一组满足任务约束且有足够可用资源的机器，其中可用资源包括已经 分配给低优先级任务但可以抢占的资源。\n在评分阶段，调度器确定每台可行机器的适宜性。评分考虑了用户特定的偏好，但主要取决于内建的标准：例如最小化被抢占任务的个数和优先级，选择已经有该任务安 装包的机器，尽可能使任务分散在不同的供电和故障域，以及装箱(Packing)质量(在单台机器上混合 高、低优先级的任务，以允许高优先级任务在负载尖峰扩容)等。\n调度器使用一份缓存的 Cell 状态拷贝，重复执行下面的操作:\n 从选举出来的 Master 获取状态变更(包括已分配的和等待中的工作);更新自己的本地拷贝。 执行一轮调度来分配任务;将分配信息发送给 Master。 Master 会接受并应用这些分配，但如果分配不适合(例如，是基于过时的状态做出的)，就会等待调度器的下一轮调度。  其他 文中还提到了如何提供售卖率以及性能争抢的问题，不过不是本文重点，可以参考一下原文。\nReference https://www.cnblogs.com/hellojamest/p/16526159.html\n",
+  "articleBody": "Borg 是一个集群管理系统，类似闭源的k8s。\n通过准入控制、高效的任务装箱、超售、机器共享、以及进程级别的性能隔离，实现了高利用率。 为高可用应用提供了可以减少故障恢复时间的运行时特性，以及降低关联故障概率的调度策略。 提供声明式的作业描述语言、域名服务集成、实时作业监控、分析和模拟系统行为的工具。简化用户的使用。 文章本意在介绍系统设计的同时，讲述Google在背后的经验总结。但本文主要关心系统的设计，关注Borg对外提供的服务SLA，关注Borg对负载，资源，调度等方面的抽象。\n系统抽象 工作负载上，主要有两种：一是长期运行的服务，二是批处理任务。分别对应两种类型的Job (prod / non-prod)。Job由若干Task组成，不同的Job拥有不同的优先级。\n部署架构上，一个Borg Cluster由若干Cell组成，一个Cell由若干机器组成。\n任务调度上，一切机器上有限的物理或者逻辑单元都需要被视为资源，如cpu，mem，io等资源。\n系统架构 Master-Slave架构，由一个BorgMaster和若干Borglet节点组成，调度器是一个独立的服务。\nBorgMaster是一个逻辑节点，负责与外部以及Borglet的交互，以及集群内状态的维护。利用Paxos实现多副本以及ha容错。\nBorglet是Cell内没台机器的Borg Proxy。负责启停Task，管理Node的物理资源，上报状态。\nScheduler是负责进行Task调度的服务。使用Master中记录的状态，并基于此异步的去处理Task的调度，并告知Master二次判断。\n资源调度 Scheduler是其中的很重要的核心服务。调度算法的好坏决定了资源的利用率，直接与使用成本关联。\n基本流程 调度算法有两个部分:\n可行性检查，找到一组可以运行任务的机器 评分，从中选择一个合适的机器。 在可行性检查阶段，调度器会找到一组满足任务约束且有足够可用资源的机器，其中可用资源包括已经 分配给低优先级任务但可以抢占的资源。\n在评分阶段，调度器确定每台可行机器的适宜性。评分考虑了用户特定的偏好，但主要取决于内建的标准：例如最小化被抢占任务的个数和优先级，选择已经有该任务安 装包的机器，尽可能使任务分散在不同的供电和故障域，以及装箱(Packing)质量(在单台机器上混合 高、低优先级的任务，以允许高优先级任务在负载尖峰扩容)等。\n调度器使用一份缓存的 Cell 状态拷贝，重复执行下面的操作:\n从选举出来的 Master 获取状态变更(包括已分配的和等待中的工作);更新自己的本地拷贝。 执行一轮调度来分配任务;将分配信息发送给 Master。 Master 会接受并应用这些分配，但如果分配不适合(例如，是基于过时的状态做出的)，就会等待调度器的下一轮调度。 其他 文中还提到了如何提供售卖率以及性能争抢的问题，不过不是本文重点，可以参考一下原文。\nReference https://www.cnblogs.com/hellojamest/p/16526159.html\n",
   "wordCount" : "1166",
   "inLanguage": "zh",
   "datePublished": "2024-02-19T11:12:16+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -231,11 +236,11 @@ if (!doNotTrack) {
       ·
       
       
-      <a href="https://noneback.github.io/zh/tags/borg/">borg</a>
+      <a href="https://noneback.github.io/zh/tags/borg/">Borg</a>
       
-      <a href="https://noneback.github.io/zh/tags/k8s/">k8s</a>
+      <a href="https://noneback.github.io/zh/tags/k8s/">K8s</a>
       
-      <a href="https://noneback.github.io/zh/tags/cluster-management/">cluster management</a>
+      <a href="https://noneback.github.io/zh/tags/cluster-management/">Cluster Management</a>
       
     </small>
   
@@ -269,7 +274,7 @@ if (!doNotTrack) {
 <p>部署架构上，一个Borg Cluster由若干Cell组成，一个Cell由若干机器组成。</p>
 <p>任务调度上，一切机器上有限的物理或者逻辑单元都需要被视为资源，如cpu，mem，io等资源。</p>
 <h2 id="系统架构">系统架构</h2>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png" src="https://raw.githubusercontent.com/noneback/images/picgo/202401291404127.png"></p>
 <p>Master-Slave架构，由一个BorgMaster和若干Borglet节点组成，调度器是一个独立的服务。</p>
 <p>BorgMaster是一个逻辑节点，负责与外部以及Borglet的交互，以及集群内状态的维护。利用Paxos实现多副本以及ha容错。</p>
 <p>Borglet是Cell内没台机器的Borg Proxy。负责启停Task，管理Node的物理资源，上报状态。</p>
@@ -299,6 +304,12 @@ if (!doNotTrack) {
   
   
   <div class="paginator">
+    
+    <a class="prev" href="https://noneback.github.io/zh/blog/zh/prometheus-tsdb/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Prometheus--TSDB</span></a>
     
     
     <a class="next" href="https://noneback.github.io/zh/blog/zh/percolator/"><span>Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications </span>
@@ -344,7 +355,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -421,4 +432,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

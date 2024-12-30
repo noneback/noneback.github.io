@@ -9,7 +9,7 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
     <link rel="canonical" href="https://noneback.github.io/blog/mit6.824-chainreplication/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -36,8 +36,7 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
 <meta property="article:modified_time" content="2023-02-08T23:05:57+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824 Chain Replication"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824 Chain Replication"/>
 <meta name="twitter:description" content="This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&rsquo;s best to refer directly to the original paper.
 Introduction In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability."/>
 
@@ -46,16 +45,16 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "MIT6.824 Chain Replication",
       "item": "https://noneback.github.io/blog/mit6.824-chainreplication/"
     }
@@ -72,7 +71,7 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
   "keywords": [
     "Distributed System", "MIT6.824", "ChainReplication"
   ],
-  "articleBody": "This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it’s best to refer directly to the original paper.\nIntroduction In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.\nThe design of the algorithm is both simple and elegant. CR splits the replication workload across all nodes in the chain, with each node responsible for forwarding updates to its successor. Write requests are propagated from the head node to the tail, while read requests are served by the tail node.\nTo maintain relationships between nodes in the chain, Chain Replication introduces a Master service responsible for managing node configurations and handling node failures.\nFailure Handling   Head Failure: If the head node fails, any pending or unprocessed requests are lost, but linearizable consistency remains unaffected. The second node in the chain is promoted to the new head.\n  Tail Failure: If the tail node fails, the second-to-last node becomes the new tail, and pending requests from the original tail are committed.\n  Middle Node Failure: When a middle node fails, the chain is reconnected in a manner similar to linked list operations. The previous node (Node_pre) is linked directly to the next node (Node_next). To ensure that no requests are lost during this failure, each CR node maintains a SendReqList that records all requests forwarded to its successor. Since requests are propagated from head to tail, Node_pre only needs to send Node_next any missing data. When the tail node receives a request, it marks it as committed, and an acknowledgment (Ack(req)) is sent back from the tail to the head, removing the request from each node’s SendReqList as the acknowledgment propagates.\n  Pros and Cons The main advantages of Chain Replication include:\n High Throughput: By distributing the workload across all nodes, CR effectively increases the throughput of a single node. Balanced Load: Each node has a similar workload, resulting in balanced utilization. Simplicity: The overall design is clean and straightforward, making it easier to implement.  However, there are some clear disadvantages:\n Bottlenecks: If a node in the chain processes requests slowly, it will delay the entire chain’s processing. Read Limitations: Only the head and tail nodes can serve requests efficiently. The data in the middle nodes is mostly there for replication purposes and not directly utilized for serving requests. However, the CRAQ (Chain Replication with Asynchronous Queries) variant allows middle nodes to serve read-only requests, similar to Raft’s Read Index, which can help alleviate this limitation.  References  Chain Replication Paper Summary Original CR Paper  ",
+  "articleBody": "This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it’s best to refer directly to the original paper.\nIntroduction In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.\nThe design of the algorithm is both simple and elegant. CR splits the replication workload across all nodes in the chain, with each node responsible for forwarding updates to its successor. Write requests are propagated from the head node to the tail, while read requests are served by the tail node.\nTo maintain relationships between nodes in the chain, Chain Replication introduces a Master service responsible for managing node configurations and handling node failures.\nFailure Handling Head Failure: If the head node fails, any pending or unprocessed requests are lost, but linearizable consistency remains unaffected. The second node in the chain is promoted to the new head.\nTail Failure: If the tail node fails, the second-to-last node becomes the new tail, and pending requests from the original tail are committed.\nMiddle Node Failure: When a middle node fails, the chain is reconnected in a manner similar to linked list operations. The previous node (Node_pre) is linked directly to the next node (Node_next). To ensure that no requests are lost during this failure, each CR node maintains a SendReqList that records all requests forwarded to its successor. Since requests are propagated from head to tail, Node_pre only needs to send Node_next any missing data. When the tail node receives a request, it marks it as committed, and an acknowledgment (Ack(req)) is sent back from the tail to the head, removing the request from each node’s SendReqList as the acknowledgment propagates.\nPros and Cons The main advantages of Chain Replication include:\nHigh Throughput: By distributing the workload across all nodes, CR effectively increases the throughput of a single node. Balanced Load: Each node has a similar workload, resulting in balanced utilization. Simplicity: The overall design is clean and straightforward, making it easier to implement. However, there are some clear disadvantages:\nBottlenecks: If a node in the chain processes requests slowly, it will delay the entire chain’s processing. Read Limitations: Only the head and tail nodes can serve requests efficiently. The data in the middle nodes is mostly there for replication purposes and not directly utilized for serving requests. However, the CRAQ (Chain Replication with Asynchronous Queries) variant allows middle nodes to serve read-only requests, similar to Raft’s Read Index, which can help alleviate this limitation. References Chain Replication Paper Summary Original CR Paper ",
   "wordCount" : "463",
   "inLanguage": "en",
   "datePublished": "2023-02-08T23:05:57+08:00",
@@ -147,10 +146,10 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -212,11 +211,11 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -264,7 +263,7 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
   <section class="blog-content"><p>This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&rsquo;s best to refer directly to the original paper.</p>
 <h2 id="introduction">Introduction</h2>
 <p>In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png" alt="Chain Replication"></p>
+<p><img alt="Chain Replication" src="https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png"></p>
 <p>The design of the algorithm is both simple and elegant. CR splits the replication workload across all nodes in the chain, with each node responsible for forwarding updates to its successor. Write requests are propagated from the head node to the tail, while read requests are served by the tail node.</p>
 <p>To maintain relationships between nodes in the chain, Chain Replication introduces a Master service responsible for managing node configurations and handling node failures.</p>
 <h2 id="failure-handling">Failure Handling</h2>
@@ -352,7 +351,7 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -429,4 +428,4 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

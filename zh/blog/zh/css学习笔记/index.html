@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/css%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2018-11-01T00:00:00+00:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="元素布局与定位"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="元素布局与定位"/>
 <meta name="twitter:description" content="元素布局与定位 position 位置属性 其中有relative，absolute，static，fixed 1.relative：相对布局，相对于原来的文档流"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "元素布局与定位",
       "item": "https://noneback.github.io/zh/blog/zh/css%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "CSS"
   ],
-  "articleBody": "元素布局与定位 position 位置属性  其中有relative，absolute，static，fixed\n 1.relative：相对布局，相对于原来的文档流中的位置（默认位置），有left，right，top，bottom。\n2.static：即默认文档流的位置\n3.absolute：绝对位置，脱离出常规文档流，其原有的元素位置被回收，被其他元素顶替。其本身则相对于顶级元素body元素定位布局\n 关于定位的重要概念：定位上下文\n 4.fixed:固定定位，完全移除文档流，与absolute绝对定位类似。但它是相对于视口（浏览器窗口或者屏幕），因此它不会随着窗口的滚动而移动。\n定位上下文  相对定位的参考元素，只有其存在才可进行相关的定位\n display 显示属性 属性值有block、inline，和none。它可以更改元素的显示模式，如将块级元素以行内元素显示。\n其中对于设定为none属性值的元素，它们都不会在页面中显示出来，原本所占有的空间也会被回收\n ps:回顾\n 块级元素，比如段落、标题、列表等，在浏览器中上下堆叠显示。 行内元素，比如a、span、img，在浏览器中左右并排显示，只有前一行没有空间的时候才会显示到下一行。   背景 背景属性： 1.颜色：\nbackground-color  2.图片及与其相关的属性：\nbackground-image：url图片路径/图片文件名）添加背景图片 background-repeat：选择图片的重复方式，有 no—repeat，repeat-x，-y等  3.背景的位置：\nbackground-position：用于控制背景的位置布局，控制的方法有关键字、百分比、与像素（ps：注意其基准点的不同）  4.背景的尺寸：\nbackground-size：用来控制背景图片的尺寸。 控制方法： 1.百分比：按比例缩放 2.像素：固定缩放 3.cover：拉大图片，使其完全填满背景区，保持宽高比 4.contain：缩放图片，使其恰好适合背景区，保持宽高比  5.背景粘附：\nbackground-attachment：控制滚动元素内背景图片是否随滚动元素而滚动。 如：background-attachment：fixed；  6.简写背景属性：\n 即将‘-’后面的内容省略，直接将属性只写在括号内。 如：\n body{background:url(.../...) fixed no-repeat}  ps:CSS允许添加多背景图片，其中先添加的图片位于上层。\n字体 字体样式的属性：\n1.font-family:字体族，字体类型，可继承。\n 设置字体栈:以防字体无效，多罗列出一些字体以备用，如：\n body{font-family:\"trebuchet ms\"(当字体名字有空格时，用”“括起来),tahoma,sans-sreif;} //按先后顺序优先  2.font-size:字体大小，有相对单位与绝对单位，相对单位可继承。\n  绝对单位：像素与一些如同x-small等基准大小 相对单位：百分比、em、rem。 如果给某个元素设定了相对字体大小，则该元素的字体大小要相对于最近的设定过字体大小的祖先元素来确定。 rem相对单位：相对与HTML根元素的大小。集两种单位的优点于一身。   3.font-style:字体样式，设定是正体还是 斜体\n 属性值：italic（斜体）、oblique（斜体）、normal（正体）。\n 4.font-wight:字体粗细\n 属性值：100……等以及bold和normal等\n 5.font-variant:字体变化\n 属性值：normal，small-caps 6.font(简写属性):\n 示例：\np{font:bold italic small-caps .9em helvetica,arial,san-serif;}  文本属性 p{ text-indent:3em; letter-spacing：2em； word-spacing：2em； text-decoration：underline； text-align:center; text-height：1.5（即为字体的1.5倍）； span：vertical-align：60%； }  1.text-indent:文本缩进,正值向右缩进。属性可被子元素继承，且继承的是依据父元素计算的具体数值。\n2.letter-spacing:在默认基础上改变字符间距,无论如何一定要使用相对单位，以便缩放。\n3.word-spacing：单词间距，类似。\n4.text-decoration:文本装饰，主要用于链接添加下划线。\n 属性值：underline、overline、line-through、blink、none\n 5.text-align:文本对齐\n 属性值：left，right，center、justify（两端对齐）。\n 6.line-height：行高，与外边距不同，不叠加，其余类似。属性值为任意的值，不用添加单位。可用于除去大标题的空白。\n7.text-transformation：用于转换字母的大小写。\n8.span：垂直对齐，属性值为任意数值或者一些关键字。用于书写上标或者下标。\nweb字体大揭秘 可调用远程服务器中的字体给浏览器使用。\n​\n",
+  "articleBody": "元素布局与定位 position 位置属性 其中有relative，absolute，static，fixed\n1.relative：相对布局，相对于原来的文档流中的位置（默认位置），有left，right，top，bottom。\n2.static：即默认文档流的位置\n3.absolute：绝对位置，脱离出常规文档流，其原有的元素位置被回收，被其他元素顶替。其本身则相对于顶级元素body元素定位布局\n关于定位的重要概念：定位上下文\n4.fixed:固定定位，完全移除文档流，与absolute绝对定位类似。但它是相对于视口（浏览器窗口或者屏幕），因此它不会随着窗口的滚动而移动。\n定位上下文 相对定位的参考元素，只有其存在才可进行相关的定位\ndisplay 显示属性 属性值有block、inline，和none。它可以更改元素的显示模式，如将块级元素以行内元素显示。\n其中对于设定为none属性值的元素，它们都不会在页面中显示出来，原本所占有的空间也会被回收\nps:回顾\n块级元素，比如段落、标题、列表等，在浏览器中上下堆叠显示。 行内元素，比如a、span、img，在浏览器中左右并排显示，只有前一行没有空间的时候才会显示到下一行。 背景 背景属性： 1.颜色：\nbackground-color 2.图片及与其相关的属性：\nbackground-image：url图片路径/图片文件名）添加背景图片 background-repeat：选择图片的重复方式，有 no—repeat，repeat-x，-y等 3.背景的位置：\nbackground-position：用于控制背景的位置布局，控制的方法有关键字、百分比、与像素（ps：注意其基准点的不同） 4.背景的尺寸：\nbackground-size：用来控制背景图片的尺寸。 控制方法： 1.百分比：按比例缩放 2.像素：固定缩放 3.cover：拉大图片，使其完全填满背景区，保持宽高比 4.contain：缩放图片，使其恰好适合背景区，保持宽高比 5.背景粘附：\nbackground-attachment：控制滚动元素内背景图片是否随滚动元素而滚动。 如：background-attachment：fixed； 6.简写背景属性：\n即将‘-’后面的内容省略，直接将属性只写在括号内。 如：\nbody{background:url(.../...) fixed no-repeat} ps:CSS允许添加多背景图片，其中先添加的图片位于上层。\n字体 字体样式的属性：\n1.font-family:字体族，字体类型，可继承。\n设置字体栈:以防字体无效，多罗列出一些字体以备用，如：\nbody{font-family:\"trebuchet ms\"(当字体名字有空格时，用”“括起来),tahoma,sans-sreif;} //按先后顺序优先 2.font-size:字体大小，有相对单位与绝对单位，相对单位可继承。\n绝对单位：像素与一些如同x-small等基准大小 相对单位：百分比、em、rem。 如果给某个元素设定了相对字体大小，则该元素的字体大小要相对于最近的设定过字体大小的祖先元素来确定。 rem相对单位：相对与HTML根元素的大小。集两种单位的优点于一身。 3.font-style:字体样式，设定是正体还是 斜体\n属性值：italic（斜体）、oblique（斜体）、normal（正体）。\n4.font-wight:字体粗细\n属性值：100……等以及bold和normal等\n5.font-variant:字体变化\n属性值：normal，small-caps 6.font(简写属性):\n示例：\np{font:bold italic small-caps .9em helvetica,arial,san-serif;} 文本属性 p{ text-indent:3em; letter-spacing：2em； word-spacing：2em； text-decoration：underline； text-align:center; text-height：1.5（即为字体的1.5倍）； span：vertical-align：60%； } 1.text-indent:文本缩进,正值向右缩进。属性可被子元素继承，且继承的是依据父元素计算的具体数值。\n2.letter-spacing:在默认基础上改变字符间距,无论如何一定要使用相对单位，以便缩放。\n3.word-spacing：单词间距，类似。\n4.text-decoration:文本装饰，主要用于链接添加下划线。\n属性值：underline、overline、line-through、blink、none\n5.text-align:文本对齐\n属性值：left，right，center、justify（两端对齐）。\n6.line-height：行高，与外边距不同，不叠加，其余类似。属性值为任意的值，不用添加单位。可用于除去大标题的空白。\n7.text-transformation：用于转换字母的大小写。\n8.span：垂直对齐，属性值为任意数值或者一些关键字。用于书写上标或者下标。\nweb字体大揭秘 可调用远程服务器中的字体给浏览器使用。\n​\n",
   "wordCount" : "1945",
   "inLanguage": "zh",
   "datePublished": "2018-11-01T00:00:00Z",
@@ -103,10 +108,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -168,11 +173,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -399,7 +404,7 @@ background-repeat：选择图片的重复方式，有 no—repeat，repeat-x，-
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -476,4 +481,4 @@ background-repeat：选择图片的重复方式，有 no—repeat，repeat-x，-
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

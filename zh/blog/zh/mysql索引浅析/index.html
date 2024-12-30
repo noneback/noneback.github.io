@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2021-03-21T20:41:33+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MySQL索引浅析"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MySQL索引浅析"/>
 <meta name="twitter:description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。 My"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "MySQL索引浅析",
       "item": "https://noneback.github.io/zh/blog/zh/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "DB", "MySQL"
   ],
-  "articleBody": "数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B+树，哈希表等。\nMySQL中使用的是B+树构建索引。理由是B+树的一个节点可以存储更多的数据，并且B+树中，仅有叶子节点存储数据，非叶子节点仅存储索引，故而能将索引尽量多的保存在内存中，减少了树高，也降低了查询索引时进入磁盘IO的次数，极大提高查询的效率。\nInnodb中的索引 聚簇索引与非聚簇索引 索引按照叶子节点保存的数据可分为聚簇索引和非聚簇索引两种\n 聚簇索引： 叶子节点直接保存了数据行，能够直接查询到用户数据 非聚簇索引：叶子节点保存了主键的值，通过回表，查询主键索引查询用户数据  Innodb引擎是利用主键索引组织表中的数据，每个表中一定需要有主键，利用主键构造B+树，得到主键索引，其中主键索引就是聚簇索引，其余的二级索引都是非聚簇索引\n联合索引 联合索引是由多个字段组成的索引。\ncreate index index_name on table_name (col_1,col_2...) 相比与单值索引，主要区别在于其遵守最左前缀匹配原则\n 最左前缀匹配原则：使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序\n 使用索引优化查询性能 由于索引有序，故而能极大的提高查询的效率。使用索引进行查询优化时要遵守一些原则\n最左前缀匹配原则 使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序。查询索引时，我们也需要满足最左前缀匹配，否则数据的排列是无序的，会导致全表的扫描。\n 使用 col1,col2,col3构建索引，按照最左前缀匹配，在设计查询语句时我们需要按照col1 - col2 - col3的顺序去设计判断条件。\nselect * from table_name where col1 = 1 and col2 = 2; 走索引\nselect * from table_name where col2 = 1 and col3 = 2; 不走索引\n注：MySQL查询时，会一直向右匹配直到遇到范围查询(、\n 索引覆盖原则 索引覆盖，指通过查询索引可以直接查询到需要的值，而不需要回表等操作。设计合理的索引，可以减少回表的次数。\n 对联合索引(col1,col2,col3)\n查询语句 select col1,col2,col3 from test where col1=1 and col2=2可以直接查到col1-col3的值，无需回表，因为他们的值已经被保存在二级索引中了。\n ",
+  "articleBody": "数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B+树，哈希表等。\nMySQL中使用的是B+树构建索引。理由是B+树的一个节点可以存储更多的数据，并且B+树中，仅有叶子节点存储数据，非叶子节点仅存储索引，故而能将索引尽量多的保存在内存中，减少了树高，也降低了查询索引时进入磁盘IO的次数，极大提高查询的效率。\nInnodb中的索引 聚簇索引与非聚簇索引 索引按照叶子节点保存的数据可分为聚簇索引和非聚簇索引两种\n聚簇索引： 叶子节点直接保存了数据行，能够直接查询到用户数据 非聚簇索引：叶子节点保存了主键的值，通过回表，查询主键索引查询用户数据 Innodb引擎是利用主键索引组织表中的数据，每个表中一定需要有主键，利用主键构造B+树，得到主键索引，其中主键索引就是聚簇索引，其余的二级索引都是非聚簇索引\n联合索引 联合索引是由多个字段组成的索引。\ncreate index index_name on table_name (col_1,col_2...) 相比与单值索引，主要区别在于其遵守最左前缀匹配原则\n最左前缀匹配原则：使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序\n使用索引优化查询性能 由于索引有序，故而能极大的提高查询的效率。使用索引进行查询优化时要遵守一些原则\n最左前缀匹配原则 使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序。查询索引时，我们也需要满足最左前缀匹配，否则数据的排列是无序的，会导致全表的扫描。\n使用 col1,col2,col3构建索引，按照最左前缀匹配，在设计查询语句时我们需要按照col1 -\u003e col2 -\u003e col3的顺序去设计判断条件。\nselect * from table_name where col1 = 1 and col2 = 2; 走索引\nselect * from table_name where col2 = 1 and col3 = 2; 不走索引\n注：MySQL查询时，会一直向右匹配直到遇到范围查询(\u003e、\u003c、between、like)就停止匹配\n索引覆盖原则 索引覆盖，指通过查询索引可以直接查询到需要的值，而不需要回表等操作。设计合理的索引，可以减少回表的次数。\n对联合索引(col1,col2,col3)\n查询语句 select col1,col2,col3 from test where col1=1 and col2=2可以直接查到col1-col3的值，无需回表，因为他们的值已经被保存在二级索引中了。\n",
   "wordCount" : "890",
   "inLanguage": "zh",
   "datePublished": "2021-03-21T20:41:33+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -270,8 +275,8 @@ if (!doNotTrack) {
 <p>Innodb引擎是利用主键索引组织表中的数据，每个表中一定需要有主键，利用主键构造B+树，得到主键索引，其中<strong>主键索引就是聚簇索引</strong>，其余的<strong>二级索引都是非聚簇索引</strong></p>
 <h3 id="联合索引">联合索引</h3>
 <p>联合索引是由多个字段组成的索引。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">index</span> index_name <span style="color:#66d9ef">on</span> <span style="color:#66d9ef">table_name</span> (col_1,col_2...)
-</code></pre></div><p>相比与单值索引，主要区别在于其遵守<strong>最左前缀匹配原则</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">index</span> index_name <span style="color:#66d9ef">on</span> <span style="color:#66d9ef">table_name</span> (col_1,col_2...)
+</span></span></code></pre></div><p>相比与单值索引，主要区别在于其遵守<strong>最左前缀匹配原则</strong></p>
 <blockquote>
 <p>最左前缀匹配原则：使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序</p>
 </blockquote>
@@ -347,7 +352,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -424,4 +429,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

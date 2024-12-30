@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/zookeeper/</link>
     <description>Recent content in ZooKeeper on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Tue, 03 Jan 2023 23:49:41 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/zookeeper/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -36,12 +37,12 @@
 &lt;blockquote&gt;
 &lt;p&gt;Regular 和 Ephemeral 的区别在于Ephemeral可以在Session结束时自动删除。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155342Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155342Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D\&#34;Untitled.png\&#34;&amp;x-id=GetObject&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Client通过API与ZK交互，ZK通过Session管理Clinet连接，在Session中Clinet可以观测到反应其操作的状态变化。&lt;/p&gt;
 &lt;h2 id=&#34;cap&#34;&gt;CAP&lt;/h2&gt;
 &lt;p&gt;ZK保证CP，比如在选举leader时，会停止服务，直到选举成功之后才会再次对外提供服务。&lt;/p&gt;
 &lt;h2 id=&#34;实现&#34;&gt;实现&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155414Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155414Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D\&#34;Untitled.png\&#34;&amp;x-id=GetObject&#34;&gt;&lt;/p&gt;
 &lt;p&gt;ZK使用多副本实现高可用。&lt;/p&gt;
 &lt;p&gt;简单来说，ZK上层使用ZAB协议处理写请求，保证多副本更新的线性一致性，本地处理读请求，读请求保证顺序一致性。下层数据状态机保存到ZK集群机器上的Replicated Database（内存）+ WAL上，并定期snapshot。整个内存数据库通过 Fuzzy Snapshot + WAL Replay的方式保证单机Crash Safe以及重启恢复的速度。&lt;/p&gt;
 &lt;blockquote&gt;

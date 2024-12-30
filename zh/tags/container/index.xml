@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/container/</link>
     <description>Recent content in Container on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Tue, 08 Jun 2021 22:26:17 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/container/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -23,7 +24,7 @@
 &lt;li&gt;
 &lt;p&gt;&lt;strong&gt;subsystem&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;一组资源控制的模块&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png&#34; alt=&#34;image.png&#34;&gt;
+&lt;p&gt;&lt;img alt=&#34;image.png&#34; src=&#34;https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png&#34;&gt;
 每个 subsystem会关联到定义了相应限制的 cgroup上,并对这个cgroup中的进程做相应的限制和控制。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
@@ -50,63 +51,63 @@
 &lt;ul&gt;
 &lt;li&gt;创建挂载hierarchy，新建子cgroup&lt;/li&gt;
 &lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;mkdir cgroup &lt;span style=&#34;color:#75715e&#34;&gt;# 创建挂载点&lt;/span&gt;
-sudo mount -t cgroup -o none,name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;cgroup-test cgroup-test ./cgroup-test &lt;span style=&#34;color:#75715e&#34;&gt;# 挂载hierarchy&lt;/span&gt;
-sudo mkdir cgroup-1
-sudo mkdir cgroup-2
-tree
-
-.
-├── cgroup-1
-│   ├── cgroup.clone_children
-│   ├── cgroup.procs
-│   ├── notify_on_release
-│   └── tasks
-├── cgroup-2
-│   ├── cgroup.clone_children
-│   ├── cgroup.procs
-│   ├── notify_on_release
-│   └── tasks
-├── cgroup.clone_children
-├── cgroup.procs
-├── cgroup.sane_behavior
-├── notify_on_release
-├── release_agent
-└── tasks
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;不同文件的含义&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png&#34; alt=&#34;image.png&#34;&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;mkdir cgroup &lt;span style=&#34;color:#75715e&#34;&gt;# 创建挂载点&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sudo mount -t cgroup -o none,name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;cgroup-test cgroup-test ./cgroup-test &lt;span style=&#34;color:#75715e&#34;&gt;# 挂载hierarchy&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sudo mkdir cgroup-1
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sudo mkdir cgroup-2
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;tree
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;.
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── cgroup-1
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│   ├── cgroup.clone_children
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│   ├── cgroup.procs
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│   ├── notify_on_release
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│   └── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── cgroup-2
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│   ├── cgroup.clone_children
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│   ├── cgroup.procs
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│   ├── notify_on_release
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│   └── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── cgroup.clone_children
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── cgroup.procs
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── cgroup.sane_behavior
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── notify_on_release
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;├── release_agent
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;└── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;不同文件的含义&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image.png&#34; src=&#34;https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png&#34;&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;在cgroup中添加和移动进程（将进程pid移入对应tasks文件中）&lt;/li&gt;
 &lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &lt;/span&gt;$$&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;gt;&amp;gt; ./cgroup-1/tasks&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 将终端进程移入cgroup-1中&lt;/span&gt;
-cat /proc/$$/cgroup
-
-&amp;gt;&amp;gt; 
-13:name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;cgroup-test:/cgroup-1
-12:memory:/user.slice/user-1002.slice/session-12331.scope
-11:perf_event:/
-10:cpuset:/
-9:freezer:/
-8:blkio:/user.slice
-7:rdma:/
-6:hugetlb:/
-5:pids:/user.slice/user-1002.slice/session-12331.scope
-4:cpu,cpuacct:/user.slice
-3:net_cls,net_prio:/
-2:devices:/user.slice
-1:name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;systemd:/user.slice/user-1002.slice/session-12331.scope
-0::/user.slice/user-1002.slice/session-12331.scope
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &lt;/span&gt;$$&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;gt;&amp;gt; ./cgroup-1/tasks&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 将终端进程移入cgroup-1中&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cat /proc/$$/cgroup
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;gt;&amp;gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;13:name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;cgroup-test:/cgroup-1
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;12:memory:/user.slice/user-1002.slice/session-12331.scope
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;11:perf_event:/
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;10:cpuset:/
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;9:freezer:/
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;8:blkio:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;7:rdma:/
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;6:hugetlb:/
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;5:pids:/user.slice/user-1002.slice/session-12331.scope
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;4:cpu,cpuacct:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3:net_cls,net_prio:/
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;2:devices:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;1:name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;systemd:/user.slice/user-1002.slice/session-12331.scope
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;0::/user.slice/user-1002.slice/session-12331.scope
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;通过subsystem限制cgroup中进程的资源&lt;/p&gt;
 &lt;p&gt;首先将hierarchy关联到subsystem，系统默认将hierarchy关联到memory hierarchy&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 首先,在不做限制的情况下,启动一个占用内存的stress进程&lt;/span&gt;
-stress --vm-bytes 200m --vm-keep -m &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
-sudo mkdir test-limit-memory &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; cd test-limit-memory &lt;span style=&#34;color:#75715e&#34;&gt;# 创建一个cgroup&lt;/span&gt;
-sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &amp;#34;&lt;/span&gt;100m&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34; &amp;gt; memory.limit&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 设置最大cgroup占用为100m&lt;/span&gt;
-sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &lt;/span&gt;$$&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;gt; tasks&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 将当前进程移入cgroup&lt;/span&gt;
-stress --vm-bytes 200m --vm-keep -m &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 首先,在不做限制的情况下,启动一个占用内存的stress进程&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;stress --vm-bytes 200m --vm-keep -m &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sudo mkdir test-limit-memory &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; cd test-limit-memory &lt;span style=&#34;color:#75715e&#34;&gt;# 创建一个cgroup&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &amp;#34;&lt;/span&gt;100m&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34; &amp;gt; memory.limit&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 设置最大cgroup占用为100m&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sudo sh -c &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;echo &lt;/span&gt;$$&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;gt; tasks&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 将当前进程移入cgroup&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;stress --vm-bytes 200m --vm-keep -m &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h4 id=&#34;最后可以观测到进程占用的内存被限制了&#34;&gt;最后可以观测到进程占用的内存被限制了&lt;/h4&gt;
 </description>

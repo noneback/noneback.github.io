@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>arch on NoneBack</title>
+    <title>Arch on NoneBack</title>
     <link>https://noneback.github.io/zh/tags/arch/</link>
-    <description>Recent content in arch on NoneBack created by </description>
+    <description>Recent content in Arch on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Sat, 15 Jan 2022 23:13:16 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/arch/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -37,7 +38,7 @@
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;&lt;code&gt;/mnt/boot&lt;/code&gt; 或 &lt;code&gt;/mnt/efi&lt;/code&gt;&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;&lt;code&gt;/dev/*efi_system_partition（efi 系统分区）*&lt;/code&gt;&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/EFI_system_partition_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)&#34;&gt;EFI 系统分区&lt;/a&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/EFI_system_partition_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29&#34;&gt;EFI 系统分区&lt;/a&gt;&lt;/td&gt;
 &lt;td style=&#34;text-align:left&#34;&gt;至少 260 MiB&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
@@ -54,13 +55,13 @@
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;fdisk -l 查看硬盘信息
-利用cfdisk /dev/nvme 对硬盘分区
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;分区格式化&#34;&gt;分区格式化&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;mkfs.ext4 &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
-mkswap &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;swap&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
-mkfs.fat -F &lt;span style=&#34;color:#ae81ff&#34;&gt;32&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;efi&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;分区配置和安装系统&#34;&gt;分区配置和安装系统&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;fdisk -l 查看硬盘信息
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;利用cfdisk /dev/nvme 对硬盘分区
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;分区格式化&#34;&gt;分区格式化&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;mkfs.ext4 &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;mkswap &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;swap&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;mkfs.fat -F &lt;span style=&#34;color:#ae81ff&#34;&gt;32&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;efi&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;分区配置和安装系统&#34;&gt;分区配置和安装系统&lt;/h4&gt;
 &lt;ul&gt;
 &lt;li&gt;挂载Root &lt;code&gt;mount /dev/${root_partition} /mnt&lt;/code&gt;&lt;/li&gt;
 &lt;li&gt;挂载EFI &lt;code&gt;mount /dev/${efi_partiton} /mnt/boot/efi&lt;/code&gt;&lt;/li&gt;
@@ -73,9 +74,9 @@ mkfs.fat -F &lt;span style=&#34;color:#ae81ff&#34;&gt;32&lt;/span&gt; &lt;span s
 &lt;ul&gt;
 &lt;li&gt;Change Root到新安装的系统&lt;/li&gt;
 &lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;mount /dev/&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root_partition&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt; /mnt
-arch-chroot /mnt
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;mount /dev/&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root_partition&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt; /mnt
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;arch-chroot /mnt
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;设置时区，同步时间&lt;/p&gt;
 &lt;/li&gt;
@@ -136,28 +137,28 @@ arch-chroot /mnt
 &lt;/table&gt;
 &lt;h3 id=&#34;安装桌面环境&#34;&gt;安装桌面环境&lt;/h3&gt;
 &lt;h4 id=&#34;安装xorg软件&#34;&gt;安装xorg软件&lt;/h4&gt;
-&lt;p&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Xorg_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)&#34;&gt;Xorg&lt;/a&gt; 项目提供了一个 X 窗口系统(图形化用户界面的基础)的开源实现。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Xorg_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29&#34;&gt;Xorg&lt;/a&gt; 项目提供了一个 X 窗口系统(图形化用户界面的基础)的开源实现。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;xorg-server + xorg-apps + xrandr + xinit&lt;/strong&gt;&lt;/p&gt;
 &lt;h4 id=&#34;安装桌面配套软件&#34;&gt;安装桌面配套软件&lt;/h4&gt;
 &lt;p&gt;使用suckless全套的平铺式桌面环境&lt;strong&gt;dwm + slock + st + dmenu + slim + slstatus&lt;/strong&gt;&lt;/p&gt;
 &lt;h4 id=&#34;编写xinitc配置以及xprofile&#34;&gt;编写xinitc配置以及xprofile&lt;/h4&gt;
 &lt;p&gt;在xinitc中添加&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# .xinitc&lt;/span&gt;
-fcitx5 &amp;amp;
-xautolock -time &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt; -locker slock &amp;amp;
-
-autorandr -l home
-picom -b
-feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
-exec slstatus &amp;amp;
-exec dwm
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# .xprofile&lt;/span&gt;
-export INPUT_METHOD&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
-export GTK_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
-export QT_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
-export XMODIFIERS&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;@im&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;美化以及易用&#34;&gt;美化以及易用&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# .xinitc&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;fcitx5 &amp;amp;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;xautolock -time &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt; -locker slock &amp;amp;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;autorandr -l home
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;picom -b
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;exec slstatus &amp;amp;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;exec dwm
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# .xprofile&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export INPUT_METHOD&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export GTK_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export QT_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export XMODIFIERS&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;@im&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;美化以及易用&#34;&gt;美化以及易用&lt;/h4&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;

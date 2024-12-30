@@ -5,12 +5,12 @@
     <meta charset="utf-8">
     <meta name="description" content="Ladder@Transactions and Distributed Transactions Transactions A transaction is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the atomicity of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.
 A single-node database transaction has four main properties:
- Atomicity: The transaction is executed as a whole.">
+Atomicity: The transaction is executed as a whole.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -31,34 +31,33 @@ if (!doNotTrack) {
     <meta property="og:title" content="Distributed Transactions" />
 <meta property="og:description" content="Transactions and Distributed Transactions Transactions A transaction is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the atomicity of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.
 A single-node database transaction has four main properties:
- Atomicity: The transaction is executed as a whole." />
+Atomicity: The transaction is executed as a whole." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/blog/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2021-05-20T23:55:11+08:00" />
 <meta property="article:modified_time" content="2021-05-20T23:55:11+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Distributed Transactions"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Distributed Transactions"/>
 <meta name="twitter:description" content="Transactions and Distributed Transactions Transactions A transaction is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the atomicity of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.
 A single-node database transaction has four main properties:
- Atomicity: The transaction is executed as a whole."/>
+Atomicity: The transaction is executed as a whole."/>
 
 
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "Distributed Transactions",
       "item": "https://noneback.github.io/blog/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"
     }
@@ -71,11 +70,11 @@ A single-node database transaction has four main properties:
   "@type": "BlogPosting",
   "headline": "Distributed Transactions",
   "name": "Distributed Transactions",
-  "description": "Transactions and Distributed Transactions Transactions A transaction is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the atomicity of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.\nA single-node database transaction has four main properties:\n Atomicity: The transaction is executed as a whole.",
+  "description": "Transactions and Distributed Transactions Transactions A transaction is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the atomicity of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.\nA single-node database transaction has four main properties:\nAtomicity: The transaction is executed as a whole.",
   "keywords": [
     "Transaction", "microservice"
   ],
-  "articleBody": "Transactions and Distributed Transactions Transactions A transaction is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the atomicity of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.\nA single-node database transaction has four main properties:\n Atomicity: The transaction is executed as a whole. Either all operations within the transaction are executed, or none are executed. Consistency: The transaction must ensure that the database moves from one consistent state to another. Consistent states mean that the data in the database must satisfy all integrity constraints. Isolation: When multiple transactions are executed concurrently, the execution of one transaction should not affect the execution of others. Durability: Changes made by a committed transaction should be permanently stored in the database.  Distributed Transactions A distributed transaction is a transaction where the participants, transaction-supporting servers, resource servers, and transaction manager are located on different nodes of a distributed system.\nWith the adoption of microservice architectures, large business domains often involve multiple services, and a business process requires participation from multiple services. In specific business scenarios, data consistency among multiple services must be ensured.\nFor example, in a large e-commerce system, the order interface typically deducts inventory, reduces discounts, and generates an order ID. The order service, inventory, discount, and order ID are all separate services. The success of the order interface depends not only on local database operations but also on third-party system results. In this case, distributed transactions ensure that all these operations either succeed together or fail together.\nIn essence, distributed transactions are used to ensure data consistency across different databases.\nUse Cases Typical use cases in e-commerce systems include:\n  Order Inventory Deduction\nWhen placing an order, operations include generating an order record and reducing product inventory. These are handled by separate microservices, so distributed transactions are required to ensure the atomicity of the order operation.\n  Third-Party Payments\nIn a microservice architecture, payment and orders are independent services. The order payment status depends on a notification from the financial service, which, in turn, depends on notifications from a third-party payment service.\nA classic scenario is illustrated below:\nFrom the diagram, there are two calls: the third-party payment service calling the payment service, and the payment service calling the order service. Both calls can encounter timeouts. Without distributed transactions, the actual payment status and the final payment status visible to the user may become inconsistent.\n  Implementation Approaches Two-Phase Commit (2PC) A transaction commit is divided into two phases:\n  Preparation Phase:\n The transaction manager (TM) initiates the transaction, logs the start of the transaction, and asks the participating resource managers (RMs) whether they can execute the commit operation, then waits for their responses. RMs execute local transactions, log redo/undo data, and return results to TM, but do not commit.    Commit/Rollback Phase:\n If all participating RMs execute successfully, the transaction proceeds to the commit phase:  TM logs the commit, sends a commit instruction to all RMs. RMs commit the local transaction and respond to TM. TM logs the end of the transaction.   If any RM fails or times out during preparation or commit:  TM logs the rollback, sends rollback instructions to all RMs. RMs rollback the local transaction and respond to TM. TM logs the end of the transaction.      Characteristics  Atomicity: Supported Consistency: Strong consistency Isolation: Supported Durability: Supported  Disadvantages  Synchronous Blocking: When participants occupy shared resources, others can only wait for resource release, leading to blocking. Single Point of Failure: If the transaction manager fails, the entire system becomes unavailable. Data Inconsistency: If the transaction manager only sends some commit messages, and a network issue occurs, only some participants receive the commit message, leading to inconsistency. Uncertainty: If both the transaction manager and a participant fail after sending a commit message, it is uncertain whether the message was successfully committed.  Local Message Table The transaction initiator maintains a local message table, and operations on the business table and the message table are within the same local transaction. Asynchronously, a scheduled task scans the message table and delivers the message downstream.\nThe broad concept of the local message table also allows downstream notification through methods other than message delivery, such as RPC calls.\n The initiator executes a local transaction, operating both the business table and the local message table. A scheduled task scans pending local messages (in the message table) and sends them to the message queue:  If successful, mark the local message as sent. If failed, retry until successful.   The message queue delivers the message downstream. The downstream transaction participant receives the message and executes a local transaction:  If failed, no ACK is returned, and the message queue retries. If successful, an ACK is returned, marking the end of the global transaction. If the message or ACK is lost, the message queue retries.    Exceptional Scenarios  Message Loss: Handled by repeating the scheduled task. Delivery Failure: Handled by retries, downstream must ensure idempotency. ACK Loss: Handled by retries, downstream must ensure idempotency.  Advantages and Challenges Advantages:\n High system throughput, asynchronous downstream transactions via middleware decoupling. Moderate business intrusion, requiring local message tables and scheduled tasks.  Challenges:\n Incomplete transaction support, downstream transactions cannot be rolled back, only retried.  Characteristics  Atomicity: Supported Consistency: Eventual consistency Isolation: Not supported (committed branch transactions are visible to other transactions) Durability: Supported  Best-Effort Notification The best-effort notification is a simple approach to flexible transactions, suitable for business with low time sensitivity to eventual consistency, where the result of the passive party does not affect the initiator’s result.\nThis approach roughly works as follows:\n System A completes its local transaction and sends a message to the MQ. A service consumes the MQ and calls System B’s interface. If System B succeeds, everything is fine; if it fails, the notification service periodically retries calling System B up to N times. If it still fails, it gives up.  Advantages and Challenges Advantages:\n Simple implementation.  Challenges:\n No compensation mechanism, no guarantee of delivery. Requires idempotency, with interfaces ensuring consistency and atomicity.  Characteristics  Atomicity: Not supported (requires additional interfaces) Consistency: Not supported (requires additional interfaces) Isolation: Not supported (committed branch transactions are visible to other transactions) Durability: Supported  Classic Scenario Payment Callback:\nThe payment service receives a successful payment notification from a third-party service, updates the payment status of the order, and synchronously notifies the order service. If this synchronous notification fails, an asynchronous script will keep retrying the order service interface.\nReferences Distributed Transactions: All You Need to Know\n",
+  "articleBody": "Transactions and Distributed Transactions Transactions A transaction is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the atomicity of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.\nA single-node database transaction has four main properties:\nAtomicity: The transaction is executed as a whole. Either all operations within the transaction are executed, or none are executed. Consistency: The transaction must ensure that the database moves from one consistent state to another. Consistent states mean that the data in the database must satisfy all integrity constraints. Isolation: When multiple transactions are executed concurrently, the execution of one transaction should not affect the execution of others. Durability: Changes made by a committed transaction should be permanently stored in the database. Distributed Transactions A distributed transaction is a transaction where the participants, transaction-supporting servers, resource servers, and transaction manager are located on different nodes of a distributed system.\nWith the adoption of microservice architectures, large business domains often involve multiple services, and a business process requires participation from multiple services. In specific business scenarios, data consistency among multiple services must be ensured.\nFor example, in a large e-commerce system, the order interface typically deducts inventory, reduces discounts, and generates an order ID. The order service, inventory, discount, and order ID are all separate services. The success of the order interface depends not only on local database operations but also on third-party system results. In this case, distributed transactions ensure that all these operations either succeed together or fail together.\nIn essence, distributed transactions are used to ensure data consistency across different databases.\nUse Cases Typical use cases in e-commerce systems include:\nOrder Inventory Deduction\nWhen placing an order, operations include generating an order record and reducing product inventory. These are handled by separate microservices, so distributed transactions are required to ensure the atomicity of the order operation.\nThird-Party Payments\nIn a microservice architecture, payment and orders are independent services. The order payment status depends on a notification from the financial service, which, in turn, depends on notifications from a third-party payment service.\nA classic scenario is illustrated below:\nFrom the diagram, there are two calls: the third-party payment service calling the payment service, and the payment service calling the order service. Both calls can encounter timeouts. Without distributed transactions, the actual payment status and the final payment status visible to the user may become inconsistent.\nImplementation Approaches Two-Phase Commit (2PC) A transaction commit is divided into two phases:\nPreparation Phase:\nThe transaction manager (TM) initiates the transaction, logs the start of the transaction, and asks the participating resource managers (RMs) whether they can execute the commit operation, then waits for their responses. RMs execute local transactions, log redo/undo data, and return results to TM, but do not commit. Commit/Rollback Phase:\nIf all participating RMs execute successfully, the transaction proceeds to the commit phase: TM logs the commit, sends a commit instruction to all RMs. RMs commit the local transaction and respond to TM. TM logs the end of the transaction. If any RM fails or times out during preparation or commit: TM logs the rollback, sends rollback instructions to all RMs. RMs rollback the local transaction and respond to TM. TM logs the end of the transaction. Characteristics Atomicity: Supported Consistency: Strong consistency Isolation: Supported Durability: Supported Disadvantages Synchronous Blocking: When participants occupy shared resources, others can only wait for resource release, leading to blocking. Single Point of Failure: If the transaction manager fails, the entire system becomes unavailable. Data Inconsistency: If the transaction manager only sends some commit messages, and a network issue occurs, only some participants receive the commit message, leading to inconsistency. Uncertainty: If both the transaction manager and a participant fail after sending a commit message, it is uncertain whether the message was successfully committed. Local Message Table The transaction initiator maintains a local message table, and operations on the business table and the message table are within the same local transaction. Asynchronously, a scheduled task scans the message table and delivers the message downstream.\nThe broad concept of the local message table also allows downstream notification through methods other than message delivery, such as RPC calls.\nThe initiator executes a local transaction, operating both the business table and the local message table. A scheduled task scans pending local messages (in the message table) and sends them to the message queue: If successful, mark the local message as sent. If failed, retry until successful. The message queue delivers the message downstream. The downstream transaction participant receives the message and executes a local transaction: If failed, no ACK is returned, and the message queue retries. If successful, an ACK is returned, marking the end of the global transaction. If the message or ACK is lost, the message queue retries. Exceptional Scenarios Message Loss: Handled by repeating the scheduled task. Delivery Failure: Handled by retries, downstream must ensure idempotency. ACK Loss: Handled by retries, downstream must ensure idempotency. Advantages and Challenges Advantages:\nHigh system throughput, asynchronous downstream transactions via middleware decoupling. Moderate business intrusion, requiring local message tables and scheduled tasks. Challenges:\nIncomplete transaction support, downstream transactions cannot be rolled back, only retried. Characteristics Atomicity: Supported Consistency: Eventual consistency Isolation: Not supported (committed branch transactions are visible to other transactions) Durability: Supported Best-Effort Notification The best-effort notification is a simple approach to flexible transactions, suitable for business with low time sensitivity to eventual consistency, where the result of the passive party does not affect the initiator’s result.\nThis approach roughly works as follows:\nSystem A completes its local transaction and sends a message to the MQ. A service consumes the MQ and calls System B’s interface. If System B succeeds, everything is fine; if it fails, the notification service periodically retries calling System B up to N times. If it still fails, it gives up. Advantages and Challenges Advantages:\nSimple implementation. Challenges:\nNo compensation mechanism, no guarantee of delivery. Requires idempotency, with interfaces ensuring consistency and atomicity. Characteristics Atomicity: Not supported (requires additional interfaces) Consistency: Not supported (requires additional interfaces) Isolation: Not supported (committed branch transactions are visible to other transactions) Durability: Supported Classic Scenario Payment Callback:\nThe payment service receives a successful payment notification from a third-party service, updates the payment status of the order, and synchronously notifies the order service. If this synchronous notification fails, an asynchronous script will keep retrying the order service interface.\nReferences Distributed Transactions: All You Need to Know\n",
   "wordCount" : "1097",
   "inLanguage": "en",
   "datePublished": "2021-05-20T23:55:11+08:00",
@@ -150,10 +149,10 @@ A single-node database transaction has four main properties:
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -215,11 +214,11 @@ A single-node database transaction has four main properties:
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -243,9 +242,9 @@ A single-node database transaction has four main properties:
       ·
       
       
-      <a href="https://noneback.github.io/tags/architecture/">architecture</a>
+      <a href="https://noneback.github.io/tags/architecture/">Architecture</a>
       
-      <a href="https://noneback.github.io/tags/microservice/">microservice</a>
+      <a href="https://noneback.github.io/tags/microservice/">Microservice</a>
       
       <a href="https://noneback.github.io/tags/transaction/">Transaction</a>
       
@@ -312,13 +311,13 @@ A single-node database transaction has four main properties:
 <p><strong>Third-Party Payments</strong></p>
 <p>In a microservice architecture, payment and orders are independent services. The order payment status depends on a notification from the financial service, which, in turn, depends on notifications from a third-party payment service.</p>
 <p>A classic scenario is illustrated below:</p>
-<p><img src="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png" alt="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png"></p>
+<p><img alt="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png" src="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png"></p>
 <p>From the diagram, there are two calls: the third-party payment service calling the payment service, and the payment service calling the order service. Both calls can encounter <strong>timeouts</strong>. Without distributed transactions, the actual payment status and the final payment status visible to the user may become <strong>inconsistent</strong>.</p>
 </li>
 </ul>
 <h1 id="implementation-approaches">Implementation Approaches</h1>
 <h2 id="two-phase-commit-2pc">Two-Phase Commit (2PC)</h2>
-<p><img src="https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png" alt="https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png"></p>
+<p><img alt="https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png" src="https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png"></p>
 <p>A transaction commit is divided into two phases:</p>
 <ol>
 <li>
@@ -365,7 +364,7 @@ A single-node database transaction has four main properties:
 <h2 id="local-message-table">Local Message Table</h2>
 <p>The transaction initiator maintains a <strong>local message table</strong>, and operations on the business table and the message table are within the same local transaction. Asynchronously, a <strong>scheduled task</strong> scans the message table and delivers the message downstream.</p>
 <p>The broad concept of the local message table also allows downstream notification through methods other than message delivery, such as RPC calls.</p>
-<p><img src="https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png" alt="https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png"></p>
+<p><img alt="https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png" src="https://i.loli.net/2021/05/19/tmNeiALsdof24PW.png"></p>
 <ol>
 <li>The initiator executes a local transaction, operating both the business table and the local message table.</li>
 <li>A scheduled task scans pending local messages (in the message table) and sends them to the message queue:
@@ -434,7 +433,7 @@ A single-node database transaction has four main properties:
 <h3 id="classic-scenario">Classic Scenario</h3>
 <p><strong>Payment Callback</strong>:</p>
 <p>The payment service receives a successful payment notification from a third-party service, updates the payment status of the order, and synchronously notifies the order service. If this synchronous notification fails, an asynchronous script will keep retrying the order service interface.</p>
-<p><img src="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg" alt="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg"></p>
+<p><img alt="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg" src="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/try-best-notify.jpg"></p>
 <h2 id="references">References</h2>
 <p><a href="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/">Distributed Transactions: All You Need to Know</a></p>
 </section>
@@ -493,7 +492,7 @@ A single-node database transaction has four main properties:
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -570,4 +569,4 @@ A single-node database transaction has four main properties:
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

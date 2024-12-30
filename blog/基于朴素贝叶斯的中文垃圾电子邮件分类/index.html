@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/blog/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2020-05-06T00:00:00+00:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Chinese Spam Email Classification Based on Naive Bayes"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Chinese Spam Email Classification Based on Naive Bayes"/>
 <meta name="twitter:description" content="Chinese Spam Email Classification Based on Naive Bayes Training and Testing Data This project primarily uses open-source data on GitHub. Data Processing First, we use regular expressions to filter the content of Chinese emails in the training set, removing all non-Chinese characters. The remaining content is then tokenized using jieba for word segmentation, and stopwords are filtered using a Chinese stopword list. The processed results for spam and normal emails"/>
 
 
@@ -43,16 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "Chinese Spam Email Classification Based on Naive Bayes",
       "item": "https://noneback.github.io/blog/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/"
     }
@@ -69,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "ML"
   ],
-  "articleBody": "Chinese Spam Email Classification Based on Naive Bayes Training and Testing Data This project primarily uses open-source data on GitHub.\nData Processing First, we use regular expressions to filter the content of Chinese emails in the training set, removing all non-Chinese characters. The remaining content is then tokenized using jieba for word segmentation, and stopwords are filtered using a Chinese stopword list. The processed results for spam and normal emails are stored separately.\nTwo dictionaries, spam_voca and normal_voca, are used to store the word frequencies of different terms in different emails. The data processing is then complete.\nTraining and Prediction The training and prediction process involves calculating the probability $P(Spam|word_1, word_2, \\dots, word_n)$. When this probability exceeds a certain threshold, the email is classified as spam.\n Based on the conditional independence assumption of Naive Bayes, and assuming the prior probability $P(s) = P(s') = 0.5$, we have:\n$P(s|w_1, w_2, \\dots, w_n) = \\frac{P(s, w_1, w_2, \\dots, w_n)}{P(w_1, w_2, \\dots, w_n)}$\n$= \\frac{P(w_1, w_2, \\dots, w_n | s) P(s)}{P(w_1, w_2, \\dots, w_n)} = \\frac{P(w_1, w_2, \\dots, w_n | s) P(s)}{P(w_1, w_2, \\dots, w_n | s) \\cdot p(s) + P(w_1, w_2, \\dots, w_n | s') \\cdot p(s')} $\nSince $P(spam) = P(not\\ spam)$, we have\n$\\frac{\\prod\\limits_{j=1}^n P(w_j | s)}{\\prod\\limits_{j=1}^n P(w_j | s) + \\prod\\limits_{j=1}^n P(w_j | s')}$\nFurther, using Bayes' theorem $P(w_j | s) = \\frac{P(s | w_j) \\cdot P(w_j)}{P(s)}$, the expression becomes\n$\\frac{\\prod\\limits_{j=1}^n P(s | w_j)}{\\prod\\limits_{j=1}^n P(s | w_j) + \\prod\\limits_{j=1}^n P(s' | w_j)}$\n Process details:\n For each email in the test set, perform the same processing, and calculate the top $n$ words with the highest $P(s|w)$. During calculation, if a word appears only in the spam dictionary, set $P(w | s') = 0.01$; similarly, if a word appears only in the normal dictionary, set $P(w | s) = 0.01$. If the word appears in neither, set $P(s|w) = 0.4$. These assumptions are based on prior research. Use the 15 most important words for each email and calculate the probability using the above formulas. If the probability is greater than the threshold $\\alpha$ (typically set to 0.9), classify it as spam; otherwise, classify it as a normal email.  You can refer to the code for further details.\nResults By adjusting the number of words used for prediction, the best result for this dataset is:\nSelected 29 words: 0.9642857142857143 Project Structure  data  中文停用词表.txt (Chinese stopword list) normal (folder for normal emails) spam (folder for spam emails) test (folder for test emails)   main.py (main script) normal_voca.json (JSON file for normal email vocabulary) pycache (cache folder)  utils.cpython-36.pyc   spam_voca.json (JSON file for spam email vocabulary) utils.py (utility functions)  Code # utils.py import jieba import numpy import re import os import json from collections import defaultdict spam_file_num = 7775 normal_file_num = 7063 # Load stopword list def get_stopwords(): return [i.strip() for i in open('./data/中文停用词表.txt', encoding='gbk')] # Read raw email content and process it def get_raw_str_list(path): stop_list = get_stopwords() with open(path, encoding='gbk') as f: raw_str = f.read() pattern = '[^\\u4E00-\\u9FA5]' # Chinese unicode range regex = re.compile(pattern) handled_str = re.sub(pattern, '', raw_str) str_list = [word for word in jieba.cut(handled_str) if word not in stop_list] return str_list # Build vocabulary def get_voca(path, is_file_path=False): if is_file_path: return read_voca_from_file(path) voca = defaultdict(int) file_list = [file for file in os.listdir(path)] for file in file_list: raw_str_list = get_raw_str_list(path + str(file)) for raw_str in raw_str_list: voca[raw_str] = voca[raw_str] + 1 return voca # Save vocabulary to JSON file def save_voca2json(voca, path, sort_by_value=False, indent_=4): if sort_by_value: sorted_by_value(voca) with open(path, 'w+') as f: f.write(json.dumps(voca, ensure_ascii=False, indent=indent_)) # Read vocabulary from JSON file def read_voca_from_file(path): with open(path) as f: voca = json.load(f) return voca # Sort dictionary by value def sorted_by_value(_dict): _dict = dict(sorted(spam_voca.items(), key=lambda x: x[1], reverse=True)) # Calculate P(Spam|word) def get_top_words_prob(path, spam_voca, normal_voca, words_size=30): critical_words = [] for word in get_raw_str_list(path): if word in spam_voca.keys() and word in normal_voca.keys(): p_w_s = spam_voca[word] / spam_file_num p_w_n = normal_voca[word] / normal_file_num p_s_w = p_w_s / (p_w_n + p_w_s) elif word in spam_voca.keys() and word not in normal_voca.keys(): p_w_s = spam_voca[word] / spam_file_num p_w_n = 0.01 p_s_w = p_w_s / (p_w_n + p_w_s) elif word not in spam_voca.keys() and word in normal_voca.keys(): p_w_s = 0.01 p_w_n = normal_voca[word] / normal_file_num p_s_w = p_w_s / (p_w_n + p_w_s) else: p_s_w = 0.4 critical_words.append([word, p_s_w]) return dict(sorted(critical_words[:words_size], key=lambda x: x[1], reverse=True)) # Calculate Bayesian probability def caculate_bayes(words_prob, spam_voca, normal_voca): p_s_w = 1 p_s_nw = 1 for word, prob in words_prob.items(): p_s_w *= prob p_s_nw *= (1 - prob) return p_s_w / (p_s_w + p_s_nw) def predict(bayes, threshold=0.9): return bayes = threshold # Get files and labels def get_files_labels(dir_path, is_spam=True): raw_files_list = os.listdir(dir_path) files_list = [dir_path + file for file in raw_files_list] labels = [is_spam for _ in range(len(files_list))] return files_list, labels # Predict and print results def predict_result(file_list, y, spam_voca, normal_voca, word_size=30): ret = [] right = 0 for file in file_list: words_prob = get_top_words_prob(file, spam_voca, normal_voca, words_size=word_size) bayes = caculate_bayes(words_prob, spam_voca, normal_voca) ret.append(predict(bayes)) for i in range(len(ret)): if ret[i] == y[i]: right += 1 print(right / len(y)) # main.py from utils import * if __name__ == '__main__': # Get vocabulary and save for future use spam_voca = get_voca('./spam_voca.json', is_file_path=True) normal_voca = get_voca('./normal_voca.json', is_file_path=True) save ",
+  "articleBody": "Chinese Spam Email Classification Based on Naive Bayes Training and Testing Data This project primarily uses open-source data on GitHub.\nData Processing First, we use regular expressions to filter the content of Chinese emails in the training set, removing all non-Chinese characters. The remaining content is then tokenized using jieba for word segmentation, and stopwords are filtered using a Chinese stopword list. The processed results for spam and normal emails are stored separately.\nTwo dictionaries, spam_voca and normal_voca, are used to store the word frequencies of different terms in different emails. The data processing is then complete.\nTraining and Prediction The training and prediction process involves calculating the probability $P(Spam|word_1, word_2, \\dots, word_n)$. When this probability exceeds a certain threshold, the email is classified as spam.\nBased on the conditional independence assumption of Naive Bayes, and assuming the prior probability $P(s) = P(s’) = 0.5$, we have:\n$P(s|w_1, w_2, \\dots, w_n) = \\frac{P(s, w_1, w_2, \\dots, w_n)}{P(w_1, w_2, \\dots, w_n)}$\n$= \\frac{P(w_1, w_2, \\dots, w_n | s) P(s)}{P(w_1, w_2, \\dots, w_n)} = \\frac{P(w_1, w_2, \\dots, w_n | s) P(s)}{P(w_1, w_2, \\dots, w_n | s) \\cdot p(s) + P(w_1, w_2, \\dots, w_n | s’) \\cdot p(s’)} $\nSince $P(spam) = P(not\\ spam)$, we have\n$\\frac{\\prod\\limits_{j=1}^n P(w_j | s)}{\\prod\\limits_{j=1}^n P(w_j | s) + \\prod\\limits_{j=1}^n P(w_j | s’)}$\nFurther, using Bayes’ theorem $P(w_j | s) = \\frac{P(s | w_j) \\cdot P(w_j)}{P(s)}$, the expression becomes\n$\\frac{\\prod\\limits_{j=1}^n P(s | w_j)}{\\prod\\limits_{j=1}^n P(s | w_j) + \\prod\\limits_{j=1}^n P(s’ | w_j)}$\nProcess details:\nFor each email in the test set, perform the same processing, and calculate the top $n$ words with the highest $P(s|w)$. During calculation, if a word appears only in the spam dictionary, set $P(w | s’) = 0.01$; similarly, if a word appears only in the normal dictionary, set $P(w | s) = 0.01$. If the word appears in neither, set $P(s|w) = 0.4$. These assumptions are based on prior research. Use the 15 most important words for each email and calculate the probability using the above formulas. If the probability is greater than the threshold $\\alpha$ (typically set to 0.9), classify it as spam; otherwise, classify it as a normal email. You can refer to the code for further details.\nResults By adjusting the number of words used for prediction, the best result for this dataset is:\nSelected 29 words: 0.9642857142857143 Project Structure data 中文停用词表.txt (Chinese stopword list) normal (folder for normal emails) spam (folder for spam emails) test (folder for test emails) main.py (main script) normal_voca.json (JSON file for normal email vocabulary) pycache (cache folder) utils.cpython-36.pyc spam_voca.json (JSON file for spam email vocabulary) utils.py (utility functions) Code # utils.py import jieba import numpy import re import os import json from collections import defaultdict spam_file_num = 7775 normal_file_num = 7063 # Load stopword list def get_stopwords(): return [i.strip() for i in open('./data/中文停用词表.txt', encoding='gbk')] # Read raw email content and process it def get_raw_str_list(path): stop_list = get_stopwords() with open(path, encoding='gbk') as f: raw_str = f.read() pattern = '[^\\u4E00-\\u9FA5]' # Chinese unicode range regex = re.compile(pattern) handled_str = re.sub(pattern, '', raw_str) str_list = [word for word in jieba.cut(handled_str) if word not in stop_list] return str_list # Build vocabulary def get_voca(path, is_file_path=False): if is_file_path: return read_voca_from_file(path) voca = defaultdict(int) file_list = [file for file in os.listdir(path)] for file in file_list: raw_str_list = get_raw_str_list(path + str(file)) for raw_str in raw_str_list: voca[raw_str] = voca[raw_str] + 1 return voca # Save vocabulary to JSON file def save_voca2json(voca, path, sort_by_value=False, indent_=4): if sort_by_value: sorted_by_value(voca) with open(path, 'w+') as f: f.write(json.dumps(voca, ensure_ascii=False, indent=indent_)) # Read vocabulary from JSON file def read_voca_from_file(path): with open(path) as f: voca = json.load(f) return voca # Sort dictionary by value def sorted_by_value(_dict): _dict = dict(sorted(spam_voca.items(), key=lambda x: x[1], reverse=True)) # Calculate P(Spam|word) def get_top_words_prob(path, spam_voca, normal_voca, words_size=30): critical_words = [] for word in get_raw_str_list(path): if word in spam_voca.keys() and word in normal_voca.keys(): p_w_s = spam_voca[word] / spam_file_num p_w_n = normal_voca[word] / normal_file_num p_s_w = p_w_s / (p_w_n + p_w_s) elif word in spam_voca.keys() and word not in normal_voca.keys(): p_w_s = spam_voca[word] / spam_file_num p_w_n = 0.01 p_s_w = p_w_s / (p_w_n + p_w_s) elif word not in spam_voca.keys() and word in normal_voca.keys(): p_w_s = 0.01 p_w_n = normal_voca[word] / normal_file_num p_s_w = p_w_s / (p_w_n + p_w_s) else: p_s_w = 0.4 critical_words.append([word, p_s_w]) return dict(sorted(critical_words[:words_size], key=lambda x: x[1], reverse=True)) # Calculate Bayesian probability def caculate_bayes(words_prob, spam_voca, normal_voca): p_s_w = 1 p_s_nw = 1 for word, prob in words_prob.items(): p_s_w *= prob p_s_nw *= (1 - prob) return p_s_w / (p_s_w + p_s_nw) def predict(bayes, threshold=0.9): return bayes \u003e= threshold # Get files and labels def get_files_labels(dir_path, is_spam=True): raw_files_list = os.listdir(dir_path) files_list = [dir_path + file for file in raw_files_list] labels = [is_spam for _ in range(len(files_list))] return files_list, labels # Predict and print results def predict_result(file_list, y, spam_voca, normal_voca, word_size=30): ret = [] right = 0 for file in file_list: words_prob = get_top_words_prob(file, spam_voca, normal_voca, words_size=word_size) bayes = caculate_bayes(words_prob, spam_voca, normal_voca) ret.append(predict(bayes)) for i in range(len(ret)): if ret[i] == y[i]: right += 1 print(right / len(y)) # main.py from utils import * if __name__ == '__main__': # Get vocabulary and save for future use spam_voca = get_voca('./spam_voca.json', is_file_path=True) normal_voca = get_voca('./normal_voca.json', is_file_path=True) save ",
   "wordCount" : "897",
   "inLanguage": "en",
   "datePublished": "2020-05-06T00:00:00Z",
@@ -144,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -209,11 +208,11 @@ if (!doNotTrack) {
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -265,24 +264,24 @@ if (!doNotTrack) {
 <h2 id="training-and-prediction">Training and Prediction</h2>
 <p>The training and prediction process involves calculating the probability $P(Spam|word_1, word_2, \dots, word_n)$. When this probability exceeds a certain threshold, the email is classified as spam.</p>
 <blockquote>
-<p>Based on the conditional independence assumption of Naive Bayes, and assuming the prior probability $P(s) = P(s') = 0.5$, we have:</p>
+<p>Based on the conditional independence assumption of Naive Bayes, and assuming the prior probability $P(s) = P(s&rsquo;) = 0.5$, we have:</p>
 <p>$P(s|w_1, w_2, \dots, w_n) = \frac{P(s, w_1, w_2, \dots, w_n)}{P(w_1, w_2, \dots, w_n)}$</p>
-<p>$= \frac{P(w_1, w_2, \dots, w_n | s) P(s)}{P(w_1, w_2, \dots, w_n)} = \frac{P(w_1, w_2, \dots, w_n | s) P(s)}{P(w_1, w_2, \dots, w_n | s) \cdot p(s) + P(w_1, w_2, \dots, w_n | s') \cdot p(s')} $</p>
+<p>$= \frac{P(w_1, w_2, \dots, w_n | s) P(s)}{P(w_1, w_2, \dots, w_n)} = \frac{P(w_1, w_2, \dots, w_n | s) P(s)}{P(w_1, w_2, \dots, w_n | s) \cdot p(s) + P(w_1, w_2, \dots, w_n | s&rsquo;) \cdot p(s&rsquo;)} $</p>
 <p>Since $P(spam) = P(not\ spam)$, we have</p>
-<p>$\frac{\prod\limits_{j=1}^n P(w_j | s)}{\prod\limits_{j=1}^n P(w_j | s) + \prod\limits_{j=1}^n P(w_j | s')}$</p>
-<p>Further, using Bayes' theorem $P(w_j | s) = \frac{P(s | w_j) \cdot P(w_j)}{P(s)}$, the expression becomes</p>
-<p>$\frac{\prod\limits_{j=1}^n P(s | w_j)}{\prod\limits_{j=1}^n P(s | w_j) + \prod\limits_{j=1}^n P(s' | w_j)}$</p>
+<p>$\frac{\prod\limits_{j=1}^n P(w_j | s)}{\prod\limits_{j=1}^n P(w_j | s) + \prod\limits_{j=1}^n P(w_j | s&rsquo;)}$</p>
+<p>Further, using Bayes&rsquo; theorem $P(w_j | s) = \frac{P(s | w_j) \cdot P(w_j)}{P(s)}$, the expression becomes</p>
+<p>$\frac{\prod\limits_{j=1}^n P(s | w_j)}{\prod\limits_{j=1}^n P(s | w_j) + \prod\limits_{j=1}^n P(s&rsquo; | w_j)}$</p>
 </blockquote>
 <p>Process details:</p>
 <ul>
-<li>For each email in the test set, perform the same processing, and calculate the top $n$ words with the highest $P(s|w)$. During calculation, if a word appears only in the spam dictionary, set $P(w | s') = 0.01$; similarly, if a word appears only in the normal dictionary, set $P(w | s) = 0.01$. If the word appears in neither, set $P(s|w) = 0.4$. These assumptions are based on prior research.</li>
+<li>For each email in the test set, perform the same processing, and calculate the top $n$ words with the highest $P(s|w)$. During calculation, if a word appears only in the spam dictionary, set $P(w | s&rsquo;) = 0.01$; similarly, if a word appears only in the normal dictionary, set $P(w | s) = 0.01$. If the word appears in neither, set $P(s|w) = 0.4$. These assumptions are based on prior research.</li>
 <li>Use the 15 most important words for each email and calculate the probability using the above formulas. If the probability is greater than the threshold $\alpha$ (typically set to 0.9), classify it as spam; otherwise, classify it as a normal email.</li>
 </ul>
 <p>You can refer to the code for further details.</p>
 <h2 id="results">Results</h2>
 <p>By adjusting the number of words used for prediction, the best result for this dataset is:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Selected <span style="color:#ae81ff">29</span> words: <span style="color:#ae81ff">0.9642857142857143</span>
-</code></pre></div><h2 id="project-structure">Project Structure</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>Selected <span style="color:#ae81ff">29</span> words: <span style="color:#ae81ff">0.9642857142857143</span>
+</span></span></code></pre></div><h2 id="project-structure">Project Structure</h2>
 <ul>
 <li><strong>data</strong>
 <ul>
@@ -303,124 +302,124 @@ if (!doNotTrack) {
 <li><strong>utils.py</strong> (utility functions)</li>
 </ul>
 <h2 id="code">Code</h2>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># utils.py</span>
-<span style="color:#f92672">import</span> jieba
-<span style="color:#f92672">import</span> numpy
-<span style="color:#f92672">import</span> re
-<span style="color:#f92672">import</span> os
-<span style="color:#f92672">import</span> json
-<span style="color:#f92672">from</span> collections <span style="color:#f92672">import</span> defaultdict
-
-spam_file_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">7775</span>
-normal_file_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">7063</span>
-
-<span style="color:#75715e"># Load stopword list</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_stopwords</span>():
-    <span style="color:#66d9ef">return</span> [i<span style="color:#f92672">.</span>strip() <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> open(<span style="color:#e6db74">&#39;./data/中文停用词表.txt&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;gbk&#39;</span>)]
-
-<span style="color:#75715e"># Read raw email content and process it</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_raw_str_list</span>(path):
-    stop_list <span style="color:#f92672">=</span> get_stopwords()
-    <span style="color:#66d9ef">with</span> open(path, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;gbk&#39;</span>) <span style="color:#66d9ef">as</span> f:
-        raw_str <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>read()
-    pattern <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;[^</span><span style="color:#ae81ff">\u4E00</span><span style="color:#e6db74">-</span><span style="color:#ae81ff">\u9FA5</span><span style="color:#e6db74">]&#39;</span>  <span style="color:#75715e"># Chinese unicode range</span>
-    regex <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>compile(pattern)
-    handled_str <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(pattern, <span style="color:#e6db74">&#39;&#39;</span>, raw_str)
-    str_list <span style="color:#f92672">=</span> [word <span style="color:#66d9ef">for</span> word <span style="color:#f92672">in</span> jieba<span style="color:#f92672">.</span>cut(handled_str) <span style="color:#66d9ef">if</span> word <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> stop_list]
-    <span style="color:#66d9ef">return</span> str_list
-
-<span style="color:#75715e"># Build vocabulary</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_voca</span>(path, is_file_path<span style="color:#f92672">=</span><span style="color:#66d9ef">False</span>):
-    <span style="color:#66d9ef">if</span> is_file_path:
-        <span style="color:#66d9ef">return</span> read_voca_from_file(path)
-
-    voca <span style="color:#f92672">=</span> defaultdict(int)
-    file_list <span style="color:#f92672">=</span> [file <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> os<span style="color:#f92672">.</span>listdir(path)]
-    <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> file_list:
-        raw_str_list <span style="color:#f92672">=</span> get_raw_str_list(path <span style="color:#f92672">+</span> str(file))
-        <span style="color:#66d9ef">for</span> raw_str <span style="color:#f92672">in</span> raw_str_list:
-            voca[raw_str] <span style="color:#f92672">=</span> voca[raw_str] <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
-
-    <span style="color:#66d9ef">return</span> voca
-
-<span style="color:#75715e"># Save vocabulary to JSON file</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">save_voca2json</span>(voca, path, sort_by_value<span style="color:#f92672">=</span><span style="color:#66d9ef">False</span>, indent_<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>):
-    <span style="color:#66d9ef">if</span> sort_by_value:
-        sorted_by_value(voca)
-    <span style="color:#66d9ef">with</span> open(path, <span style="color:#e6db74">&#39;w+&#39;</span>) <span style="color:#66d9ef">as</span> f:
-        f<span style="color:#f92672">.</span>write(json<span style="color:#f92672">.</span>dumps(voca, ensure_ascii<span style="color:#f92672">=</span><span style="color:#66d9ef">False</span>, indent<span style="color:#f92672">=</span>indent_))
-
-<span style="color:#75715e"># Read vocabulary from JSON file</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_voca_from_file</span>(path):
-    <span style="color:#66d9ef">with</span> open(path) <span style="color:#66d9ef">as</span> f:
-        voca <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>load(f)
-    <span style="color:#66d9ef">return</span> voca
-
-<span style="color:#75715e"># Sort dictionary by value</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">sorted_by_value</span>(_dict):
-    _dict <span style="color:#f92672">=</span> dict(sorted(spam_voca<span style="color:#f92672">.</span>items(), key<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> x: x[<span style="color:#ae81ff">1</span>], reverse<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>))
-
-<span style="color:#75715e"># Calculate P(Spam|word)</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_top_words_prob</span>(path, spam_voca, normal_voca, words_size<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>):
-    critical_words <span style="color:#f92672">=</span> []
-    <span style="color:#66d9ef">for</span> word <span style="color:#f92672">in</span> get_raw_str_list(path):
-        <span style="color:#66d9ef">if</span> word <span style="color:#f92672">in</span> spam_voca<span style="color:#f92672">.</span>keys() <span style="color:#f92672">and</span> word <span style="color:#f92672">in</span> normal_voca<span style="color:#f92672">.</span>keys():
-            p_w_s <span style="color:#f92672">=</span> spam_voca[word] <span style="color:#f92672">/</span> spam_file_num
-            p_w_n <span style="color:#f92672">=</span> normal_voca[word] <span style="color:#f92672">/</span> normal_file_num
-            p_s_w <span style="color:#f92672">=</span> p_w_s <span style="color:#f92672">/</span> (p_w_n <span style="color:#f92672">+</span> p_w_s)
-        <span style="color:#66d9ef">elif</span> word <span style="color:#f92672">in</span> spam_voca<span style="color:#f92672">.</span>keys() <span style="color:#f92672">and</span> word <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> normal_voca<span style="color:#f92672">.</span>keys():
-            p_w_s <span style="color:#f92672">=</span> spam_voca[word] <span style="color:#f92672">/</span> spam_file_num
-            p_w_n <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
-            p_s_w <span style="color:#f92672">=</span> p_w_s <span style="color:#f92672">/</span> (p_w_n <span style="color:#f92672">+</span> p_w_s)
-        <span style="color:#66d9ef">elif</span> word <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> spam_voca<span style="color:#f92672">.</span>keys() <span style="color:#f92672">and</span> word <span style="color:#f92672">in</span> normal_voca<span style="color:#f92672">.</span>keys():
-            p_w_s <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
-            p_w_n <span style="color:#f92672">=</span> normal_voca[word] <span style="color:#f92672">/</span> normal_file_num
-            p_s_w <span style="color:#f92672">=</span> p_w_s <span style="color:#f92672">/</span> (p_w_n <span style="color:#f92672">+</span> p_w_s)
-        <span style="color:#66d9ef">else</span>:
-            p_s_w <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.4</span>
-        critical_words<span style="color:#f92672">.</span>append([word, p_s_w])
-    <span style="color:#66d9ef">return</span> dict(sorted(critical_words[:words_size], key<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> x: x[<span style="color:#ae81ff">1</span>], reverse<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>))
-
-<span style="color:#75715e"># Calculate Bayesian probability</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">caculate_bayes</span>(words_prob, spam_voca, normal_voca):
-    p_s_w <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
-    p_s_nw <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
-    <span style="color:#66d9ef">for</span> word, prob <span style="color:#f92672">in</span> words_prob<span style="color:#f92672">.</span>items():
-        p_s_w <span style="color:#f92672">*=</span> prob
-        p_s_nw <span style="color:#f92672">*=</span> (<span style="color:#ae81ff">1</span> <span style="color:#f92672">-</span> prob)
-    <span style="color:#66d9ef">return</span> p_s_w <span style="color:#f92672">/</span> (p_s_w <span style="color:#f92672">+</span> p_s_nw)
-
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">predict</span>(bayes, threshold<span style="color:#f92672">=</span><span style="color:#ae81ff">0.9</span>):
-    <span style="color:#66d9ef">return</span> bayes <span style="color:#f92672">&gt;=</span> threshold
-
-<span style="color:#75715e"># Get files and labels</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_files_labels</span>(dir_path, is_spam<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>):
-    raw_files_list <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>listdir(dir_path)
-    files_list <span style="color:#f92672">=</span> [dir_path <span style="color:#f92672">+</span> file <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> raw_files_list]
-    labels <span style="color:#f92672">=</span> [is_spam <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(len(files_list))]
-    <span style="color:#66d9ef">return</span> files_list, labels
-
-<span style="color:#75715e"># Predict and print results</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">predict_result</span>(file_list, y, spam_voca, normal_voca, word_size<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>):
-    ret <span style="color:#f92672">=</span> []
-    right <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-    <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> file_list:
-        words_prob <span style="color:#f92672">=</span> get_top_words_prob(file, spam_voca, normal_voca, words_size<span style="color:#f92672">=</span>word_size)
-        bayes <span style="color:#f92672">=</span> caculate_bayes(words_prob, spam_voca, normal_voca)
-        ret<span style="color:#f92672">.</span>append(predict(bayes))
-    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(ret)):
-        <span style="color:#66d9ef">if</span> ret[i] <span style="color:#f92672">==</span> y[i]:
-            right <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
-    print(right <span style="color:#f92672">/</span> len(y))
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># main.py</span>
-<span style="color:#f92672">from</span> utils <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
-
-<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;__main__&#39;</span>:
-    <span style="color:#75715e"># Get vocabulary and save for future use</span>
-    spam_voca <span style="color:#f92672">=</span> get_voca(<span style="color:#e6db74">&#39;./spam_voca.json&#39;</span>, is_file_path<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>)
-    normal_voca <span style="color:#f92672">=</span> get_voca(<span style="color:#e6db74">&#39;./normal_voca.json&#39;</span>, is_file_path<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>)
-    save
-</code></pre></div></section>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#75715e"># utils.py</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> jieba
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> re
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> os
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> json
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> collections <span style="color:#f92672">import</span> defaultdict
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>spam_file_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">7775</span>
+</span></span><span style="display:flex;"><span>normal_file_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">7063</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Load stopword list</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_stopwords</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> [i<span style="color:#f92672">.</span>strip() <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> open(<span style="color:#e6db74">&#39;./data/中文停用词表.txt&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;gbk&#39;</span>)]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Read raw email content and process it</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_raw_str_list</span>(path):
+</span></span><span style="display:flex;"><span>    stop_list <span style="color:#f92672">=</span> get_stopwords()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">with</span> open(path, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;gbk&#39;</span>) <span style="color:#66d9ef">as</span> f:
+</span></span><span style="display:flex;"><span>        raw_str <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>read()
+</span></span><span style="display:flex;"><span>    pattern <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;[^</span><span style="color:#ae81ff">\u4E00</span><span style="color:#e6db74">-</span><span style="color:#ae81ff">\u9FA5</span><span style="color:#e6db74">]&#39;</span>  <span style="color:#75715e"># Chinese unicode range</span>
+</span></span><span style="display:flex;"><span>    regex <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>compile(pattern)
+</span></span><span style="display:flex;"><span>    handled_str <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(pattern, <span style="color:#e6db74">&#39;&#39;</span>, raw_str)
+</span></span><span style="display:flex;"><span>    str_list <span style="color:#f92672">=</span> [word <span style="color:#66d9ef">for</span> word <span style="color:#f92672">in</span> jieba<span style="color:#f92672">.</span>cut(handled_str) <span style="color:#66d9ef">if</span> word <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> stop_list]
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> str_list
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Build vocabulary</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_voca</span>(path, is_file_path<span style="color:#f92672">=</span><span style="color:#66d9ef">False</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> is_file_path:
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> read_voca_from_file(path)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    voca <span style="color:#f92672">=</span> defaultdict(int)
+</span></span><span style="display:flex;"><span>    file_list <span style="color:#f92672">=</span> [file <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> os<span style="color:#f92672">.</span>listdir(path)]
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> file_list:
+</span></span><span style="display:flex;"><span>        raw_str_list <span style="color:#f92672">=</span> get_raw_str_list(path <span style="color:#f92672">+</span> str(file))
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> raw_str <span style="color:#f92672">in</span> raw_str_list:
+</span></span><span style="display:flex;"><span>            voca[raw_str] <span style="color:#f92672">=</span> voca[raw_str] <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> voca
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Save vocabulary to JSON file</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">save_voca2json</span>(voca, path, sort_by_value<span style="color:#f92672">=</span><span style="color:#66d9ef">False</span>, indent_<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> sort_by_value:
+</span></span><span style="display:flex;"><span>        sorted_by_value(voca)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">with</span> open(path, <span style="color:#e6db74">&#39;w+&#39;</span>) <span style="color:#66d9ef">as</span> f:
+</span></span><span style="display:flex;"><span>        f<span style="color:#f92672">.</span>write(json<span style="color:#f92672">.</span>dumps(voca, ensure_ascii<span style="color:#f92672">=</span><span style="color:#66d9ef">False</span>, indent<span style="color:#f92672">=</span>indent_))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Read vocabulary from JSON file</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_voca_from_file</span>(path):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">with</span> open(path) <span style="color:#66d9ef">as</span> f:
+</span></span><span style="display:flex;"><span>        voca <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>load(f)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> voca
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Sort dictionary by value</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">sorted_by_value</span>(_dict):
+</span></span><span style="display:flex;"><span>    _dict <span style="color:#f92672">=</span> dict(sorted(spam_voca<span style="color:#f92672">.</span>items(), key<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> x: x[<span style="color:#ae81ff">1</span>], reverse<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Calculate P(Spam|word)</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_top_words_prob</span>(path, spam_voca, normal_voca, words_size<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>):
+</span></span><span style="display:flex;"><span>    critical_words <span style="color:#f92672">=</span> []
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> word <span style="color:#f92672">in</span> get_raw_str_list(path):
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> word <span style="color:#f92672">in</span> spam_voca<span style="color:#f92672">.</span>keys() <span style="color:#f92672">and</span> word <span style="color:#f92672">in</span> normal_voca<span style="color:#f92672">.</span>keys():
+</span></span><span style="display:flex;"><span>            p_w_s <span style="color:#f92672">=</span> spam_voca[word] <span style="color:#f92672">/</span> spam_file_num
+</span></span><span style="display:flex;"><span>            p_w_n <span style="color:#f92672">=</span> normal_voca[word] <span style="color:#f92672">/</span> normal_file_num
+</span></span><span style="display:flex;"><span>            p_s_w <span style="color:#f92672">=</span> p_w_s <span style="color:#f92672">/</span> (p_w_n <span style="color:#f92672">+</span> p_w_s)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">elif</span> word <span style="color:#f92672">in</span> spam_voca<span style="color:#f92672">.</span>keys() <span style="color:#f92672">and</span> word <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> normal_voca<span style="color:#f92672">.</span>keys():
+</span></span><span style="display:flex;"><span>            p_w_s <span style="color:#f92672">=</span> spam_voca[word] <span style="color:#f92672">/</span> spam_file_num
+</span></span><span style="display:flex;"><span>            p_w_n <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
+</span></span><span style="display:flex;"><span>            p_s_w <span style="color:#f92672">=</span> p_w_s <span style="color:#f92672">/</span> (p_w_n <span style="color:#f92672">+</span> p_w_s)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">elif</span> word <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> spam_voca<span style="color:#f92672">.</span>keys() <span style="color:#f92672">and</span> word <span style="color:#f92672">in</span> normal_voca<span style="color:#f92672">.</span>keys():
+</span></span><span style="display:flex;"><span>            p_w_s <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
+</span></span><span style="display:flex;"><span>            p_w_n <span style="color:#f92672">=</span> normal_voca[word] <span style="color:#f92672">/</span> normal_file_num
+</span></span><span style="display:flex;"><span>            p_s_w <span style="color:#f92672">=</span> p_w_s <span style="color:#f92672">/</span> (p_w_n <span style="color:#f92672">+</span> p_w_s)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span>:
+</span></span><span style="display:flex;"><span>            p_s_w <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.4</span>
+</span></span><span style="display:flex;"><span>        critical_words<span style="color:#f92672">.</span>append([word, p_s_w])
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> dict(sorted(critical_words[:words_size], key<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> x: x[<span style="color:#ae81ff">1</span>], reverse<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Calculate Bayesian probability</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">caculate_bayes</span>(words_prob, spam_voca, normal_voca):
+</span></span><span style="display:flex;"><span>    p_s_w <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    p_s_nw <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> word, prob <span style="color:#f92672">in</span> words_prob<span style="color:#f92672">.</span>items():
+</span></span><span style="display:flex;"><span>        p_s_w <span style="color:#f92672">*=</span> prob
+</span></span><span style="display:flex;"><span>        p_s_nw <span style="color:#f92672">*=</span> (<span style="color:#ae81ff">1</span> <span style="color:#f92672">-</span> prob)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> p_s_w <span style="color:#f92672">/</span> (p_s_w <span style="color:#f92672">+</span> p_s_nw)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">predict</span>(bayes, threshold<span style="color:#f92672">=</span><span style="color:#ae81ff">0.9</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> bayes <span style="color:#f92672">&gt;=</span> threshold
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Get files and labels</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_files_labels</span>(dir_path, is_spam<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>):
+</span></span><span style="display:flex;"><span>    raw_files_list <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>listdir(dir_path)
+</span></span><span style="display:flex;"><span>    files_list <span style="color:#f92672">=</span> [dir_path <span style="color:#f92672">+</span> file <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> raw_files_list]
+</span></span><span style="display:flex;"><span>    labels <span style="color:#f92672">=</span> [is_spam <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(len(files_list))]
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> files_list, labels
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Predict and print results</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">predict_result</span>(file_list, y, spam_voca, normal_voca, word_size<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>):
+</span></span><span style="display:flex;"><span>    ret <span style="color:#f92672">=</span> []
+</span></span><span style="display:flex;"><span>    right <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> file_list:
+</span></span><span style="display:flex;"><span>        words_prob <span style="color:#f92672">=</span> get_top_words_prob(file, spam_voca, normal_voca, words_size<span style="color:#f92672">=</span>word_size)
+</span></span><span style="display:flex;"><span>        bayes <span style="color:#f92672">=</span> caculate_bayes(words_prob, spam_voca, normal_voca)
+</span></span><span style="display:flex;"><span>        ret<span style="color:#f92672">.</span>append(predict(bayes))
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(ret)):
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> ret[i] <span style="color:#f92672">==</span> y[i]:
+</span></span><span style="display:flex;"><span>            right <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    print(right <span style="color:#f92672">/</span> len(y))
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#75715e"># main.py</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> utils <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;__main__&#39;</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># Get vocabulary and save for future use</span>
+</span></span><span style="display:flex;"><span>    spam_voca <span style="color:#f92672">=</span> get_voca(<span style="color:#e6db74">&#39;./spam_voca.json&#39;</span>, is_file_path<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>)
+</span></span><span style="display:flex;"><span>    normal_voca <span style="color:#f92672">=</span> get_voca(<span style="color:#e6db74">&#39;./normal_voca.json&#39;</span>, is_file_path<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>)
+</span></span><span style="display:flex;"><span>    save
+</span></span></code></pre></div></section>
 
   
   
@@ -476,7 +475,7 @@ normal_file_num <span style="color:#f92672">=</span> <span style="color:#ae81ff"
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -553,4 +552,4 @@ normal_file_num <span style="color:#f92672">=</span> <span style="color:#ae81ff"
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

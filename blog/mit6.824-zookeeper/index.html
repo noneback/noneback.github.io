@@ -10,7 +10,7 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
     <link rel="canonical" href="https://noneback.github.io/blog/mit6.824-zookeeper/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -38,8 +38,7 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
 <meta property="article:modified_time" content="2023-01-03T23:49:41+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824-ZooKeeper"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-ZooKeeper"/>
 <meta name="twitter:description" content="This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic decisions. These trade-offs are the most insightful aspects of this article.
 Positioning ZooKeeper is a wait-free, high-performance coordination service for distributed applications. It supports the coordination needs of distributed applications by providing coordination primitives (specific APIs and data models).
 Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high performance and distributed application coordination service."/>
@@ -49,16 +48,16 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "MIT6.824-ZooKeeper",
       "item": "https://noneback.github.io/blog/mit6.824-zookeeper/"
     }
@@ -75,8 +74,8 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
   "keywords": [
     "ZooKeeper", "Distributed System", "MIT6.824"
   ],
-  "articleBody": "This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic decisions. These trade-offs are the most insightful aspects of this article.\nPositioning ZooKeeper is a wait-free, high-performance coordination service for distributed applications. It supports the coordination needs of distributed applications by providing coordination primitives (specific APIs and data models).\nDesign Keywords There are two key phrases in ZooKeeper’s positioning: high performance and distributed application coordination service.\nZooKeeper’s high performance is achieved through wait-free design, local reads from multiple replicas, and the watch mechanism:\n Wait-free requests are handled asynchronously, which may lead to request reordering, making the state machine different from the real-time sequence. ZooKeeper provides FIFO client order guarantees to manage this. Additionally, asynchronous handling is conducive to batch processing and pipelining, further improving performance. The watch mechanism notifies clients of updates when a znode changes, reducing the overhead of clients querying local caches. Local reads from multiple replicas: ZooKeeper uses the ZAB protocol to achieve data consensus, ensuring that write operations are linearizable. Read requests, however, are served locally from replicas without going through the ZAB consensus protocol, which provides serializability and might return stale data, improving performance.  The distributed application coordination service refers to the data model and API semantics provided by ZooKeeper, allowing distributed applications to freely use them to fulfill coordination needs such as group membership and distributed locking.\nData Model and API ZooKeeper provides an abstraction of data nodes called znodes, which are organized through a hierarchical namespace. ZooKeeper offers two types of znodes: regular and ephemeral. Each znode stores data and is accessed using standard UNIX filesystem paths.\nIn practice, znodes are not designed for general data storage. Instead, znodes map to abstractions in client applications, often corresponding to metadata used for coordination.\n In other words, when coordinating through ZooKeeper, utilize the metadata associated with znodes instead of treating them as mere data storage. For example, znodes associate metadata with timestamps and version counters, allowing clients to track changes to the znodes and perform conditional updates based on the znode version.\n Essentially, this data model is a simplified file system API that supports full data reads and writes. Users implement distributed application coordination using the semantics provided by ZooKeeper.\n The difference between regular and ephemeral znodes is that ephemeral nodes are automatically deleted when the session ends.\n Clients interact with ZooKeeper through its API, and ZooKeeper manages client connections through sessions. In a session, clients can observe state changes that reflect their operations.\nCAP Guarantees ZooKeeper provides CP (Consistency and Partition Tolerance) guarantees. For instance, during leader election, ZooKeeper will stop serving requests until a new leader is elected, ensuring consistency.\nImplementation ZooKeeper uses multiple replicas to achieve high availability.\nIn simple terms, ZooKeeper’s upper layer uses the ZAB protocol to handle write requests, ensuring linearizability across replicas. Reads are processed locally, ensuring sequential consistency. The underlying data state machine is stored in the replicated database (in-memory) and Write-Ahead Log (WAL) on ZooKeeper cluster machines, with periodic snapshots to ensure durability. The entire in-memory database uses fuzzy snapshots and WAL replay to ensure crash safety and fast recovery after a crash.\n The advantage of fuzzy snapshots is that they do not block online requests.\n Interaction with Clients  Update operations will notify and clear the relevant znode’s watch. Read requests are processed locally, and the partial order of write requests is defined by zxid. Sequential consistency is ensured, but reads may be stale. ZooKeeper provides the sync operation, which can mitigate this to some extent. When a client connects to a new ZooKeeper server, the maximum zxid is compared. The outdated ZooKeeper server will not establish a session with the client. Clients maintain sessions through heartbeats, and the server handles requests idempotently.  References ZooKeeper Paper\nMIT6.824-ZooKeeper FAQ\n",
-  "wordCount" : "638",
+  "articleBody": "This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic decisions. These trade-offs are the most insightful aspects of this article.\nPositioning ZooKeeper is a wait-free, high-performance coordination service for distributed applications. It supports the coordination needs of distributed applications by providing coordination primitives (specific APIs and data models).\nDesign Keywords There are two key phrases in ZooKeeper’s positioning: high performance and distributed application coordination service.\nZooKeeper’s high performance is achieved through wait-free design, local reads from multiple replicas, and the watch mechanism:\nWait-free requests are handled asynchronously, which may lead to request reordering, making the state machine different from the real-time sequence. ZooKeeper provides FIFO client order guarantees to manage this. Additionally, asynchronous handling is conducive to batch processing and pipelining, further improving performance. The watch mechanism notifies clients of updates when a znode changes, reducing the overhead of clients querying local caches. Local reads from multiple replicas: ZooKeeper uses the ZAB protocol to achieve data consensus, ensuring that write operations are linearizable. Read requests, however, are served locally from replicas without going through the ZAB consensus protocol, which provides serializability and might return stale data, improving performance. The distributed application coordination service refers to the data model and API semantics provided by ZooKeeper, allowing distributed applications to freely use them to fulfill coordination needs such as group membership and distributed locking.\nData Model and API ZooKeeper provides an abstraction of data nodes called znodes, which are organized through a hierarchical namespace. ZooKeeper offers two types of znodes: regular and ephemeral. Each znode stores data and is accessed using standard UNIX filesystem paths.\nIn practice, znodes are not designed for general data storage. Instead, znodes map to abstractions in client applications, often corresponding to metadata used for coordination.\nIn other words, when coordinating through ZooKeeper, utilize the metadata associated with znodes instead of treating them as mere data storage. For example, znodes associate metadata with timestamps and version counters, allowing clients to track changes to the znodes and perform conditional updates based on the znode version.\nEssentially, this data model is a simplified file system API that supports full data reads and writes. Users implement distributed application coordination using the semantics provided by ZooKeeper.\nThe difference between regular and ephemeral znodes is that ephemeral nodes are automatically deleted when the session ends.\n",
+  "wordCount" : "399",
   "inLanguage": "en",
   "datePublished": "2023-01-03T23:49:41+08:00",
   "dateModified": "2023-01-03T23:49:41+08:00",
@@ -150,10 +149,10 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -215,11 +214,11 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -236,7 +235,7 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
 
   <p>
   <small>
-    January 3, 2023&nbsp;· 638 words&nbsp;· 3 min</small>
+    January 3, 2023&nbsp;· 399 words&nbsp;· 2 min</small>
 
   <small>
       
@@ -297,12 +296,12 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
 <blockquote>
 <p>The difference between regular and ephemeral znodes is that ephemeral nodes are automatically deleted when the session ends.</p>
 </blockquote>
-<p><img src="https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155342Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;x-id=GetObject" alt="img"></p>
+<p><img alt="img" src="https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T155342Z&X-Amz-Expires=86400&X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D\"Untitled.png\"&x-id=GetObject"></p>
 <p>Clients interact with ZooKeeper through its API, and ZooKeeper manages client connections through sessions. In a session, clients can observe state changes that reflect their operations.</p>
 <h2 id="cap-guarantees">CAP Guarantees</h2>
 <p>ZooKeeper provides CP (Consistency and Partition Tolerance) guarantees. For instance, during leader election, ZooKeeper will stop serving requests until a new leader is elected, ensuring consistency.</p>
 <h2 id="implementation">Implementation</h2>
-<p><img src="https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155414Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;x-id=GetObject" alt="img"></p>
+<p><img alt="img" src="https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T155414Z&X-Amz-Expires=86400&X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D\"Untitled.png\"&x-id=GetObject"></p>
 <p>ZooKeeper uses multiple replicas to achieve high availability.</p>
 <p>In simple terms, ZooKeeper&rsquo;s upper layer uses the ZAB protocol to handle write requests, ensuring linearizability across replicas. Reads are processed locally, ensuring sequential consistency. The underlying data state machine is stored in the replicated database (in-memory) and Write-Ahead Log (WAL) on ZooKeeper cluster machines, with periodic snapshots to ensure durability. The entire in-memory database uses fuzzy snapshots and WAL replay to ensure crash safety and fast recovery after a crash.</p>
 <blockquote>
@@ -374,7 +373,7 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -451,4 +450,4 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

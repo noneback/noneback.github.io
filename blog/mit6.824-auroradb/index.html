@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/blog/mit6.824-auroradb/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2023-08-01T16:11:54+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824 AuroraDB"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824 AuroraDB"/>
 <meta name="twitter:description" content="This article introduces the design considerations of AWS&rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead. Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios. In terms of design, there are several aspects worth noting: The design premise of"/>
 
 
@@ -43,16 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  2 ,
+      "position":  1 ,
       "name": "Blogs",
       "item": "https://noneback.github.io/blog/"
     }, 
     {
       "@type": "ListItem",
-      "position":  3 ,
+      "position":  2 ,
       "name": "MIT6.824 AuroraDB",
       "item": "https://noneback.github.io/blog/mit6.824-auroradb/"
     }
@@ -69,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "Distributed System", "Database", "AuroraDB", "Cloud-Native"
   ],
-  "articleBody": "This article introduces the design considerations of AWS’s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead.\n Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios.\nIn terms of design, there are several aspects worth noting:\n The design premise of Aurora is that with databases moving to the cloud, thanks to advancements in cloud infrastructure, the biggest bottleneck for databases has shifted from compute and storage to the network. This was an important premise for AWS when designing Aurora. Based on this premise, Aurora revisits the concept of “Log is Database”, pushing only the RedoLog down to the storage layer. Storage-compute separation: The database storage layer interfaces with a distributed storage system, which provides reliability and security guarantees. The compute and storage layers can scale independently. The storage system provides a unified data view to the upper layers, significantly improving the efficiency of core functions and operations (such as backup, data recovery, and high availability). Interesting reliability guarantees: For example, quorum-based NRW consistency protocol, where read and write operations on storage nodes require majority voting, ensures dual-AZ level fault tolerance. Sharding is used to reduce failure handling time, improving the SLA. Most reads occur during database recovery when the current state needs to be restored. Single-writer multi-reader: Unlike NewSQL products with a shared-nothing architecture, Aurora provides only a single write node. This simplifies data consistency guarantees since the single write node can use the RedoLog LSN as a logical clock to maintain the partial order of data updates. By pushing the RedoLog to all nodes and applying these operations in order, consistency can be achieved. Transaction implementation: Since the storage system provides a unified file view to the upper layer, Aurora’s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC. Background acceleration for foreground processing: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc.  Interestingly, although PolarDB’s design was inspired by Aurora, its architectural design considers that the network is not the bottleneck but rather that various system calls through the OS slow down overall speed. Given the instability of Alibaba Cloud’s storage system at that time, PolarStore was introduced, using hardware and FUSE-based storage technology to bypass or optimize system calls. Now that Pangu has improved significantly in terms of both stability and performance, it makes sense to weaken the role of PolarStore. I think this reasoning makes sense.\nAdditionally, why did they choose to use NRW instead of a consensus protocol like Raft? For now, it seems that NRW has one less round of network communication compared to Raft, which might be the reason.\nReferences  https://zhuanlan.zhihu.com/p/319806107 http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt Paper Reading - Amazon Aurora: Design Considerations for High Throughput Cloud-Native Relational Database - keys961 | keys961 Blog  ",
+  "articleBody": "This article introduces the design considerations of AWS’s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead.\nAurora is a database product provided by AWS, primarily aimed at OLTP business scenarios.\nIn terms of design, there are several aspects worth noting:\nThe design premise of Aurora is that with databases moving to the cloud, thanks to advancements in cloud infrastructure, the biggest bottleneck for databases has shifted from compute and storage to the network. This was an important premise for AWS when designing Aurora. Based on this premise, Aurora revisits the concept of “Log is Database”, pushing only the RedoLog down to the storage layer. Storage-compute separation: The database storage layer interfaces with a distributed storage system, which provides reliability and security guarantees. The compute and storage layers can scale independently. The storage system provides a unified data view to the upper layers, significantly improving the efficiency of core functions and operations (such as backup, data recovery, and high availability). Interesting reliability guarantees: For example, quorum-based NRW consistency protocol, where read and write operations on storage nodes require majority voting, ensures dual-AZ level fault tolerance. Sharding is used to reduce failure handling time, improving the SLA. Most reads occur during database recovery when the current state needs to be restored. Single-writer multi-reader: Unlike NewSQL products with a shared-nothing architecture, Aurora provides only a single write node. This simplifies data consistency guarantees since the single write node can use the RedoLog LSN as a logical clock to maintain the partial order of data updates. By pushing the RedoLog to all nodes and applying these operations in order, consistency can be achieved. Transaction implementation: Since the storage system provides a unified file view to the upper layer, Aurora’s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC. Background acceleration for foreground processing: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc. Interestingly, although PolarDB’s design was inspired by Aurora, its architectural design considers that the network is not the bottleneck but rather that various system calls through the OS slow down overall speed. Given the instability of Alibaba Cloud’s storage system at that time, PolarStore was introduced, using hardware and FUSE-based storage technology to bypass or optimize system calls. Now that Pangu has improved significantly in terms of both stability and performance, it makes sense to weaken the role of PolarStore. I think this reasoning makes sense.\nAdditionally, why did they choose to use NRW instead of a consensus protocol like Raft? For now, it seems that NRW has one less round of network communication compared to Raft, which might be the reason.\nReferences https://zhuanlan.zhihu.com/p/319806107 http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt Paper Reading - Amazon Aurora: Design Considerations for High Throughput Cloud-Native Relational Database - keys961 | keys961 Blog ",
   "wordCount" : "524",
   "inLanguage": "en",
   "datePublished": "2023-08-01T16:11:54+08:00",
@@ -144,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -209,11 +208,11 @@ if (!doNotTrack) {
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -265,12 +264,12 @@ if (!doNotTrack) {
 <li><strong>Transaction implementation</strong>: Since the storage system provides a unified file view to the upper layer, Aurora&rsquo;s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC.</li>
 <li><strong>Background acceleration for foreground processing</strong>: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc.</li>
 </ul>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" alt="Aurora Architecture Overview"></p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png" alt="Aurora Write Path"></p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png" alt="Aurora Read Path"></p>
+<p><img alt="Aurora Architecture Overview" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png"></p>
+<p><img alt="Aurora Write Path" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png"></p>
+<p><img alt="Aurora Read Path" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png"></p>
 <p>Interestingly, although PolarDB&rsquo;s design was inspired by Aurora, its architectural design considers that the network is not the bottleneck but rather that various system calls through the OS slow down overall speed. Given the instability of Alibaba Cloud&rsquo;s storage system at that time, PolarStore was introduced, using hardware and FUSE-based storage technology to bypass or optimize system calls. Now that Pangu has improved significantly in terms of both stability and performance, it makes sense to weaken the role of PolarStore. I think this reasoning makes sense.</p>
 <p>Additionally, why did they choose to use NRW instead of a consensus protocol like Raft? For now, it seems that NRW has one less round of network communication compared to Raft, which might be the reason.</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png" alt="Aurora Storage-Compute Separation"></p>
+<p><img alt="Aurora Storage-Compute Separation" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png"></p>
 <h1 id="references">References</h1>
 <ul>
 <li><a href="https://zhuanlan.zhihu.com/p/319806107">https://zhuanlan.zhihu.com/p/319806107</a></li>
@@ -333,7 +332,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -410,4 +409,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mit6.824-chainreplication/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2023-02-08T23:05:57+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="MIT6.824-ChainReplication"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-ChainReplication"/>
 <meta name="twitter:description" content="只是简单写写，有一些具体一点的设计建议去读一下原文。 简介 简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "MIT6.824-ChainReplication",
       "item": "https://noneback.github.io/zh/blog/zh/mit6.824-chainreplication/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "Distributed System", "MIT6.824", "ChainReplication"
   ],
-  "articleBody": "只是简单写写，有一些具体一点的设计建议去读一下原文。\n简介 简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来保证服务的可用性。\n算法的设计很简单巧妙。算法通过链式复制将复制的吞吐均分到所有的CR节点上，每个节点只负责对后续节点的复制。写入请求从头部节向后传播，查询请求交由尾部节点响应。\n为了维护Chain上节点之前的前后关系，CR还引入了一个Master服务，用于管理节点之间的关系，以及处理Node Failure的情况。\n故障处理  Head Fail：头节点Pending or 没处理完 的请求将被丢失，不影响线性一致性，之后将第二个节点设置为头结点 Tail Fail：倒数第二个节点将成为尾节点，此时原来Tail Pending的请求将被提交 Middle Fail：中间节点故障的处理，类比链表的操作。Node_pre 将指向 Node_next，此时我们需要保证故障Node传递的请求被完整的传递下去。每个CR节点会维护一个SendReqList，记录已传递给后续节点的请求，由于请求是从头到尾传播，所以Node_pre只需要Node_next所缺失的数据即可。当Tail接收到请求时，标识数据被提交，此时会从尾至头传递Ack(req)信息，经过的节点都会把req从SendReqList从去除。  优缺点 最大的优点是，可以单节点提高吞吐量，节点的负载比较均衡，同时相对易于实现。整体设计很简洁有效。\n但很明显也会有以下缺点。\n 如果传播链条上有一个节点处理慢，将会拖慢整个处理流程。 除了首尾两个节点，其他节点的数据基本只作为副本存在，而无法提供服务。当然CRAQ里有让中间节点提供只读服务的方法，类似Raft的Read Index，暂不细说。  参考 Chain Replication 论文阅读\nCR Paper\n",
+  "articleBody": "只是简单写写，有一些具体一点的设计建议去读一下原文。\n简介 简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来保证服务的可用性。\n算法的设计很简单巧妙。算法通过链式复制将复制的吞吐均分到所有的CR节点上，每个节点只负责对后续节点的复制。写入请求从头部节向后传播，查询请求交由尾部节点响应。\n为了维护Chain上节点之前的前后关系，CR还引入了一个Master服务，用于管理节点之间的关系，以及处理Node Failure的情况。\n故障处理 Head Fail：头节点Pending or 没处理完 的请求将被丢失，不影响线性一致性，之后将第二个节点设置为头结点 Tail Fail：倒数第二个节点将成为尾节点，此时原来Tail Pending的请求将被提交 Middle Fail：中间节点故障的处理，类比链表的操作。Node_pre 将指向 Node_next，此时我们需要保证故障Node传递的请求被完整的传递下去。每个CR节点会维护一个SendReqList，记录已传递给后续节点的请求，由于请求是从头到尾传播，所以Node_pre只需要Node_next所缺失的数据即可。当Tail接收到请求时，标识数据被提交，此时会从尾至头传递Ack(req)信息，经过的节点都会把req从SendReqList从去除。 优缺点 最大的优点是，可以单节点提高吞吐量，节点的负载比较均衡，同时相对易于实现。整体设计很简洁有效。\n但很明显也会有以下缺点。\n如果传播链条上有一个节点处理慢，将会拖慢整个处理流程。 除了首尾两个节点，其他节点的数据基本只作为副本存在，而无法提供服务。当然CRAQ里有让中间节点提供只读服务的方法，类似Raft的Read Index，暂不细说。 参考 Chain Replication 论文阅读\nCR Paper\n",
   "wordCount" : "740",
   "inLanguage": "zh",
   "datePublished": "2023-02-08T23:05:57+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -253,7 +258,7 @@ if (!doNotTrack) {
   <section class="blog-content"><p>只是简单写写，有一些具体一点的设计建议去读一下原文。</p>
 <h1 id="简介">简介</h1>
 <p>简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来保证服务的可用性。</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png" alt="image-20230208232032286"></p>
+<p><img alt="image-20230208232032286" src="https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png"></p>
 <p>算法的设计很简单巧妙。算法通过链式复制将复制的吞吐均分到所有的CR节点上，每个节点只负责对后续节点的复制。写入请求从头部节向后传播，查询请求交由尾部节点响应。</p>
 <p>为了维护Chain上节点之前的前后关系，CR还引入了一个Master服务，用于管理节点之间的关系，以及处理Node Failure的情况。</p>
 <h2 id="故障处理">故障处理</h2>
@@ -328,7 +333,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -405,4 +410,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

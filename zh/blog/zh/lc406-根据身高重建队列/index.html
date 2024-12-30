@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/lc406-%E6%A0%B9%E6%8D%AE%E8%BA%AB%E9%AB%98%E9%87%8D%E5%BB%BA%E9%98%9F%E5%88%97/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2020-11-16T00:52:04+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="LC406 根据身高重建队列"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="LC406 根据身高重建队列"/>
 <meta name="twitter:description" content="今天的每日一题是LC406 根据身高重建队列,属于贪心算法的一题，以此记录解题思路。 描述 题目描述如下： 假设有打乱顺序的一群人站成一个队列。 每个"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "LC406 根据身高重建队列",
       "item": "https://noneback.github.io/zh/blog/zh/lc406-%E6%A0%B9%E6%8D%AE%E8%BA%AB%E9%AB%98%E9%87%8D%E5%BB%BA%E9%98%9F%E5%88%97/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "leetcode", "algorithm", "answer"
   ],
-  "articleBody": "今天的每日一题是LC406 根据身高重建队列,属于贪心算法的一题，以此记录解题思路。\n描述 题目描述如下：\n 假设有打乱顺序的一群人站成一个队列。 每个人由一个整数对(h, k)表示，其中h是这个人的身高，k是排在这个人前面且身高大于或等于h的人数。 编写一个算法来重建这个队列。\n示例 输入: [[7,0], [4,4], [7,1], [5,0], [6,1], [5,2]] 输出: [[5,0], [7,0], [5,2], [6,1], [4,4], [7,1]]  分析 完成这题最主要的就是要明白每个元素顺序对k的影响。\n1.首先将元素排序。$h$大的放在前面，如果$h$相同，则把$k$大的放前面。\n2.将排序后的元素放入队列中。\n 第 $0, \\cdots, i-10,⋯,i−1 $个人已经在队列中被安排了位置，他们只要站在第 $i$ 个人的前面，就会对第 $i$ 个人产生影响，因为他们都比第 $i$ 个人高；\n而第 $i+1, \\cdots, n-1$ 个人还没有被放入队列中，并且他们无论站在哪里，对第 $i$ 个人都没有任何影响，因为他们都比第 $i$ 个人矮。\n也就是说，当我们放入第 $i$ 个人时，只需要将其插入队列中，使得他的前面恰好有 $k_i$ 个人即可。\n 代码 /* * @lc app=leetcode.cn id=406 lang=cpp * * [406] 根据身高重建队列 */ // @lc code=start #include bits/stdc++.h using namespace std; class Solution { public: vectorvectorint reconstructQueue(vectorvectorint\u0026 people) { sort(people.begin(), people.end(), [](const vectorint\u0026 u, const vectorint\u0026 v) { return u[0]  v[0] || (u[0] == v[0] \u0026\u0026 u[1] v[1]); }); vectorvectorint ans; for (const vectorint\u0026 person : people) { ans.insert(ans.begin() + person[1], person); } return ans; } }; // @lc code=end 参考 题解\nLC406 根据身高重建队列\n",
+  "articleBody": "今天的每日一题是LC406 根据身高重建队列,属于贪心算法的一题，以此记录解题思路。\n描述 题目描述如下：\n假设有打乱顺序的一群人站成一个队列。 每个人由一个整数对(h, k)表示，其中h是这个人的身高，k是排在这个人前面且身高大于或等于h的人数。 编写一个算法来重建这个队列。\n示例 输入: [[7,0], [4,4], [7,1], [5,0], [6,1], [5,2]] 输出: [[5,0], [7,0], [5,2], [6,1], [4,4], [7,1]] 分析 完成这题最主要的就是要明白每个元素顺序对k的影响。\n1.首先将元素排序。$h$大的放在前面，如果$h$相同，则把$k$大的放前面。\n2.将排序后的元素放入队列中。\n第 $0, \\cdots, i-10,⋯,i−1 $个人已经在队列中被安排了位置，他们只要站在第 $i$ 个人的前面，就会对第 $i$ 个人产生影响，因为他们都比第 $i$ 个人高；\n而第 $i+1, \\cdots, n-1$ 个人还没有被放入队列中，并且他们无论站在哪里，对第 $i$ 个人都没有任何影响，因为他们都比第 $i$ 个人矮。\n也就是说，当我们放入第 $i$ 个人时，只需要将其插入队列中，使得他的前面恰好有 $k_i$ 个人即可。\n代码 /* * @lc app=leetcode.cn id=406 lang=cpp * * [406] 根据身高重建队列 */ // @lc code=start #include \u003cbits/stdc++.h\u003e using namespace std; class Solution { public: vector\u003cvector\u003cint\u003e\u003e reconstructQueue(vector\u003cvector\u003cint\u003e\u003e\u0026 people) { sort(people.begin(), people.end(), [](const vector\u003cint\u003e\u0026 u, const vector\u003cint\u003e\u0026 v) { return u[0] \u003e v[0] || (u[0] == v[0] \u0026\u0026 u[1] \u003c v[1]); }); vector\u003cvector\u003cint\u003e\u003e ans; for (const vector\u003cint\u003e\u0026 person : people) { ans.insert(ans.begin() + person[1], person); } return ans; } }; // @lc code=end 参考 题解\nLC406 根据身高重建队列\n",
   "wordCount" : "487",
   "inLanguage": "zh",
   "datePublished": "2020-11-16T00:52:04+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -231,9 +236,9 @@ if (!doNotTrack) {
       ·
       
       
-      <a href="https://noneback.github.io/zh/tags/greedy/">greedy</a>
+      <a href="https://noneback.github.io/zh/tags/greedy/">Greedy</a>
       
-      <a href="https://noneback.github.io/zh/tags/leetcode/">leetcode</a>
+      <a href="https://noneback.github.io/zh/tags/leetcode/">Leetcode</a>
       
     </small>
   
@@ -273,32 +278,32 @@ if (!doNotTrack) {
 <p>也就是说，当我们放入第 $i$ 个人时，只需要将其插入队列中，使得他的前面恰好有 $k_i$ 个人即可。</p>
 </blockquote>
 <h2 id="代码">代码</h2>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#75715e">/*
-</span><span style="color:#75715e"> * @lc app=leetcode.cn id=406 lang=cpp
-</span><span style="color:#75715e"> *
-</span><span style="color:#75715e"> * [406] 根据身高重建队列
-</span><span style="color:#75715e"> */</span>
-
-<span style="color:#75715e">// @lc code=start
-</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">#</span><span style="color:#a6e22e">include</span> &lt;<span style="color:#a6e22e">bits</span><span style="color:#f92672">/</span><span style="color:#a6e22e">stdc</span><span style="color:#f92672">++</span>.<span style="color:#a6e22e">h</span>&gt;
-<span style="color:#a6e22e">using</span> <span style="color:#a6e22e">namespace</span> <span style="color:#a6e22e">std</span>;
-<span style="color:#a6e22e">class</span> <span style="color:#a6e22e">Solution</span> {
- <span style="color:#a6e22e">public</span>:
-  <span style="color:#a6e22e">vector</span>&lt;<span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span><span style="color:#f92672">&gt;&gt;</span> <span style="color:#a6e22e">reconstructQueue</span>(<span style="color:#a6e22e">vector</span>&lt;<span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span><span style="color:#f92672">&gt;&gt;&amp;</span> <span style="color:#a6e22e">people</span>) {
-    <span style="color:#a6e22e">sort</span>(<span style="color:#a6e22e">people</span>.<span style="color:#a6e22e">begin</span>(), <span style="color:#a6e22e">people</span>.<span style="color:#a6e22e">end</span>(),
-         [](<span style="color:#66d9ef">const</span> <span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span>&gt;<span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">u</span>, <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span>&gt;<span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">v</span>) {
-           <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">u</span>[<span style="color:#ae81ff">0</span>] &gt; <span style="color:#a6e22e">v</span>[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">||</span> (<span style="color:#a6e22e">u</span>[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">==</span> <span style="color:#a6e22e">v</span>[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">u</span>[<span style="color:#ae81ff">1</span>] &lt; <span style="color:#a6e22e">v</span>[<span style="color:#ae81ff">1</span>]);
-         });
-
-    <span style="color:#a6e22e">vector</span>&lt;<span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span><span style="color:#f92672">&gt;&gt;</span> <span style="color:#a6e22e">ans</span>;
-    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">const</span> <span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span>&gt;<span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">person</span> : <span style="color:#a6e22e">people</span>) {
-      <span style="color:#a6e22e">ans</span>.<span style="color:#a6e22e">insert</span>(<span style="color:#a6e22e">ans</span>.<span style="color:#a6e22e">begin</span>() <span style="color:#f92672">+</span> <span style="color:#a6e22e">person</span>[<span style="color:#ae81ff">1</span>], <span style="color:#a6e22e">person</span>);
-    }
-    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ans</span>;
-  }
-};
-<span style="color:#75715e">// @lc code=end
-</span></code></pre></div><h2 id="参考">参考</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#75715e">/*
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> * @lc app=leetcode.cn id=406 lang=cpp
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> *
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> * [406] 根据身高重建队列
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> */</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// @lc code=start
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">#</span><span style="color:#a6e22e">include</span> &lt;<span style="color:#a6e22e">bits</span><span style="color:#f92672">/</span><span style="color:#a6e22e">stdc</span><span style="color:#f92672">++</span>.<span style="color:#a6e22e">h</span>&gt;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">using</span> <span style="color:#a6e22e">namespace</span> <span style="color:#a6e22e">std</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">class</span> <span style="color:#a6e22e">Solution</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">public</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">vector</span>&lt;<span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span><span style="color:#f92672">&gt;&gt;</span> <span style="color:#a6e22e">reconstructQueue</span>(<span style="color:#a6e22e">vector</span>&lt;<span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span><span style="color:#f92672">&gt;&gt;&amp;</span> <span style="color:#a6e22e">people</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">sort</span>(<span style="color:#a6e22e">people</span>.<span style="color:#a6e22e">begin</span>(), <span style="color:#a6e22e">people</span>.<span style="color:#a6e22e">end</span>(),
+</span></span><span style="display:flex;"><span>         [](<span style="color:#66d9ef">const</span> <span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span>&gt;<span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">u</span>, <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span>&gt;<span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">v</span>) {
+</span></span><span style="display:flex;"><span>           <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">u</span>[<span style="color:#ae81ff">0</span>] &gt; <span style="color:#a6e22e">v</span>[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">||</span> (<span style="color:#a6e22e">u</span>[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">==</span> <span style="color:#a6e22e">v</span>[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">u</span>[<span style="color:#ae81ff">1</span>] &lt; <span style="color:#a6e22e">v</span>[<span style="color:#ae81ff">1</span>]);
+</span></span><span style="display:flex;"><span>         });
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">vector</span>&lt;<span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span><span style="color:#f92672">&gt;&gt;</span> <span style="color:#a6e22e">ans</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">const</span> <span style="color:#a6e22e">vector</span>&lt;<span style="color:#66d9ef">int</span>&gt;<span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">person</span> : <span style="color:#a6e22e">people</span>) {
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">ans</span>.<span style="color:#a6e22e">insert</span>(<span style="color:#a6e22e">ans</span>.<span style="color:#a6e22e">begin</span>() <span style="color:#f92672">+</span> <span style="color:#a6e22e">person</span>[<span style="color:#ae81ff">1</span>], <span style="color:#a6e22e">person</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ans</span>;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// @lc code=end
+</span></span></span></code></pre></div><h2 id="参考">参考</h2>
 <p><a href="https://leetcode-cn.com/problems/queue-reconstruction-by-height/solution/gen-ju-shen-gao-zhong-jian-dui-lie-by-leetcode-sol/">题解</a></p>
 <p><a href="https://leetcode-cn.com/problems/queue-reconstruction-by-height/">LC406 根据身高重建队列</a></p>
 </section>
@@ -357,7 +362,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -434,4 +439,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

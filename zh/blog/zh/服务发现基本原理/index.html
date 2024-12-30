@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2021-05-12T22:37:30+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="服务发现基本原理"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="服务发现基本原理"/>
 <meta name="twitter:description" content="服务发现是什么？基本的实现思路？ 总览 服务发现的角色组成 服务发现由三种角色组成： 服务提供者：服务的实际提供者，提供对应的微服务 服务消费者：使用"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "服务发现基本原理",
       "item": "https://noneback.github.io/zh/blog/zh/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "Microservice", "Service Discovery"
   ],
-  "articleBody": "服务发现是什么？基本的实现思路？\n总览 服务发现的角色组成 服务发现由三种角色组成：\n 服务提供者：服务的实际提供者，提供对应的微服务 服务消费者：使用服务提供者提供的微服务，一般是其他上游微服务 服务中介：用于联系服务的提供者与消费者的一个服务，一般为KV存储，以服务名作为Key，以服务提供者IP作为Value，在有服务提供者状态变化的时候需要及时的更新与通知。  基本的流程是：首先创建一个服务提供者(微服务)，服务提供者将自身的服务地址(一般为IP:PORT)和服务名称注册到服务中介；服务消费者在调用其他微服务时，去服务中介查找服务地址，进行调用。\n服务中介 服务中介是服务发现的核心，除了支持服务注册与查找等基本功能，它还需要解决几个核心的问题：\n  服务提供者Crash后，无法主动通知中介，怎么处理？如何保证服务列表的有效性。\n  客户端心跳：服务提供者每隔一定时间主动发送“心跳”的方式来向服务端表明自己的服务状态正常，或者维护一个长连接\n 只说明了链路的正常，不代表服务的正常\n   服务端主动探测：服务中介主动调用服务节点的某个接口进行健康检查\n 服务注册中心主动调用服务的某个接口无法做到通用性。在很多场景下服务注册中心到服务发布者的网络是不通的，服务端无法主动发起健康检查，那么往往需要在宿主机器上部署一个 agent 来代替服务端的接口探测\n     服务列表更改之后，如何及时通知服务消费者\n有一下集中机制处理：\n 消费者轮询中介 + 服务列表版本号 消费中介推送：TCP长连接推送 or Http Polling 推拉结合：消费者主动拉取，中介主动推送    服务发现分布式，避免单点问题\n采用分布式KV存储，如etcd等\n  常见服务发现工具  ECTD ZooKeeper Consul  参考 知乎:服务发现基本原理\nInfoQ:聊一聊微服务架构中的服务发现系统\n",
+  "articleBody": "服务发现是什么？基本的实现思路？\n总览 服务发现的角色组成 服务发现由三种角色组成：\n服务提供者：服务的实际提供者，提供对应的微服务 服务消费者：使用服务提供者提供的微服务，一般是其他上游微服务 服务中介：用于联系服务的提供者与消费者的一个服务，一般为KV存储，以服务名作为Key，以服务提供者IP作为Value，在有服务提供者状态变化的时候需要及时的更新与通知。 基本的流程是：首先创建一个服务提供者(微服务)，服务提供者将自身的服务地址(一般为IP:PORT)和服务名称注册到服务中介；服务消费者在调用其他微服务时，去服务中介查找服务地址，进行调用。\n服务中介 服务中介是服务发现的核心，除了支持服务注册与查找等基本功能，它还需要解决几个核心的问题：\n服务提供者Crash后，无法主动通知中介，怎么处理？如何保证服务列表的有效性。\n客户端心跳：服务提供者每隔一定时间主动发送“心跳”的方式来向服务端表明自己的服务状态正常，或者维护一个长连接\n只说明了链路的正常，不代表服务的正常\n服务端主动探测：服务中介主动调用服务节点的某个接口进行健康检查\n服务注册中心主动调用服务的某个接口无法做到通用性。在很多场景下服务注册中心到服务发布者的网络是不通的，服务端无法主动发起健康检查，那么往往需要在宿主机器上部署一个 agent 来代替服务端的接口探测\n服务列表更改之后，如何及时通知服务消费者\n有一下集中机制处理：\n消费者轮询中介 + 服务列表版本号 消费中介推送：TCP长连接推送 or Http Polling 推拉结合：消费者主动拉取，中介主动推送 服务发现分布式，避免单点问题\n采用分布式KV存储，如etcd等\n常见服务发现工具 ECTD ZooKeeper Consul 参考 知乎:服务发现基本原理\nInfoQ:聊一聊微服务架构中的服务发现系统\n",
   "wordCount" : "711",
   "inLanguage": "zh",
   "datePublished": "2021-05-12T22:37:30+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -231,7 +236,7 @@ if (!doNotTrack) {
       ·
       
       
-      <a href="https://noneback.github.io/zh/tags/microservice/">microservice</a>
+      <a href="https://noneback.github.io/zh/tags/microservice/">Microservice</a>
       
     </small>
   
@@ -254,7 +259,7 @@ if (!doNotTrack) {
 
   <section class="blog-content"><p>服务发现是什么？基本的实现思路？</p>
 <h2 id="总览">总览</h2>
-<p><img src="https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg" alt="https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg"></p>
+<p><img alt="https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg" src="https://pic2.zhimg.com/80/v2-c5e1d05128694eaffc043d1acf1cab41_1440w.jpg"></p>
 <h2 id="服务发现的角色组成">服务发现的角色组成</h2>
 <p>服务发现由三种角色组成：</p>
 <ul>
@@ -362,7 +367,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -439,4 +444,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

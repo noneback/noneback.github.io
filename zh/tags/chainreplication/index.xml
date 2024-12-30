@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/chainreplication/</link>
     <description>Recent content in ChainReplication on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Wed, 08 Feb 2023 23:05:57 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/chainreplication/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -16,7 +17,7 @@
       <description>&lt;p&gt;只是简单写写，有一些具体一点的设计建议去读一下原文。&lt;/p&gt;
 &lt;h1 id=&#34;简介&#34;&gt;简介&lt;/h1&gt;
 &lt;p&gt;简单来讲，CR论文介绍了一种用于存储服务的满足线性一致性的复制状态机算法。它通过链式复制来提高算法的吞吐量，通过多副本来保证服务的可用性。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34; alt=&#34;image-20230208232032286&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20230208232032286&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;算法的设计很简单巧妙。算法通过链式复制将复制的吞吐均分到所有的CR节点上，每个节点只负责对后续节点的复制。写入请求从头部节向后传播，查询请求交由尾部节点响应。&lt;/p&gt;
 &lt;p&gt;为了维护Chain上节点之前的前后关系，CR还引入了一个Master服务，用于管理节点之间的关系，以及处理Node Failure的情况。&lt;/p&gt;
 &lt;h2 id=&#34;故障处理&#34;&gt;故障处理&lt;/h2&gt;

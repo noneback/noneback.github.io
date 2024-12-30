@@ -8,7 +8,7 @@
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/dfs-haystack/">
         <meta name="google-site-verification" content="xxx">
 
-    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io/index.xml" title="NoneBack">
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
@@ -34,8 +34,7 @@ if (!doNotTrack) {
 <meta property="article:modified_time" content="2021-10-06T22:44:01+08:00" />
 
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="DFS-Haystack"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="DFS-Haystack"/>
 <meta name="twitter:description" content="组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来"/>
 
 
@@ -43,10 +42,16 @@ if (!doNotTrack) {
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
-  "itemListElement": [, 
+  "itemListElement": [
     {
       "@type": "ListItem",
-      "position":  4 ,
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/zh/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
       "name": "DFS-Haystack",
       "item": "https://noneback.github.io/zh/blog/zh/dfs-haystack/"
     }
@@ -63,7 +68,7 @@ if (!doNotTrack) {
   "keywords": [
     "DFS", "Distributed System", "Paper Reading"
   ],
-  "articleBody": "组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来源应该就是Haystack。 于是大致阅读了一下这篇论文，写下学习笔记。 笔记依旧不深究具体细节，仅仅记录对问题的思考以及设计的思路。\n介绍 HayStack是Facebook为了小文件设计的一种存储系统。之前的DFS，对于文件的寻址路径一般是都会使用Cache来缓存元数据，以便减少磁盘交互提高寻址效率。一个文件就需要一个维护一类元数据，文件数决定了元数据量。在高并发场景下，我们要减少磁盘IO，一般会选择将寻址需要的元数据缓存在内存中。\n在大量小文件场景下，会有大量的元数据。考虑到在内存元数据维护带来的开销，这种方案变得不可用。于是便有了为小文件特别优化的HayStack。它核心思想是将多个小文件聚合成一个大文件，以减少元数据。\n背景 论文中的小文件其实是特指图片数据。\nFacebook是以社交起家的公司。在社交场景中，图片的上传和读取是常见需求。当业务发展到一定的程度，就需要有专门的服务支撑图片的大量高并发读写请求。\n在社交场景下，这类数据的特点是written once, read often, never modified, and rarely deleted.基于此，Facebook开发了HayStack来支持图片分享服务。\n设计 传统的设计 论文中给出了两种历史设计：基于CDN和基于NAS的方案\n基于CDN的方案 这个方案的核心其实就是利用CDN对热点图片数据进行缓存，减少网络传输。\n常用的设计，对于热点图片的优化很显著。但问题也很明显，一是CDN价格昂贵容量有限；二是图片分享场景，也会有很多less popular的图片数据，这就会导致长尾效应，拖慢速度。\n CDN其实一般服务于静态数据的，并且一般都是在活动之前进行预热，并不适合作为一种图片缓存服务使用。很多的less popular的数据其实并未进入CDN，故而导致长尾效应。\n 基于NAS的方案 这是facebook最初的设计方案，本质和基于CDN的方案区别不大，属于它的一种实现。\n引入NAS横向拓展存储，引入文件系统语义，同时也会有磁盘IO存在。和本地文件类似，对于未读取过的数据，至少需要三次磁盘IO：\n Read directory metadata into memory Load the inode into memory Read the content of the file  PhotoStore作为一层缓存使用，缓存一些元数据如file handle等，以加速寻址过程。\n基于NAS的设计并没有解决元数据过多导致不适合全量缓存这个关键问题，一但文件数量到达临界值，不可避免的需要进行磁盘IO。\n 更本质的问题其实是文件与寻址元数据一一对应的关系，使得元数据量随着文件数的变化而变化。\n 所以，优化的关键是，改变文件与寻址元数据一一对应的关系，降低寻址过程中磁盘IO出现的频率。\n基于HayStack的方案 此方案最核心的思路是将多个小文件聚合成大文件，并只维护一份元数据。本质上是改变了元数据与文件数的映射关系，使将所有元数据保存在内存的方案成为可能。\n 只维护聚合后的大文件的元数据，小文件在大文件中的位置需要另外维护映射\n 实现 Haystack主要有三个组件，Haystack Directory、Haystack Cache、Haystack Store\n文件映射与数据落盘 文件数据最终保存在logic volume上，一个logic volume对应多机器上的多个physical volume。\n用户首先访问Directory来获取访问路径，之后再通过Directory生成的URL访问其他组件，获取需要的数据。\n组件 Haystack Directory 属于Haystack的接入层，主要负责文件寻址以及访问控制。\n读写请求首先访问Directory。对于读请求，Directory会生成一个访问URL，URL包含了访问的路径：http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}。对于写请求，它会指定一个可以写入的volume提供用户写入。\n详细点来说，最主要有四个功能：\n  负载均衡，平衡读写请求，\n  决定请求的访问路径，比如是否通过CDN访问，生产访问URL\n  元数据与映射管理， 如logic attr and logic volume = list of phycial volume mapping\n  logic volume读写管理，logic volume可能是Readonly或者WriteEnabled\n 这部分设计和数据特点有关，write once and read more。可以提高并发度。\n   基于此，Directory就必须记录一些必须的元数据，file to volume，logical to phycial mapping、logical volume attr（size，owner、etc）。\n依赖分布式KV落盘元数据和缓存服务加速访问，以此保证容错可用以及低延迟。\n Proxy，Metadata Mapping，Access Control\n Haystack Cache Cache作为缓存用于优化寻址以及图像获取。核心的设计是Cache Rule，判断什么样的数据需要被缓存以及Cache Miss的处理。\nHaystack中，被缓存的图片数据需要满足这两个特点：\n The request comes directly from a user and not the CDN The photo is fetched from a write-enabled Store machine  当出现Cache Miss时，它会从Store上获取图片数据并同步推送至浏览器以及CDN中。\n 这样的策略是基于图片请求的场景与特点决定的。\n首先，在CDN中Miss的请求，很大概率上也会在Cache中miss，所以重CDN重定向的请求的数据不会被Cache。其次，图片往往在刚刚写入后不久时间内会被频繁的访问，所以这样的数据理应被Cache。\nCDN可以被视为一个External Cache。\n Haystack Store Store属于Haystack的存储层，负责数据存储相关操作。\n首先是它的寻址抽象：filename + offset = logical volume id + offset = data。\n多个Physical Volume组成Logical Volume，并作为实际落盘单位进行维护。在Store中，小文件被抽象成Needle，交由Physical Volume进行管理和维护。\n Needle实际上是对小文件的一种封装，以及对Volume的分块管理。\n Store的数据访问一般是以Needle维度进行的。为了加速文件寻址，一般会在内存中维护一个用于寻址元信息的Map：key/alternate key = needle's flag/offset/other attribute\n这些Map最后会被持久化到磁盘中的Index File中，做为In-Memory Mapping的一种Checkpoint存在，用于Crash后寻址元数据的快速恢复。\n 每个Volume会维护一个自己的In-Memory Mapping和Index File\n 在我们更新In-Memory Mapping的时候（比如修改文件、新增文件），会异步更新Index File。但在文件删除时，我们只异步标记文件删除，而不会修改Index File。\n Index只是作为加速查找的手段，无Index的Needles依旧是可以被寻址的，故而上述策略是有效的。但是由于异步更新和不删除对应文件的Index的设计，引入了Orphan Index和Deleted Index的问题。\nOrphan Index是指无索引记录的Needle，一般Store会检查出这些Needle并为其添加Index。\nDeleted Index一般就直接在查询是检测出文件是Deleted的，并且是Mark Deleted的状态，此时会告知上层为查询到文件，同时及时更新In-Memory Mapping。这样的设计加速了文件NotFound的情况下的查询时间。\n 工作负载 读 (Logical Volume ID, key, alternate key, cookies) = photo\n当接收到从Cache收到读请求时，Store会去查询In-Memory Mapping查询对应的Needle。如果查询到，则根据volume + offset获取文件数据，并校验文件的cookie和完整性；否则返回错误。\n Cookie是在Directory生成URL的时候随机生成的字符串，在寻址的时候带上并校验可以有效防止恶意攻击。\n 写 (Logical Volume ID, key, alternate key, cookies， data) = result\nHaystack不支持文件的覆盖写入，只支持追加写。当收到写请求时，Store会异步Append文件数据到Needle中并更新In-Memory Mapping。如果这是一个老文件，那么Directory会更新它保存的元数据，以便后续的访问不会访问老版本的文件。\n 除了Directory的元信息之外，怎么去判断数据版本的新旧？\n答案是根据volume以及offset。老的volume会被冻结为ReadOnly，新的volume的写入是追加的，所以offset大的必然更新。\n 删除 采取Mark Delete + Compact GC的方式处理删除请求。\n容错设计 对于Store使用监控 + 热备的方式，Directory和Cache可以使用Raft等一致性算法保证数据副本一致与容错。\n优化 优化手段主要有三点：Compaction、Batch Load、In Memory。\n总结  优化的抽象：异步、批处理、缓存 要发现主要问题，比如大量小文件最主要的问题是元数据带来的管理负担。  参考 Finding a needle in Haystack: Facebook’s photo storage\n",
+  "articleBody": "组内的主要项目便是一种提供POXIS文件系统语义的DFS，其中解决losf(lots of small files)的思路就是对小文件单独处理。里面的思想来源应该就是Haystack。 于是大致阅读了一下这篇论文，写下学习笔记。 笔记依旧不深究具体细节，仅仅记录对问题的思考以及设计的思路。\n介绍 HayStack是Facebook为了小文件设计的一种存储系统。之前的DFS，对于文件的寻址路径一般是都会使用Cache来缓存元数据，以便减少磁盘交互提高寻址效率。一个文件就需要一个维护一类元数据，文件数决定了元数据量。在高并发场景下，我们要减少磁盘IO，一般会选择将寻址需要的元数据缓存在内存中。\n在大量小文件场景下，会有大量的元数据。考虑到在内存元数据维护带来的开销，这种方案变得不可用。于是便有了为小文件特别优化的HayStack。它核心思想是将多个小文件聚合成一个大文件，以减少元数据。\n背景 论文中的小文件其实是特指图片数据。\nFacebook是以社交起家的公司。在社交场景中，图片的上传和读取是常见需求。当业务发展到一定的程度，就需要有专门的服务支撑图片的大量高并发读写请求。\n在社交场景下，这类数据的特点是written once, read often, never modified, and rarely deleted.基于此，Facebook开发了HayStack来支持图片分享服务。\n设计 传统的设计 论文中给出了两种历史设计：基于CDN和基于NAS的方案\n基于CDN的方案 这个方案的核心其实就是利用CDN对热点图片数据进行缓存，减少网络传输。\n常用的设计，对于热点图片的优化很显著。但问题也很明显，一是CDN价格昂贵容量有限；二是图片分享场景，也会有很多less popular的图片数据，这就会导致长尾效应，拖慢速度。\nCDN其实一般服务于静态数据的，并且一般都是在活动之前进行预热，并不适合作为一种图片缓存服务使用。很多的less popular的数据其实并未进入CDN，故而导致长尾效应。\n基于NAS的方案 这是facebook最初的设计方案，本质和基于CDN的方案区别不大，属于它的一种实现。\n引入NAS横向拓展存储，引入文件系统语义，同时也会有磁盘IO存在。和本地文件类似，对于未读取过的数据，至少需要三次磁盘IO：\nRead directory metadata into memory Load the inode into memory Read the content of the file PhotoStore作为一层缓存使用，缓存一些元数据如file handle等，以加速寻址过程。\n基于NAS的设计并没有解决元数据过多导致不适合全量缓存这个关键问题，一但文件数量到达临界值，不可避免的需要进行磁盘IO。\n更本质的问题其实是文件与寻址元数据一一对应的关系，使得元数据量随着文件数的变化而变化。\n所以，优化的关键是，改变文件与寻址元数据一一对应的关系，降低寻址过程中磁盘IO出现的频率。\n基于HayStack的方案 此方案最核心的思路是将多个小文件聚合成大文件，并只维护一份元数据。本质上是改变了元数据与文件数的映射关系，使将所有元数据保存在内存的方案成为可能。\n只维护聚合后的大文件的元数据，小文件在大文件中的位置需要另外维护映射\n实现 Haystack主要有三个组件，Haystack Directory、Haystack Cache、Haystack Store\n文件映射与数据落盘 文件数据最终保存在logic volume上，一个logic volume对应多机器上的多个physical volume。\n用户首先访问Directory来获取访问路径，之后再通过Directory生成的URL访问其他组件，获取需要的数据。\n组件 Haystack Directory 属于Haystack的接入层，主要负责文件寻址以及访问控制。\n读写请求首先访问Directory。对于读请求，Directory会生成一个访问URL，URL包含了访问的路径：http://{cdn}/{cache}/{machine id}/{logicalvolume,Photo}。对于写请求，它会指定一个可以写入的volume提供用户写入。\n详细点来说，最主要有四个功能：\n负载均衡，平衡读写请求，\n决定请求的访问路径，比如是否通过CDN访问，生产访问URL\n元数据与映射管理， 如logic attr and logic volume =\u003e list of phycial volume mapping\nlogic volume读写管理，logic volume可能是Readonly或者WriteEnabled\n这部分设计和数据特点有关，write once and read more。可以提高并发度。\n基于此，Directory就必须记录一些必须的元数据，file to volume，logical to phycial mapping、logical volume attr（size，owner、etc）。\n依赖分布式KV落盘元数据和缓存服务加速访问，以此保证容错可用以及低延迟。\nProxy，Metadata Mapping，Access Control\nHaystack Cache Cache作为缓存用于优化寻址以及图像获取。核心的设计是Cache Rule，判断什么样的数据需要被缓存以及Cache Miss的处理。\nHaystack中，被缓存的图片数据需要满足这两个特点：\nThe request comes directly from a user and not the CDN The photo is fetched from a write-enabled Store machine 当出现Cache Miss时，它会从Store上获取图片数据并同步推送至浏览器以及CDN中。\n这样的策略是基于图片请求的场景与特点决定的。\n首先，在CDN中Miss的请求，很大概率上也会在Cache中miss，所以重CDN重定向的请求的数据不会被Cache。其次，图片往往在刚刚写入后不久时间内会被频繁的访问，所以这样的数据理应被Cache。\nCDN可以被视为一个External Cache。\nHaystack Store Store属于Haystack的存储层，负责数据存储相关操作。\n首先是它的寻址抽象：filename + offset =\u003e logical volume id + offset =\u003e data。\n多个Physical Volume组成Logical Volume，并作为实际落盘单位进行维护。在Store中，小文件被抽象成Needle，交由Physical Volume进行管理和维护。\nNeedle实际上是对小文件的一种封装，以及对Volume的分块管理。\nStore的数据访问一般是以Needle维度进行的。为了加速文件寻址，一般会在内存中维护一个用于寻址元信息的Map：key/alternate key =\u003e needle's flag/offset/other attribute\n这些Map最后会被持久化到磁盘中的Index File中，做为In-Memory Mapping的一种Checkpoint存在，用于Crash后寻址元数据的快速恢复。\n每个Volume会维护一个自己的In-Memory Mapping和Index File\n在我们更新In-Memory Mapping的时候（比如修改文件、新增文件），会异步更新Index File。但在文件删除时，我们只异步标记文件删除，而不会修改Index File。\nIndex只是作为加速查找的手段，无Index的Needles依旧是可以被寻址的，故而上述策略是有效的。但是由于异步更新和不删除对应文件的Index的设计，引入了Orphan Index和Deleted Index的问题。\nOrphan Index是指无索引记录的Needle，一般Store会检查出这些Needle并为其添加Index。\nDeleted Index一般就直接在查询是检测出文件是Deleted的，并且是Mark Deleted的状态，此时会告知上层为查询到文件，同时及时更新In-Memory Mapping。这样的设计加速了文件NotFound的情况下的查询时间。\n工作负载 读 (Logical Volume ID, key, alternate key, cookies) =\u003e photo\n当接收到从Cache收到读请求时，Store会去查询In-Memory Mapping查询对应的Needle。如果查询到，则根据volume + offset获取文件数据，并校验文件的cookie和完整性；否则返回错误。\nCookie是在Directory生成URL的时候随机生成的字符串，在寻址的时候带上并校验可以有效防止恶意攻击。\n写 (Logical Volume ID, key, alternate key, cookies， data) =\u003e result\nHaystack不支持文件的覆盖写入，只支持追加写。当收到写请求时，Store会异步Append文件数据到Needle中并更新In-Memory Mapping。如果这是一个老文件，那么Directory会更新它保存的元数据，以便后续的访问不会访问老版本的文件。\n除了Directory的元信息之外，怎么去判断数据版本的新旧？\n答案是根据volume以及offset。老的volume会被冻结为ReadOnly，新的volume的写入是追加的，所以offset大的必然更新。\n删除 采取Mark Delete + Compact GC的方式处理删除请求。\n容错设计 对于Store使用监控 + 热备的方式，Directory和Cache可以使用Raft等一致性算法保证数据副本一致与容错。\n优化 优化手段主要有三点：Compaction、Batch Load、In Memory。\n总结 优化的抽象：异步、批处理、缓存 要发现主要问题，比如大量小文件最主要的问题是元数据带来的管理负担。 参考 Finding a needle in Haystack: Facebook’s photo storage\n",
   "wordCount" : "3596",
   "inLanguage": "zh",
   "datePublished": "2021-10-06T22:44:01+08:00",
@@ -138,10 +143,10 @@ if (!doNotTrack) {
     <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
 
     
-    <script src="/js/highlight.min.min.f6a23da83df7f66cbfe262036561fe5a3f8d59f21314b55aae8c09ea70eb5212.js"></script>
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
     <script>hljs.highlightAll();</script>
 
-    <script>(()=>{var b=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,a=localStorage.getItem("theme");b&&a===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),b&&a==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),a==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
     </head>
 <body>
       <main class="wrapper"><nav class="navigation">
@@ -203,11 +208,11 @@ if (!doNotTrack) {
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/">EN</a>
             </li>
-            
-            
             
             
             
@@ -283,7 +288,7 @@ if (!doNotTrack) {
 <h4 id="基于cdn的方案">基于CDN的方案</h4>
 <p>这个方案的核心其实就是利用CDN对热点图片数据进行缓存，减少网络传输。</p>
 <p>常用的设计，对于热点图片的优化很显著。但问题也很明显，一是CDN价格昂贵容量有限；二是图片分享场景，也会有很多<code>less popular</code>的图片数据，这就会导致长尾效应，拖慢速度。</p>
-<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1guuaefh22gj610g0s4gnh02.jpg" alt="image-20210926200920113"></p>
+<p><img alt="image-20210926200920113" src="https://tva1.sinaimg.cn/large/008i3skNly1guuaefh22gj610g0s4gnh02.jpg"></p>
 <blockquote>
 <p>CDN其实一般服务于静态数据的，并且一般都是在活动之前进行预热，并不适合作为一种图片缓存服务使用。很多的<code>less popular</code>的数据其实并未进入CDN，故而导致长尾效应。</p>
 </blockquote>
@@ -296,7 +301,7 @@ if (!doNotTrack) {
 <li>Read the content of the file</li>
 </ul>
 <p>PhotoStore作为一层缓存使用，缓存一些元数据如file handle等，以加速寻址过程。</p>
-<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1guuafar1rpj60u80scmyx02.jpg" alt="image-20210926201012724"></p>
+<p><img alt="image-20210926201012724" src="https://tva1.sinaimg.cn/large/008i3skNly1guuafar1rpj60u80scmyx02.jpg"></p>
 <p>基于NAS的设计并没有解决<strong>元数据过多导致不适合全量缓存</strong>这个关键问题，一但文件数量到达临界值，不可避免的需要进行磁盘IO。</p>
 <blockquote>
 <p>更本质的问题其实是<strong>文件与寻址元数据一一对应的关系</strong>，使得元数据量随着文件数的变化而变化。</p>
@@ -307,7 +312,7 @@ if (!doNotTrack) {
 <blockquote>
 <p>只维护聚合后的大文件的元数据，小文件在大文件中的位置需要另外维护映射</p>
 </blockquote>
-<p><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guv5ytgsmtj60k20jqjsk02.jpg" alt="image-20210927142131959"></p>
+<p><img alt="image-20210927142131959" src="https://tva1.sinaimg.cn/large/008i3skNgy1guv5ytgsmtj60k20jqjsk02.jpg"></p>
 <h2 id="实现">实现</h2>
 <p>Haystack主要有三个组件，Haystack Directory、Haystack Cache、Haystack Store</p>
 <h3 id="文件映射与数据落盘">文件映射与数据落盘</h3>
@@ -357,15 +362,15 @@ if (!doNotTrack) {
 <p>Store属于Haystack的存储层，负责数据存储相关操作。</p>
 <p>首先是它的寻址抽象：<code>filename + offset =&gt;  logical volume id + offset =&gt; data</code>。</p>
 <p>多个Physical Volume组成Logical Volume，并作为实际落盘单位进行维护。在Store中，小文件被抽象成<strong>Needle</strong>，交由Physical Volume进行管理和维护。</p>
-<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg" alt="image-20211006164409801"></p>
+<p><img alt="image-20211006164409801" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg"></p>
 <blockquote>
 <p>Needle实际上是对小文件的一种<strong>封装</strong>，以及对Volume的<strong>分块</strong>管理。</p>
-<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5ooyhloxj61150u043702.jpg" alt="image-20211006164428466"></p>
+<p><img alt="image-20211006164428466" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5ooyhloxj61150u043702.jpg"></p>
 </blockquote>
 <p>Store的数据访问一般是以Needle维度进行的。为了加速文件寻址，一般会在内存中维护一个用于寻址元信息的Map：<code>key/alternate key =&gt; needle's flag/offset/other attribute</code></p>
 <p>这些Map最后会被持久化到磁盘中的<strong>Index File</strong>中，做为In-Memory Mapping的一种Checkpoint存在，用于Crash后寻址元数据的快速恢复。</p>
-<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg" alt="image-20211006172431986"></p>
-<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg" alt="image-20211006172515258"></p>
+<p><img alt="image-20211006172431986" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg"></p>
+<p><img alt="image-20211006172515258" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg"></p>
 <blockquote>
 <p>每个Volume会维护一个自己的In-Memory Mapping和Index File</p>
 </blockquote>
@@ -458,7 +463,7 @@ if (!doNotTrack) {
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io">NoneBack</a>
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
@@ -535,4 +540,4 @@ if (!doNotTrack) {
   </script>
 
   
-  <script src="/main.min.e02624bc38670c46ea2d95b7a5526a080a0d890af856155bbae501d0e248f2a49b4c1cfe5c3a7902d1edc9dff4333eec594df8a39d9510cdee06ce12f2dd9009.js" integrity="sha512-4CYkvDhnDEbqLZW3pVJqCAoNiQr4VhVbuuUB0OJI8qSbTBz&#43;XDp5AtHtyd/0Mz7sWU34o52VEM3uBs4S8t2QCQ==" crossorigin="anonymous" defer></script></html>
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

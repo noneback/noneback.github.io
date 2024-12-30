@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/tags/distributed-system/</link>
     <description>Recent content in Distributed System on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Thu, 28 Sep 2023 10:43:23 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/distributed-system/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -50,7 +51,7 @@ end
 &lt;blockquote&gt;
 &lt;p&gt;&lt;code&gt;lock + write + data&lt;/code&gt;: for transactions, where &lt;code&gt;lock&lt;/code&gt; indicates that a cell is held by a transaction, and &lt;code&gt;write&lt;/code&gt; represents the data visibility.&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;notify + ack&lt;/code&gt;: for watcher or notifier mechanisms.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
@@ -64,7 +65,7 @@ end
 &lt;/ol&gt;
 &lt;blockquote&gt;
 &lt;p&gt;The locking process utilizes the primary-secondary mechanism, where one write is chosen as the &lt;strong&gt;primary&lt;/strong&gt; and all others as &lt;strong&gt;secondary&lt;/strong&gt;. The secondary locks point to the primary.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;Clearly, data in the prewrite phase is invisible to other transactions.&lt;/p&gt;
 &lt;h4 id=&#34;commit&#34;&gt;Commit&lt;/h4&gt;
@@ -87,9 +88,9 @@ end
 &lt;h2 id=&#34;percolator-in-tidb&#34;&gt;Percolator in TiDB&lt;/h2&gt;
 &lt;p&gt;Based on our analysis above, Percolator is an optimized 2PC distributed transaction implementation, relying on a storage engine that supports single-node transactions.&lt;/p&gt;
 &lt;p&gt;Let&amp;rsquo;s briefly look at how TiDB uses Percolator to implement distributed transactions.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34; src=&#34;https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;The architecture of TiDB and TiKV is shown above. Data from relational tables in TiDB is ultimately mapped to KV pairs in TiKV. TiKV is a distributed KV store based on Raft and RocksDB. RocksDB supports transactional operations on KV pairs.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34; src=&#34;https://download.pingcap.com/images/docs/tikv-rocksdb.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Thus, the transaction path in TiDB is as follows: a relational table transaction is converted into a set of KV transactions, which are executed based on Percolator to achieve relational table transaction operations.&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Of course, it cannot provide the same transactional semantics and performance guarantees as a single-node TP database. However, a shared-nothing architecture has its own advantages, which may make this trade-off acceptable.&lt;/p&gt;
@@ -137,7 +138,7 @@ end
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png&#34; alt=&#34;Dynamo Design Considerations&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Dynamo Design Considerations&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230801162353.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;The table in the paper clearly shows the aspects considered during Dynamo&amp;rsquo;s development and the corresponding technical choices. For more information, refer to the original paper.&lt;/p&gt;
 &lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://www.raychase.net/2396&#34;&gt;Dynamo&amp;rsquo;s Implementation and Decentralization&lt;/a&gt;&lt;/p&gt;
@@ -164,12 +165,12 @@ end
 &lt;li&gt;&lt;strong&gt;Transaction implementation&lt;/strong&gt;: Since the storage system provides a unified file view to the upper layer, Aurora&amp;rsquo;s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Background acceleration for foreground processing&lt;/strong&gt;: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc.&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34; alt=&#34;Aurora Architecture Overview&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34; alt=&#34;Aurora Write Path&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34; alt=&#34;Aurora Read Path&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Aurora Architecture Overview&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Aurora Write Path&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Aurora Read Path&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Interestingly, although PolarDB&amp;rsquo;s design was inspired by Aurora, its architectural design considers that the network is not the bottleneck but rather that various system calls through the OS slow down overall speed. Given the instability of Alibaba Cloud&amp;rsquo;s storage system at that time, PolarStore was introduced, using hardware and FUSE-based storage technology to bypass or optimize system calls. Now that Pangu has improved significantly in terms of both stability and performance, it makes sense to weaken the role of PolarStore. I think this reasoning makes sense.&lt;/p&gt;
 &lt;p&gt;Additionally, why did they choose to use NRW instead of a consensus protocol like Raft? For now, it seems that NRW has one less round of network communication compared to Raft, which might be the reason.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34; alt=&#34;Aurora Storage-Compute Separation&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Aurora Storage-Compute Separation&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png&#34;&gt;&lt;/p&gt;
 &lt;h1 id=&#34;references&#34;&gt;References&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/319806107&#34;&gt;https://zhuanlan.zhihu.com/p/319806107&lt;/a&gt;&lt;/li&gt;
@@ -188,7 +189,7 @@ end
       <description>&lt;p&gt;This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&amp;rsquo;s best to refer directly to the original paper.&lt;/p&gt;
 &lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34; alt=&#34;Chain Replication&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Chain Replication&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20230215135829.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;The design of the algorithm is both simple and elegant. CR splits the replication workload across all nodes in the chain, with each node responsible for forwarding updates to its successor. Write requests are propagated from the head node to the tail, while read requests are served by the tail node.&lt;/p&gt;
 &lt;p&gt;To maintain relationships between nodes in the chain, Chain Replication introduces a Master service responsible for managing node configurations and handling node failures.&lt;/p&gt;
 &lt;h2 id=&#34;failure-handling&#34;&gt;Failure Handling&lt;/h2&gt;
@@ -252,12 +253,12 @@ end
 &lt;blockquote&gt;
 &lt;p&gt;The difference between regular and ephemeral znodes is that ephemeral nodes are automatically deleted when the session ends.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155342Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/c9c4c039-a334-4c00-946c-743e6ab984d9/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155342Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=7b1041157b56fe404023a2303762de9bb599c57d116bc10b9f46e1733f67bbc2&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D\&#34;Untitled.png\&#34;&amp;x-id=GetObject&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Clients interact with ZooKeeper through its API, and ZooKeeper manages client connections through sessions. In a session, clients can observe state changes that reflect their operations.&lt;/p&gt;
 &lt;h2 id=&#34;cap-guarantees&#34;&gt;CAP Guarantees&lt;/h2&gt;
 &lt;p&gt;ZooKeeper provides CP (Consistency and Partition Tolerance) guarantees. For instance, during leader election, ZooKeeper will stop serving requests until a new leader is elected, ensuring consistency.&lt;/p&gt;
 &lt;h2 id=&#34;implementation&#34;&gt;Implementation&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;amp;X-Amz-Date=20230103T155414Z&amp;amp;X-Amz-Expires=86400&amp;amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;amp;X-Amz-SignedHeaders=host&amp;amp;response-content-disposition=filename%3D%22Untitled.png%22&amp;amp;x-id=GetObject&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s3.us-west-2.amazonaws.com/secure.notion-static.com/cb5e3866-1ce2-4897-aa47-c486c10aba12/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&amp;X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&amp;X-Amz-Date=20230103T155414Z&amp;X-Amz-Expires=86400&amp;X-Amz-Signature=35715be3617f7544fc7fcc05705f99a32d46e0ca9c31af2d51f383148f316f32&amp;X-Amz-SignedHeaders=host&amp;response-content-disposition=filename%3D\&#34;Untitled.png\&#34;&amp;x-id=GetObject&#34;&gt;&lt;/p&gt;
 &lt;p&gt;ZooKeeper uses multiple replicas to achieve high availability.&lt;/p&gt;
 &lt;p&gt;In simple terms, ZooKeeper&amp;rsquo;s upper layer uses the ZAB protocol to handle write requests, ensuring linearizability across replicas. Reads are processed locally, ensuring sequential consistency. The underlying data state machine is stored in the replicated database (in-memory) and Write-Ahead Log (WAL) on ZooKeeper cluster machines, with periodic snapshots to ensure durability. The entire in-memory database uses fuzzy snapshots and WAL replay to ensure crash safety and fast recovery after a crash.&lt;/p&gt;
 &lt;blockquote&gt;
@@ -286,7 +287,7 @@ end
 &lt;h2 id=&#34;lab-overview&#34;&gt;Lab Overview&lt;/h2&gt;
 &lt;p&gt;Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.&lt;/p&gt;
 &lt;p&gt;The structure of RaftKV and the interaction between its modules are shown below:&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34; alt=&#34;image-20220429211429808&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;image-20220429211429808&#34; src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Compared to the previous lab, the difficulty is significantly lower. For implementation, you can refer to this excellent &lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;implementation&lt;/a&gt;, so I won&amp;rsquo;t elaborate too much.&lt;/p&gt;
 &lt;h2 id=&#34;raft-related-topics&#34;&gt;Raft-Related Topics&lt;/h2&gt;
 &lt;p&gt;Let&amp;rsquo;s talk about Raft and its interactions with clients.&lt;/p&gt;
@@ -364,7 +365,7 @@ end
 &lt;h2 id=&#34;algorithm-overview&#34;&gt;Algorithm Overview&lt;/h2&gt;
 &lt;p&gt;The basis of consensus algorithms is the replicated state machine, which means that &lt;strong&gt;executing the same deterministic commands in the same order will eventually lead to a consistent state&lt;/strong&gt;. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.&lt;/p&gt;
 &lt;p&gt;The core content of the Raft algorithm can be divided into three parts: $Leader Election + Log Replication + Safety$.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;img&#34; src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Initially, all nodes in the cluster start as Followers. If a Follower does not receive a heartbeat from the Leader within a certain period, it becomes a Candidate and triggers an election, requesting votes from the other Followers. The Candidate that receives a majority of votes becomes the Leader.&lt;/p&gt;
 &lt;p&gt;Raft is a &lt;strong&gt;strong leader&lt;/strong&gt; and strongly consistent distributed consensus algorithm. It uses Terms as a logical clock, and only one Leader can exist in each term. The Leader needs to send heartbeats periodically to maintain its status and to handle &lt;strong&gt;log replication&lt;/strong&gt;.&lt;/p&gt;
 &lt;p&gt;When replicating logs, the Leader first replicates the log to other Followers. Once a majority of the Followers successfully replicate the log, the Leader commits the log.&lt;/p&gt;
@@ -458,7 +459,7 @@ end
 &lt;/ul&gt;
 &lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
 &lt;p&gt;Kylin consists of two parts: &lt;strong&gt;online querying&lt;/strong&gt; and &lt;strong&gt;offline building&lt;/strong&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34; alt=&#34;Kylin Architecture&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Kylin Architecture&#34; src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34;&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;Offline Building&lt;/strong&gt;: Involves three main components: the data source, the build engine, and the storage engine. Data is fetched from the data source, cubes are built, and they are stored in the columnar storage engine.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Online Querying&lt;/strong&gt;: Consists of an interface layer and a query engine, abstracting away concepts like cubes from the user. External applications use the REST API to submit queries, which are processed by the query engine and returned.&lt;/li&gt;
@@ -506,7 +507,7 @@ end
 &lt;h4 id=&#34;cdn-based-solution&#34;&gt;CDN-based Solution&lt;/h4&gt;
 &lt;p&gt;The core of this solution is to use CDN (Content Delivery Network) to cache hot image data, reducing network transmission.&lt;/p&gt;
 &lt;p&gt;This approach optimizes access to hot images but also has some issues. Firstly, CDN is expensive and has limited capacity. Secondly, image sharing includes many &lt;code&gt;less popular&lt;/code&gt; images, which leads to the long tail effect, slowing down access.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011455343.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011455343.png&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;CDNs are generally used to serve static data and are often pre-warmed before an event, making them unsuitable as an image cache service. Many &lt;code&gt;less popular&lt;/code&gt; images do not enter the CDN, leading to the long tail effect.&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -519,7 +520,7 @@ end
 &lt;li&gt;Read the content of the file&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;PhotoStore was used as a caching layer to store some metadata like file handles to speed up the addressing process.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011454979.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011454979.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;The NAS-based design did not solve the fundamental issue of excessive metadata that could not be fully cached. When the number of files reaches a certain threshold, disk I/O becomes inevitable.&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;The fundamental issue is the &lt;strong&gt;one-to-one relationship between files and addressing metadata&lt;/strong&gt;, causing the volume of metadata to change with the number of files.&lt;/p&gt;
@@ -530,7 +531,7 @@ end
 &lt;blockquote&gt;
 &lt;p&gt;Metadata is maintained only for the aggregated file, and the position of small files within the large file is maintained separately.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011456020.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202411011456020.png&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;implementation&#34;&gt;Implementation&lt;/h2&gt;
 &lt;p&gt;Haystack mainly consists of three components: Haystack Directory, Haystack Cache, and Haystack Store.&lt;/p&gt;
 &lt;h3 id=&#34;file-mapping-and-storage&#34;&gt;File Mapping and Storage&lt;/h3&gt;
@@ -569,14 +570,14 @@ end
 &lt;p&gt;The Store layer is responsible for data storage operations.&lt;/p&gt;
 &lt;p&gt;The addressing abstraction is: &lt;code&gt;filename + offset =&amp;gt; logical volume id + offset =&amp;gt; data&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;Multiple physical volumes constitute a logical volume. In the Store, small files are encapsulated as &lt;strong&gt;Needles&lt;/strong&gt; managed by physical volumes.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg&#34; alt=&#34;Needle Abstraction&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Needle Abstraction&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Needles represent a way to encapsulate small files and manage volume blocks.&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;Store data is accessed at the Needle level. To speed up addressing, a memory map is used: &lt;code&gt;key/alternate key =&amp;gt; needle&#39;s flag/offset/other attributes&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;These maps are persisted in &lt;strong&gt;Index Files&lt;/strong&gt; on disk to provide a checkpoint for quick metadata recovery after a crash.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg&#34; alt=&#34;Index File&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg&#34; alt=&#34;Volume Mapping&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Index File&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Volume Mapping&#34; src=&#34;https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg&#34;&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Each volume maintains its own in-memory mapping and index file.&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -630,10 +631,10 @@ end
 &lt;h2 id=&#34;data-model&#34;&gt;Data Model&lt;/h2&gt;
 &lt;p&gt;Bigtable&amp;rsquo;s data model is No Schema and provides a simple model. It treats all data as strings, with encoding and decoding handled by the application layer.&lt;/p&gt;
 &lt;p&gt;Bigtable is essentially a &lt;strong&gt;sparse, distributed, persistent multidimensional sorted Map&lt;/strong&gt;. The &lt;strong&gt;index&lt;/strong&gt; of the Map is composed of &lt;strong&gt;Row Key, Column Key, and TimeStamp&lt;/strong&gt;, and the &lt;strong&gt;value&lt;/strong&gt; is an unstructured byte array.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Mapping abstraction
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;row&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;column&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;int64&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&amp;gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;// A Row Key is essentially a multi-dimensional structure composed of {Row, Column, Timestamp}.
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The paper describes the data model as follows:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Mapping abstraction
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;row&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;column&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;:&lt;span style=&#34;color:#66d9ef&#34;&gt;int64&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&amp;gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// A Row Key is essentially a multi-dimensional structure composed of {Row, Column, Timestamp}.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The paper describes the data model as follows:&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;A Bigtable is a sparse, distributed, persistent multidimensional sorted map.&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -702,30 +703,30 @@ Extra version management increases maintenance overhead, usually handled by limi
 &lt;/blockquote&gt;
 &lt;h3 id=&#34;api&#34;&gt;API&lt;/h3&gt;
 &lt;p&gt;The paper provides an API that highlights the differences from RDBMS.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Writing to Bigtable
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Open the table 
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Table &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;T &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; OpenOrDie(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/bigtable/web/webtable&amp;#34;&lt;/span&gt;);
-&lt;span style=&#34;color:#75715e&#34;&gt;// Write a new anchor and delete an old anchor 
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;RowMutation &lt;span style=&#34;color:#a6e22e&#34;&gt;r1&lt;/span&gt;(T, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
-r1.Set(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.c-span.org&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CNN&amp;#34;&lt;/span&gt;); 
-r1.Delete(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.abc.com&amp;#34;&lt;/span&gt;); 
-Operation op; 
-Apply(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;op, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;r1);
-
-&lt;span style=&#34;color:#75715e&#34;&gt;// Reading from Bigtable
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Scanner &lt;span style=&#34;color:#a6e22e&#34;&gt;scanner&lt;/span&gt;(T); 
-ScanStream &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;stream; 
-stream &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; scanner.FetchColumnFamily(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor&amp;#34;&lt;/span&gt;); 
-stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;SetReturnAllVersions(); 
-scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
-&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (; &lt;span style=&#34;color:#f92672&#34;&gt;!&lt;/span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Done(); stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Next()) { 
-  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%s %s %lld %s&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, 
-         scanner.RowName(), 
-         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;ColumnName(), 
-         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;MicroTimestamp(), 
-         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Value());
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Writing to Bigtable
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Open the table 
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Table &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;T &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; OpenOrDie(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/bigtable/web/webtable&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Write a new anchor and delete an old anchor 
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;RowMutation &lt;span style=&#34;color:#a6e22e&#34;&gt;r1&lt;/span&gt;(T, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;r1.Set(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.c-span.org&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CNN&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;r1.Delete(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor:www.abc.com&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Operation op; 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Apply(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;op, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;r1);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Reading from Bigtable
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;Scanner &lt;span style=&#34;color:#a6e22e&#34;&gt;scanner&lt;/span&gt;(T); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ScanStream &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;stream; 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;stream &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; scanner.FetchColumnFamily(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;anchor&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;SetReturnAllVersions(); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;scanner.Lookup(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;com.cnn.www&amp;#34;&lt;/span&gt;); 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; (; &lt;span style=&#34;color:#f92672&#34;&gt;!&lt;/span&gt;stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Done(); stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Next()) { 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  printf(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%s %s %lld %s&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;, 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         scanner.RowName(), 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;ColumnName(), 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;MicroTimestamp(), 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         stream&lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt;Value());
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;architecture-design&#34;&gt;Architecture Design&lt;/h2&gt;
 &lt;h3 id=&#34;external-components&#34;&gt;External Components&lt;/h3&gt;
 &lt;p&gt;Bigtable is built on top of other components in Google&amp;rsquo;s ecosystem, which significantly simplifies Bigtable&amp;rsquo;s design.&lt;/p&gt;
 &lt;h4 id=&#34;gfs&#34;&gt;GFS&lt;/h4&gt;
@@ -875,27 +876,27 @@ If the file doesn&amp;rsquo;t exist, the disconnected Tablet Server should autom
 &lt;li&gt;Map: Takes input data and generates a set of intermediate key-value pairs&lt;/li&gt;
 &lt;li&gt;Reduce: Takes intermediate key-value pairs as input, combines all data with the same key, and outputs the result.&lt;/li&gt;
 &lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;map(String key, String value)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
-  &lt;span style=&#34;color:#75715e&#34;&gt;// key: document name
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// value: document contents
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each word w in value:
-    EmitIntermediate(w, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;1&amp;#34;&lt;/span&gt;);
-
-
-reduce(String key, Iterator values)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
-  &lt;span style=&#34;color:#75715e&#34;&gt;// key: a word
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// values: a list of counts
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
-  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each v in values:
-    result &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; ParseInt(v);
-  Emit(AsString(result));
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;mapreduce-execution-process&#34;&gt;MapReduce Execution Process&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;map(String key, String value)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// key: document name
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// value: document contents
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each word w in value:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    EmitIntermediate(w, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;1&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;reduce(String key, Iterator values)&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// key: a word
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;// values: a list of counts
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; each v in values:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    result &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; ParseInt(v);
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  Emit(AsString(result));
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;mapreduce-execution-process&#34;&gt;MapReduce Execution Process&lt;/h3&gt;
 &lt;p&gt;The Distributed MapReduce System adopts a master-slave design. During the MapReduce computation, there is generally one Master and several Workers.&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Master: Responsible for creating, assigning, and scheduling Map and Reduce tasks&lt;/li&gt;
 &lt;li&gt;Worker: Responsible for executing Map and Reduce tasks&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png&#34; alt=&#34;Screenshot_20210112_125637&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Screenshot_20210112_125637&#34; src=&#34;https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png&#34;&gt;&lt;/p&gt;
 &lt;p&gt;A more detailed description is as follows:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
@@ -947,99 +948,99 @@ reduce(String key, Iterator values)&lt;span style=&#34;color:#f92672&#34;&gt;:&l
 &lt;h3 id=&#34;main-data-structures&#34;&gt;Main Data Structures&lt;/h3&gt;
 &lt;p&gt;The design of data structures is the main task, and good design helps in implementing functionality. The relevant code is shown here; for the specific implementation, see &lt;a href=&#34;https://github.com/noneback/Toys/tree/master/6.824-Lab1-MapReduce&#34;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
 &lt;h4 id=&#34;master-1&#34;&gt;Master&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Master&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#75715e&#34;&gt;// Your definitions here.
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;taskQueue&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;chan&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;tasksContext&lt;/span&gt; []&lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;lock&lt;/span&gt;         &lt;span style=&#34;color:#a6e22e&#34;&gt;sync&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Mutex&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;files&lt;/span&gt;        []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;phase&lt;/span&gt;        &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;done&lt;/span&gt;         &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;     &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;worker-1&#34;&gt;Worker&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;worker&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;mapf&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) []&lt;span style=&#34;color:#a6e22e&#34;&gt;KeyValue&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;reducef&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;nMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;task--taskcontext&#34;&gt;Task &amp;amp; TaskContext&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;       &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;Filename&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;Phase&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;t&lt;/span&gt;         &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;state&lt;/span&gt;     &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;startTime&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Time&lt;/span&gt;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;rpc-args--reply&#34;&gt;Rpc Args &amp;amp; Reply&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;T&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;HasT&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskID&lt;/span&gt;   &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;State&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
-}
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
-}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
- &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;NReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;NMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;constant--type&#34;&gt;Constant &amp;amp; Type&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
- &lt;span style=&#34;color:#a6e22e&#34;&gt;RUNNING&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;FAILED&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;READY&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;IDEL&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;COMPLETE&lt;/span&gt;
-)
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
- &lt;span style=&#34;color:#a6e22e&#34;&gt;MAX_PROCESSING_TIME&lt;/span&gt; = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;SCHEDULE_INTERVAL&lt;/span&gt;   = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt;
-)
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
- &lt;span style=&#34;color:#a6e22e&#34;&gt;MAP&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
- &lt;span style=&#34;color:#a6e22e&#34;&gt;REDUCE&lt;/span&gt;
-)
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;running-and-testing&#34;&gt;Running and Testing&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Master&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;// Your definitions here.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;taskQueue&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;chan&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;tasksContext&lt;/span&gt; []&lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;lock&lt;/span&gt;         &lt;span style=&#34;color:#a6e22e&#34;&gt;sync&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Mutex&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;files&lt;/span&gt;        []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;phase&lt;/span&gt;        &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;done&lt;/span&gt;         &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;     &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;worker-1&#34;&gt;Worker&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;worker&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;mapf&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) []&lt;span style=&#34;color:#a6e22e&#34;&gt;KeyValue&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;reducef&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;, []&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;nReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;nMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;task--taskcontext&#34;&gt;Task &amp;amp; TaskContext&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;       &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Filename&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Phase&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskContext&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;t&lt;/span&gt;         &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;state&lt;/span&gt;     &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;workerID&lt;/span&gt;  &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;startTime&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Time&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;rpc-args--reply&#34;&gt;Rpc Args &amp;amp; Reply&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;T&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;Task&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;HasT&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;WorkerID&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TaskID&lt;/span&gt;   &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;State&lt;/span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ReportTaskReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerArgs&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RegWorkerReply&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ID&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;NReduce&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;NMap&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;constant--type&#34;&gt;Constant &amp;amp; Type&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;RUNNING&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;FAILED&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;READY&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;IDEL&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;COMPLETE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;MAX_PROCESSING_TIME&lt;/span&gt; = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;SCHEDULE_INTERVAL&lt;/span&gt;   = &lt;span style=&#34;color:#a6e22e&#34;&gt;time&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Second&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; (
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;MAP&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; = &lt;span style=&#34;color:#66d9ef&#34;&gt;iota&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;REDUCE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ContextState&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;PhaseKind&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;running-and-testing&#34;&gt;Running and Testing&lt;/h3&gt;
 &lt;h4 id=&#34;running&#34;&gt;Running&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# In main directory&lt;/span&gt;
-cd ./src/main
-&lt;span style=&#34;color:#75715e&#34;&gt;# Master&lt;/span&gt;
-go run ./mrmaster.go pg*.txt                                                
-&lt;span style=&#34;color:#75715e&#34;&gt;# Worker&lt;/span&gt;
-go build -buildmode&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;plugin ../mrapps/wc.go &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; go run ./mrworker.go ./wc.so
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;testing&#34;&gt;Testing&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;cd ./src/main
-
-sh  ./test-mr.sh
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;optimization&#34;&gt;Optimization&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# In main directory&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cd ./src/main
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Master&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;go run ./mrmaster.go pg*.txt                                                
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Worker&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;go build -buildmode&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;plugin ../mrapps/wc.go &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; go run ./mrworker.go ./wc.so
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;testing&#34;&gt;Testing&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cd ./src/main
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sh  ./test-mr.sh
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;optimization&#34;&gt;Optimization&lt;/h2&gt;
 &lt;p&gt;These optimizations are some designs I thought of that could be improved when reviewing my code after completing the experiment.&lt;/p&gt;
 &lt;h3 id=&#34;hotspot-issue&#34;&gt;Hotspot Issue&lt;/h3&gt;
 &lt;p&gt;The hotspot issue here refers to a scenario where a particular data item appears frequently in the dataset. The intermediate key-value pairs generated during the Map phase can lead to a situation where one key appears frequently, resulting in excessive disk IO and network IO for a few machines during the shuffle step.&lt;/p&gt;

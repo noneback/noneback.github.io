@@ -5,6 +5,7 @@
     <link>https://noneback.github.io/zh/tags/mysql/</link>
     <description>Recent content in MySQL on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
     <lastBuildDate>Sun, 21 Mar 2021 20:41:33 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/mysql/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -25,8 +26,8 @@
 &lt;p&gt;Innodb引擎是利用主键索引组织表中的数据，每个表中一定需要有主键，利用主键构造B+树，得到主键索引，其中&lt;strong&gt;主键索引就是聚簇索引&lt;/strong&gt;，其余的&lt;strong&gt;二级索引都是非聚簇索引&lt;/strong&gt;&lt;/p&gt;
 &lt;h3 id=&#34;联合索引&#34;&gt;联合索引&lt;/h3&gt;
 &lt;p&gt;联合索引是由多个字段组成的索引。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-sql&#34; data-lang=&#34;sql&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;create&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;index&lt;/span&gt; index_name &lt;span style=&#34;color:#66d9ef&#34;&gt;on&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;table_name&lt;/span&gt; (col_1,col_2...)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;相比与单值索引，主要区别在于其遵守&lt;strong&gt;最左前缀匹配原则&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sql&#34; data-lang=&#34;sql&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;create&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;index&lt;/span&gt; index_name &lt;span style=&#34;color:#66d9ef&#34;&gt;on&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;table_name&lt;/span&gt; (col_1,col_2...)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;相比与单值索引，主要区别在于其遵守&lt;strong&gt;最左前缀匹配原则&lt;/strong&gt;&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;最左前缀匹配原则：使用联合索引时，索引按照索引字段从左到右的顺序对索引值进行排序&lt;/p&gt;
 &lt;/blockquote&gt;
