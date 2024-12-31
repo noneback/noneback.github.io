@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>TSDB on NoneBack</title>
+    <link>https://noneback.github.io/tags/tsdb/</link>
+    <description>Recent content in TSDB on NoneBack created by </description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <copyright>@NoneBack All rights reserved</copyright>
+    <lastBuildDate>Tue, 31 Dec 2024 01:10:28 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/tsdb/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Prometheus--TSDB</title>
+      <link>https://noneback.github.io/blog/prometheus-tsdb/</link>
+      <pubDate>Tue, 31 Dec 2024 01:10:28 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/prometheus-tsdb/</guid>
+      <description>&lt;p&gt;Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&amp;rsquo;m diving into the standard open-source monitoring system.&lt;/p&gt;
+&lt;p&gt;This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.&lt;/p&gt;
+&lt;p&gt;Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.&lt;/p&gt;
+&lt;h2 id=&#34;data--query-model&#34;&gt;Data + Query Model&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;A &lt;strong&gt;single&lt;/strong&gt; monitoring metric is described as a structure of time-dependent data, a timeseries.&lt;/p&gt;
+&lt;p&gt;$$
+{timeseries} = \quad\lbrace \quad metric(attached\ with\ a\ set\ of\ labels) \Rightarrow   (t_0,\ v_0),\ (t_1,\ v_1),\  (t_2,\ v_2),\ \ldots,\ (t_n, v_n) \quad\rbrace
+$$&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Queries utilize the ${identifier(metric\ +\ sets\ of\ selected\ labels\ value)}$ to retrieve the corresponding timeseries.
+series&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;series
+  ^   
+  │   . . . . . . . . . . . . . . . . .   . . . . .   {__name__=&amp;#34;request_total&amp;#34;, method=&amp;#34;GET&amp;#34;}
+  │     . . . . . . . . . . . . . . . . . . . . . .   {__name__=&amp;#34;request_total&amp;#34;, method=&amp;#34;POST&amp;#34;}
+  │         . . . . . . .
+  │       . . .     . . . . . . . . . . . . . . . .                  ... 
+  │     . . . . . . . . . . . . . . . . .   . . . .   
+  │     . . . . . . . . . .   . . . . . . . . . . .   {__name__=&amp;#34;errors_total&amp;#34;, method=&amp;#34;POST&amp;#34;}
+  │           . . .   . . . . . . . . .   . . . . .   {__name__=&amp;#34;errors_total&amp;#34;, method=&amp;#34;GET&amp;#34;}
+  │         . . . . . . . . .       . . . . .
+  │       . . .     . . . . . . . . . . . . . . . .                  ... 
+  │     . . . . . . . . . . . . . . . .   . . . . 
+  v
+    &amp;lt;-------------------- time ---------------------&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;blockquote&gt;
+&lt;p&gt;The use of the identifier is crucial. Poor labeling can lead to timeseries data growth, especially in scenarios where containers are rebuilt.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;data-organization&#34;&gt;Data Organization&lt;/h2&gt;
+&lt;p&gt;For cloud-native scenarios, what characteristics do monitoring data have?&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Short data lifecycle. The lifespan of individual containers is brief (e.g., in scaling scenarios or during extensive temporary tasks), leading to rapid timeseries growth along certain time dimensions.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Vertical writing with horizontal querying.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231010014.png&#34;&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;With these issues in mind, let&amp;rsquo;s look at how the data files are organized to address or sidestep these problems.&lt;/p&gt;
+&lt;p&gt;First, examine the logical structure:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231010031.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The entire database consists of blocks and a HEAD. Each block can further be broken down into chunks, while the HEAD serves as a read-write buffer area composed of in-memory data and write-ahead logs (WAL). Chunks contain multiple timeseries.&lt;/p&gt;
+&lt;p&gt;The disk directory structure for a single block is as follows:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;├── 01BKGV7JC0RY8A6MACW02A2PJD  // block 的 ULID
+│   ├── chunks
+│   │   └── 000001
+│   ├── tombstones
+│   ├── index
+│   └── meta.json
+├── chunks_head
+│   └── 000001
+└── wal
+    ├── 000000002
+    └── checkpoint.00000001
+        └── 00000000
+&lt;/code&gt;&lt;/pre&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Block&lt;/strong&gt;: Contains all data for a given time period (default 2 hours) and is read-only, named using a &lt;a href=&#34;https://github.com/oklog/ulid&#34;&gt;ULID&lt;/a&gt;. Each block includes:
+&lt;ul&gt;
+&lt;li&gt;Chunks: fixed-size (max 128MB) chunks file&lt;/li&gt;
+&lt;li&gt;Index: index file mainly containing inverted index information&lt;/li&gt;
+&lt;li&gt;meta.json: metadata including block&amp;rsquo;s minTime and maxTime for data skipping during queries.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Chunks Head&lt;/strong&gt;: The chunks file corresponding to the block currently being written, read-only, with a maximum of 120 data points and a maximum time span of 2 hours.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;WAL&lt;/strong&gt;: Guarantees data integrity.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The diagram provides significant insights, such as how the WAL ensures data integrity; the Head acts similarly to a buffer pool in a TSDB, managing memory data for batch flushing to disk. When certain conditions are met (e.g., time threshold, data size threshold), the Head becomes immutable (block) and is flushed to disk.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Overall, many design concepts in data organization resemble the LSM storage structure, which indeed suits TSDB well.&lt;/p&gt;
+&lt;p&gt;Prometheus&amp;rsquo;s design approach can be summarized as follows:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Using time-based data partitioning to resolve the issue of short data lifecycles.&lt;/li&gt;
+&lt;li&gt;Using in-memory batching to handle scenarios where only the latest data is written.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Setting aside similar aspects with LevelDB, let&amp;rsquo;s outline the differences.&lt;/p&gt;
+&lt;p&gt;First, the underlying models are different. LevelDB is a key-value store, while TSDB focuses on timeseries with a strong temporal connection, where time is monotonically increasing. It rarely writes historical data. Additionally, the query models differ; TSDB provides diverse query options, such as filtering timeseries based on various label set operations, necessitating more metadata for efficient querying.&lt;/p&gt;
+&lt;p&gt;Due to these requirements, new structures and functions are introduced: inverted indexes, checkpoints, tombstones, retention policies, and a compaction design distinct from the LSM key-value model. These will be analyzed in relation to the corresponding file formats.&lt;/p&gt;
+&lt;h3 id=&#34;file-organization-format&#34;&gt;File Organization Format&lt;/h3&gt;
+&lt;p&gt;Let&amp;rsquo;s examine the components; the specifics of the organizational method are not the focus of this article.&lt;/p&gt;
+&lt;h4 id=&#34;metajson&#34;&gt;meta.json&lt;/h4&gt;
+&lt;p&gt;This file contains information about the block, particularly valuable for compaction and the minT, maxT timestamps.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;minT&lt;/code&gt; and &lt;code&gt;maxT&lt;/code&gt; record the block&amp;rsquo;s time access period, which can skip data during queries.&lt;/p&gt;
+&lt;p&gt;Compaction records the block&amp;rsquo;s historical information, such as the number of compaction iterations (level) and its source blocks. The precise utility of this is uncertain but may help during compaction or retention tasks to manage potential duplicates.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;ulid&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;01EM6Q6A1YPX4G9TEB20J22B2R&amp;#34;&lt;/span&gt;, 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;minTime&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1602237600000&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;maxTime&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1602244800000&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;stats&amp;#34;&lt;/span&gt;: {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;numSamples&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;553673232&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;numSeries&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1346066&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;numChunks&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;4440437&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    },
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;compaction&amp;#34;&lt;/span&gt;: {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;level&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;sources&amp;#34;&lt;/span&gt;: [
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;01EM65SHSX4VARXBBHBF0M0FDS&amp;#34;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;01EM6GAJSYWSQQRDY782EA5ZPN&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        ]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    },
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;version&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;chunks&#34;&gt;chunks&lt;/h4&gt;
+&lt;p&gt;These are standard data files, with their indexes stored in the index file. Note that a chunk can only belong to one timeseries, and a timeseries consists of multiple chunks.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌──────────────────────────────┐
+│  magic(0x85BD40DD) &amp;lt;4 byte&amp;gt;  │
+├──────────────────────────────┤
+│    version(1) &amp;lt;1 byte&amp;gt;       │
+├──────────────────────────────┤
+│    padding(0) &amp;lt;3 byte&amp;gt;       │
+├──────────────────────────────┤
+│ ┌──────────────────────────┐ │
+│ │         Chunk 1          │ │
+│ ├──────────────────────────┤ │
+│ │          ...             │ │
+│ ├──────────────────────────┤ │
+│ │         Chunk N          │ │
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
+
+Every Chunk:
+┌───────────────┬───────────────────┬──────────────┬────────────────┐
+│ len &amp;lt;uvarint&amp;gt; │ encoding &amp;lt;1 byte&amp;gt; │ data &amp;lt;bytes&amp;gt; │ CRC32 &amp;lt;4 byte&amp;gt; │
+└───────────────┴───────────────────┴──────────────┴────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;h4 id=&#34;tombstone&#34;&gt;tombstone&lt;/h4&gt;
+&lt;p&gt;This marks deleted data. TSDB might have delete operations under scenarios like transient jobs or container destruction, where business logic may necessitate removal. Tombstones primarily enable appending writes instead of in-place modifications, and subsequently, blocks may be compacted to reclaim disk space.&lt;/p&gt;
+&lt;p&gt;Of course, not deleting data isn&amp;rsquo;t harmful; there will be TTL expiration that removes obsolete data.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌────────────────────────────┬─────────────────────┐
+│ magic(0x0130BA30) &amp;lt;4b&amp;gt;     │ version(1) &amp;lt;1 byte&amp;gt; │
+├────────────────────────────┴─────────────────────┤
+│ ┌──────────────────────────────────────────────┐ │
+│ │                Tombstone 1                   │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      ...                     │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                Tombstone N                   │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                  CRC&amp;lt;4b&amp;gt;                     │ │
+│ └──────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+
+Every Tombstone:
+┌────────────────────────┬─────────────────┬─────────────────┐
+│ series ref &amp;lt;uvarint64&amp;gt; │ mint &amp;lt;varint64&amp;gt; │ maxt &amp;lt;varint64&amp;gt; │
+└────────────────────────┴─────────────────┴─────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;h4 id=&#34;index-file&#34;&gt;index file&lt;/h4&gt;
+&lt;p&gt;This file contains all information needed for reading, such as inverted indexes and the mapping of timeseries to chunks.&lt;/p&gt;
+&lt;p&gt;Notable structures include Series and Postings.&lt;/p&gt;
+&lt;p&gt;The Series section documents all series information corresponding to their chunks within the blocks.&lt;/p&gt;
+&lt;p&gt;The Posting Offset Table lists the locations of inverted indexes. The actual inverted index content is stored in the Postings section.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;With inverted index collection operations, you can rapidly filter and retrieve timeseries that meet specified criteria.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌────────────────────────────┬─────────────────────┐
+│ magic(0xBAAAD700) &amp;lt;4b&amp;gt;     │ version(1) &amp;lt;1 byte&amp;gt; │
+├────────────────────────────┴─────────────────────┤
+│ ┌──────────────────────────────────────────────┐ │
+│ │                 Symbol Table                 │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                    Series                    │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                 Label Index 1                │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      ...                     │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                 Label Index N                │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                   Postings 1                 │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      ...                     │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                   Postings N                 │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │               Label Offset Table             │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │             Postings Offset Table            │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      TOC                     │ │
+│ └──────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+
+A Series:
+┌──────────────────────────────────────────────────────┐
+│ len &amp;lt;uvarint&amp;gt;                                        │
+├──────────────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────────────────┐ │
+│ │            labels count &amp;lt;uvarint64&amp;gt;              │ │
+│ ├──────────────────────────────────────────────────┤ │
+│ │  ┌────────────────────────────────────────────┐  │ │
+│ │  │ ref(l_i.name) &amp;lt;uvarint32&amp;gt;                  │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ ref(l_i.value) &amp;lt;uvarint32&amp;gt;                 │  │ │
+│ │  └────────────────────────────────────────────┘  │ │
+│ │                       ...                        │ │
+│ ├──────────────────────────────────────────────────┤ │
+│ │            chunks count &amp;lt;uvarint64&amp;gt;              │ │
+│ ├──────────────────────────────────────────────────┤ │
+│ │  ┌────────────────────────────────────────────┐  │ │
+│ │  │ c_0.mint &amp;lt;varint64&amp;gt;                        │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ c_0.maxt - c_0.mint &amp;lt;uvarint64&amp;gt;            │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ ref(c_0.data) &amp;lt;uvarint64&amp;gt;                  │  │ │
+│ │  └────────────────────────────────────────────┘  │ │
+│ │  ┌────────────────────────────────────────────┐  │ │
+│ │  │ c_i.mint - c_i-1.maxt &amp;lt;uvarint64&amp;gt;          │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ c_i.maxt - c_i.mint &amp;lt;uvarint64&amp;gt;            │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ ref(c_i.data) - ref(c_i-1.data) &amp;lt;varint64&amp;gt; │  │ │
+│ │  └────────────────────────────────────────────┘  │ │
+│ │                       ...                        │ │
+│ └──────────────────────────────────────────────────┘ │
+├──────────────────────────────────────────────────────┤
+│ CRC32 &amp;lt;4b&amp;gt;                                           │
+└──────────────────────────────────────────────────────┘
+
+A Postings:
+┌────────────────────┬────────────────────┐
+│ len &amp;lt;4b&amp;gt;           │ #entries &amp;lt;4b&amp;gt;      │
+├────────────────────┴────────────────────┤
+│ ┌─────────────────────────────────────┐ │
+│ │ ref(series_1) &amp;lt;4b&amp;gt;                  │ │
+│ ├─────────────────────────────────────┤ │
+│ │ ...                                 │ │
+│ ├─────────────────────────────────────┤ │
+│ │ ref(series_n) &amp;lt;4b&amp;gt;                  │ │
+│ └─────────────────────────────────────┘ │
+├─────────────────────────────────────────┤
+│ CRC32 &amp;lt;4b&amp;gt;                              │
+└─────────────────────────────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;h2 id=&#34;accelerating-disk-queries&#34;&gt;Accelerating Disk Queries&lt;/h2&gt;
+&lt;p&gt;Let&amp;rsquo;s focus on how a query locates the relevant data:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;First, it queries the Posting Offset Table to find the position of the corresponding label&amp;rsquo;s Postings.&lt;/li&gt;
+&lt;li&gt;Based on the information from the Postings, it identifies the chunk locations via the series reference.&lt;/li&gt;
+&lt;li&gt;Finally, it locates the corresponding chunks for the timeseries.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png&#34;&gt;
+&lt;img alt=&#34;!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg&#34; src=&#34;https://github.com/noneback/images/blob/picgo/image.png?raw=true&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;compaction&#34;&gt;Compaction&lt;/h2&gt;
+&lt;p&gt;Similar to LevelDB, Prometheus utilizes both major and minor compaction processes, termed Compaction and Head Compaction.&lt;/p&gt;
+&lt;p&gt;Head Compaction is akin to the process of persisting the Head portion into Chunks, during which tombstones are actually deleted from memory.&lt;/p&gt;
+&lt;p&gt;Compaction is the merging of blocks, accomplishing multiple aims:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Reclaiming disk resources used by marked deletions.&lt;/li&gt;
+&lt;li&gt;Consolidating duplicate information scattered across multiple blocks, such as shared chunks and inverted index records.&lt;/li&gt;
+&lt;li&gt;Enhancing query processing speed by addressing data overlapping across different blocks—handling this during compaction is more efficient than performing in-memory processing post-read.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;when-does-compaction-occur&#34;&gt;When does compaction occur?&lt;/h3&gt;
+&lt;p&gt;The official blog doesn&amp;rsquo;t clarify this well, merely mentioning it occurs when data overlaps. However, various triggers exist, including time-based triggers, checks at each minor compaction, tombstone size evaluations, and manual triggers, following strategies observed in LevelDB.&lt;/p&gt;
+&lt;h2 id=&#34;retention&#34;&gt;Retention&lt;/h2&gt;
+&lt;p&gt;This is straightforward—based on time or size-based TTL. Integrating this into the compaction process could also be a viable approach.&lt;/p&gt;
+&lt;h2 id=&#34;snapshot&#34;&gt;Snapshot&lt;/h2&gt;
+&lt;p&gt;This process involves dumping the in-memory data to disk, likely designed to balance extensive metric data disk writes with data integrity; Otherwise, its functionality would be dupicated with wal.&lt;/p&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://web.archive.org/web/20210803115658/https://fabxc.org/tsdb/&#34;&gt;https://web.archive.org/web/20210803115658/https://fabxc.org/tsdb/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://liujiacai.net/blog/2021/04/11/prometheus-storage-engine/&#34;&gt;https://liujiacai.net/blog/2021/04/11/prometheus-storage-engine/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://tech.qimao.com/prometheus-tsdb-de-she-ji-yu-shi-xian-2/&#34;&gt;https://tech.qimao.com/prometheus-tsdb-de-she-ji-yu-shi-xian-2/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://ganeshvernekar.com/blog/prometheus-tsdb-persistent-block-and-its-index/&#34;&gt;https://ganeshvernekar.com/blog/prometheus-tsdb-persistent-block-and-its-index/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://ganeshvernekar.com/blog/prometheus-tsdb-compaction-and-retention/#compaction&#34;&gt;https://ganeshvernekar.com/blog/prometheus-tsdb-compaction-and-retention/#compaction&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

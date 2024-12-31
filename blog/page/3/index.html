@@ -150,6 +150,31 @@ if (!doNotTrack) {
       
         <article>
           <div class="blog-card">
+              <h3><a href="/blog/leveldb-write/">LevelDB Write</a></h3>
+              <p>
+  <small>
+    May 10, 2022&nbsp;· 712 words&nbsp;· 4 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/lsm/">LSM</a>
+      
+      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      
+    </small>
+  
+<p>
+              This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.
+Main Process The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a WriteBatch, and then it is executed.
+Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&amp; value) { WriteBatch batch; batch.
+          </div>
+        </article>
+      
+        <article>
+          <div class="blog-card">
               <h3><a href="/blog/mit6.824-raftkv/">MIT6.824-RaftKV</a></h3>
               <p>
   <small>
@@ -250,30 +275,6 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
   
 <p>
               Originally, I wanted to replace Manjaro KDE with DWM, but I got stuck at the boot screen, and while trying to fix it, I ended up corrupting the bootloader. So, I decided to go all in, format the entire disk, and try setting up an Arch + DWM development environment. Here, I&rsquo;m documenting the process to assist with future repairs and device migrations. This is not a step-by-step guide, but
-          </div>
-        </article>
-      
-        <article>
-          <div class="blog-card">
-              <h3><a href="/blog/how-to-implement-skiplist/">How to Implement SkipList</a></h3>
-              <p>
-  <small>
-    November 21, 2021&nbsp;· 705 words&nbsp;· 4 min</small>
-
-  <small>
-      
-      ·
-      
-      
-      <a href="https://noneback.github.io/tags/datastructure/">DataStructure</a>
-      
-      <a href="https://noneback.github.io/tags/skiplist/">SkipList</a>
-      
-    </small>
-  
-<p>
-              Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I&rsquo;m thinking about it again, I realize I&rsquo;ve forgotten some of the details, so I&rsquo;m writing it down for future reference.
-What is SkipList? SkipList is an ordered data structure that can be seen as an alternative to balanced trees.
           </div>
         </article>
       </div>

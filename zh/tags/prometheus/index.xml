@@ -91,14 +91,14 @@ $$&lt;/p&gt;
 &lt;li&gt;通过内存攒批的方式来对应只写最新数据的场景&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;抛开与 leveldb 类似的地方不谈，我们来看看有什么不一样的地方。&lt;/p&gt;
-&lt;p&gt;首先，使用的模型上不一样。leveldb 是 kv ，tsdb 是 timeseries，查询的模型不一样。tsdb 会有更多样话的查询方式，比如对label 的各种集合操作对 timeseries 进行过滤 ，所以会有更多的元信息来标注 timeseries，以便高效的查询。&lt;/p&gt;
-&lt;p&gt;因为这类的需求，这里引入了一些新结构：倒排索引，checkpoint，tomebstone。这些让我们和对应的文件 format 一起分析。&lt;/p&gt;
+&lt;p&gt;首先，使用的模型上不一样。leveldb 是 kv ，tsdb 是 timeseries，与时间强关联，而时间是单调递增的。很少会去写入过去时间端的数据。其次，查询的模型也不一样。tsdb 会有更多样话的查询方式，比如对label 的各种集合操作对 timeseries 进行过滤 ，所以会有更多的元信息来标注 timeseries，以便高效的查询。&lt;/p&gt;
+&lt;p&gt;因为这类的需求，这里引入了一些新结构和功能：倒排索引，checkpoint，tombstone，retention，以及和 lsm kv模型不一样的 compaction 设计。这些让我们和对应的文件 format 一起分析。&lt;/p&gt;
 &lt;h3 id=&#34;文件组织格式&#34;&gt;文件组织格式&lt;/h3&gt;
 &lt;p&gt;让我们来看看有哪些成分，具体的组织方式不是本文重点。&lt;/p&gt;
 &lt;h4 id=&#34;metajson&#34;&gt;meta.json&lt;/h4&gt;
 &lt;p&gt;block 的一些信息，关键看 compaction 和 minT,maxT。&lt;/p&gt;
 &lt;p&gt;minT,maxT 记录block 的时间访问，查询的时候可以用来做 data skip。&lt;/p&gt;
-&lt;p&gt;companction：？？？？？暂时不知道干啥的&lt;/p&gt;
+&lt;p&gt;companction：记录了block的历史信息，比如经历了几次 compaction(level), 由哪些 block 派生出来(source)。暂时不知道有啥用。可能可以compaction 或者 retention 的时候用到，比如清理重复的 source 里面的 block。&lt;/p&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;{
     &amp;#34;ulid&amp;#34;: &amp;#34;01EM6Q6A1YPX4G9TEB20J22B2R&amp;#34;, # 
     &amp;#34;minTime&amp;#34;: 1602237600000,
@@ -256,7 +256,7 @@ A Postings:
 &lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png&#34;&gt;
 &lt;img alt=&#34;!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg&#34; src=&#34;https://github.com/noneback/images/blob/picgo/image.png?raw=true&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;compaction&#34;&gt;Compaction&lt;/h2&gt;
-&lt;p&gt;类似 leveldb，也有 major compaction和 minor compaction。在这里加 Compaction 和 Head Compaction。&lt;/p&gt;
+&lt;p&gt;类似 leveldb，也有 major compaction和 minor compaction。在这里叫 Compaction 和 Head Compaction。&lt;/p&gt;
 &lt;p&gt;Head Compaction类似把 Head部分持久化成 Chunk 的过程，在这个过程中，mark delete 的tombstone 会被真的删除（毕竟要读到内存里，顺手删了）。&lt;/p&gt;
 &lt;p&gt;Compaction 就是把 Block 合并的一个过程。这个动作可以回收：&lt;/p&gt;
 &lt;ol&gt;

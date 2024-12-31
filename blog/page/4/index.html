@@ -150,6 +150,30 @@ if (!doNotTrack) {
       
         <article>
           <div class="blog-card">
+              <h3><a href="/blog/how-to-implement-skiplist/">How to Implement SkipList</a></h3>
+              <p>
+  <small>
+    November 21, 2021&nbsp;· 705 words&nbsp;· 4 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/datastructure/">DataStructure</a>
+      
+      <a href="https://noneback.github.io/tags/skiplist/">SkipList</a>
+      
+    </small>
+  
+<p>
+              Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I&rsquo;m thinking about it again, I realize I&rsquo;ve forgotten some of the details, so I&rsquo;m writing it down for future reference.
+What is SkipList? SkipList is an ordered data structure that can be seen as an alternative to balanced trees.
+          </div>
+        </article>
+      
+        <article>
+          <div class="blog-card">
               <h3><a href="/blog/kylin%E6%A6%82%E8%BF%B0/">Kylin Overview</a></h3>
               <p>
   <small>
@@ -256,36 +280,6 @@ This is the last of Google&rsquo;s three foundational distributed system papers,
 <p>
               This article introduces the Google File System (GFS) paper published in 2003, which proposed a distributed file system designed to store large volumes of data reliably, meeting Google&rsquo;s data storage needs. This write-up reflects on the design goals, trade-offs, and architectural choices of GFS.
 Introduction GFS is a distributed file system developed by Google to meet the needs of data-intensive applications, using commodity hardware to provide a scalable and fault-tolerant solution.
-          </div>
-        </article>
-      
-        <article>
-          <div class="blog-card">
-              <h3><a href="/blog/epoll-and-io%E5%A4%8D%E7%94%A8/">Epoll and IO Multiplexing</a></h3>
-              <p>
-  <small>
-    August 15, 2021&nbsp;· 834 words&nbsp;· 4 min</small>
-
-  <small>
-      
-      ·
-      
-      
-      <a href="https://noneback.github.io/tags/os/">OS</a>
-      
-      <a href="https://noneback.github.io/tags/linux/">Linux</a>
-      
-      <a href="https://noneback.github.io/tags/network/">Network</a>
-      
-      <a href="https://noneback.github.io/tags/io/">IO</a>
-      
-    </small>
-  
-<p>
-              Let&rsquo;s start with epoll.
-epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.
-Usage API epoll has three primary system calls:
-/** epoll_create * Creates an epoll instance and returns a file descriptor for it. * Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
           </div>
         </article>
       </div>

@@ -150,6 +150,36 @@ if (!doNotTrack) {
       
         <article>
           <div class="blog-card">
+              <h3><a href="/blog/epoll-and-io%E5%A4%8D%E7%94%A8/">Epoll and IO Multiplexing</a></h3>
+              <p>
+  <small>
+    August 15, 2021&nbsp;· 834 words&nbsp;· 4 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/os/">OS</a>
+      
+      <a href="https://noneback.github.io/tags/linux/">Linux</a>
+      
+      <a href="https://noneback.github.io/tags/network/">Network</a>
+      
+      <a href="https://noneback.github.io/tags/io/">IO</a>
+      
+    </small>
+  
+<p>
+              Let&rsquo;s start with epoll.
+epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.
+Usage API epoll has three primary system calls:
+/** epoll_create * Creates an epoll instance and returns a file descriptor for it. * Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
+          </div>
+        </article>
+      
+        <article>
+          <div class="blog-card">
               <h3><a href="/blog/linux-cgroups%E7%AE%80%E4%BB%8B/">Linux Cgroups Overview</a></h3>
               <p>
   <small>
@@ -248,32 +278,6 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 <p>
               Database indexes are sorted data structures in DBMS that help in quickly querying and updating data in a database. Generally, data structures used for building indexes include B-trees, B+ trees, hash tables, etc.
 MySQL uses B+ trees to build indexes. The reason for this choice is that a B+ tree node can store more data, and in a B+ tree, only leaf nodes store data, while non-leaf nodes store only indexes.
-          </div>
-        </article>
-      
-        <article>
-          <div class="blog-card">
-              <h3><a href="/blog/https%E6%B5%85%E6%9E%90/">HTTPS Introduction</a></h3>
-              <p>
-  <small>
-    February 21, 2021&nbsp;· 564 words&nbsp;· 3 min</small>
-
-  <small>
-      
-      ·
-      
-      
-      <a href="https://noneback.github.io/tags/network/">Network</a>
-      
-      <a href="https://noneback.github.io/tags/https/">HTTPS</a>
-      
-      <a href="https://noneback.github.io/tags/http/">HTTP</a>
-      
-    </small>
-  
-<p>
-              HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.
-Problems with HTTP Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e.
           </div>
         </article>
       </div>

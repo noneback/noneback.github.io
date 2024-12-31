@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prometheus--TSDB</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/blog/prometheus-tsdb/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="Prometheus--TSDB" />
+<meta property="og:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://noneback.github.io/blog/prometheus-tsdb/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2024-12-31T01:10:28+08:00" />
+<meta property="article:modified_time" content="2024-12-31T01:10:28+08:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Prometheus--TSDB"/>
+<meta name="twitter:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Prometheus--TSDB",
+      "item": "https://noneback.github.io/blog/prometheus-tsdb/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Prometheus--TSDB",
+  "name": "Prometheus--TSDB",
+  "description": "Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I\u0026rsquo;m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the",
+  "keywords": [
+    "Prometheus", "TSDB", "Observability"
+  ],
+  "articleBody": "Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system.\nThis article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.\nAnalyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.\nData + Query Model A single monitoring metric is described as a structure of time-dependent data, a timeseries.\n$$ {timeseries} = \\quad\\lbrace \\quad metric(attached\\ with\\ a\\ set\\ of\\ labels) \\Rightarrow (t_0,\\ v_0),\\ (t_1,\\ v_1),\\ (t_2,\\ v_2),\\ \\ldots,\\ (t_n, v_n) \\quad\\rbrace $$\nQueries utilize the ${identifier(metric\\ +\\ sets\\ of\\ selected\\ labels\\ value)}$ to retrieve the corresponding timeseries. series\nseries ^ │ . . . . . . . . . . . . . . . . . . . . . . {__name__=\"request_total\", method=\"GET\"} │ . . . . . . . . . . . . . . . . . . . . . . {__name__=\"request_total\", method=\"POST\"} │ . . . . . . . │ . . . . . . . . . . . . . . . . . . . ... │ . . . . . . . . . . . . . . . . . . . . . │ . . . . . . . . . . . . . . . . . . . . . {__name__=\"errors_total\", method=\"POST\"} │ . . . . . . . . . . . . . . . . . {__name__=\"errors_total\", method=\"GET\"} │ . . . . . . . . . . . . . . │ . . . . . . . . . . . . . . . . . . . ... │ . . . . . . . . . . . . . . . . . . . . v \u003c-------------------- time ---------------------\u003e The use of the identifier is crucial. Poor labeling can lead to timeseries data growth, especially in scenarios where containers are rebuilt.\nData Organization For cloud-native scenarios, what characteristics do monitoring data have?\nShort data lifecycle. The lifespan of individual containers is brief (e.g., in scaling scenarios or during extensive temporary tasks), leading to rapid timeseries growth along certain time dimensions.\nVertical writing with horizontal querying.\nWith these issues in mind, let’s look at how the data files are organized to address or sidestep these problems.\nFirst, examine the logical structure:\nThe entire database consists of blocks and a HEAD. Each block can further be broken down into chunks, while the HEAD serves as a read-write buffer area composed of in-memory data and write-ahead logs (WAL). Chunks contain multiple timeseries.\nThe disk directory structure for a single block is as follows:\n├── 01BKGV7JC0RY8A6MACW02A2PJD // block 的 ULID │ ├── chunks │ │ └── 000001 │ ├── tombstones │ ├── index │ └── meta.json ├── chunks_head │ └── 000001 └── wal ├── 000000002 └── checkpoint.00000001 └── 00000000 Block: Contains all data for a given time period (default 2 hours) and is read-only, named using a ULID. Each block includes: Chunks: fixed-size (max 128MB) chunks file Index: index file mainly containing inverted index information meta.json: metadata including block’s minTime and maxTime for data skipping during queries. Chunks Head: The chunks file corresponding to the block currently being written, read-only, with a maximum of 120 data points and a maximum time span of 2 hours. WAL: Guarantees data integrity. The diagram provides significant insights, such as how the WAL ensures data integrity; the Head acts similarly to a buffer pool in a TSDB, managing memory data for batch flushing to disk. When certain conditions are met (e.g., time threshold, data size threshold), the Head becomes immutable (block) and is flushed to disk.\nOverall, many design concepts in data organization resemble the LSM storage structure, which indeed suits TSDB well.\nPrometheus’s design approach can be summarized as follows:\nUsing time-based data partitioning to resolve the issue of short data lifecycles. Using in-memory batching to handle scenarios where only the latest data is written. Setting aside similar aspects with LevelDB, let’s outline the differences.\nFirst, the underlying models are different. LevelDB is a key-value store, while TSDB focuses on timeseries with a strong temporal connection, where time is monotonically increasing. It rarely writes historical data. Additionally, the query models differ; TSDB provides diverse query options, such as filtering timeseries based on various label set operations, necessitating more metadata for efficient querying.\nDue to these requirements, new structures and functions are introduced: inverted indexes, checkpoints, tombstones, retention policies, and a compaction design distinct from the LSM key-value model. These will be analyzed in relation to the corresponding file formats.\nFile Organization Format Let’s examine the components; the specifics of the organizational method are not the focus of this article.\nmeta.json This file contains information about the block, particularly valuable for compaction and the minT, maxT timestamps.\nminT and maxT record the block’s time access period, which can skip data during queries.\nCompaction records the block’s historical information, such as the number of compaction iterations (level) and its source blocks. The precise utility of this is uncertain but may help during compaction or retention tasks to manage potential duplicates.\n{ \"ulid\": \"01EM6Q6A1YPX4G9TEB20J22B2R\", \"minTime\": 1602237600000, \"maxTime\": 1602244800000, \"stats\": { \"numSamples\": 553673232, \"numSeries\": 1346066, \"numChunks\": 4440437 }, \"compaction\": { \"level\": 1, \"sources\": [ \"01EM65SHSX4VARXBBHBF0M0FDS\", \"01EM6GAJSYWSQQRDY782EA5ZPN\" ] }, \"version\": 1 } chunks These are standard data files, with their indexes stored in the index file. Note that a chunk can only belong to one timeseries, and a timeseries consists of multiple chunks.\n┌──────────────────────────────┐ │ magic(0x85BD40DD) \u003c4 byte\u003e │ ├──────────────────────────────┤ │ version(1) \u003c1 byte\u003e │ ├──────────────────────────────┤ │ padding(0) \u003c3 byte\u003e │ ├──────────────────────────────┤ │ ┌──────────────────────────┐ │ │ │ Chunk 1 │ │ │ ├──────────────────────────┤ │ │ │ ... │ │ │ ├──────────────────────────┤ │ │ │ Chunk N │ │ │ └──────────────────────────┘ │ └──────────────────────────────┘ Every Chunk: ┌───────────────┬───────────────────┬──────────────┬────────────────┐ │ len │ encoding \u003c1 byte\u003e │ data │ CRC32 \u003c4 byte\u003e │ └───────────────┴───────────────────┴──────────────┴────────────────┘ tombstone This marks deleted data. TSDB might have delete operations under scenarios like transient jobs or container destruction, where business logic may necessitate removal. Tombstones primarily enable appending writes instead of in-place modifications, and subsequently, blocks may be compacted to reclaim disk space.\nOf course, not deleting data isn’t harmful; there will be TTL expiration that removes obsolete data.\n┌────────────────────────────┬─────────────────────┐ │ magic(0x0130BA30) \u003c4b\u003e │ version(1) \u003c1 byte\u003e │ ├────────────────────────────┴─────────────────────┤ │ ┌──────────────────────────────────────────────┐ │ │ │ Tombstone 1 │ │ │ ├──────────────────────────────────────────────┤ │ │ │ ... │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Tombstone N │ │ │ ├──────────────────────────────────────────────┤ │ │ │ CRC\u003c4b\u003e │ │ │ └──────────────────────────────────────────────┘ │ └──────────────────────────────────────────────────┘ Every Tombstone: ┌────────────────────────┬─────────────────┬─────────────────┐ │ series ref │ mint │ maxt │ └────────────────────────┴─────────────────┴─────────────────┘ index file This file contains all information needed for reading, such as inverted indexes and the mapping of timeseries to chunks.\nNotable structures include Series and Postings.\nThe Series section documents all series information corresponding to their chunks within the blocks.\nThe Posting Offset Table lists the locations of inverted indexes. The actual inverted index content is stored in the Postings section.\nWith inverted index collection operations, you can rapidly filter and retrieve timeseries that meet specified criteria.\n┌────────────────────────────┬─────────────────────┐ │ magic(0xBAAAD700) \u003c4b\u003e │ version(1) \u003c1 byte\u003e │ ├────────────────────────────┴─────────────────────┤ │ ┌──────────────────────────────────────────────┐ │ │ │ Symbol Table │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Series │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Label Index 1 │ │ │ ├──────────────────────────────────────────────┤ │ │ │ ... │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Label Index N │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Postings 1 │ │ │ ├──────────────────────────────────────────────┤ │ │ │ ... │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Postings N │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Label Offset Table │ │ │ ├──────────────────────────────────────────────┤ │ │ │ Postings Offset Table │ │ │ ├──────────────────────────────────────────────┤ │ │ │ TOC │ │ │ └──────────────────────────────────────────────┘ │ └──────────────────────────────────────────────────┘ A Series: ┌──────────────────────────────────────────────────────┐ │ len │ ├──────────────────────────────────────────────────────┤ │ ┌──────────────────────────────────────────────────┐ │ │ │ labels count │ │ │ ├──────────────────────────────────────────────────┤ │ │ │ ┌────────────────────────────────────────────┐ │ │ │ │ │ ref(l_i.name) │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ ref(l_i.value) │ │ │ │ │ └────────────────────────────────────────────┘ │ │ │ │ ... │ │ │ ├──────────────────────────────────────────────────┤ │ │ │ chunks count │ │ │ ├──────────────────────────────────────────────────┤ │ │ │ ┌────────────────────────────────────────────┐ │ │ │ │ │ c_0.mint │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ c_0.maxt - c_0.mint │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ ref(c_0.data) │ │ │ │ │ └────────────────────────────────────────────┘ │ │ │ │ ┌────────────────────────────────────────────┐ │ │ │ │ │ c_i.mint - c_i-1.maxt │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ c_i.maxt - c_i.mint │ │ │ │ │ ├────────────────────────────────────────────┤ │ │ │ │ │ ref(c_i.data) - ref(c_i-1.data) │ │ │ │ │ └────────────────────────────────────────────┘ │ │ │ │ ... │ │ │ └──────────────────────────────────────────────────┘ │ ├──────────────────────────────────────────────────────┤ │ CRC32 \u003c4b\u003e │ └──────────────────────────────────────────────────────┘ A Postings: ┌────────────────────┬────────────────────┐ │ len \u003c4b\u003e │ #entries \u003c4b\u003e │ ├────────────────────┴────────────────────┤ │ ┌─────────────────────────────────────┐ │ │ │ ref(series_1) \u003c4b\u003e │ │ │ ├─────────────────────────────────────┤ │ │ │ ... │ │ │ ├─────────────────────────────────────┤ │ │ │ ref(series_n) \u003c4b\u003e │ │ │ └─────────────────────────────────────┘ │ ├─────────────────────────────────────────┤ │ CRC32 \u003c4b\u003e │ └─────────────────────────────────────────┘ Accelerating Disk Queries Let’s focus on how a query locates the relevant data:\nFirst, it queries the Posting Offset Table to find the position of the corresponding label’s Postings. Based on the information from the Postings, it identifies the chunk locations via the series reference. Finally, it locates the corresponding chunks for the timeseries. Compaction Similar to LevelDB, Prometheus utilizes both major and minor compaction processes, termed Compaction and Head Compaction.\nHead Compaction is akin to the process of persisting the Head portion into Chunks, during which tombstones are actually deleted from memory.\nCompaction is the merging of blocks, accomplishing multiple aims:\nReclaiming disk resources used by marked deletions. Consolidating duplicate information scattered across multiple blocks, such as shared chunks and inverted index records. Enhancing query processing speed by addressing data overlapping across different blocks—handling this during compaction is more efficient than performing in-memory processing post-read. When does compaction occur? The official blog doesn’t clarify this well, merely mentioning it occurs when data overlaps. However, various triggers exist, including time-based triggers, checks at each minor compaction, tombstone size evaluations, and manual triggers, following strategies observed in LevelDB.\nRetention This is straightforward—based on time or size-based TTL. Integrating this into the compaction process could also be a viable approach.\nSnapshot This process involves dumping the in-memory data to disk, likely designed to balance extensive metric data disk writes with data integrity; Otherwise, its functionality would be dupicated with wal.\nReferences https://web.archive.org/web/20210803115658/https://fabxc.org/tsdb/ https://liujiacai.net/blog/2021/04/11/prometheus-storage-engine/ https://tech.qimao.com/prometheus-tsdb-de-she-ji-yu-shi-xian-2/ https://ganeshvernekar.com/blog/prometheus-tsdb-persistent-block-and-its-index/ https://ganeshvernekar.com/blog/prometheus-tsdb-compaction-and-retention/#compaction ",
+  "wordCount" : "4802",
+  "inLanguage": "en",
+  "datePublished": "2024-12-31T01:10:28+08:00",
+  "dateModified": "2024-12-31T01:10:28+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/blog/prometheus-tsdb/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"
+    integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"
+    integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR"
+    crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMathInElement(document.body, {
+            
+            
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: "\\begin{equation}", right: "\\end{equation}", display: true },
+                { left: "\\begin{align}", right: "\\end{align}", display: true },
+                { left: "\\begin{alignat}", right: "\\end{alignat}", display: true },
+                { left: "\\begin{gather}", right: "\\end{gather}", display: true },
+                { left: "\\begin{CD}", right: "\\end{CD}", display: true },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            
+            throwOnError: false,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command),
+            macros: {
+                "\\eqref": "\\href{###1}{(\\text{#1})}",
+                "\\ref": "\\href{###1}{\\text{#1}}",
+                "\\label": "\\htmlId{#1}{}"
+            }
+        });
+    });
+</script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/blog">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>Prometheus--TSDB</h1>
+  </header>
+
+  <p>
+  <small>
+    December 31, 2024&nbsp;· 4802 words&nbsp;· 10 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/prometheus/">Prometheus</a>
+      
+      <a href="https://noneback.github.io/tags/tsdb/">TSDB</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#data--query-model">Data + Query Model</a></li>
+    <li><a href="#data-organization">Data Organization</a>
+      <ul>
+        <li><a href="#file-organization-format">File Organization Format</a></li>
+      </ul>
+    </li>
+    <li><a href="#accelerating-disk-queries">Accelerating Disk Queries</a></li>
+    <li><a href="#compaction">Compaction</a>
+      <ul>
+        <li><a href="#when-does-compaction-occur">When does compaction occur?</a></li>
+      </ul>
+    </li>
+    <li><a href="#retention">Retention</a></li>
+    <li><a href="#snapshot">Snapshot</a></li>
+    <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><p>Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system.</p>
+<p>This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.</p>
+<p>Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.</p>
+<h2 id="data--query-model">Data + Query Model</h2>
+<ol>
+<li>
+<p>A <strong>single</strong> monitoring metric is described as a structure of time-dependent data, a timeseries.</p>
+<p>$$
+{timeseries} = \quad\lbrace \quad metric(attached\ with\ a\ set\ of\ labels) \Rightarrow   (t_0,\ v_0),\ (t_1,\ v_1),\  (t_2,\ v_2),\ \ldots,\ (t_n, v_n) \quad\rbrace
+$$</p>
+</li>
+<li>
+<p>Queries utilize the ${identifier(metric\ +\ sets\ of\ selected\ labels\ value)}$ to retrieve the corresponding timeseries.
+series</p>
+</li>
+</ol>
+<pre tabindex="0"><code>series
+  ^   
+  │   . . . . . . . . . . . . . . . . .   . . . . .   {__name__=&#34;request_total&#34;, method=&#34;GET&#34;}
+  │     . . . . . . . . . . . . . . . . . . . . . .   {__name__=&#34;request_total&#34;, method=&#34;POST&#34;}
+  │         . . . . . . .
+  │       . . .     . . . . . . . . . . . . . . . .                  ... 
+  │     . . . . . . . . . . . . . . . . .   . . . .   
+  │     . . . . . . . . . .   . . . . . . . . . . .   {__name__=&#34;errors_total&#34;, method=&#34;POST&#34;}
+  │           . . .   . . . . . . . . .   . . . . .   {__name__=&#34;errors_total&#34;, method=&#34;GET&#34;}
+  │         . . . . . . . . .       . . . . .
+  │       . . .     . . . . . . . . . . . . . . . .                  ... 
+  │     . . . . . . . . . . . . . . . .   . . . . 
+  v
+    &lt;-------------------- time ---------------------&gt;
+</code></pre><blockquote>
+<p>The use of the identifier is crucial. Poor labeling can lead to timeseries data growth, especially in scenarios where containers are rebuilt.</p>
+</blockquote>
+<h2 id="data-organization">Data Organization</h2>
+<p>For cloud-native scenarios, what characteristics do monitoring data have?</p>
+<ol>
+<li>
+<p>Short data lifecycle. The lifespan of individual containers is brief (e.g., in scaling scenarios or during extensive temporary tasks), leading to rapid timeseries growth along certain time dimensions.</p>
+</li>
+<li>
+<p>Vertical writing with horizontal querying.</p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010014.png"></p>
+</li>
+</ol>
+<p>With these issues in mind, let&rsquo;s look at how the data files are organized to address or sidestep these problems.</p>
+<p>First, examine the logical structure:</p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010031.png"></p>
+<p>The entire database consists of blocks and a HEAD. Each block can further be broken down into chunks, while the HEAD serves as a read-write buffer area composed of in-memory data and write-ahead logs (WAL). Chunks contain multiple timeseries.</p>
+<p>The disk directory structure for a single block is as follows:</p>
+<pre tabindex="0"><code>├── 01BKGV7JC0RY8A6MACW02A2PJD  // block 的 ULID
+│   ├── chunks
+│   │   └── 000001
+│   ├── tombstones
+│   ├── index
+│   └── meta.json
+├── chunks_head
+│   └── 000001
+└── wal
+    ├── 000000002
+    └── checkpoint.00000001
+        └── 00000000
+</code></pre><ul>
+<li><strong>Block</strong>: Contains all data for a given time period (default 2 hours) and is read-only, named using a <a href="https://github.com/oklog/ulid">ULID</a>. Each block includes:
+<ul>
+<li>Chunks: fixed-size (max 128MB) chunks file</li>
+<li>Index: index file mainly containing inverted index information</li>
+<li>meta.json: metadata including block&rsquo;s minTime and maxTime for data skipping during queries.</li>
+</ul>
+</li>
+<li><strong>Chunks Head</strong>: The chunks file corresponding to the block currently being written, read-only, with a maximum of 120 data points and a maximum time span of 2 hours.</li>
+<li><strong>WAL</strong>: Guarantees data integrity.</li>
+</ul>
+<blockquote>
+<p>The diagram provides significant insights, such as how the WAL ensures data integrity; the Head acts similarly to a buffer pool in a TSDB, managing memory data for batch flushing to disk. When certain conditions are met (e.g., time threshold, data size threshold), the Head becomes immutable (block) and is flushed to disk.</p>
+</blockquote>
+<p>Overall, many design concepts in data organization resemble the LSM storage structure, which indeed suits TSDB well.</p>
+<p>Prometheus&rsquo;s design approach can be summarized as follows:</p>
+<ul>
+<li>Using time-based data partitioning to resolve the issue of short data lifecycles.</li>
+<li>Using in-memory batching to handle scenarios where only the latest data is written.</li>
+</ul>
+<p>Setting aside similar aspects with LevelDB, let&rsquo;s outline the differences.</p>
+<p>First, the underlying models are different. LevelDB is a key-value store, while TSDB focuses on timeseries with a strong temporal connection, where time is monotonically increasing. It rarely writes historical data. Additionally, the query models differ; TSDB provides diverse query options, such as filtering timeseries based on various label set operations, necessitating more metadata for efficient querying.</p>
+<p>Due to these requirements, new structures and functions are introduced: inverted indexes, checkpoints, tombstones, retention policies, and a compaction design distinct from the LSM key-value model. These will be analyzed in relation to the corresponding file formats.</p>
+<h3 id="file-organization-format">File Organization Format</h3>
+<p>Let&rsquo;s examine the components; the specifics of the organizational method are not the focus of this article.</p>
+<h4 id="metajson">meta.json</h4>
+<p>This file contains information about the block, particularly valuable for compaction and the minT, maxT timestamps.</p>
+<p><code>minT</code> and <code>maxT</code> record the block&rsquo;s time access period, which can skip data during queries.</p>
+<p>Compaction records the block&rsquo;s historical information, such as the number of compaction iterations (level) and its source blocks. The precise utility of this is uncertain but may help during compaction or retention tasks to manage potential duplicates.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ulid&#34;</span>: <span style="color:#e6db74">&#34;01EM6Q6A1YPX4G9TEB20J22B2R&#34;</span>, 
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;minTime&#34;</span>: <span style="color:#ae81ff">1602237600000</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;maxTime&#34;</span>: <span style="color:#ae81ff">1602244800000</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;stats&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;numSamples&#34;</span>: <span style="color:#ae81ff">553673232</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;numSeries&#34;</span>: <span style="color:#ae81ff">1346066</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;numChunks&#34;</span>: <span style="color:#ae81ff">4440437</span>
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;compaction&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;level&#34;</span>: <span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;sources&#34;</span>: [
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;01EM65SHSX4VARXBBHBF0M0FDS&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;01EM6GAJSYWSQQRDY782EA5ZPN&#34;</span>
+</span></span><span style="display:flex;"><span>        ]
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="chunks">chunks</h4>
+<p>These are standard data files, with their indexes stored in the index file. Note that a chunk can only belong to one timeseries, and a timeseries consists of multiple chunks.</p>
+<pre tabindex="0"><code>┌──────────────────────────────┐
+│  magic(0x85BD40DD) &lt;4 byte&gt;  │
+├──────────────────────────────┤
+│    version(1) &lt;1 byte&gt;       │
+├──────────────────────────────┤
+│    padding(0) &lt;3 byte&gt;       │
+├──────────────────────────────┤
+│ ┌──────────────────────────┐ │
+│ │         Chunk 1          │ │
+│ ├──────────────────────────┤ │
+│ │          ...             │ │
+│ ├──────────────────────────┤ │
+│ │         Chunk N          │ │
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
+
+Every Chunk:
+┌───────────────┬───────────────────┬──────────────┬────────────────┐
+│ len &lt;uvarint&gt; │ encoding &lt;1 byte&gt; │ data &lt;bytes&gt; │ CRC32 &lt;4 byte&gt; │
+└───────────────┴───────────────────┴──────────────┴────────────────┘
+</code></pre><h4 id="tombstone">tombstone</h4>
+<p>This marks deleted data. TSDB might have delete operations under scenarios like transient jobs or container destruction, where business logic may necessitate removal. Tombstones primarily enable appending writes instead of in-place modifications, and subsequently, blocks may be compacted to reclaim disk space.</p>
+<p>Of course, not deleting data isn&rsquo;t harmful; there will be TTL expiration that removes obsolete data.</p>
+<pre tabindex="0"><code>┌────────────────────────────┬─────────────────────┐
+│ magic(0x0130BA30) &lt;4b&gt;     │ version(1) &lt;1 byte&gt; │
+├────────────────────────────┴─────────────────────┤
+│ ┌──────────────────────────────────────────────┐ │
+│ │                Tombstone 1                   │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      ...                     │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                Tombstone N                   │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                  CRC&lt;4b&gt;                     │ │
+│ └──────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+
+Every Tombstone:
+┌────────────────────────┬─────────────────┬─────────────────┐
+│ series ref &lt;uvarint64&gt; │ mint &lt;varint64&gt; │ maxt &lt;varint64&gt; │
+└────────────────────────┴─────────────────┴─────────────────┘
+</code></pre><h4 id="index-file">index file</h4>
+<p>This file contains all information needed for reading, such as inverted indexes and the mapping of timeseries to chunks.</p>
+<p>Notable structures include Series and Postings.</p>
+<p>The Series section documents all series information corresponding to their chunks within the blocks.</p>
+<p>The Posting Offset Table lists the locations of inverted indexes. The actual inverted index content is stored in the Postings section.</p>
+<blockquote>
+<p>With inverted index collection operations, you can rapidly filter and retrieve timeseries that meet specified criteria.</p>
+</blockquote>
+<pre tabindex="0"><code>┌────────────────────────────┬─────────────────────┐
+│ magic(0xBAAAD700) &lt;4b&gt;     │ version(1) &lt;1 byte&gt; │
+├────────────────────────────┴─────────────────────┤
+│ ┌──────────────────────────────────────────────┐ │
+│ │                 Symbol Table                 │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                    Series                    │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                 Label Index 1                │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      ...                     │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                 Label Index N                │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                   Postings 1                 │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      ...                     │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                   Postings N                 │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │               Label Offset Table             │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │             Postings Offset Table            │ │
+│ ├──────────────────────────────────────────────┤ │
+│ │                      TOC                     │ │
+│ └──────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+
+A Series:
+┌──────────────────────────────────────────────────────┐
+│ len &lt;uvarint&gt;                                        │
+├──────────────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────────────────┐ │
+│ │            labels count &lt;uvarint64&gt;              │ │
+│ ├──────────────────────────────────────────────────┤ │
+│ │  ┌────────────────────────────────────────────┐  │ │
+│ │  │ ref(l_i.name) &lt;uvarint32&gt;                  │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ ref(l_i.value) &lt;uvarint32&gt;                 │  │ │
+│ │  └────────────────────────────────────────────┘  │ │
+│ │                       ...                        │ │
+│ ├──────────────────────────────────────────────────┤ │
+│ │            chunks count &lt;uvarint64&gt;              │ │
+│ ├──────────────────────────────────────────────────┤ │
+│ │  ┌────────────────────────────────────────────┐  │ │
+│ │  │ c_0.mint &lt;varint64&gt;                        │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ c_0.maxt - c_0.mint &lt;uvarint64&gt;            │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ ref(c_0.data) &lt;uvarint64&gt;                  │  │ │
+│ │  └────────────────────────────────────────────┘  │ │
+│ │  ┌────────────────────────────────────────────┐  │ │
+│ │  │ c_i.mint - c_i-1.maxt &lt;uvarint64&gt;          │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ c_i.maxt - c_i.mint &lt;uvarint64&gt;            │  │ │
+│ │  ├────────────────────────────────────────────┤  │ │
+│ │  │ ref(c_i.data) - ref(c_i-1.data) &lt;varint64&gt; │  │ │
+│ │  └────────────────────────────────────────────┘  │ │
+│ │                       ...                        │ │
+│ └──────────────────────────────────────────────────┘ │
+├──────────────────────────────────────────────────────┤
+│ CRC32 &lt;4b&gt;                                           │
+└──────────────────────────────────────────────────────┘
+
+A Postings:
+┌────────────────────┬────────────────────┐
+│ len &lt;4b&gt;           │ #entries &lt;4b&gt;      │
+├────────────────────┴────────────────────┤
+│ ┌─────────────────────────────────────┐ │
+│ │ ref(series_1) &lt;4b&gt;                  │ │
+│ ├─────────────────────────────────────┤ │
+│ │ ...                                 │ │
+│ ├─────────────────────────────────────┤ │
+│ │ ref(series_n) &lt;4b&gt;                  │ │
+│ └─────────────────────────────────────┘ │
+├─────────────────────────────────────────┤
+│ CRC32 &lt;4b&gt;                              │
+└─────────────────────────────────────────┘
+</code></pre><h2 id="accelerating-disk-queries">Accelerating Disk Queries</h2>
+<p>Let&rsquo;s focus on how a query locates the relevant data:</p>
+<ul>
+<li>First, it queries the Posting Offset Table to find the position of the corresponding label&rsquo;s Postings.</li>
+<li>Based on the information from the Postings, it identifies the chunk locations via the series reference.</li>
+<li>Finally, it locates the corresponding chunks for the timeseries.</li>
+</ul>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png">
+<img alt="!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg" src="https://github.com/noneback/images/blob/picgo/image.png?raw=true"></p>
+<h2 id="compaction">Compaction</h2>
+<p>Similar to LevelDB, Prometheus utilizes both major and minor compaction processes, termed Compaction and Head Compaction.</p>
+<p>Head Compaction is akin to the process of persisting the Head portion into Chunks, during which tombstones are actually deleted from memory.</p>
+<p>Compaction is the merging of blocks, accomplishing multiple aims:</p>
+<ol>
+<li>Reclaiming disk resources used by marked deletions.</li>
+<li>Consolidating duplicate information scattered across multiple blocks, such as shared chunks and inverted index records.</li>
+<li>Enhancing query processing speed by addressing data overlapping across different blocks—handling this during compaction is more efficient than performing in-memory processing post-read.</li>
+</ol>
+<h3 id="when-does-compaction-occur">When does compaction occur?</h3>
+<p>The official blog doesn&rsquo;t clarify this well, merely mentioning it occurs when data overlaps. However, various triggers exist, including time-based triggers, checks at each minor compaction, tombstone size evaluations, and manual triggers, following strategies observed in LevelDB.</p>
+<h2 id="retention">Retention</h2>
+<p>This is straightforward—based on time or size-based TTL. Integrating this into the compaction process could also be a viable approach.</p>
+<h2 id="snapshot">Snapshot</h2>
+<p>This process involves dumping the in-memory data to disk, likely designed to balance extensive metric data disk writes with data integrity; Otherwise, its functionality would be dupicated with wal.</p>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://web.archive.org/web/20210803115658/https://fabxc.org/tsdb/">https://web.archive.org/web/20210803115658/https://fabxc.org/tsdb/</a></li>
+<li><a href="https://liujiacai.net/blog/2021/04/11/prometheus-storage-engine/">https://liujiacai.net/blog/2021/04/11/prometheus-storage-engine/</a></li>
+<li><a href="https://tech.qimao.com/prometheus-tsdb-de-she-ji-yu-shi-xian-2/">https://tech.qimao.com/prometheus-tsdb-de-she-ji-yu-shi-xian-2/</a></li>
+<li><a href="https://ganeshvernekar.com/blog/prometheus-tsdb-persistent-block-and-its-index/">https://ganeshvernekar.com/blog/prometheus-tsdb-persistent-block-and-its-index/</a></li>
+<li><a href="https://ganeshvernekar.com/blog/prometheus-tsdb-compaction-and-retention/#compaction">https://ganeshvernekar.com/blog/prometheus-tsdb-compaction-and-retention/#compaction</a></li>
+</ul>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    
+    <a class="next" href="https://noneback.github.io/blog/borg/"><span>Borg: Large-scale Cluster Management at Google with Borg</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>
