@@ -166,6 +166,29 @@ if (!doNotTrack) {
 <div class="featured-list">
   
     <article class="featured-single">
+        <h4><a href="/blog/leveldb-mvcc/">LevelDB MVCC</a></h4>
+        <p>
+  <small>
+    February 8, 2025&nbsp;· 540 words&nbsp;· 3 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      
+      <a href="https://noneback.github.io/tags/mvcc/">MVCC</a>
+      
+    </small>
+  
+<p>
+        LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let&rsquo;s explore how it accomplishes this.
+Sequence Number LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.
+Versioning Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another.
+    </article>
+  
+    <article class="featured-single">
         <h4><a href="/blog/prometheus-tsdb/">Prometheus--TSDB</a></h4>
         <p>
   <small>
@@ -656,7 +679,7 @@ About the Paper The core content of the paper is the proposed MapReduce distribu
 
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>

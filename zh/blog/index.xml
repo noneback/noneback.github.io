@@ -7,7 +7,108 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
-    <lastBuildDate>Tue, 31 Dec 2024 01:10:28 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/blog/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sat, 08 Feb 2025 14:06:39 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>LevelDB MVCC</title>
+      <link>https://noneback.github.io/zh/blog/zh/leveldb-mvcc/</link>
+      <pubDate>Sat, 08 Feb 2025 14:06:39 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/zh/blog/zh/leveldb-mvcc/</guid>
+      <description>&lt;p&gt;LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。&lt;/p&gt;
+&lt;h2 id=&#34;sequence-number&#34;&gt;Sequence Number&lt;/h2&gt;
+&lt;p&gt;LevelDB通过Sequence Number作为逻辑时钟，维护了写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;Alt text&#34; src=&#34;https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;versioning&#34;&gt;Versioning&lt;/h2&gt;
+&lt;p&gt;LevelDB每次sstable文件集合变化，都会从一个Version升级成另外一个Version。Version表示DB在某个时刻的状态，每个Version中记录了某个时刻sstable以及compaction 有关的元信息。VersionEdit 描述了版本的变化。&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Version1 ---VersionEdit--&amp;gt; Version2
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;VersionSet 被描述为 一组有序的 Version 链表，代表了数据库当前以及历史的运行状态。其中LastSeq 和 Version 链表最为关键。&lt;/p&gt;
+&lt;p&gt;Version链表描述了存储的所有Version以及变化，Version 本身使用 RC 的方式做 GC。LastSeq作为逻辑时钟，维护了读写操作的全序关系。&lt;/p&gt;
+&lt;p&gt;Manifest文件作为VersionChange的WAL保证版本变更的原子性。WAL + Manifest 确保了LastSeq变更的原子性。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-plain&#34; data-lang=&#34;plain&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Write Done ---&amp;gt; VersionEdit ---&amp;gt; Manifest ---&amp;gt; VersionSet
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;在整个 Version迁移过程中，写操作导致状态变更由 VersionEdit 记录在内存中，然后写入到 Manifest里，最后再将 VersionSet 指向此 Version，这样的操作保证了 Version 变更的一致性。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;如何理解这里的一致性？&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;DB 在 Crush Recovery 只有依旧可以利用 Manifest 恢复最新的 Version&lt;/li&gt;
+&lt;li&gt;Compaction 不会影响到正在进行的读操作。读操作也不会读取到中间状态的 sstable 文件&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;VersionEdit&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;/** other code */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;typedef&lt;/span&gt; std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;set&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; DeletedFileSet;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string comparator_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; log_number_;  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; prev_log_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; next_file_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    SequenceNumber last_sequence_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_comparator_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_log_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_prev_log_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_next_file_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;bool&lt;/span&gt; has_last_sequence_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, InternalKey&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; compact_pointers_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    DeletedFileSet deleted_files_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, FileMetaData&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; new_files_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;};
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Version&lt;/span&gt; {  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    VersionSet&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; vset_;  &lt;span style=&#34;color:#75715e&#34;&gt;// VersionSet to which this Version belongs
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      Version&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; next_;     &lt;span style=&#34;color:#75715e&#34;&gt;// Next version in linked list
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      Version&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; prev_;     &lt;span style=&#34;color:#75715e&#34;&gt;// Previous version in linked list
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; refs_;          &lt;span style=&#34;color:#75715e&#34;&gt;// Number of live refs to this version
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// List of files and meta per level
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;vector&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;FileMetaData&lt;span style=&#34;color:#f92672&#34;&gt;*&amp;gt;&lt;/span&gt; files_[config&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;kNumLevels];
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// Next file to compact based on seek stats. （allowed_seek耗尽导致的compact）
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      FileMetaData&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; file_to_compact_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; file_to_compact_level_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// Level that should be compacted next and its compaction score.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// Score &amp;lt; 1 means compaction is not strictly needed.  These fields
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#75715e&#34;&gt;// are initialized by Finalize().
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;double&lt;/span&gt; compaction_score_;  &lt;span style=&#34;color:#75715e&#34;&gt;// score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; compaction_level_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;VersionSet&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    Env&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; env_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string dbname_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; Options&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; options_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    TableCache&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; table_cache_;  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;const&lt;/span&gt; InternalKeyComparator icmp_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; next_file_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; manifest_file_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; last_sequence_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; log_number_;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt; prev_log_number_;  &lt;span style=&#34;color:#75715e&#34;&gt;// 0 or backing store for memtable being compacted
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;// Opened lazily
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    WritableFile&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; descriptor_file_; &lt;span style=&#34;color:#75715e&#34;&gt;// descriptor_ is for manifest file
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    log&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;Writer&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; descriptor_log_; &lt;span style=&#34;color:#75715e&#34;&gt;// descriptor_ is for manifest file
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    Version dummy_versions_;  &lt;span style=&#34;color:#75715e&#34;&gt;// Head of circular doubly-linked list of versions. 正在使用的version的链表
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    Version&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; current_;        &lt;span style=&#34;color:#75715e&#34;&gt;// == dummy_versions_.prev_
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;// Per-level key at which the next compaction at that level should start.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;// Either an empty string, or a valid InternalKey.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string compact_pointer_[config&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;kNumLevels];
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;mvcc&#34;&gt;MVCC&lt;/h2&gt;
+&lt;p&gt;MVCC 主要解决了 sstable 的读写冲突问题。&lt;/p&gt;
+&lt;p&gt;对于memtable的读写操作，依赖 skiplist，本身是有读写冲突的。对与sstable的读写操作（compaction 和 read ）则是没有。&lt;/p&gt;
+&lt;p&gt;每次写操作都会附带上Sequence Number，并且 sstable 只允许追加写入，compaction 也仅仅是将 sstable 合并，写入新文件中。&lt;/p&gt;
+&lt;p&gt;每次读操作会附带上 Sequence Number 以及 Version 信息，Sequence Number 确保了后续的写入对读不可见，关联Version确保了Version关联的sstable在读操作结束前不会被GC。进而确保了读取所用到的 sstable 文件不会丢失或者更新。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;如果Read 和 Write 在同一个 Version 进行，则必须是Compaction 先完成后，否则 Version 不会变化。此时触发读取操作，此时sstable不会有变化，所以读写并不冲突。如果不是，则只能是先读后写，写对读不可见，更不会有冲突。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;reference&#34;&gt;Reference&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://leveldb-handbook.readthedocs.io/zh/latest/index.html&#34;&gt;https://leveldb-handbook.readthedocs.io/zh/latest/index.html&lt;/a&gt;
+&lt;a href=&#34;https://noneback.github.io/zh/blog/zh/leveldb-write/&#34;&gt;https://noneback.github.io/zh/blog/zh/leveldb-write/&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
     <item>
       <title>Prometheus--TSDB</title>
       <link>https://noneback.github.io/zh/blog/zh/prometheus-tsdb/</link>

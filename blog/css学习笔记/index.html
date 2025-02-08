@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>元素布局与定位</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@元素布局与定位 position 位置属性 其中有relative，absolute，static，fixed 1.relative：相对布局，相对于原来的文档流">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="http://localhost:1313/blog/css%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="http://localhost:1313//index.xml" title="NoneBack">
+
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
+}
+</script>
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:title" content="元素布局与定位" />
+<meta property="og:description" content="元素布局与定位 position 位置属性 其中有relative，absolute，static，fixed 1.relative：相对布局，相对于原来的文档流" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://localhost:1313/blog/css%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2018-11-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2018-11-01T00:00:00+00:00" />
+
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="元素布局与定位"/>
+<meta name="twitter:description" content="元素布局与定位 position 位置属性 其中有relative，absolute，static，fixed 1.relative：相对布局，相对于原来的文档流"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "http://localhost:1313/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "元素布局与定位",
+      "item": "http://localhost:1313/blog/css%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "元素布局与定位",
+  "name": "元素布局与定位",
+  "description": "元素布局与定位 position 位置属性 其中有relative，absolute，static，fixed 1.relative：相对布局，相对于原来的文档流",
+  "keywords": [
+    "CSS"
+  ],
+  "articleBody": "元素布局与定位 position 位置属性 其中有relative，absolute，static，fixed\n1.relative：相对布局，相对于原来的文档流中的位置（默认位置），有left，right，top，bottom。\n2.static：即默认文档流的位置\n3.absolute：绝对位置，脱离出常规文档流，其原有的元素位置被回收，被其他元素顶替。其本身则相对于顶级元素body元素定位布局\n关于定位的重要概念：定位上下文\n4.fixed:固定定位，完全移除文档流，与absolute绝对定位类似。但它是相对于视口（浏览器窗口或者屏幕），因此它不会随着窗口的滚动而移动。\n定位上下文 相对定位的参考元素，只有其存在才可进行相关的定位\ndisplay 显示属性 属性值有block、inline，和none。它可以更改元素的显示模式，如将块级元素以行内元素显示。\n其中对于设定为none属性值的元素，它们都不会在页面中显示出来，原本所占有的空间也会被回收\nps:回顾\n块级元素，比如段落、标题、列表等，在浏览器中上下堆叠显示。 行内元素，比如a、span、img，在浏览器中左右并排显示，只有前一行没有空间的时候才会显示到下一行。 背景 背景属性： 1.颜色：\nbackground-color 2.图片及与其相关的属性：\nbackground-image：url图片路径/图片文件名）添加背景图片 background-repeat：选择图片的重复方式，有 no—repeat，repeat-x，-y等 3.背景的位置：\nbackground-position：用于控制背景的位置布局，控制的方法有关键字、百分比、与像素（ps：注意其基准点的不同） 4.背景的尺寸：\nbackground-size：用来控制背景图片的尺寸。 控制方法： 1.百分比：按比例缩放 2.像素：固定缩放 3.cover：拉大图片，使其完全填满背景区，保持宽高比 4.contain：缩放图片，使其恰好适合背景区，保持宽高比 5.背景粘附：\nbackground-attachment：控制滚动元素内背景图片是否随滚动元素而滚动。 如：background-attachment：fixed； 6.简写背景属性：\n即将‘-’后面的内容省略，直接将属性只写在括号内。 如：\nbody{background:url(.../...) fixed no-repeat} ps:CSS允许添加多背景图片，其中先添加的图片位于上层。\n字体 字体样式的属性：\n1.font-family:字体族，字体类型，可继承。\n设置字体栈:以防字体无效，多罗列出一些字体以备用，如：\nbody{font-family:\"trebuchet ms\"(当字体名字有空格时，用”“括起来),tahoma,sans-sreif;} //按先后顺序优先 2.font-size:字体大小，有相对单位与绝对单位，相对单位可继承。\n绝对单位：像素与一些如同x-small等基准大小 相对单位：百分比、em、rem。 如果给某个元素设定了相对字体大小，则该元素的字体大小要相对于最近的设定过字体大小的祖先元素来确定。 rem相对单位：相对与HTML根元素的大小。集两种单位的优点于一身。 3.font-style:字体样式，设定是正体还是 斜体\n属性值：italic（斜体）、oblique（斜体）、normal（正体）。\n4.font-wight:字体粗细\n属性值：100……等以及bold和normal等\n5.font-variant:字体变化\n属性值：normal，small-caps 6.font(简写属性):\n示例：\np{font:bold italic small-caps .9em helvetica,arial,san-serif;} 文本属性 p{ text-indent:3em; letter-spacing：2em； word-spacing：2em； text-decoration：underline； text-align:center; text-height：1.5（即为字体的1.5倍）； span：vertical-align：60%； } 1.text-indent:文本缩进,正值向右缩进。属性可被子元素继承，且继承的是依据父元素计算的具体数值。\n2.letter-spacing:在默认基础上改变字符间距,无论如何一定要使用相对单位，以便缩放。\n3.word-spacing：单词间距，类似。\n4.text-decoration:文本装饰，主要用于链接添加下划线。\n属性值：underline、overline、line-through、blink、none\n5.text-align:文本对齐\n属性值：left，right，center、justify（两端对齐）。\n6.line-height：行高，与外边距不同，不叠加，其余类似。属性值为任意的值，不用添加单位。可用于除去大标题的空白。\n7.text-transformation：用于转换字母的大小写。\n8.span：垂直对齐，属性值为任意数值或者一些关键字。用于书写上标或者下标。\nweb字体大揭秘 可调用远程服务器中的字体给浏览器使用。\n​\n",
+  "wordCount" : "1945",
+  "inLanguage": "en",
+  "datePublished": "2018-11-01T00:00:00Z",
+  "dateModified": "2018-11-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "http://localhost:1313/blog/css%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "http://localhost:1313/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/blog">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="http://localhost:1313/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>元素布局与定位</h1>
+  </header>
+
+  <p>
+  <small>
+    November 1, 2018&nbsp;· 1945 words&nbsp;· 4 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="http://localhost:1313/tags/css/">CSS</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#元素布局与定位">元素布局与定位</a>
+      <ul>
+        <li><a href="#position-位置属性">position 位置属性</a></li>
+        <li><a href="#display-显示属性">display 显示属性</a></li>
+        <li><a href="#背景">背景</a></li>
+      </ul>
+    </li>
+    <li><a href="#字体">字体</a>
+      <ul>
+        <li><a href="#文本属性">文本属性</a></li>
+      </ul>
+    </li>
+    <li><a href="#web字体大揭秘">web字体大揭秘</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><h2 id="元素布局与定位">元素布局与定位</h2>
+<h3 id="position-位置属性">position 位置属性</h3>
+<blockquote>
+<p>其中有relative，absolute，static，fixed</p>
+</blockquote>
+<p>1.relative：相对布局，相对于原来的文档流中的位置（默认位置），有left，right，top，bottom。</p>
+<p>2.static：即默认文档流的位置</p>
+<p>3.absolute：绝对位置，脱离出常规文档流，其原有的元素位置被回收，被其他元素顶替。其本身则相对于顶级元素body元素定位布局</p>
+<blockquote>
+<p>关于定位的重要概念：<strong>定位上下文</strong></p>
+</blockquote>
+<p>4.fixed:固定定位，完全移除文档流，与absolute绝对定位类似。但它是相对于视口（浏览器窗口或者屏幕），因此<strong>它不会随着窗口的滚动而移动</strong>。</p>
+<h4 id="定位上下文">定位上下文</h4>
+<blockquote>
+<p>相对定位的参考元素，只有其存在才可进行相关的定位</p>
+</blockquote>
+<h3 id="display-显示属性">display 显示属性</h3>
+<p>属性值有block、inline，和none。它可以更改元素的显示模式，如将块级元素以行内元素显示。<br>
+其中对于设定为none属性值的元素，它们都不会在页面中显示出来，原本所占有的空间也会被回收</p>
+<blockquote>
+<p>ps:回顾</p>
+<ul>
+<li>块级元素，比如段落、标题、列表等，在浏览器中上下堆叠显示。</li>
+<li>行内元素，比如a、span、img，在浏览器中左右并排显示，只有前一行没有空间的时候才会显示到下一行。</li>
+</ul>
+</blockquote>
+<h3 id="背景">背景</h3>
+<p>背景属性：
+1.颜色：</p>
+<pre><code>background-color    
+</code></pre>
+<p>2.图片及与其相关的属性：</p>
+<pre><code>background-image：url图片路径/图片文件名）添加背景图片
+background-repeat：选择图片的重复方式，有 no—repeat，repeat-x，-y等
+</code></pre>
+<p>3.背景的位置：</p>
+<pre><code>background-position：用于控制背景的位置布局，控制的方法有关键字、百分比、与像素（ps：注意其基准点的不同）
+</code></pre>
+<p>4.背景的尺寸：</p>
+<pre><code>background-size：用来控制背景图片的尺寸。
+控制方法：
+1.百分比：按比例缩放  
+2.像素：固定缩放  
+3.cover：拉大图片，使其完全填满背景区，保持宽高比
+4.contain：缩放图片，使其恰好适合背景区，保持宽高比
+</code></pre>
+<p>5.背景粘附：</p>
+<pre><code>background-attachment：控制滚动元素内背景图片是否随滚动元素而滚动。
+如：background-attachment：fixed；
+</code></pre>
+<p>6.简写背景属性：</p>
+<blockquote>
+<p>即将‘-’后面的内容省略，直接将属性只写在括号内。
+如：</p>
+</blockquote>
+<pre><code>body{background:url(.../...) fixed no-repeat}
+</code></pre>
+<p><strong>ps</strong>:CSS允许添加多背景图片，其中先添加的图片位于上层。</p>
+<h2 id="字体">字体</h2>
+<p>字体样式的属性：</p>
+<p>1.font-family:字体族，字体类型，可继承。</p>
+<blockquote>
+<p>设置字体栈:以防字体无效，多罗列出一些字体以备用，如：</p>
+</blockquote>
+<pre><code>body{font-family:&quot;trebuchet ms&quot;(当字体名字有空格时，用”“括起来),tahoma,sans-sreif;}
+//按先后顺序优先
+</code></pre>
+<p>2.font-size:字体大小，有相对单位与绝对单位，相对单位可继承。</p>
+<blockquote>
+<ul>
+<li>绝对单位：像素与一些如同x-small等基准大小</li>
+<li>相对单位：百分比、em、rem。</li>
+<li>如果给某个元素设定了相对字体大小，则该元素的字体大小要相对于<strong>最近的设定过字体大小的祖先元素</strong>来确定。</li>
+<li>rem相对单位：相对与HTML根元素的大小。集两种单位的优点于一身。</li>
+</ul>
+</blockquote>
+<p>3.font-style:字体样式，设定是正体还是 斜体</p>
+<blockquote>
+<p>属性值：italic（斜体）、oblique（斜体）、normal（正体）。</p>
+</blockquote>
+<p>4.font-wight:字体粗细</p>
+<blockquote>
+<p>属性值：100&hellip;&hellip;等以及bold和normal等</p>
+</blockquote>
+<p>5.font-variant:字体变化</p>
+<blockquote>
+<p>属性值：normal，small-caps
+6.font(简写属性):</p>
+</blockquote>
+<p>示例：</p>
+<pre><code>p{font:bold italic small-caps .9em helvetica,arial,san-serif;} 
+</code></pre>
+<h3 id="文本属性">文本属性</h3>
+<pre><code>p{
+    text-indent:3em;  
+    letter-spacing：2em；  
+    word-spacing：2em；  
+    text-decoration：underline；  
+    text-align:center;  
+    text-height：1.5（即为字体的1.5倍）；  
+    span：vertical-align：60%；  
+
+    }
+</code></pre>
+<p>1.text-indent:文本缩进,正值向右缩进。属性可被子元素继承，且继承的是依据父元素计算的具体数值。</p>
+<p>2.letter-spacing:在默认基础上改变字符间距,无论如何一定要使用相对单位，以便缩放。</p>
+<p>3.word-spacing：单词间距，类似。</p>
+<p>4.text-decoration:文本装饰，主要用于链接添加下划线。</p>
+<blockquote>
+<p>属性值：underline、overline、line-through、blink、none</p>
+</blockquote>
+<p>5.text-align:文本对齐</p>
+<blockquote>
+<p>属性值：left，right，center、justify（两端对齐）。</p>
+</blockquote>
+<p>6.line-height：行高，与外边距不同，不叠加，其余类似。属性值为任意的值，不用添加单位。可用于除去大标题的空白。<br>
+7.text-transformation：用于转换字母的大小写。<br>
+8.span：垂直对齐，属性值为任意数值或者一些关键字。用于书写上标或者下标。</p>
+<h2 id="web字体大揭秘">web字体大揭秘</h2>
+<p>可调用远程服务器中的字体给浏览器使用。</p>
+<p>​</p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="http://localhost:1313/blog/%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%8C%E6%AD%A5%E4%B8%8E%E4%BA%92%E6%96%A5/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>进程的同步与互斥</span></a>
+    
+    
+    <a class="next" href="http://localhost:1313/blog/gsoc/"><span></span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2025 <a href="http://localhost:1313/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

@@ -150,6 +150,31 @@ if (!doNotTrack) {
       
         <article>
           <div class="blog-card">
+              <h3><a href="/blog/leveldb-mvcc/">LevelDB MVCC</a></h3>
+              <p>
+  <small>
+    February 8, 2025&nbsp;· 540 words&nbsp;· 3 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      
+      <a href="https://noneback.github.io/tags/mvcc/">MVCC</a>
+      
+    </small>
+  
+<p>
+              LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let&rsquo;s explore how it accomplishes this.
+Sequence Number LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.
+Versioning Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another.
+          </div>
+        </article>
+      
+        <article>
+          <div class="blog-card">
               <h3><a href="/blog/prometheus-tsdb/">Prometheus--TSDB</a></h3>
               <p>
   <small>
@@ -243,33 +268,6 @@ It achieves high utilization through admission control, efficient task packing, 
 Design Dynamo is a NoSQL product that provides a key-value storage interface. It emphasizes high availability rather than consistency, which leads to differences in architectural design and technical choices compared to other systems.
           </div>
         </article>
-      
-        <article>
-          <div class="blog-card">
-              <h3><a href="/blog/mit6.824-auroradb/">MIT6.824 AuroraDB</a></h3>
-              <p>
-  <small>
-    August 1, 2023&nbsp;· 524 words&nbsp;· 2 min</small>
-
-  <small>
-      
-      ·
-      
-      
-      <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
-      
-      <a href="https://noneback.github.io/tags/database/">Database</a>
-      
-      <a href="https://noneback.github.io/tags/cloud-native/">Cloud-Native</a>
-      
-      <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
-      
-    </small>
-  
-<p>
-              This article introduces the design considerations of AWS&rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead. Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios. In terms of design, there are several aspects worth noting: The design premise of
-          </div>
-        </article>
       </div>
     
     <div class="paginator">
@@ -283,7 +281,7 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
 </div>
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>

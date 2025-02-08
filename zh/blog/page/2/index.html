@@ -150,6 +150,54 @@ if (!doNotTrack) {
       
         <article>
           <div class="blog-card">
+              <h3><a href="/zh/blog/zh/mit6.824-auroradb/">MIT6.824 AuroraDB</a></h3>
+              <p>
+  <small>
+    2023年8月1日&nbsp;· 1159 字&nbsp;· 3 分钟</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
+      
+      <a href="https://noneback.github.io/zh/tags/database/">Database</a>
+      
+      <a href="https://noneback.github.io/zh/tags/cloud-native/">Cloud-Native</a>
+      
+      <a href="https://noneback.github.io/zh/tags/mit6.824/">MIT6.824</a>
+      
+    </small>
+  
+<p>
+              <p>这篇文章介绍了AWS的数据库产品Aurora的设计考虑，包括存算分离、一写多读、基于Quorum的NRW一致性协议等。同时，文章也提到了PolarDB参考Aurora进行设计，但在网络瓶颈和系统调用方面有所不同。</p>
+<hr>
+<p>Aurora是AWS提供的一种数据库产品，主要面向OLTP的业务场景。</p>
+<p>设计上，我觉得有这些值得参考的地方：</p>
+<ul>
+<li>Aurora设计的前提是，在数据库上云之后，得益于云基础设施的发展，数据库最大的瓶颈从计算和存储变成了网络， 这是AWS在设计Aurora的时候一个很重要的前提。基于此前提，Aurora重提Log is Database的论调，只将RedoLog下推至存储层。</li>
+<li>存算分离。数据库存储层对接分布式存储底座，通过存储底座提供良好的可靠性和安全性保证。计算和存储层可以独立拓展。同时，存储底座对上层提供的单一数据视图，使得一些核心功能和运维操作效率得到很好的提升（比如备份，数据恢复，HA等）</li>
+<li>一些有意思的可靠性保证。比如基于Quorum的NRW一致性协议，存储节点读写都需要多数派的投票。保证双AZ级别的容错；用分片存储减少故障处理时间，以此提升SLA。多数读只发生在数据库恢复的时候，此时数据库需要恢复当前的状态。</li>
+<li>一写多读。不同于ShareNothing架构的NewSQL产品，Aurora只提供了单个写节点。数据一致性保证也因此变得简单，因为单写节点可以通过RedoLog LSN作为逻辑时钟，以此维护数据更新操作的偏序关系，只需要把RedoLog下推至所有节点，并基于此顺序对这些操作Apply就可以保证数据的一致性。</li>
+<li>事务的实现。由于存储底座对上层提供的单一文件视图，所以对与Aurora来说，其事务的实现几乎与单机事务算法相同，并能提供相同的事务语义。NewSQL的事务一般是基于2PC的分布式事务实现。</li>
+<li>后台加速前台处理。类似LevelDB的思路，尽可能将存储节点的一些操作异步化（比如日志Apply），提升前台用户感知性能。这些异步的操作通过维护各种xxLSN来记录当前节点的后台处理进度，比如VLSN，commit-LSN等等</li>
+</ul>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094928.png"></p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094941.png"></p>
+<p>有趣的是，PolarDB虽然是参考Aurora进行的设计，但它的架构设计认为网络并非瓶颈，而是经过OS的各种系统调用拖慢了整体速度。在彼时阿里云存储底座并不稳定的条件下，所以才有了它架构中的PolarStore，用各种硬件以及FUSE等存储技术越过或者优化系统调用，而如今盘古在稳定性和性能上都做的很不错的情况下，弱化PolarStore这个组件也成为了正常的选择。我认为说的不无道理。</p>
+<p>另外，为什么他们选择用NWR而不是用Raft之类的一致性协议？目前看上去，NWR在网络上，一次请求的网络比Raft少一轮，可能是这个原因</p>
+<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094918.png"></p>
+<h1 id="参考">参考</h1>
+<p><a href="https://zhuanlan.zhihu.com/p/319806107">https://zhuanlan.zhihu.com/p/319806107</a></p>
+<p><a href="http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt">http://nil.csail.mit.edu/6.824/2020/notes/l-aurora.txt</a></p>
+<p><a href="https://keys961.github.io/2020/05/05/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB-Aurora/">论文阅读-Amazon Aurora: Design Considerations for High Throughput Cloud-Native Relational Database - keys961 | keys961 Blog</a></p>
+          </div>
+        </article>
+      
+        <article>
+          <div class="blog-card">
               <h3><a href="/zh/blog/zh/mit6.824-chainreplication/">MIT6.824-ChainReplication</a></h3>
               <p>
   <small>
@@ -249,31 +297,6 @@ if (!doNotTrack) {
               iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后
           </div>
         </article>
-      
-        <article>
-          <div class="blog-card">
-              <h3><a href="/zh/blog/zh/apacheiceberg%E8%B0%83%E7%A0%94/">Apache-Iceberg调研</a></h3>
-              <p>
-  <small>
-    2022年10月5日&nbsp;· 2426 字&nbsp;· 5 分钟</small>
-
-  <small>
-      
-      ·
-      
-      
-      <a href="https://noneback.github.io/zh/tags/lake-house/">Lake House</a>
-      
-      <a href="https://noneback.github.io/zh/tags/storage/">Storage</a>
-      
-      <a href="https://noneback.github.io/zh/tags/big-data/">Big Data</a>
-      
-    </small>
-  
-<p>
-              一种用于大规模分析数据集的表格式。 一种对数据文件和元数据文件的组织规范。 一种介于存储和计算中间的schema语义抽象。 netflix开发开源
-          </div>
-        </article>
       </div>
     
     <div class="paginator">
@@ -289,7 +312,7 @@ if (!doNotTrack) {
 </div>
 
         </div><footer class="footer">
-  <p>&copy; 2024 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
     <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
