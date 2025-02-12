@@ -90,11 +90,10 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;// Either an empty string, or a valid InternalKey.
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string compact_pointer_[config&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;kNumLevels];
 &lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;mvcc&#34;&gt;MVCC&lt;/h2&gt;
-&lt;p&gt;MVCC 主要解决了 sstable 的读写冲突问题。&lt;/p&gt;
-&lt;p&gt;对于memtable的读写操作，依赖 skiplist，本身是有读写冲突的。对与sstable的读写操作（compaction 和 read ）则是没有。&lt;/p&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;mvcc--snapshot-read&#34;&gt;MVCC &amp;amp; Snapshot Read&lt;/h2&gt;
+&lt;p&gt;对于memtable的并发读写操作，依赖 skiplist，本身是有锁来处理读写冲突的。对于sstable的并发读写（compaction 和 read ）则依赖 Version 和 Sequence Number 解决。&lt;/p&gt;
 &lt;p&gt;每次对 sstable 的写操作（minor/major compaction）必然产生新的 sstable 文件，带来 sstable 集合的变化，进而产生新的 Version。而每条KV记录也一定会携带 Sequence Number信息。&lt;/p&gt;
-&lt;p&gt;每次读操作会附带上 Sequence Number 以及 Version 信息，Sequence Number 确保了后续的写入对读不可见，关联Version确保了Version关联的sstable在读操作结束前不会被GC。进而确保了读取所用到的 sstable 文件不会丢失或者更新。&lt;/p&gt;
+&lt;p&gt;每次读操作(&lt;code&gt;Version.Get&lt;/code&gt;)会附带上 Sequence Number 以及 Version 信息，Sequence Number 确保了后续的写入对读不可见，关联Version确保了Version关联的sstable在读操作结束前不会被GC。进而确保了读取所用到的sstable文件不会丢失或者更新,同时也能实现 Snapshot Read。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;如果 Read 和 Write 在同一个 Version 进行，则必须是Compaction 先完成后，否则 Version 不会变化。此时触发读取操作，此时sstable不会有变化，所以读写并不冲突。如果不是，则只能是先读后写，写对读不可见，更不会有冲突。&lt;/p&gt;
 &lt;/blockquote&gt;
