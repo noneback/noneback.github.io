@@ -3,9 +3,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LevelDB MVCC</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let&rsquo;s explore how it accomplishes this.
-Sequence Number LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.
-Versioning Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another.">
+    <meta name="description" content="Ladder@LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.
+Sequence Number LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.
+Versioning Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/leveldb-mvcc/">
         <meta name="google-site-verification" content="xxx">
@@ -29,9 +29,9 @@ if (!doNotTrack) {
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:title" content="LevelDB MVCC" />
-<meta property="og:description" content="LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let&rsquo;s explore how it accomplishes this.
-Sequence Number LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.
-Versioning Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another." />
+<meta property="og:description" content="LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.
+Sequence Number LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.
+Versioning Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://noneback.github.io/blog/leveldb-mvcc/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2025-02-08T14:06:39+08:00" />
@@ -39,9 +39,9 @@ Versioning Whenever there is a change in the collection of SSTable files, LevelD
 
 
 <meta name="twitter:card" content="summary"/><meta name="twitter:title" content="LevelDB MVCC"/>
-<meta name="twitter:description" content="LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let&rsquo;s explore how it accomplishes this.
-Sequence Number LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.
-Versioning Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another."/>
+<meta name="twitter:description" content="LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.
+Sequence Number LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.
+Versioning Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information."/>
 
 
 <script type="application/ld+json">
@@ -70,12 +70,12 @@ Versioning Whenever there is a change in the collection of SSTable files, LevelD
   "@type": "BlogPosting",
   "headline": "LevelDB MVCC",
   "name": "LevelDB MVCC",
-  "description": "LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let\u0026rsquo;s explore how it accomplishes this.\nSequence Number LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.\nVersioning Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another.",
+  "description": "LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let\u0026rsquo;s examine its implementation.\nSequence Number LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.\nVersioning Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information.",
   "keywords": [
     "LevelDB", "MVCC"
   ],
-  "articleBody": "LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let’s explore how it accomplishes this.\nSequence Number LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.\nVersioning Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another. A Version represents the state of the database at a specific moment, recording metadata such as the current SSTables and compaction-related information. VersionEdit captures the changes between versions.\nVersion1 ---VersionEdit--\u003e Version2 VersionSet is a linked list of ordered Versions, representing the current and historical states of the database. Among these, LastSeq and the Version linked list are the most important. Version itself uses reference counting (RC) for garbage collection.\nThe Manifest file acts as the WAL (Write-Ahead Logging) for Version changes, ensuring atomicity during version transitions. The combination of WAL and Manifest guarantees the atomicity of LastSeq updates.\nWrite Done ---\u003e VersionEdit ---\u003e Manifest ---\u003e VersionSet During the Version migration process, write operations cause state changes that are recorded in memory as VersionEdit, then written to the Manifest, and finally, the VersionSet is updated to point to the new Version. This operation ensures consistency in version changes.\nHow to understand this consistency?\nDuring crash recovery, the latest Version can still be restored using the Manifest. Compaction does not interfere with ongoing read operations. Reads will never encounter intermediate SSTable files.\nclass VersionEdit { /** Other code */ typedef std::set\u003cstd::pair\u003cint, uint64_t\u003e\u003e DeletedFileSet; std::string comparator_; uint64_t log_number_; uint64_t prev_log_number_; uint64_t next_file_number_; SequenceNumber last_sequence_; bool has_comparator_; bool has_log_number_; bool has_prev_log_number_; bool has_next_file_number_; bool has_last_sequence_; std::vector\u003cstd::pair\u003cint, InternalKey\u003e\u003e compact_pointers_; DeletedFileSet deleted_files_; std::vector\u003cstd::pair\u003cint, FileMetaData\u003e\u003e new_files_; }; class Version { VersionSet*vset_; Version* next_; Version* prev_; int refs_; std::vector\u003cFileMetaData*\u003e files_[config::kNumLevels]; FileMetaData* file_to_compact_; int file_to_compact_level_; double compaction_score_; int compaction_level_; }; class VersionSet { Env*const env_; const std::string dbname_; const Options* const options_; TableCache* const table_cache_; const InternalKeyComparator icmp_; uint64_t next_file_number_; uint64_t manifest_file_number_; uint64_t last_sequence_; uint64_t log_number_; uint64_t prev_log_number_; WritableFile* descriptor_file_; log::Writer* descriptor_log_; Version dummy_versions_; Version* current_; std::string compact_pointer_[config::kNumLevels]; } MVCC Mechanism MVCC primarily resolves concurrent read and write conflicts on SSTables.\nMemtable Operations: Reads and writes to the Memtable use a skip list, which inherently introduces conflicts. SSTable Operations: Reads and writes (compaction and read operations) do not interfere with each other. Each write operation is associated with a Sequence Number, and SSTables are only appended to. Compaction merely merges SSTables into new files.\nEach read operation is associated with a Sequence Number and Version. The Sequence Number ensures that subsequent writes are invisible to the read operation, and the associated Version ensures that the SSTables used during the read are not garbage collected. This guarantees that the read operation does not encounter changes to the SSTables it uses.\nIf a read and write operate within the same Version, the compaction must complete first, and the Version does not change. This ensures that the compaction process does not interfere with the read. For other cases, reads always precede writes, making writes invisible to the read and eliminating conflicts.\nReference https://leveldb-handbook.readthedocs.io/en/latest/index.html\nhttps://noneback.github.io/en/blog/en/leveldb-write/\n",
-  "wordCount" : "540",
+  "articleBody": "LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let’s examine its implementation.\nSequence Number LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.\nVersioning Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information. VersionEdit records version changes.\nVersion1 ---VersionEdit--\u003e Version2 The VersionSet is represented as an ordered linked list of Versions, reflecting the database’s current and historical states. The LastSeq (last sequence number) and Version linked list are critical components.\nThe Version linked list tracks all stored Versions and their changes, with reference counting (RC) used for garbage collection. The Version Chain describes the total order of sstable write operations across different times.\nWAL + Manifest ensures atomic LastSeq updates. The Manifest file acts as a WAL for version changes, working with Version Commit operations to guarantee atomic updates of the latest version in VersionSet.\nDuring version transitions:\nWrite operations generate VersionEdit records in memory Changes are written to the Manifest VersionSet updates to the new Version This process ensures version consistency: compaction-induced version changes won’t affect ongoing read operations, and readers never access intermediate sstable states.\nclass VersionEdit { /** Other code */ typedef std::set\u003cstd::pair\u003cint, uint64_t\u003e\u003e DeletedFileSet; std::string comparator_; uint64_t log_number_; uint64_t prev_log_number_; uint64_t next_file_number_; SequenceNumber last_sequence_; bool has_comparator_; bool has_log_number_; bool has_prev_log_number_; bool has_next_file_number_; bool has_last_sequence_; std::vector\u003cstd::pair\u003cint, InternalKey\u003e\u003e compact_pointers_; DeletedFileSet deleted_files_; std::vector\u003cstd::pair\u003cint, FileMetaData\u003e\u003e new_files_; }; class Version { VersionSet*vset_; Version* next_; Version* prev_; int refs_; std::vector\u003cFileMetaData*\u003e files_[config::kNumLevels]; FileMetaData* file_to_compact_; int file_to_compact_level_; double compaction_score_; int compaction_level_; }; class VersionSet { Env*const env_; const std::string dbname_; const Options* const options_; TableCache* const table_cache_; const InternalKeyComparator icmp_; uint64_t next_file_number_; uint64_t manifest_file_number_; uint64_t last_sequence_; uint64_t log_number_; uint64_t prev_log_number_; WritableFile* descriptor_file_; log::Writer* descriptor_log_; Version dummy_versions_; Version* current_; std::string compact_pointer_[config::kNumLevels]; } MVCC \u0026 Snapshot Read MVCC primarily resolves concurrent read and write conflicts on SSTables.\nMemtable Operations: Reads and writes to the Memtable use a skip list, which inherently introduces conflicts. SSTable Operations: Reads and writes (compaction and read operations) do not interfere with each other. Each write operation is associated with a Sequence Number, and SSTables are only appended to. Compaction merely merges SSTables into new files.\nEach read operation is associated with a Sequence Number and Version. The Sequence Number ensures that subsequent writes are invisible to the read operation, and the associated Version ensures that the SSTables used during the read are not garbage collected. This guarantees that the read operation does not encounter changes to the SSTables it uses.\nIf a read and write operate within the same Version, the compaction must complete first, and the Version does not change. This ensures that the compaction process does not interfere with the read. For other cases, reads always precede writes, making writes invisible to the read and eliminating conflicts.\nReference https://leveldb-handbook.readthedocs.io/en/latest/index.html\nhttps://noneback.github.io/en/blog/en/leveldb-write/\n",
+  "wordCount" : "502",
   "inLanguage": "en",
   "datePublished": "2025-02-08T14:06:39+08:00",
   "dateModified": "2025-02-08T14:06:39+08:00",
@@ -235,7 +235,7 @@ Versioning Whenever there is a change in the collection of SSTable files, LevelD
 
   <p>
   <small>
-    February 8, 2025&nbsp;· 540 words&nbsp;· 3 min</small>
+    February 8, 2025&nbsp;· 502 words&nbsp;· 3 min</small>
 
   <small>
       
@@ -253,28 +253,30 @@ Versioning Whenever there is a change in the collection of SSTable files, LevelD
   <div class="blog-toc">
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#sequence-number">Sequence Number</a></li>
-    <li><a href="#versioning">Versioning</a></li>
-    <li><a href="#mvcc-mechanism">MVCC Mechanism</a></li>
+    <li><a href="#mvcc--snapshot-read">MVCC &amp; Snapshot Read</a></li>
     <li><a href="#reference">Reference</a></li>
   </ul>
 </nav>
   </div>
 
-  <section class="blog-content"><p>LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let&rsquo;s explore how it accomplishes this.</p>
-<h2 id="sequence-number">Sequence Number</h2>
-<p>LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.</p>
+  <section class="blog-content"><p>LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.</p>
+<p>Sequence Number
+LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.</p>
 <p><img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg"></p>
-<h2 id="versioning">Versioning</h2>
-<p>Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another. A Version represents the state of the database at a specific moment, recording metadata such as the current SSTables and compaction-related information. VersionEdit captures the changes between versions.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-plain" data-lang="plain"><span style="display:flex;"><span>Version1 ---VersionEdit--&gt; Version2
-</span></span></code></pre></div><p>VersionSet is a linked list of ordered Versions, representing the current and historical states of the database. Among these, LastSeq and the Version linked list are the most important. Version itself uses reference counting (RC) for garbage collection.</p>
-<p>The Manifest file acts as the WAL (Write-Ahead Logging) for Version changes, ensuring atomicity during version transitions. The combination of WAL and Manifest guarantees the atomicity of LastSeq updates.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-plain" data-lang="plain"><span style="display:flex;"><span>Write Done ---&gt; VersionEdit ---&gt; Manifest ---&gt; VersionSet
-</span></span></code></pre></div><p>During the Version migration process, write operations cause state changes that are recorded in memory as VersionEdit, then written to the Manifest, and finally, the VersionSet is updated to point to the new Version. This operation ensures consistency in version changes.</p>
-<p>How to understand this consistency?</p>
-<p>During crash recovery, the latest Version can still be restored using the Manifest.
-Compaction does not interfere with ongoing read operations. Reads will never encounter intermediate SSTable files.</p>
+<p>Versioning
+Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information. VersionEdit records version changes.</p>
+<pre tabindex="0"><code>Version1 ---VersionEdit--&gt; Version2
+</code></pre><p>The VersionSet is represented as an ordered linked list of Versions, reflecting the database&rsquo;s current and historical states. The LastSeq (last sequence number) and Version linked list are critical components.</p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202502121042060.png"></p>
+<p>The Version linked list tracks all stored Versions and their changes, with reference counting (RC) used for garbage collection. The Version Chain describes the total order of sstable write operations across different times.</p>
+<p>WAL + Manifest ensures atomic LastSeq updates. The Manifest file acts as a WAL for version changes, working with Version Commit operations to guarantee atomic updates of the latest version in VersionSet.</p>
+<p>During version transitions:</p>
+<ol>
+<li>Write operations generate VersionEdit records in memory</li>
+<li>Changes are written to the Manifest</li>
+<li>VersionSet updates to the new Version</li>
+</ol>
+<p>This process ensures version consistency: compaction-induced version changes won&rsquo;t affect ongoing read operations, and readers never access intermediate sstable states.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionEdit</span> {
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e">/** Other code */</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">typedef</span> std<span style="color:#f92672">::</span>set<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">uint64_t</span><span style="color:#f92672">&gt;&gt;</span> DeletedFileSet;
@@ -329,7 +331,7 @@ Compaction does not interfere with ongoing read operations. Reads will never enc
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>string compact_pointer_[config<span style="color:#f92672">::</span>kNumLevels];
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><h2 id="mvcc-mechanism">MVCC Mechanism</h2>
+</span></span></code></pre></div><h2 id="mvcc--snapshot-read">MVCC &amp; Snapshot Read</h2>
 <p>MVCC primarily resolves concurrent read and write conflicts on SSTables.</p>
 <p>Memtable Operations: Reads and writes to the Memtable use a skip list, which inherently introduces conflicts.
 SSTable Operations: Reads and writes (compaction and read operations) do not interfere with each other.

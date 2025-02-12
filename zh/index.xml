@@ -16,13 +16,13 @@
       <guid>https://noneback.github.io/zh/blog/zh/leveldb-mvcc/</guid>
       <description>&lt;p&gt;LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。&lt;/p&gt;
 &lt;h2 id=&#34;sequence-number&#34;&gt;Sequence Number&lt;/h2&gt;
-&lt;p&gt;LevelDB通过Sequence Number作为逻辑时钟，维护了写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。&lt;/p&gt;
+&lt;p&gt;LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。&lt;/p&gt;
 &lt;p&gt;&lt;img alt=&#34;Alt text&#34; src=&#34;https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;versioning&#34;&gt;Versioning&lt;/h2&gt;
 &lt;p&gt;LevelDB每次sstable文件集合变化，都会从一个Version升级成另外一个Version。Version表示DB在某个时刻的状态，每个Version中记录了某个时刻sstable以及compaction 有关的元信息。VersionEdit 描述了版本的变化。&lt;/p&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Version1 ---VersionEdit--&amp;gt; Version2
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;VersionSet 被描述为 一组有序的 Version 链表，代表了数据库当前以及历史的运行状态。其中LastSeq 和 Version 链表最为关键。&lt;/p&gt;
-&lt;p&gt;Version链表描述了存储的所有Version以及变化，Version 本身使用 RC 的方式做 GC。LastSeq作为逻辑时钟，维护了读写操作的全序关系。&lt;/p&gt;
+&lt;p&gt;Version链表描述了存储的所有Version以及变化，Version 本身使用 RC 的方式做 GC。Version Chain 描述了不同时间sstable 集合写操作的全序关系。&lt;/p&gt;
 &lt;p&gt;WAL + Manifest 确保了LastSeq变更的原子性。&lt;/p&gt;
 &lt;p&gt;Manifest文件作为VersionChange的WAL保证版本变更的Crush Safety, 和 Version Commit操作一起保证了VersionSet最新版本变更的原子性。&lt;/p&gt;
 &lt;p&gt;&lt;img alt=&#34;x&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202502121042060.png&#34;&gt;&lt;/p&gt;

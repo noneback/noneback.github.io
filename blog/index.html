@@ -153,7 +153,7 @@ if (!doNotTrack) {
               <h3><a href="/blog/leveldb-mvcc/">LevelDB MVCC</a></h3>
               <p>
   <small>
-    February 8, 2025&nbsp;· 540 words&nbsp;· 3 min</small>
+    February 8, 2025&nbsp;· 502 words&nbsp;· 3 min</small>
 
   <small>
       
@@ -167,9 +167,9 @@ if (!doNotTrack) {
     </small>
   
 <p>
-              LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let&rsquo;s explore how it accomplishes this.
-Sequence Number LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.
-Versioning Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another.
+              LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.
+Sequence Number LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.
+Versioning Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information.
           </div>
         </article>
       

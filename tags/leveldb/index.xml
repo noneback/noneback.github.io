@@ -14,20 +14,24 @@
       <pubDate>Sat, 08 Feb 2025 14:06:39 +0800</pubDate>
       
       <guid>https://noneback.github.io/blog/leveldb-mvcc/</guid>
-      <description>&lt;p&gt;LevelDB achieves concurrent reads and writes of SSTables and supports Snapshot Read functionality through MVCC (Multi-Version Concurrency Control). Let&amp;rsquo;s explore how it accomplishes this.&lt;/p&gt;
-&lt;h2 id=&#34;sequence-number&#34;&gt;Sequence Number&lt;/h2&gt;
-&lt;p&gt;LevelDB uses the Sequence Number as a logical timestamp to maintain a total order of write operations. The Sequence Number is encoded into the last few bytes of the InternalKey. When writing to memory, the ordered nature of the data is also ensured.&lt;/p&gt;
+      <description>&lt;p&gt;LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&amp;rsquo;s examine its implementation.&lt;/p&gt;
+&lt;p&gt;Sequence Number
+LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.&lt;/p&gt;
 &lt;p&gt;&lt;img src=&#34;https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg&#34;&gt;&lt;/p&gt;
-&lt;h2 id=&#34;versioning&#34;&gt;Versioning&lt;/h2&gt;
-&lt;p&gt;Whenever there is a change in the collection of SSTable files, LevelDB upgrades from one Version to another. A Version represents the state of the database at a specific moment, recording metadata such as the current SSTables and compaction-related information. VersionEdit captures the changes between versions.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-plain&#34; data-lang=&#34;plain&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Version1 ---VersionEdit--&amp;gt; Version2
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;VersionSet is a linked list of ordered Versions, representing the current and historical states of the database. Among these, LastSeq and the Version linked list are the most important. Version itself uses reference counting (RC) for garbage collection.&lt;/p&gt;
-&lt;p&gt;The Manifest file acts as the WAL (Write-Ahead Logging) for Version changes, ensuring atomicity during version transitions. The combination of WAL and Manifest guarantees the atomicity of LastSeq updates.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-plain&#34; data-lang=&#34;plain&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Write Done ---&amp;gt; VersionEdit ---&amp;gt; Manifest ---&amp;gt; VersionSet
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;During the Version migration process, write operations cause state changes that are recorded in memory as VersionEdit, then written to the Manifest, and finally, the VersionSet is updated to point to the new Version. This operation ensures consistency in version changes.&lt;/p&gt;
-&lt;p&gt;How to understand this consistency?&lt;/p&gt;
-&lt;p&gt;During crash recovery, the latest Version can still be restored using the Manifest.
-Compaction does not interfere with ongoing read operations. Reads will never encounter intermediate SSTable files.&lt;/p&gt;
+&lt;p&gt;Versioning
+Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information. VersionEdit records version changes.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Version1 ---VersionEdit--&amp;gt; Version2
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The VersionSet is represented as an ordered linked list of Versions, reflecting the database&amp;rsquo;s current and historical states. The LastSeq (last sequence number) and Version linked list are critical components.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202502121042060.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The Version linked list tracks all stored Versions and their changes, with reference counting (RC) used for garbage collection. The Version Chain describes the total order of sstable write operations across different times.&lt;/p&gt;
+&lt;p&gt;WAL + Manifest ensures atomic LastSeq updates. The Manifest file acts as a WAL for version changes, working with Version Commit operations to guarantee atomic updates of the latest version in VersionSet.&lt;/p&gt;
+&lt;p&gt;During version transitions:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Write operations generate VersionEdit records in memory&lt;/li&gt;
+&lt;li&gt;Changes are written to the Manifest&lt;/li&gt;
+&lt;li&gt;VersionSet updates to the new Version&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;This process ensures version consistency: compaction-induced version changes won&amp;rsquo;t affect ongoing read operations, and readers never access intermediate sstable states.&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;VersionEdit&lt;/span&gt; {
 &lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;/** Other code */&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;typedef&lt;/span&gt; std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;set&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; DeletedFileSet;
@@ -82,7 +86,7 @@ Compaction does not interfere with ongoing read operations. Reads will never enc
 &lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;string compact_pointer_[config&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;kNumLevels];
 &lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;mvcc-mechanism&#34;&gt;MVCC Mechanism&lt;/h2&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;mvcc--snapshot-read&#34;&gt;MVCC &amp;amp; Snapshot Read&lt;/h2&gt;
 &lt;p&gt;MVCC primarily resolves concurrent read and write conflicts on SSTables.&lt;/p&gt;
 &lt;p&gt;Memtable Operations: Reads and writes to the Memtable use a skip list, which inherently introduces conflicts.
 SSTable Operations: Reads and writes (compaction and read operations) do not interfere with each other.
