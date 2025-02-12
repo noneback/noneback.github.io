@@ -23,16 +23,11 @@
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Version1 ---VersionEdit--&amp;gt; Version2
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;VersionSet 被描述为 一组有序的 Version 链表，代表了数据库当前以及历史的运行状态。其中LastSeq 和 Version 链表最为关键。&lt;/p&gt;
 &lt;p&gt;Version链表描述了存储的所有Version以及变化，Version 本身使用 RC 的方式做 GC。LastSeq作为逻辑时钟，维护了读写操作的全序关系。&lt;/p&gt;
-&lt;p&gt;Manifest文件作为VersionChange的WAL保证版本变更的原子性。WAL + Manifest 确保了LastSeq变更的原子性。&lt;/p&gt;
+&lt;p&gt;WAL + Manifest 确保了LastSeq变更的原子性。&lt;/p&gt;
+&lt;p&gt;Manifest文件作为VersionChange的WAL保证版本变更的Crush Safety, 和 Version Commit操作一起保证了VersionSet变更的原子性。&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;x&#34; src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/202502121042060.png&#34;&gt;&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-plain&#34; data-lang=&#34;plain&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Write Done ---&amp;gt; VersionEdit ---&amp;gt; Manifest ---&amp;gt; VersionSet
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;在整个 Version迁移过程中，写操作导致状态变更由 VersionEdit 记录在内存中，然后写入到 Manifest里，最后再将 VersionSet 指向此 Version，这样的操作保证了 Version 变更的一致性。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;如何理解这里的一致性？&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;DB 在 Crush Recovery 只有依旧可以利用 Manifest 恢复最新的 Version&lt;/li&gt;
-&lt;li&gt;Compaction 不会影响到正在进行的读操作。读操作也不会读取到中间状态的 sstable 文件&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/blockquote&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;在整个 Version迁移过程中，写操作导致状态变更由 VersionEdit 记录在内存中，然后写入到 Manifest里，最后再将 VersionSet 指向此 Version，这样的操作保证了 Version 变更的一致性，即Compaction 不会影响到正在进行的读操作。读操作也不会读取到中间状态的 sstable 文件。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;VersionEdit&lt;/span&gt; {
 &lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;/** other code */&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;typedef&lt;/span&gt; std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;set&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;std&lt;span style=&#34;color:#f92672&#34;&gt;::&lt;/span&gt;pair&lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;uint64_t&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&amp;gt;&lt;/span&gt; DeletedFileSet;
@@ -98,10 +93,10 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;mvcc&#34;&gt;MVCC&lt;/h2&gt;
 &lt;p&gt;MVCC 主要解决了 sstable 的读写冲突问题。&lt;/p&gt;
 &lt;p&gt;对于memtable的读写操作，依赖 skiplist，本身是有读写冲突的。对与sstable的读写操作（compaction 和 read ）则是没有。&lt;/p&gt;
-&lt;p&gt;每次写操作都会附带上Sequence Number，并且 sstable 只允许追加写入，compaction 也仅仅是将 sstable 合并，写入新文件中。&lt;/p&gt;
+&lt;p&gt;每次对 sstable 的写操作（minor/major compaction）必然产生新的 sstable 文件，带来 sstable 集合的变化，进而产生新的 Version。而每条KV记录也一定会携带 Sequence Number信息。&lt;/p&gt;
 &lt;p&gt;每次读操作会附带上 Sequence Number 以及 Version 信息，Sequence Number 确保了后续的写入对读不可见，关联Version确保了Version关联的sstable在读操作结束前不会被GC。进而确保了读取所用到的 sstable 文件不会丢失或者更新。&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;如果Read 和 Write 在同一个 Version 进行，则必须是Compaction 先完成后，否则 Version 不会变化。此时触发读取操作，此时sstable不会有变化，所以读写并不冲突。如果不是，则只能是先读后写，写对读不可见，更不会有冲突。&lt;/p&gt;
+&lt;p&gt;如果 Read 和 Write 在同一个 Version 进行，则必须是Compaction 先完成后，否则 Version 不会变化。此时触发读取操作，此时sstable不会有变化，所以读写并不冲突。如果不是，则只能是先读后写，写对读不可见，更不会有冲突。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h2 id=&#34;reference&#34;&gt;Reference&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://leveldb-handbook.readthedocs.io/zh/latest/index.html&#34;&gt;https://leveldb-handbook.readthedocs.io/zh/latest/index.html&lt;/a&gt;
