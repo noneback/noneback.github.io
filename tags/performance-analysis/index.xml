@@ -120,8 +120,38 @@ C++ symbols are often mangled (encoded) for uniqueness. Tools like c++filt resto
   D --&amp;gt;|No| F[Use alternative tools e.g., memory profiler, I/O tracer]
   E --&amp;gt; G[Analyze flame graphs/call chains]
   G --&amp;gt; H[Root cause identified]
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;When CPU Profiling Is NOT Suitable
-For non-CPU-bound issues, profiling data may have limited value. Alternative tools are recommended:&lt;/p&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Scenario Category&lt;/th&gt;
+&lt;th&gt;Typical Symptoms&lt;/th&gt;
+&lt;th&gt;Tool Choices&lt;/th&gt;
+&lt;th&gt;Data Collection Strategy&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Sudden CPU Spikes&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Sawtooth-shaped CPU peaks in monitoring charts.&lt;/td&gt;
+&lt;td&gt;Continuous Profiling Systems&lt;/td&gt;
+&lt;td&gt;Capture 5-minute context before/after spikes + regular sampling.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Version Performance Regression&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;QPS/TPS drops post-deployment.&lt;/td&gt;
+&lt;td&gt;Differential FlameGraph&lt;/td&gt;
+&lt;td&gt;A/B version comparison sampling under identical loads.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;High CpuSys&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Elevated OS kernel CPU usage causing host instability.&lt;/td&gt;
+&lt;td&gt;FlameGraph/Call-Chain Graph&lt;/td&gt;
+&lt;td&gt;Regular sampling with kernel stack analysis.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;when-cpu-profiling-is-not-suitable&#34;&gt;When CPU Profiling Is NOT Suitable&lt;/h3&gt;
+&lt;p&gt;For non-CPU-bound issues, profiling data may have limited value. Alternative tools are recommended:&lt;/p&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code class=&#34;language-mermaid&#34; data-lang=&#34;mermaid&#34;&gt;graph TD
   A[CPU Profiling Limitations] --&amp;gt; B[Memory Bottlenecks]
   A --&amp;gt; C[I/O-Bound Workloads]
