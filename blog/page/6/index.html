@@ -11,29 +11,39 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
-<script>
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.dataLayer = window.dataLayer || [];
-	function gtag(){dataLayer.push(arguments);}
-	gtag('js', new Date());
-	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
-}
-</script>
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-H0SRTJWPEK');
+        }
+      </script>
+    
+  
+
 
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
-    <meta property="og:title" content="Blogs" />
-<meta property="og:description" content="" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://noneback.github.io/blog/" />
+    <meta property="og:url" content="https://noneback.github.io/blog/">
+  <meta property="og:site_name" content="NoneBack">
+  <meta property="og:title" content="Blogs">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="website">
 
 
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Blogs"/>
-<meta name="twitter:description" content=""/>
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Blogs">
 
 
 <script type="application/ld+json">
@@ -150,6 +160,31 @@ if (!doNotTrack) {
       
         <article>
           <div class="blog-card">
+              <h3><a href="/blog/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/">CPU False Sharing</a></h3>
+              <p>
+  <small>
+    May 2, 2021&nbsp;· 566 words&nbsp;· 3 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/cpu/">CPU</a>
+      
+      <a href="https://noneback.github.io/tags/cache/">Cache</a>
+      
+    </small>
+  
+<p>
+              The motivation for this post comes from an interview question I was asked: What is CPU false sharing?
+CPU Cache Let&rsquo;s start by discussing CPU cache.
+CPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor&rsquo;s frequency.
+          </div>
+        </article>
+      
+        <article>
+          <div class="blog-card">
               <h3><a href="/blog/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/">MySQL Index Overview</a></h3>
               <p>
   <small>
@@ -245,29 +280,6 @@ About the Paper The core content of the paper is the proposed MapReduce distribu
               Chinese Spam Email Classification Based on Naive Bayes Training and Testing Data This project primarily uses open-source data on GitHub. Data Processing First, we use regular expressions to filter the content of Chinese emails in the training set, removing all non-Chinese characters. The remaining content is then tokenized using jieba for word segmentation, and stopwords are filtered using a Chinese stopword list. The processed results for spam and normal emails
           </div>
         </article>
-      
-        <article>
-          <div class="blog-card">
-              <h3><a href="/blog/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/">Java Multithreading Programming</a></h3>
-              <p>
-  <small>
-    November 1, 2019&nbsp;· 1626 words&nbsp;· 8 min</small>
-
-  <small>
-      
-      ·
-      
-      
-      <a href="https://noneback.github.io/tags/java/">JAVA</a>
-      
-    </small>
-  
-<p>
-              Yesterday evening, while revisiting the book &ldquo;Advanced Java: Multithreading and Parallel Programming&rdquo; by Liang Yung, I thought it would be a good idea to take the opportunity to document my understanding.
-Java Multithreading Programming Java provides built-in support for multithreading.
-A thread is a single sequential flow of control within a process, and multiple threads can run concurrently within a process, each performing different tasks. Multithreading is a specialized form of multitasking that consumes fewer resources.
-          </div>
-        </article>
       </div>
     
     <div class="paginator">
@@ -343,6 +355,11 @@ A thread is a single sequential flow of control within a process, and multiple t
         });
         codeblock.parentNode.appendChild(copybutton);
     });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+<script>
+    mermaid.init(undefined, '.language-mermaid');
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

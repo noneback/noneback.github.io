@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Performance Analysis on NoneBack</title>
+    <link>https://noneback.github.io/tags/performance-analysis/</link>
+    <description>Recent content in Performance Analysis on NoneBack created by </description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <copyright>@NoneBack All rights reserved</copyright>
+    <lastBuildDate>Mon, 10 Mar 2025 14:46:54 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/performance-analysis/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>CPU Profiling: What, How, and When</title>
+      <link>https://noneback.github.io/blog/cpu-profiling-what-how-and-when/</link>
+      <pubDate>Mon, 10 Mar 2025 14:46:54 +0800</pubDate>
+      
+      <guid>https://noneback.github.io/blog/cpu-profiling-what-how-and-when/</guid>
+      <description>&lt;h2 id=&#34;what-what-is-cpu-profiling&#34;&gt;What: What is CPU Profiling&lt;/h2&gt;
+&lt;p&gt;A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.&lt;/p&gt;
+&lt;h2 id=&#34;how-how-profiling-data-is-collected&#34;&gt;How: How Profiling Data is Collected&lt;/h2&gt;
+&lt;p&gt;Common tools like &lt;code&gt;perf&lt;/code&gt; are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code class=&#34;language-mermaid&#34; data-lang=&#34;mermaid&#34;&gt;graph TD
+    A[Sampling Trigger] --&amp;gt;|Interrupt| B[Sampling]
+    B --&amp;gt;|perf_event/ebpf| C[Process Stack Addresses]
+    C --&amp;gt;|Address Translation| D[ELF, OFFSET]
+    D --&amp;gt;|Symbol Resolution| E[Call Stack]
+    E --&amp;gt;|Formatting| F[pprof/perf script]
+    F --&amp;gt; |Visualization| G[Flame Graph/Call Graph]
+&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;trigger-mechanisms&#34;&gt;Trigger Mechanisms&lt;/h3&gt;
+&lt;p&gt;Generally uses timer interrupts or event-counter-based strategies.&lt;/p&gt;
+&lt;h4 id=&#34;timer-interrupts&#34;&gt;Timer Interrupts&lt;/h4&gt;
+&lt;p&gt;Default fixed frequency (e.g., 99Hz) clock interrupts (SIGPROF). Shorter intervals increase precision but also overhead. Linux perf defaults to 99Hz frequency (≈10.1ms intervals).&lt;/p&gt;
+&lt;h4 id=&#34;event-counter-sampling&#34;&gt;Event-Counter Sampling&lt;/h4&gt;
+&lt;p&gt;Triggers sampling when hardware performance counters (e.g., &lt;code&gt;PERF_COUNT_HW_CPU_CYCLES&lt;/code&gt;) reach thresholds. Useful for analyzing hardware-related events like Cache Misses.&lt;/p&gt;
+&lt;h3 id=&#34;sampling-methods&#34;&gt;Sampling Methods&lt;/h3&gt;
+&lt;p&gt;Typically, the OS kernel-provided interfaces like eBPF or perf_event are used for stack sampling.&lt;/p&gt;
+&lt;h4 id=&#34;ebpf-approach&#34;&gt;eBPF Approach&lt;/h4&gt;
+&lt;p&gt;Using eBPF programs (e.g., bpf_get_stackid), both user-space and kernel-space call stacks can be captured directly without additional stack unwinding. This method retrieves complete stack IP information.&lt;/p&gt;
+&lt;h4 id=&#34;perf_event-approach&#34;&gt;perf_event Approach&lt;/h4&gt;
+&lt;p&gt;The perf_event_open interface (e.g., perf record command) captures the instruction pointer (RIP). However, it only records the currently executing function address, not the full call stack. This means only the function name triggered by the sample can be resolved.&lt;/p&gt;
+&lt;p&gt;Example perf record output:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;node &lt;span style=&#34;color:#ae81ff&#34;&gt;3236535&lt;/span&gt; 34397396.208842:     &lt;span style=&#34;color:#ae81ff&#34;&gt;250000&lt;/span&gt; cpu-clock:pppH:           110c800 v8::internal::Heap_CombinedGenerationalAndSharedBarrierSlow+0x0 &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;node &lt;span style=&#34;color:#ae81ff&#34;&gt;3236535&lt;/span&gt; 34397396.354632:     &lt;span style=&#34;color:#ae81ff&#34;&gt;250000&lt;/span&gt; cpu-clock:pppH:      7f7d63e87ef4 Builtins_LoadIC+0x574 &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;To obtain a full call stack, tools like libunwind perform stack unwinding. For example, &lt;code&gt;perf record -g&lt;/code&gt; generates a full stack trace by unwinding the stack frames.&lt;/p&gt;
+&lt;p&gt;Example perf record -g output:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;node &lt;span style=&#34;color:#ae81ff&#34;&gt;3236535&lt;/span&gt; 34397238.259753:     &lt;span style=&#34;color:#ae81ff&#34;&gt;250000&lt;/span&gt; cpu-clock:pppH: 
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            7f7d44339100 &lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;unknown&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;/tmp/perf-3236535.map&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;                 18ea0dc Builtins_JSEntryTrampoline+0x5c &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;                 18e9e03 Builtins_JSEntry+0x83 &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;...&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;                  c7d43f node::Start+0x58f &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;...&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;            7f7d6ba14d90 __libc_start_call_main+0x80 &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;/usr/lib/x86_64-linux-gnu/libc.so.6&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;address-translation&#34;&gt;Address Translation&lt;/h3&gt;
+&lt;p&gt;The sampled address information corresponds to the process&amp;rsquo;s virtual addresses, such as:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;7f7d44339100  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;18ea0dc  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;18e9e03  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;106692b  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;10679c4  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;f2a090d  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;c1c738  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;To resolve these addresses into ELF + OFFSET for symbol translation, we use the memory mapping information from &lt;code&gt;/proc/[pid]/maps&lt;/code&gt;. The key fields in the maps file include:&lt;/p&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;p&gt;Example /proc/[pid]/maps entries:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;00400000-00b81000 r--p &lt;span style=&#34;color:#ae81ff&#34;&gt;00000000&lt;/span&gt; fc:03 &lt;span style=&#34;color:#ae81ff&#34;&gt;550055&lt;/span&gt;  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;7f7d6bf3c000-7f7d6bf3d000 ---p 0021a000 fc:03 &lt;span style=&#34;color:#ae81ff&#34;&gt;67&lt;/span&gt;  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30  
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;7f7d6bf61000-7f7d6bf63000 r--p &lt;span style=&#34;color:#ae81ff&#34;&gt;00000000&lt;/span&gt; fc:03 &lt;span style=&#34;color:#ae81ff&#34;&gt;2928&lt;/span&gt;  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2  
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;translation-process&#34;&gt;Translation Process&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;Match the virtual address to the appropriate memory segment in &lt;code&gt;/proc/[pid]/maps&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;Calculate the offset within the ELF file using:
+&lt;code&gt;offset = virtual_address - segment_start + file_offset&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;symbol-resolution&#34;&gt;Symbol Resolution&lt;/h3&gt;
+&lt;p&gt;After translating virtual addresses into &lt;code&gt;ELF + OFFSET&lt;/code&gt; pairs, the next step is resolving these offsets into human-readable function symbols. This involves leveraging symbol tables or debugging information embedded in the ELF files.&lt;/p&gt;
+&lt;h4 id=&#34;methods-for-symbol-resolution&#34;&gt;Methods for Symbol Resolution&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;Using Symbol Tables
+Tools like nm can extract symbol information from the .dynsym (dynamic symbol table) or .symtab (static symbol table) sections of an ELF file.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Example:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Extract malloc-related symbols from a Node.js binary&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;nm -D /path/to/node | grep malloc
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Output:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;00000000055f9d18 D ares_malloc
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;0000000001f1a2a0 T ares_malloc_data
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;                 U malloc@GLIBC_2.2.5
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ol start=&#34;2&#34;&gt;
+&lt;li&gt;Using DWARF Debugging Information
+DWARF debug data provides richer details, including source file locations and variable scopes. Tools like readelf or addr2line can parse this information.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Example:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Extract function names and source locations from DWARF info&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;readelf --debug-dump&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;info /path/to/node | grep &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;DW_AT_name&amp;#34;&lt;/span&gt; -A3
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Output:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&amp;lt;1&amp;gt;&amp;lt;1980&amp;gt;: DW_AT_name: uv__make_close_pending
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    DW_AT_decl_file: &lt;span style=&#34;color:#ae81ff&#34;&gt;19&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    DW_AT_decl_line: &lt;span style=&#34;color:#ae81ff&#34;&gt;247&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ol start=&#34;3&#34;&gt;
+&lt;li&gt;Demangling C++ Symbols
+C++ symbols are often mangled (encoded) for uniqueness. Tools like c++filt restore human-readable names.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Example:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Demangle a mangled symbol&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;echo &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;_ZN4node14ThreadPoolWork12ScheduleWorkEv&amp;#34;&lt;/span&gt; | c++filt
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Output:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;node::ThreadPoolWork::ScheduleWork&lt;span style=&#34;color:#f92672&#34;&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;stack-output-formatting&#34;&gt;Stack Output Formatting&lt;/h3&gt;
+&lt;p&gt;Resolved stack traces are formatted for analysis tools like pprof or perf script. Additional metadata (e.g., container ID, service type) may be included for aggregation.&lt;/p&gt;
+&lt;h3 id=&#34;data-visualization&#34;&gt;Data Visualization&lt;/h3&gt;
+&lt;p&gt;All those data above will eventually be rendered as flamegraph or call-chain graph.&lt;/p&gt;
+&lt;h2 id=&#34;when-when-to-use-cpu-profiling-tools&#34;&gt;When: When to Use CPU Profiling Tools&lt;/h2&gt;
+&lt;p&gt;CPU profiling is most effective when analyzing CPU-bound performance issues. Below are common scenarios and their workflows:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code class=&#34;language-mermaid&#34; data-lang=&#34;mermaid&#34;&gt;graph TD
+  A[Observe anomaly: Unavailability/Performance Jitter] --&amp;gt; B[Identify target process &amp;amp; timeframe]
+  B --&amp;gt; C[Check core metrics: CPU, memory, disk, QPS]
+  C --&amp;gt; D{Is CPU the bottleneck?}
+  D --&amp;gt;|Yes| E[Profile CPU stacks]
+  D --&amp;gt;|No| F[Use alternative tools e.g., memory profiler, I/O tracer]
+  E --&amp;gt; G[Analyze flame graphs/call chains]
+  G --&amp;gt; H[Root cause identified]
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;When CPU Profiling Is NOT Suitable
+For non-CPU-bound issues, profiling data may have limited value. Alternative tools are recommended:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code class=&#34;language-mermaid&#34; data-lang=&#34;mermaid&#34;&gt;graph TD
+  A[CPU Profiling Limitations] --&amp;gt; B[Memory Bottlenecks]
+  A --&amp;gt; C[I/O-Bound Workloads]
+  A --&amp;gt; D[Lock Contention]
+  A --&amp;gt; E[Short-lived Processes]
+
+  B --&amp;gt;|Signs| B1(High page faults, GC pauses)
+  B --&amp;gt;|Tools| B2{{Heap profiler: e.g., pprof, vmstat}}
+
+  C --&amp;gt;|Signs| C1(High iowait, low CPU utilization)
+  C --&amp;gt;|Tools| C2{{iostat, blktrace}}
+
+  D --&amp;gt;|Signs| D1(High context switches, sys%)
+  D --&amp;gt;|Tools| D2{{perf lock, lockstat}}
+
+  E --&amp;gt;|Signs| E1(Process lifetime &amp;lt; sampling interval)
+  E --&amp;gt;|Tools| E2{{execsnoop, dynamic tracing:e.g., bpftrace}}
+&lt;/code&gt;&lt;/pre&gt;&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;code expaple：&lt;a href=&#34;https://github.com/noneback/doctor&#34;&gt;https://github.com/noneback/doctor&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;stack unwind: &lt;a href=&#34;https://zhuanlan.zhihu.com/p/460686470&#34;&gt;https://zhuanlan.zhihu.com/p/460686470&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;proc_pid_maps: &lt;a href=&#34;https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html&#34;&gt;https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;dwarf: &lt;a href=&#34;https://www.hitzhangjie.pro/debugger101.io/8-dwarf/&#34;&gt;https://www.hitzhangjie.pro/debugger101.io/8-dwarf/&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;demange &amp;amp; mangle: &lt;a href=&#34;https://www.cnblogs.com/BloodAndBone/p/7912179.html&#34;&gt;https://www.cnblogs.com/BloodAndBone/p/7912179.html&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Profiling: What, How, and When</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
+How: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="https://noneback.github.io/blog/cpu-profiling-what-how-and-when/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
+
+    
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-H0SRTJWPEK');
+        }
+      </script>
+    
+  
+
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:url" content="https://noneback.github.io/blog/cpu-profiling-what-how-and-when/">
+  <meta property="og:site_name" content="NoneBack">
+  <meta property="og:title" content="CPU Profiling: What, How, and When">
+  <meta property="og:description" content="What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
+How: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2025-03-10T14:46:54+08:00">
+    <meta property="article:modified_time" content="2025-03-10T14:46:54+08:00">
+    <meta property="article:tag" content="Performance Analysis">
+
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CPU Profiling: What, How, and When">
+  <meta name="twitter:description" content="What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
+How: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "https://noneback.github.io/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "CPU Profiling: What, How, and When",
+      "item": "https://noneback.github.io/blog/cpu-profiling-what-how-and-when/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "CPU Profiling: What, How, and When",
+  "name": "CPU Profiling: What, How, and When",
+  "description": "What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.\nHow: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.",
+  "keywords": [
+    "CPU Profiler", "Trouble-shooting"
+  ],
+  "articleBody": "What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.\nHow: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.\ngraph TD A[Sampling Trigger] --\u003e|Interrupt| B[Sampling] B --\u003e|perf_event/ebpf| C[Process Stack Addresses] C --\u003e|Address Translation| D[ELF, OFFSET] D --\u003e|Symbol Resolution| E[Call Stack] E --\u003e|Formatting| F[pprof/perf script] F --\u003e |Visualization| G[Flame Graph/Call Graph] Trigger Mechanisms Generally uses timer interrupts or event-counter-based strategies.\nTimer Interrupts Default fixed frequency (e.g., 99Hz) clock interrupts (SIGPROF). Shorter intervals increase precision but also overhead. Linux perf defaults to 99Hz frequency (≈10.1ms intervals).\nEvent-Counter Sampling Triggers sampling when hardware performance counters (e.g., PERF_COUNT_HW_CPU_CYCLES) reach thresholds. Useful for analyzing hardware-related events like Cache Misses.\nSampling Methods Typically, the OS kernel-provided interfaces like eBPF or perf_event are used for stack sampling.\neBPF Approach Using eBPF programs (e.g., bpf_get_stackid), both user-space and kernel-space call stacks can be captured directly without additional stack unwinding. This method retrieves complete stack IP information.\nperf_event Approach The perf_event_open interface (e.g., perf record command) captures the instruction pointer (RIP). However, it only records the currently executing function address, not the full call stack. This means only the function name triggered by the sample can be resolved.\nExample perf record output:\nnode 3236535 34397396.208842: 250000 cpu-clock:pppH: 110c800 v8::internal::Heap_CombinedGenerationalAndSharedBarrierSlow+0x0 (/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node) node 3236535 34397396.354632: 250000 cpu-clock:pppH: 7f7d63e87ef4 Builtins_LoadIC+0x574 (/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node) To obtain a full call stack, tools like libunwind perform stack unwinding. For example, perf record -g generates a full stack trace by unwinding the stack frames.\nExample perf record -g output:\nnode 3236535 34397238.259753: 250000 cpu-clock:pppH: 7f7d44339100 [unknown] (/tmp/perf-3236535.map) 18ea0dc Builtins_JSEntryTrampoline+0x5c (/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node) 18e9e03 Builtins_JSEntry+0x83 (...) ... c7d43f node::Start+0x58f (...) 7f7d6ba14d90 __libc_start_call_main+0x80 (/usr/lib/x86_64-linux-gnu/libc.so.6) Address Translation The sampled address information corresponds to the process’s virtual addresses, such as:\n7f7d44339100 18ea0dc 18e9e03 106692b 10679c4 f2a090d c1c738 ... To resolve these addresses into ELF + OFFSET for symbol translation, we use the memory mapping information from /proc/[pid]/maps. The key fields in the maps file include:\nExample /proc/[pid]/maps entries:\n00400000-00b81000 r--p 00000000 fc:03 550055 /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node 7f7d6bf3c000-7f7d6bf3d000 ---p 0021a000 fc:03 67 /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30 7f7d6bf61000-7f7d6bf63000 r--p 00000000 fc:03 2928 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 Translation Process Match the virtual address to the appropriate memory segment in /proc/[pid]/maps. Calculate the offset within the ELF file using: offset = virtual_address - segment_start + file_offset Symbol Resolution After translating virtual addresses into ELF + OFFSET pairs, the next step is resolving these offsets into human-readable function symbols. This involves leveraging symbol tables or debugging information embedded in the ELF files.\nMethods for Symbol Resolution Using Symbol Tables Tools like nm can extract symbol information from the .dynsym (dynamic symbol table) or .symtab (static symbol table) sections of an ELF file. Example:\n# Extract malloc-related symbols from a Node.js binary nm -D /path/to/node | grep malloc # Output: 00000000055f9d18 D ares_malloc 0000000001f1a2a0 T ares_malloc_data ... U malloc@GLIBC_2.2.5 Using DWARF Debugging Information DWARF debug data provides richer details, including source file locations and variable scopes. Tools like readelf or addr2line can parse this information. Example:\n# Extract function names and source locations from DWARF info readelf --debug-dump=info /path/to/node | grep \"DW_AT_name\" -A3 # Output: \u003c1\u003e\u003c1980\u003e: DW_AT_name: uv__make_close_pending DW_AT_decl_file: 19 DW_AT_decl_line: 247 Demangling C++ Symbols C++ symbols are often mangled (encoded) for uniqueness. Tools like c++filt restore human-readable names. Example:\n# Demangle a mangled symbol echo \"_ZN4node14ThreadPoolWork12ScheduleWorkEv\" | c++filt # Output: node::ThreadPoolWork::ScheduleWork() Stack Output Formatting Resolved stack traces are formatted for analysis tools like pprof or perf script. Additional metadata (e.g., container ID, service type) may be included for aggregation.\nData Visualization All those data above will eventually be rendered as flamegraph or call-chain graph.\nWhen: When to Use CPU Profiling Tools CPU profiling is most effective when analyzing CPU-bound performance issues. Below are common scenarios and their workflows:\ngraph TD A[Observe anomaly: Unavailability/Performance Jitter] --\u003e B[Identify target process \u0026 timeframe] B --\u003e C[Check core metrics: CPU, memory, disk, QPS] C --\u003e D{Is CPU the bottleneck?} D --\u003e|Yes| E[Profile CPU stacks] D --\u003e|No| F[Use alternative tools e.g., memory profiler, I/O tracer] E --\u003e G[Analyze flame graphs/call chains] G --\u003e H[Root cause identified] When CPU Profiling Is NOT Suitable For non-CPU-bound issues, profiling data may have limited value. Alternative tools are recommended:\ngraph TD A[CPU Profiling Limitations] --\u003e B[Memory Bottlenecks] A --\u003e C[I/O-Bound Workloads] A --\u003e D[Lock Contention] A --\u003e E[Short-lived Processes] B --\u003e|Signs| B1(High page faults, GC pauses) B --\u003e|Tools| B2{{Heap profiler: e.g., pprof, vmstat}} C --\u003e|Signs| C1(High iowait, low CPU utilization) C --\u003e|Tools| C2{{iostat, blktrace}} D --\u003e|Signs| D1(High context switches, sys%) D --\u003e|Tools| D2{{perf lock, lockstat}} E --\u003e|Signs| E1(Process lifetime \u003c sampling interval) E --\u003e|Tools| E2{{execsnoop, dynamic tracing:e.g., bpftrace}} References code expaple：https://github.com/noneback/doctor\nstack unwind: https://zhuanlan.zhihu.com/p/460686470\nproc_pid_maps: https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html\ndwarf: https://www.hitzhangjie.pro/debugger101.io/8-dwarf/\ndemange \u0026 mangle: https://www.cnblogs.com/BloodAndBone/p/7912179.html\n",
+  "wordCount" : "819",
+  "inLanguage": "en",
+  "datePublished": "2025-03-10T14:46:54+08:00",
+  "dateModified": "2025-03-10T14:46:54+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://noneback.github.io/blog/cpu-profiling-what-how-and-when/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://noneback.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"
+    integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"
+    integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js"
+    integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR"
+    crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMathInElement(document.body, {
+            
+            
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true },
+                { left: "\\begin{equation}", right: "\\end{equation}", display: true },
+                { left: "\\begin{align}", right: "\\end{align}", display: true },
+                { left: "\\begin{alignat}", right: "\\end{alignat}", display: true },
+                { left: "\\begin{gather}", right: "\\end{gather}", display: true },
+                { left: "\\begin{CD}", right: "\\end{CD}", display: true },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            
+            throwOnError: false,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command),
+            macros: {
+                "\\eqref": "\\href{###1}{(\\text{#1})}",
+                "\\ref": "\\href{###1}{\\text{#1}}",
+                "\\label": "\\htmlId{#1}{}"
+            }
+        });
+    });
+</script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/blog">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="https://noneback.github.io/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>CPU Profiling: What, How, and When</h1>
+  </header>
+
+  <p>
+  <small>
+    March 10, 2025&nbsp;· 819 words&nbsp;· 4 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/performance-analysis/">Performance Analysis</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#what-what-is-cpu-profiling">What: What is CPU Profiling</a></li>
+    <li><a href="#how-how-profiling-data-is-collected">How: How Profiling Data is Collected</a>
+      <ul>
+        <li><a href="#trigger-mechanisms">Trigger Mechanisms</a></li>
+        <li><a href="#sampling-methods">Sampling Methods</a></li>
+        <li><a href="#address-translation">Address Translation</a></li>
+        <li><a href="#symbol-resolution">Symbol Resolution</a></li>
+        <li><a href="#stack-output-formatting">Stack Output Formatting</a></li>
+        <li><a href="#data-visualization">Data Visualization</a></li>
+      </ul>
+    </li>
+    <li><a href="#when-when-to-use-cpu-profiling-tools">When: When to Use CPU Profiling Tools</a></li>
+    <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><h2 id="what-what-is-cpu-profiling">What: What is CPU Profiling</h2>
+<p>A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.</p>
+<h2 id="how-how-profiling-data-is-collected">How: How Profiling Data is Collected</h2>
+<p>Common tools like <code>perf</code> are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.</p>
+<pre tabindex="0"><code class="language-mermaid" data-lang="mermaid">graph TD
+    A[Sampling Trigger] --&gt;|Interrupt| B[Sampling]
+    B --&gt;|perf_event/ebpf| C[Process Stack Addresses]
+    C --&gt;|Address Translation| D[ELF, OFFSET]
+    D --&gt;|Symbol Resolution| E[Call Stack]
+    E --&gt;|Formatting| F[pprof/perf script]
+    F --&gt; |Visualization| G[Flame Graph/Call Graph]
+</code></pre><h3 id="trigger-mechanisms">Trigger Mechanisms</h3>
+<p>Generally uses timer interrupts or event-counter-based strategies.</p>
+<h4 id="timer-interrupts">Timer Interrupts</h4>
+<p>Default fixed frequency (e.g., 99Hz) clock interrupts (SIGPROF). Shorter intervals increase precision but also overhead. Linux perf defaults to 99Hz frequency (≈10.1ms intervals).</p>
+<h4 id="event-counter-sampling">Event-Counter Sampling</h4>
+<p>Triggers sampling when hardware performance counters (e.g., <code>PERF_COUNT_HW_CPU_CYCLES</code>) reach thresholds. Useful for analyzing hardware-related events like Cache Misses.</p>
+<h3 id="sampling-methods">Sampling Methods</h3>
+<p>Typically, the OS kernel-provided interfaces like eBPF or perf_event are used for stack sampling.</p>
+<h4 id="ebpf-approach">eBPF Approach</h4>
+<p>Using eBPF programs (e.g., bpf_get_stackid), both user-space and kernel-space call stacks can be captured directly without additional stack unwinding. This method retrieves complete stack IP information.</p>
+<h4 id="perf_event-approach">perf_event Approach</h4>
+<p>The perf_event_open interface (e.g., perf record command) captures the instruction pointer (RIP). However, it only records the currently executing function address, not the full call stack. This means only the function name triggered by the sample can be resolved.</p>
+<p>Example perf record output:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>node <span style="color:#ae81ff">3236535</span> 34397396.208842:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:           110c800 v8::internal::Heap_CombinedGenerationalAndSharedBarrierSlow+0x0 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>node <span style="color:#ae81ff">3236535</span> 34397396.354632:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:      7f7d63e87ef4 Builtins_LoadIC+0x574 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
+</span></span></code></pre></div><p>To obtain a full call stack, tools like libunwind perform stack unwinding. For example, <code>perf record -g</code> generates a full stack trace by unwinding the stack frames.</p>
+<p>Example perf record -g output:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>node <span style="color:#ae81ff">3236535</span> 34397238.259753:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH: 
+</span></span><span style="display:flex;"><span>            7f7d44339100 <span style="color:#f92672">[</span>unknown<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>/tmp/perf-3236535.map<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>                 18ea0dc Builtins_JSEntryTrampoline+0x5c <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>                 18e9e03 Builtins_JSEntry+0x83 <span style="color:#f92672">(</span>...<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>                  c7d43f node::Start+0x58f <span style="color:#f92672">(</span>...<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>            7f7d6ba14d90 __libc_start_call_main+0x80 <span style="color:#f92672">(</span>/usr/lib/x86_64-linux-gnu/libc.so.6<span style="color:#f92672">)</span>
+</span></span></code></pre></div><h3 id="address-translation">Address Translation</h3>
+<p>The sampled address information corresponds to the process&rsquo;s virtual addresses, such as:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>7f7d44339100  
+</span></span><span style="display:flex;"><span>18ea0dc  
+</span></span><span style="display:flex;"><span>18e9e03  
+</span></span><span style="display:flex;"><span>106692b  
+</span></span><span style="display:flex;"><span>10679c4  
+</span></span><span style="display:flex;"><span>f2a090d  
+</span></span><span style="display:flex;"><span>c1c738  
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><p>To resolve these addresses into ELF + OFFSET for symbol translation, we use the memory mapping information from <code>/proc/[pid]/maps</code>. The key fields in the maps file include:</p>
+<!-- raw HTML omitted -->
+<p>Example /proc/[pid]/maps entries:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>00400000-00b81000 r--p <span style="color:#ae81ff">00000000</span> fc:03 <span style="color:#ae81ff">550055</span>  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node  
+</span></span><span style="display:flex;"><span>7f7d6bf3c000-7f7d6bf3d000 ---p 0021a000 fc:03 <span style="color:#ae81ff">67</span>  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30  
+</span></span><span style="display:flex;"><span>7f7d6bf61000-7f7d6bf63000 r--p <span style="color:#ae81ff">00000000</span> fc:03 <span style="color:#ae81ff">2928</span>  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2  
+</span></span></code></pre></div><h4 id="translation-process">Translation Process</h4>
+<ol>
+<li>Match the virtual address to the appropriate memory segment in <code>/proc/[pid]/maps</code>.</li>
+<li>Calculate the offset within the ELF file using:
+<code>offset = virtual_address - segment_start + file_offset</code></li>
+</ol>
+<h3 id="symbol-resolution">Symbol Resolution</h3>
+<p>After translating virtual addresses into <code>ELF + OFFSET</code> pairs, the next step is resolving these offsets into human-readable function symbols. This involves leveraging symbol tables or debugging information embedded in the ELF files.</p>
+<h4 id="methods-for-symbol-resolution">Methods for Symbol Resolution</h4>
+<ol>
+<li>Using Symbol Tables
+Tools like nm can extract symbol information from the .dynsym (dynamic symbol table) or .symtab (static symbol table) sections of an ELF file.</li>
+</ol>
+<p>Example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Extract malloc-related symbols from a Node.js binary</span>
+</span></span><span style="display:flex;"><span>nm -D /path/to/node | grep malloc
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Output:</span>
+</span></span><span style="display:flex;"><span>00000000055f9d18 D ares_malloc
+</span></span><span style="display:flex;"><span>0000000001f1a2a0 T ares_malloc_data
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>                 U malloc@GLIBC_2.2.5
+</span></span></code></pre></div><ol start="2">
+<li>Using DWARF Debugging Information
+DWARF debug data provides richer details, including source file locations and variable scopes. Tools like readelf or addr2line can parse this information.</li>
+</ol>
+<p>Example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Extract function names and source locations from DWARF info</span>
+</span></span><span style="display:flex;"><span>readelf --debug-dump<span style="color:#f92672">=</span>info /path/to/node | grep <span style="color:#e6db74">&#34;DW_AT_name&#34;</span> -A3
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Output:</span>
+</span></span><span style="display:flex;"><span>&lt;1&gt;&lt;1980&gt;: DW_AT_name: uv__make_close_pending
+</span></span><span style="display:flex;"><span>    DW_AT_decl_file: <span style="color:#ae81ff">19</span>
+</span></span><span style="display:flex;"><span>    DW_AT_decl_line: <span style="color:#ae81ff">247</span>
+</span></span></code></pre></div><ol start="3">
+<li>Demangling C++ Symbols
+C++ symbols are often mangled (encoded) for uniqueness. Tools like c++filt restore human-readable names.</li>
+</ol>
+<p>Example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Demangle a mangled symbol</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;_ZN4node14ThreadPoolWork12ScheduleWorkEv&#34;</span> | c++filt
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Output:</span>
+</span></span><span style="display:flex;"><span>node::ThreadPoolWork::ScheduleWork<span style="color:#f92672">()</span>
+</span></span></code></pre></div><h3 id="stack-output-formatting">Stack Output Formatting</h3>
+<p>Resolved stack traces are formatted for analysis tools like pprof or perf script. Additional metadata (e.g., container ID, service type) may be included for aggregation.</p>
+<h3 id="data-visualization">Data Visualization</h3>
+<p>All those data above will eventually be rendered as flamegraph or call-chain graph.</p>
+<h2 id="when-when-to-use-cpu-profiling-tools">When: When to Use CPU Profiling Tools</h2>
+<p>CPU profiling is most effective when analyzing CPU-bound performance issues. Below are common scenarios and their workflows:</p>
+<pre tabindex="0"><code class="language-mermaid" data-lang="mermaid">graph TD
+  A[Observe anomaly: Unavailability/Performance Jitter] --&gt; B[Identify target process &amp; timeframe]
+  B --&gt; C[Check core metrics: CPU, memory, disk, QPS]
+  C --&gt; D{Is CPU the bottleneck?}
+  D --&gt;|Yes| E[Profile CPU stacks]
+  D --&gt;|No| F[Use alternative tools e.g., memory profiler, I/O tracer]
+  E --&gt; G[Analyze flame graphs/call chains]
+  G --&gt; H[Root cause identified]
+</code></pre><p>When CPU Profiling Is NOT Suitable
+For non-CPU-bound issues, profiling data may have limited value. Alternative tools are recommended:</p>
+<pre tabindex="0"><code class="language-mermaid" data-lang="mermaid">graph TD
+  A[CPU Profiling Limitations] --&gt; B[Memory Bottlenecks]
+  A --&gt; C[I/O-Bound Workloads]
+  A --&gt; D[Lock Contention]
+  A --&gt; E[Short-lived Processes]
+
+  B --&gt;|Signs| B1(High page faults, GC pauses)
+  B --&gt;|Tools| B2{{Heap profiler: e.g., pprof, vmstat}}
+
+  C --&gt;|Signs| C1(High iowait, low CPU utilization)
+  C --&gt;|Tools| C2{{iostat, blktrace}}
+
+  D --&gt;|Signs| D1(High context switches, sys%)
+  D --&gt;|Tools| D2{{perf lock, lockstat}}
+
+  E --&gt;|Signs| E1(Process lifetime &lt; sampling interval)
+  E --&gt;|Tools| E2{{execsnoop, dynamic tracing:e.g., bpftrace}}
+</code></pre><h2 id="references">References</h2>
+<ul>
+<li>
+<p>code expaple：<a href="https://github.com/noneback/doctor">https://github.com/noneback/doctor</a></p>
+</li>
+<li>
+<p>stack unwind: <a href="https://zhuanlan.zhihu.com/p/460686470">https://zhuanlan.zhihu.com/p/460686470</a></p>
+</li>
+<li>
+<p>proc_pid_maps: <a href="https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html">https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html</a></p>
+</li>
+<li>
+<p>dwarf: <a href="https://www.hitzhangjie.pro/debugger101.io/8-dwarf/">https://www.hitzhangjie.pro/debugger101.io/8-dwarf/</a></p>
+</li>
+<li>
+<p>demange &amp; mangle: <a href="https://www.cnblogs.com/BloodAndBone/p/7912179.html">https://www.cnblogs.com/BloodAndBone/p/7912179.html</a></p>
+</li>
+</ul>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    
+    <a class="next" href="https://noneback.github.io/blog/leveldb-mvcc/"><span>LevelDB MVCC</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+<script>
+    mermaid.init(undefined, '.language-mermaid');
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

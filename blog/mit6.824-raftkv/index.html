@@ -13,35 +13,52 @@ The structure of RaftKV and the interaction between its modules are shown below:
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
-<script>
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.dataLayer = window.dataLayer || [];
-	function gtag(){dataLayer.push(arguments);}
-	gtag('js', new Date());
-	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
-}
-</script>
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-H0SRTJWPEK');
+        }
+      </script>
+    
+  
+
 
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
-    <meta property="og:title" content="MIT6.824-RaftKV" />
-<meta property="og:description" content="Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.
+    <meta property="og:url" content="https://noneback.github.io/blog/mit6.824-raftkv/">
+  <meta property="og:site_name" content="NoneBack">
+  <meta property="og:title" content="MIT6.824-RaftKV">
+  <meta property="og:description" content="Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.
 Lab Overview Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.
-The structure of RaftKV and the interaction between its modules are shown below:" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://noneback.github.io/blog/mit6.824-raftkv/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2022-04-15T10:49:57+08:00" />
-<meta property="article:modified_time" content="2022-04-15T10:49:57+08:00" />
+The structure of RaftKV and the interaction between its modules are shown below:">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2022-04-15T10:49:57+08:00">
+    <meta property="article:modified_time" content="2022-04-15T10:49:57+08:00">
+    <meta property="article:tag" content="Raft">
+    <meta property="article:tag" content="Distributed System">
+    <meta property="article:tag" content="Consensus">
+    <meta property="article:tag" content="MIT6.824">
 
 
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824-RaftKV"/>
-<meta name="twitter:description" content="Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="MIT6.824-RaftKV">
+  <meta name="twitter:description" content="Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.
 Lab Overview Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.
-The structure of RaftKV and the interaction between its modules are shown below:"/>
+The structure of RaftKV and the interaction between its modules are shown below:">
 
 
 <script type="application/ld+json">
@@ -455,6 +472,11 @@ The structure of RaftKV and the interaction between its modules are shown below:
         });
         codeblock.parentNode.appendChild(copybutton);
     });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+<script>
+    mermaid.init(undefined, '.language-mermaid');
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

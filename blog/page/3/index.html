@@ -11,29 +11,39 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
-<script>
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.dataLayer = window.dataLayer || [];
-	function gtag(){dataLayer.push(arguments);}
-	gtag('js', new Date());
-	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
-}
-</script>
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-H0SRTJWPEK');
+        }
+      </script>
+    
+  
+
 
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
-    <meta property="og:title" content="Blogs" />
-<meta property="og:description" content="" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://noneback.github.io/blog/" />
+    <meta property="og:url" content="https://noneback.github.io/blog/">
+  <meta property="og:site_name" content="NoneBack">
+  <meta property="og:title" content="Blogs">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="website">
 
 
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Blogs"/>
-<meta name="twitter:description" content=""/>
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Blogs">
 
 
 <script type="application/ld+json">
@@ -150,6 +160,34 @@ if (!doNotTrack) {
       
         <article>
           <div class="blog-card">
+              <h3><a href="/blog/apacheorc%E8%B0%83%E7%A0%94/">Apache-ORC Quick Investigation</a></h3>
+              <p>
+  <small>
+    October 5, 2022&nbsp;· 565 words&nbsp;· 3 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/column-store/">Column Store</a>
+      
+      <a href="https://noneback.github.io/tags/big-data/">Big Data</a>
+      
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
+      
+    </small>
+  
+<p>
+              Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.
+Research Focus: ORC file encoding, file organization, and indexing support.
+File Layout An ORC file can be divided into three main sections:
+Header: Identifies the file type.
+          </div>
+        </article>
+      
+        <article>
+          <div class="blog-card">
               <h3><a href="/blog/apacheiceberg%E8%B0%83%E7%A0%94/">Apache-Iceberg Quick Investigation</a></h3>
               <p>
   <small>
@@ -252,34 +290,6 @@ A code repository with annotations will be shared on GitHub later for those inte
 Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and naming details of these files (as I haven&rsquo;t reached that part yet).
           </div>
         </article>
-      
-        <article>
-          <div class="blog-card">
-              <h3><a href="/blog/mit6.824-raft/">MIT6.824-Raft</a></h3>
-              <p>
-  <small>
-    February 21, 2022&nbsp;· 953 words&nbsp;· 5 min</small>
-
-  <small>
-      
-      ·
-      
-      
-      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
-      
-      <a href="https://noneback.github.io/tags/consensu/">Consensu</a>
-      
-      <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
-      
-      <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
-      
-    </small>
-  
-<p>
-              Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.
-Algorithm Overview The basis of consensus algorithms is the replicated state machine, which means that executing the same deterministic commands in the same order will eventually lead to a consistent state.
-          </div>
-        </article>
       </div>
     
     <div class="paginator">
@@ -355,6 +365,11 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
         });
         codeblock.parentNode.appendChild(copybutton);
     });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+<script>
+    mermaid.init(undefined, '.language-mermaid');
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

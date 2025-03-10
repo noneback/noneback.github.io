@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C&#43;&#43;中左值和右值的区别</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Ladder@C&#43;&#43;中左值和右值的区别 最近在复习C&#43;&#43;的语法，有一些忘记了的东西，想在这里记录一下 什么是左值和右值 抽象解释 In C&#43;&#43; an lvalue is something that points to a specific memory location. On the other">
+    <meta name="author" content="NoneBack">
+    <link rel="canonical" href="http://localhost:1313/blog/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/">
+        <meta name="google-site-verification" content="xxx">
+
+    <link rel="alternate" type="application/rss+xml" href="http://localhost:1313//index.xml" title="NoneBack">
+
+    
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-H0SRTJWPEK');
+        }
+      </script>
+    
+  
+
+
+
+
+<script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
+
+    <meta property="og:url" content="http://localhost:1313/blog/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/">
+  <meta property="og:site_name" content="NoneBack">
+  <meta property="og:title" content="C&#43;&#43;中左值和右值的区别">
+  <meta property="og:description" content="C&#43;&#43;中左值和右值的区别 最近在复习C&#43;&#43;的语法，有一些忘记了的东西，想在这里记录一下 什么是左值和右值 抽象解释 In C&#43;&#43; an lvalue is something that points to a specific memory location. On the other">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2019-11-01T00:00:00+00:00">
+    <meta property="article:modified_time" content="2019-11-01T00:00:00+00:00">
+    <meta property="article:tag" content="C&#43;&#43;">
+
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="C&#43;&#43;中左值和右值的区别">
+  <meta name="twitter:description" content="C&#43;&#43;中左值和右值的区别 最近在复习C&#43;&#43;的语法，有一些忘记了的东西，想在这里记录一下 什么是左值和右值 抽象解释 In C&#43;&#43; an lvalue is something that points to a specific memory location. On the other">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Blogs",
+      "item": "http://localhost:1313/blog/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "C++中左值和右值的区别",
+      "item": "http://localhost:1313/blog/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "C++中左值和右值的区别",
+  "name": "C\u002b\u002b中左值和右值的区别",
+  "description": "C++中左值和右值的区别 最近在复习C++的语法，有一些忘记了的东西，想在这里记录一下 什么是左值和右值 抽象解释 In C++ an lvalue is something that points to a specific memory location. On the other",
+  "keywords": [
+    "C++"
+  ],
+  "articleBody": "C++中左值和右值的区别 最近在复习C++的语法，有一些忘记了的东西，想在这里记录一下\n什么是左值和右值 抽象解释 In C++ an lvalue is something that points to a specific memory location. On the other hand, a rvalue is something that doesn’t point anywhere. In general, rvalues are temporary and short lived, while lvalues live a longer life since they exist as variables.\n参考：Understanding the meaning of lvalues and rvalues in C++\n具体 左值实际上就是有变量名的变量，变量名实际上指向了这个变量分配的内存地址，这个变量名在作用域内可以长期保存 右值实际上是没有变量名的临时变量，变量的内存地址没有实际的变量名去保存，所以说它是临时的，生命周期短的 左值可以转换成右值，反之，则不行 int a=10; std::string str=\"Hello\"; //此处的a和str是左值，它们有实际的变量名，并保存其内存的地址，而 10 和 \"Hello\"则是右值，他们只是临时变量。 int \u0026b=\u0026a; int *a_p=\u0026a; //左值往往可以进行取地址操作，而右值则不行 int *a_ptr=\u002610;//error //左值转右值 int x = 10; int y = 10; int z = x+y; //这里 x,y本来是左值的，但放在右边相加之后的结果是一个临时的变量，成为了一个右值 左值右值作为函数的返回值 //左值作为函数返回值 int tem=0; int\u0026 getlZero(){ return tem; } getlZero() = 10 //works //右值最为返回值 int getrZero(){ return 0; } getrZero() = 10//fails 左值引用和右值引用 定义 左值引用就是对一个左值进行引用的类型。右值引用就是对一个右值进行引用的类型\n右值引用和左值引用都是属于引用类型。无论是声明一个左值引用还是右值引用，都必须立即进行初始化。\n而其原因可以理解为是引用类型本身自己并不拥有所绑定对象的内存，只是该对象的一个别名。左值引用是具名变量值的别名，而右值引用则是不具名（匿名）变量的别名。\n对引用变量的修改会作用到原变量上。\n通常左值引用通常也不能绑定到右值，但右值可以借用const+左值引用变量来引用 //左右值引用的语法 int a=10; int \u0026b=a; //b是a的引用，左值引用 b=20; //此时a=b=20 int \u0026\u0026c=10; //c是右值‘10’的引用 c=20 //此时c变成了‘20’的引用 b=10；//error。 10是一个右值，所以报错 c=a; //error。a是一个左值 const int\u0026 a=10; //works // 在后台，编译器会创建一个隐藏变量（即左值），以在其中存储原始文字常量，然后将该隐藏变量绑定到引用中 引用作为函数的参数 int getSelfL(int\u0026 a){ return a; } int getSelfR(int\u0026\u0026 b){ return b; } int getSelfLR(const int\u0026 a){ return a; } int a=10; getSelfL(a); //works getSelfL(10); //fails getSelfR(10); //works getSelfR(a); //fails getSelfRL(10); //works 将亡值 在C++11之前的右值和C++11中的纯右值是等价的。C++11中的将亡值是随着右值引用的引入而新引入的。\n换言之，“将亡值”概念的产生，是由右值引用的产生而引起的，将亡值与右值引用息息相关。所谓的将亡值表达式，就是下列表达式：\n1）返回右值引用的函数的调用表达式\n2）转换为右值引用的转换函数的调用表达式\n在C++11中，我们用左值去初始化一个对象或为一个已有对象赋值时，会调用拷贝构造函数或拷贝赋值运算符来拷贝资源, 此处的拷贝可能是浅拷贝，取决于拷贝构造函数的实现方式。\n而当我们用一个右值（包括纯右值和将亡值）来初始化或赋值时，会调用移动构造函数或移动赋值运算符来移动资源，从而避免拷贝，提高效率。\n当该右值完成初始化或赋值的任务时，它的资源已经移动给了被初始化者或被赋值者，同时该右值也将会马上被销毁（销毁，实际上是说这块内存区域变成了未初始化的状态）。也就是说，当一个右值准备完成初始化或赋值任务时，它已经“将亡”了。而上面1和2两种表达式的结果都是不具名的右值引用，它们属于右值\n",
+  "wordCount" : "1325",
+  "inLanguage": "en",
+  "datePublished": "2019-11-01T00:00:00Z",
+  "dateModified": "2019-11-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "NoneBack"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "http://localhost:1313/blog/cpp%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E5%8C%BA%E5%88%AB/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "NoneBack",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "http://localhost:1313/favicon.ico"
+    }
+  }
+}
+</script>
+    <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/avatar.jpeg">
+
+<link rel="manifest" href="/images/avatar.jpeg">
+    
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+
+    
+    
+    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
+
+    
+    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
+
+    
+    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
+    </head>
+<body>
+      <main class="wrapper"><nav class="navigation">
+    <section class="container">
+        <a class="navigation-brand" href="/">
+            HOME
+        </a>
+        <input type="checkbox" id="menu-toggle" />
+        <label class="menu-button float-right" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        
+        <ul class="navigation-list" id="navigation-list">
+            
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/blog">Blog</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/tags">Tags</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/archives">Archive</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="https://umami-blog-pi.vercel.app/share/q7qW5hQ16F8cTkBD/noneback.github.io">Dashboard</a>
+            </li>
+            
+            <li class="navigation-item navigation-menu">
+                <a class="navigation-link" href="/about/">About</a>
+            </li>
+            
+            
+
+            <li class="navigation-item menu-separator">
+                <span>|</span>
+            </li>
+
+            
+            
+            <li class="navigation-item navigation-social">
+                <a class="navigation-link" href="https://github.com/noneback"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            </li>
+            
+            
+
+            <li class="navigation-item navigation-dark">
+                <button id="mode" type="button" aria-label="toggle user light or dark theme">
+                    <span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+                    <span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+                </button>
+            </li>
+
+            
+            
+            
+            
+            
+            
+            
+            <li class="navigation-item navigation-language">
+                <a href="http://localhost:1313/zh/">中</a>
+            </li>
+            
+            
+            
+            
+        </ul>
+        
+    </section>
+</nav>
+<div id="content">
+<article class="blog-single">
+  <header class="blog-title">
+    <h1>C&#43;&#43;中左值和右值的区别</h1>
+  </header>
+
+  <p>
+  <small>
+    November 1, 2019&nbsp;· 1325 words&nbsp;· 3 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="http://localhost:1313/tags/c&#43;&#43;/">C&#43;&#43;</a>
+      
+    </small>
+  
+<p>
+
+  <div class="blog-toc">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#什么是左值和右值">什么是左值和右值</a>
+      <ul>
+        <li><a href="#抽象解释">抽象解释</a></li>
+        <li><a href="#具体">具体</a></li>
+        <li><a href="#左值右值作为函数的返回值">左值右值作为函数的返回值</a></li>
+      </ul>
+    </li>
+    <li><a href="#左值引用和右值引用">左值引用和右值引用</a>
+      <ul>
+        <li><a href="#定义">定义</a></li>
+        <li><a href="#引用作为函数的参数">引用作为函数的参数</a></li>
+      </ul>
+    </li>
+    <li><a href="#将亡值">将亡值</a></li>
+  </ul>
+</nav>
+  </div>
+
+  <section class="blog-content"><h1 id="c中左值和右值的区别">C++中左值和右值的区别</h1>
+<blockquote>
+<p>最近在复习C++的语法，有一些忘记了的东西，想在这里记录一下</p>
+</blockquote>
+<h2 id="什么是左值和右值">什么是左值和右值</h2>
+<h3 id="抽象解释">抽象解释</h3>
+<blockquote>
+<p>In C++ an <strong>lvalue</strong> is something that points to a <strong>specific memory location</strong>. On the other hand, a <strong>rvalue</strong> is something that <strong>doesn&rsquo;t point anywhere</strong>. In general, <strong>rvalues are temporary and short lived</strong>, while <strong>lvalues</strong> live a longer life since they exist as variables.</p>
+<p>参考：<a href="https://www.internalpointers.com/post/understanding-meaning-lvalues-and-rvalues-c">Understanding the meaning of lvalues and rvalues in C++</a></p>
+</blockquote>
+<h3 id="具体">具体</h3>
+<ul>
+<li><strong>左值</strong>实际上就是有变量名的变量，变量名实际上指向了这个变量分配的内存地址，这个变量名在作用域内可以长期保存</li>
+<li><strong>右值</strong>实际上是没有变量名的临时变量，变量的内存地址没有实际的变量名去保存，所以说它是临时的，生命周期短的</li>
+<li><strong>左值</strong>可以转换成<strong>右值</strong>，反之，则不行</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">int</span> a<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;
+</span></span><span style="display:flex;"><span>std<span style="color:#f92672">::</span>string str<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Hello&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//此处的a和str是左值，它们有实际的变量名，并保存其内存的地址，而 10 和 &#34;Hello&#34;则是右值，他们只是临时变量。
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#f92672">&amp;</span>b<span style="color:#f92672">=&amp;</span>a;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>a_p<span style="color:#f92672">=&amp;</span>a;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//左值往往可以进行取地址操作，而右值则不行
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>a_ptr<span style="color:#f92672">=&amp;</span><span style="color:#ae81ff">10</span>;<span style="color:#75715e">//error
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//左值转右值
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> x <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> y <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> z <span style="color:#f92672">=</span> x<span style="color:#f92672">+</span>y;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//这里 x,y本来是左值的，但放在右边相加之后的结果是一个临时的变量，成为了一个右值
+</span></span></span></code></pre></div><h3 id="左值右值作为函数的返回值">左值右值作为函数的返回值</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">//左值作为函数返回值
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> tem<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;</span> getlZero(){
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> tem;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>getlZero() <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span> <span style="color:#75715e">//works
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//右值最为返回值
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> getrZero(){
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>getrZero() <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span><span style="color:#75715e">//fails
+</span></span></span></code></pre></div><h2 id="左值引用和右值引用">左值引用和右值引用</h2>
+<h3 id="定义">定义</h3>
+<p><strong>左值引用</strong>就是对一个左值进行引用的类型。<strong>右值引用</strong>就是对一个右值进行引用的类型</p>
+<blockquote>
+<p>右值引用和左值引用都是属于引用类型。无论是声明一个左值引用还是右值引用，都必须立即进行初始化。</p>
+<p>而其原因可以理解为是引用类型本身自己并不拥有所绑定对象的内存，只是该对象的一个别名。左值引用是具名变量值的别名，而右值引用则是不具名（匿名）变量的别名。</p>
+<p>对引用变量的修改会作用到原变量上。</p>
+</blockquote>
+<ul>
+<li>通常左值引用通常也不能绑定到右值，但右值可以借用const+左值引用变量来引用</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">//左右值引用的语法
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> a<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#f92672">&amp;</span>b<span style="color:#f92672">=</span>a; <span style="color:#75715e">//b是a的引用，左值引用
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>b<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>; <span style="color:#75715e">//此时a=b=20
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#f92672">&amp;&amp;</span>c<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;  <span style="color:#75715e">//c是右值‘10’的引用
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>c<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>  <span style="color:#75715e">//此时c变成了‘20’的引用
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    
+</span></span><span style="display:flex;"><span>b<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span><span style="color:#960050;background-color:#1e0010">；</span><span style="color:#75715e">//error。 10是一个右值，所以报错
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>c<span style="color:#f92672">=</span>a; <span style="color:#75715e">//error。a是一个左值
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;</span> a<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>; <span style="color:#75715e">//works
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// 在后台，编译器会创建一个隐藏变量（即左值），以在其中存储原始文字常量，然后将该隐藏变量绑定到引用中
+</span></span></span></code></pre></div><h3 id="引用作为函数的参数">引用作为函数的参数</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getSelfL</span>(<span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;</span> a){
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> a;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getSelfR</span>(<span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;&amp;</span> b){
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> b;  
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getSelfLR</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">&amp;</span> a){
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> a;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> a<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;
+</span></span><span style="display:flex;"><span>getSelfL(a); <span style="color:#75715e">//works
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>getSelfL(<span style="color:#ae81ff">10</span>); <span style="color:#75715e">//fails
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>getSelfR(<span style="color:#ae81ff">10</span>); <span style="color:#75715e">//works
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>getSelfR(a); <span style="color:#75715e">//fails
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>getSelfRL(<span style="color:#ae81ff">10</span>); <span style="color:#75715e">//works
+</span></span></span></code></pre></div><h2 id="将亡值">将亡值</h2>
+<blockquote>
+<p>在C++11之前的右值和C++11中的纯右值是等价的。C++11中的将亡值是随着右值引用的引入而新引入的。</p>
+<p>换言之，“将亡值”概念的产生，是由右值引用的产生而引起的，将亡值与右值引用息息相关。所谓的将亡值表达式，就是下列表达式：</p>
+</blockquote>
+<blockquote>
+<p>1）返回右值引用的函数的调用表达式</p>
+<p>2）转换为右值引用的转换函数的调用表达式</p>
+</blockquote>
+<p>在C++11中，我们用左值去初始化一个对象或为一个已有对象赋值时，会调用拷贝构造函数或拷贝赋值运算符来拷贝资源, 此处的拷贝可能是浅拷贝，取决于拷贝构造函数的实现方式。</p>
+<p>而当我们用一个右值（包括纯右值和将亡值）来初始化或赋值时，会调用移动构造函数或移动赋值运算符来移动资源，从而避免拷贝，提高效率。</p>
+<p>当该右值完成初始化或赋值的任务时，它的资源已经移动给了被初始化者或被赋值者，同时该右值也将会马上被销毁（销毁，实际上是说这块内存区域变成了未初始化的状态）。也就是说，当一个右值准备完成初始化或赋值任务时，它已经“将亡”了。而上面1和2两种表达式的结果都是不具名的右值引用，它们属于右值</p>
+</section>
+
+  
+  
+  <div class="paginator">
+    
+    <a class="prev" href="http://localhost:1313/blog/%E5%9F%BA%E4%BA%8E%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF%E7%9A%84%E4%B8%AD%E6%96%87%E5%9E%83%E5%9C%BE%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6%E5%88%86%E7%B1%BB/">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M9.94496 9C9.28897 9.61644 7.63215 10.997 6.04814 11.7966C5.98257 11.8297 5.98456 11.9753 6.05061 12.0063C7.05496 12.4779 8.92941 13.9264 9.94496 15M6.44444 11.9667C8.86549 12.0608 14 12 16 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>Chinese Spam Email Classification Based on Naive Bayes</span></a>
+    
+    
+    <a class="next" href="http://localhost:1313/blog/java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B6%E8%A1%8C/"><span>Java Multithreading Programming</span>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+    </a>
+    
+  </div>
+  
+
+  
+
+
+  
+  
+<div class="comments">
+  <script>
+      const getTheme = window.localStorage && window.localStorage.getItem("theme");
+      let theme = getTheme === 'dark' ? 'dark' : 'light';
+      let s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', 'noneback\/noneback.github.io');
+      s.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnkzMTAyNzgwNTc=');
+      s.setAttribute('data-category', 'Announcements');
+      s.setAttribute('data-category-id', 'DIC_kwDOEn53qc4Cj4-F');
+      s.setAttribute('data-mapping', 'pathname');
+      s.setAttribute('data-strict', '0');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', theme);
+      s.setAttribute('data-lang', 'en');
+      s.setAttribute('data-loading', 'lazy');
+      s.setAttribute('crossorigin', 'anonymous');
+      s.setAttribute('async', '');
+      document.querySelector('div.comments').innerHTML = '';
+      document.querySelector('div.comments').appendChild(s);
+  </script>
+</div>
+
+</article>
+
+
+        </div><footer class="footer">
+  <p>&copy; 2025 <a href="http://localhost:1313/">NoneBack</a>
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+️  </p>
+</footer>
+
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.5376 22.7916C11.0152 22.7207 22.5795 21.1781 22.0978 10.4211C22.0536 9.43274 21.9303 8.53367 21.7387 7.71865M10.5376 22.7916C16.876 22.3728 20.0969 19.8899 21.5383 16.9142M10.5376 22.7916C9.7707 22.9055 8.97982 22.8964 8.19743 22.7725M21.7387 7.71865C21.4988 6.69828 21.1518 5.80967 20.7188 5.04257M21.7387 7.71865C22.6022 10.1105 23.0542 13.7848 21.5383 16.9142M20.7188 5.04257C17.1684 -1.24629 7.83127 0.632493 4.27577 5.04257C2.88063 6.77451 -0.0433281 11.1668 1.38159 16.6571C2.27481 20.0988 5.17269 22.2936 8.19743 22.7725M20.7188 5.04257C22.0697 6.9404 24.0299 11.3848 22.3541 15.4153M21.5383 16.9142C21.8737 16.4251 22.1428 15.9235 22.3541 15.4153M8.19743 22.7725C12.1971 23.4683 20.6281 22.971 22.3541 15.4153M14 10.945C13.3836 10.289 12.003 8.63215 11.2034 7.04814C11.1703 6.98257 11.0247 6.98456 10.9937 7.05061C10.5221 8.05496 9.07362 9.92941 8 10.945M11.0333 7.44444C10.9392 9.86549 11 15 12 17" stroke="currentColor" stroke-linecap="round"/>
+    </svg>
+</a>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+</script>
+
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'Copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'Copied';
+            setTimeout(() => {
+                copybutton.innerHTML = 'Copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+        codeblock.parentNode.appendChild(copybutton);
+    });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+<script>
+    mermaid.init(undefined, '.language-mermaid');
+</script></main>
+    </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+      const images = Array.from(document.querySelectorAll(".blog-content img"));
+      images.forEach(img => {
+          mediumZoom(img, {
+              margin: 10,  
+              scrollOffset: 40,  
+              container: null,  
+              template: null,  
+              background: 'rgba(0, 0, 0, 0.5)'
+          });
+      });
+  </script>
+
+  
+  <script src="/main.min.6bb26b69159420159c74dc9e097b06a578ed2b68c701466a91a44a9632d851bd0af167a1b30012387b4c512b48ad9ad4d3394e04d77ae38d57e1920fe4ed34fe.js" integrity="sha512-a7JraRWUIBWcdNyeCXsGpXjtK2jHAUZqkaRKljLYUb0K8WehswASOHtMUStIrZrU0zlOBNd6441X4ZIP5O00/g==" crossorigin="anonymous" defer></script></html>

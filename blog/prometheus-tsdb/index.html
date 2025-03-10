@@ -11,31 +11,46 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
-<script>
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.dataLayer = window.dataLayer || [];
-	function gtag(){dataLayer.push(arguments);}
-	gtag('js', new Date());
-	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
-}
-</script>
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-H0SRTJWPEK');
+        }
+      </script>
+    
+  
+
 
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
-    <meta property="og:title" content="Prometheus--TSDB" />
-<meta property="og:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://noneback.github.io/blog/prometheus-tsdb/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2024-12-31T01:10:28+08:00" />
-<meta property="article:modified_time" content="2024-12-31T01:10:28+08:00" />
+    <meta property="og:url" content="https://noneback.github.io/blog/prometheus-tsdb/">
+  <meta property="og:site_name" content="NoneBack">
+  <meta property="og:title" content="Prometheus--TSDB">
+  <meta property="og:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2024-12-31T01:10:28+08:00">
+    <meta property="article:modified_time" content="2024-12-31T01:10:28+08:00">
+    <meta property="article:tag" content="Prometheus">
+    <meta property="article:tag" content="TSDB">
 
 
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Prometheus--TSDB"/>
-<meta name="twitter:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the"/>
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Prometheus--TSDB">
+  <meta name="twitter:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the">
 
 
 <script type="application/ld+json">
@@ -651,6 +666,11 @@ A Postings:
         });
         codeblock.parentNode.appendChild(copybutton);
     });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+<script>
+    mermaid.init(undefined, '.language-mermaid');
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

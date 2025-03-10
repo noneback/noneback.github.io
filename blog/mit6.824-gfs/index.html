@@ -12,33 +12,49 @@ Introduction GFS is a distributed file system developed by Google to meet the ne
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
-<script>
-var doNotTrack = false;
-if (!doNotTrack) {
-	window.dataLayer = window.dataLayer || [];
-	function gtag(){dataLayer.push(arguments);}
-	gtag('js', new Date());
-	gtag('config', 'G-H0SRTJWPEK', { 'anonymize_ip': false });
-}
-</script>
+  
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-H0SRTJWPEK');
+        }
+      </script>
+    
+  
+
 
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
-    <meta property="og:title" content="MIT6.824 GFS" />
-<meta property="og:description" content="This article introduces the Google File System (GFS) paper published in 2003, which proposed a distributed file system designed to store large volumes of data reliably, meeting Google&rsquo;s data storage needs. This write-up reflects on the design goals, trade-offs, and architectural choices of GFS.
-Introduction GFS is a distributed file system developed by Google to meet the needs of data-intensive applications, using commodity hardware to provide a scalable and fault-tolerant solution." />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://noneback.github.io/blog/mit6.824-gfs/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2021-09-09T00:44:24+08:00" />
-<meta property="article:modified_time" content="2021-09-09T00:44:24+08:00" />
+    <meta property="og:url" content="https://noneback.github.io/blog/mit6.824-gfs/">
+  <meta property="og:site_name" content="NoneBack">
+  <meta property="og:title" content="MIT6.824 GFS">
+  <meta property="og:description" content="This article introduces the Google File System (GFS) paper published in 2003, which proposed a distributed file system designed to store large volumes of data reliably, meeting Google’s data storage needs. This write-up reflects on the design goals, trade-offs, and architectural choices of GFS.
+Introduction GFS is a distributed file system developed by Google to meet the needs of data-intensive applications, using commodity hardware to provide a scalable and fault-tolerant solution.">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2021-09-09T00:44:24+08:00">
+    <meta property="article:modified_time" content="2021-09-09T00:44:24+08:00">
+    <meta property="article:tag" content="GFS">
+    <meta property="article:tag" content="MIT6.824">
+    <meta property="article:tag" content="Paper Reading">
 
 
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="MIT6.824 GFS"/>
-<meta name="twitter:description" content="This article introduces the Google File System (GFS) paper published in 2003, which proposed a distributed file system designed to store large volumes of data reliably, meeting Google&rsquo;s data storage needs. This write-up reflects on the design goals, trade-offs, and architectural choices of GFS.
-Introduction GFS is a distributed file system developed by Google to meet the needs of data-intensive applications, using commodity hardware to provide a scalable and fault-tolerant solution."/>
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="MIT6.824 GFS">
+  <meta name="twitter:description" content="This article introduces the Google File System (GFS) paper published in 2003, which proposed a distributed file system designed to store large volumes of data reliably, meeting Google’s data storage needs. This write-up reflects on the design goals, trade-offs, and architectural choices of GFS.
+Introduction GFS is a distributed file system developed by Google to meet the needs of data-intensive applications, using commodity hardware to provide a scalable and fault-tolerant solution.">
 
 
 <script type="application/ld+json">
@@ -529,6 +545,11 @@ Introduction GFS is a distributed file system developed by Google to meet the ne
         });
         codeblock.parentNode.appendChild(copybutton);
     });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+<script>
+    mermaid.init(undefined, '.language-mermaid');
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
