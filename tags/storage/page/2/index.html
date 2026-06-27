@@ -161,57 +161,6 @@
 </ul>
 <h2 id="background">Background</h2>
 <p>Issues encountered when migrating HIVE to the cloud:</p>
-<ul>
-<li>Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS.</li>
-<li>Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.</li>
-<li>Unsafe operations, CBO unfriendly, etc.</li>
-</ul>
-<h2 id="features">Features</h2>
-<ul>
-<li>Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition.
-<ul>
-<li>Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp).</li>
-</ul>
-</li>
-<li>Supports object storage with minimal dependency on FS semantics.</li>
-<li>ACID semantics support, parallel reads, serialized write operations:
-<ul>
-<li>Separation of read and write snapshots.</li>
-<li>Optimistic handling of write parallel conflicts, retry to ensure writes.</li>
-</ul>
-</li>
-<li>Snapshot support:
-<ul>
-<li>Data rollback and time travel.</li>
-<li>Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (<a href="https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html">related API doc</a>).</li>
-<li>Incremental reading can be achieved by comparing snapshot differences.</li>
-</ul>
-</li>
-<li>Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (<a href="https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html#deleteWith-java.util.function.Consumer-">deleteWith</a>).</li>
-<li>High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg&rsquo;s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API.</li>
-<li>Others: file-level encryption and decryption.</li>
-</ul>
-<h2 id="ecosystem">Ecosystem</h2>
-<ul>
-<li>Community support for OSS, Flink, Spark, and Presto:
-<ul>
-<li>Flink (<a href="https://iceberg.apache.org/docs/latest/flink/">detail</a>): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (<a href="https://iceberg.apache.org/releases/#0130-release-notes">0.13.0-release-notes</a>).</li>
-<li>Presto: <a href="https://prestodb.io/docs/current/connector/iceberg.html">Iceberg connector</a>.</li>
-<li>Aliyun OSS: <a href="https://github.com/apache/iceberg/pull/3686/files"># pr 3689</a>.</li>
-</ul>
-</li>
-<li>Integration with other components:
-<ul>
-<li>Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (<a href="https://github.com/apache/iceberg/pull/3686/files"># pr 3689</a>).</li>
-<li>Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC.</li>
-<li>Catalog: Customizable (<a href="https://iceberg.apache.org/docs/latest/custom-catalog/">Doc: Custom Catalog Implementation</a>), currently supports JDBC, Hive Metastore, Hadoop, etc.</li>
-<li>Integration with computation layer: Provides native JAVA &amp; Python APIs, with a high level of abstraction, supporting most computation engines.</li>
-</ul>
-</li>
-<li>Open and neutral community, allowing contributions to improve influence.</li>
-</ul>
-<h2 id="table-specification">Table Specification</h2>
-<p>Specification for organizing data files and metadata files.</p>
         </div>
       </article>
       
@@ -237,15 +186,6 @@
   
 <p>
           <p>This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.</p>
-<h2 id="main-process">Main Process</h2>
-<p>The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a <code>WriteBatch</code>, and then it is executed.</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">batch</span><span class="p">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="nf">Write</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">batch</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><h3 id="writebatch">WriteBatch</h3>
-<p><code>WriteBatch</code> is an encapsulation of a group of update operations, which are applied <strong>atomically</strong> to the state machine. A block of memory is used to save the user&rsquo;s update operations.</p>
         </div>
       </article>
       
@@ -271,10 +211,6 @@
   
 <p>
           <p>This is the first chapter of my notes on reading the LevelDB source code, focusing on the startup process of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.</p>
-<p>A code repository with annotations will be shared on GitHub later for those interested in studying it.</p>
-<h2 id="prerequisites">Prerequisites</h2>
-<h3 id="database-files">Database Files</h3>
-<p>For now, I won&rsquo;t delve into the encoding and naming details of these files (as I haven&rsquo;t reached that part yet). I&rsquo;ll focus on the meaning and role of each file.</p>
         </div>
       </article>
       </div>

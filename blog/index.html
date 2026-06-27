@@ -166,10 +166,9 @@
     </small>
   
 <p>
-              <h2 id="what-what-is-cpu-profiling">What: What is CPU Profiling</h2>
-<p>A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.</p>
-<h2 id="how-how-profiling-data-is-collected">How: How Profiling Data is Collected</h2>
-<p>Common tools like <code>perf</code> are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.</p>
+              
+                <p>What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, …</p>
+              
           </div>
         </article>
       
@@ -194,12 +193,10 @@
     </small>
   
 <p>
-              <p>LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.</p>
-<p>Sequence Number
-LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.</p>
-<p><img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt=""></p>
-<p>Versioning
-Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information. VersionEdit records version changes.</p>
+              
+                <p>LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.
+Sequence Number LevelDB uses Sequence Numbers as logical clocks to …</p>
+              
           </div>
         </article>
       
@@ -224,9 +221,9 @@ Every change to the sstable file collection triggers a version upgrade in LevelD
     </small>
   
 <p>
-              <p>Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system.</p>
-<p>This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.</p>
-<p>Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.</p>
+              
+                <p>Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from …</p>
+              
           </div>
         </article>
       
@@ -253,13 +250,10 @@ Every change to the sstable file collection triggers a version upgrade in LevelD
     </small>
   
 <p>
-              <p>Borg is a cluster management system, similar to the closed-source version of Kubernetes (k8s).</p>
-<ul>
-<li>It achieves high utilization through admission control, efficient task packing, overcommitment, machine sharing, and process-level performance isolation.</li>
-<li>It provides runtime features to reduce failure recovery time for high-availability applications and scheduling policies that reduce the probability of correlated failures.</li>
-<li>It offers a declarative job description language, DNS integration, real-time job monitoring, and tools for analyzing and simulating system behavior, simplifying usage for end-users.</li>
-</ul>
-<p>The paper aims to introduce the system design and share the experiences Google has gained behind it. This blog mainly focuses on system design, specifically the services Borg offers in terms of SLA, its abstraction of workloads, resources, and scheduling.</p>
+              
+                <p>Borg is a cluster management system, similar to the closed-source version of Kubernetes (k8s).
+It achieves high utilization through admission control, efficient task packing, overcommitment, machine …</p>
+              
           </div>
         </article>
       
@@ -284,10 +278,9 @@ Every change to the sstable file collection triggers a version upgrade in LevelD
     </small>
   
 <p>
-              <p>It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding.</p>
-<h2 id="percolator-and-2pc">Percolator and 2PC</h2>
-<h3 id="2pc">2PC</h3>
-<p>The Two-Phase Commit (2PC) protocol involves two types of roles: <strong>Coordinator and Participant</strong>. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator&rsquo;s requests, completing prepare operations and commit/abort operations based on those requests.</p>
+              
+                <p>It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper …</p>
+              
           </div>
         </article>
       </div>

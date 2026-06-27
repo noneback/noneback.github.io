@@ -154,9 +154,6 @@
   
 <p>
           <p>It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding.</p>
-<h2 id="percolator-and-2pc">Percolator and 2PC</h2>
-<h3 id="2pc">2PC</h3>
-<p>The Two-Phase Commit (2PC) protocol involves two types of roles: <strong>Coordinator and Participant</strong>. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator&rsquo;s requests, completing prepare operations and commit/abort operations based on those requests.</p>
         </div>
       </article>
       
@@ -184,15 +181,6 @@
           <h1 id="transactions-and-distributed-transactions">Transactions and Distributed Transactions</h1>
 <h2 id="transactions">Transactions</h2>
 <p>A <strong>transaction</strong> is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the <strong>atomicity</strong> of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.</p>
-<p>A single-node database transaction has four main properties:</p>
-<ul>
-<li><strong>Atomicity</strong>: The transaction is executed as a whole. Either all operations within the transaction are executed, or none are executed.</li>
-<li><strong>Consistency</strong>: The transaction must ensure that the database moves from one consistent state to another. Consistent states mean that the data in the database must satisfy all integrity constraints.</li>
-<li><strong>Isolation</strong>: When multiple transactions are executed concurrently, the execution of one transaction should not affect the execution of others.</li>
-<li><strong>Durability</strong>: Changes made by a committed transaction should be permanently stored in the database.</li>
-</ul>
-<h2 id="distributed-transactions">Distributed Transactions</h2>
-<p>A <strong>distributed transaction</strong> is a transaction where the <strong>participants</strong>, <strong>transaction-supporting servers</strong>, <strong>resource servers</strong>, and <strong>transaction manager</strong> are located on different nodes of a distributed system.</p>
         </div>
       </article>
       </div>

@@ -3,9 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flink-Iceberg-Connector写入流程</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。
-写入提交流程总览
-Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest &#43; snapshot &#43; metadata，数据文件对外部可见）">
+    <meta name="description" content="Ladder@Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/">
         <meta name="google-site-verification" content="xxx">
@@ -34,8 +32,7 @@ Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterSt
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/">
 	<meta property="og:site_name" content="NoneBack">
 	<meta property="og:title" content="Flink-Iceberg-Connector写入流程">
-	<meta property="og:description" content="Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。
-写入提交流程总览 Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest &#43; snapshot &#43; metadata，数据文件对外部可见）">
+	<meta property="og:description" content="Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。">
 	<meta property="og:locale" content="zh">
 	<meta property="og:type" content="article">
 		<meta property="article:section" content="blog">
@@ -49,8 +46,7 @@ Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterSt
 
 	<meta name="twitter:card" content="summary">
 	<meta name="twitter:title" content="Flink-Iceberg-Connector写入流程">
-	<meta name="twitter:description" content="Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。
-写入提交流程总览 Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest &#43; snapshot &#43; metadata，数据文件对外部可见）">
+	<meta name="twitter:description" content="Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。">
 
 
 <script type="application/ld+json">
@@ -79,7 +75,7 @@ Flink 通过 RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterSt
   "@type": "BlogPosting",
   "headline": "Flink-Iceberg-Connector写入流程",
   "name": "Flink-Iceberg-Connector写入流程",
-  "description": "Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。\n写入提交流程总览 Flink 通过 RowData -\u0026gt; distributeStream -\u0026gt; WriterStream -\u0026gt; CommitterStream，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest + snapshot + metadata，数据文件对外部可见）\n",
+  "description": "Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。\n",
   "keywords": [
     "big data", "lake house", "stream compute", "storage"
   ],

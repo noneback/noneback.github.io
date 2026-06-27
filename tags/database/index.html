@@ -156,18 +156,6 @@
   
 <p>
           <p>This article introduces the design considerations of AWS&rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead.</p>
-<hr>
-<p>Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios.</p>
-<p>In terms of design, there are several aspects worth noting:</p>
-<ul>
-<li>The design premise of Aurora is that with databases moving to the cloud, thanks to advancements in cloud infrastructure, the biggest bottleneck for databases has shifted from compute and storage to the network. This was an important premise for AWS when designing Aurora. Based on this premise, Aurora revisits the concept of &ldquo;Log is Database&rdquo;, pushing only the RedoLog down to the storage layer.</li>
-<li><strong>Storage-compute separation</strong>: The database storage layer interfaces with a distributed storage system, which provides reliability and security guarantees. The compute and storage layers can scale independently. The storage system provides a unified data view to the upper layers, significantly improving the efficiency of core functions and operations (such as backup, data recovery, and high availability).</li>
-<li><strong>Interesting reliability guarantees</strong>: For example, quorum-based NRW consistency protocol, where read and write operations on storage nodes require majority voting, ensures dual-AZ level fault tolerance. Sharding is used to reduce failure handling time, improving the SLA. Most reads occur during database recovery when the current state needs to be restored.</li>
-<li><strong>Single-writer multi-reader</strong>: Unlike NewSQL products with a shared-nothing architecture, Aurora provides only a single write node. This simplifies data consistency guarantees since the single write node can use the RedoLog LSN as a logical clock to maintain the partial order of data updates. By pushing the RedoLog to all nodes and applying these operations in order, consistency can be achieved.</li>
-<li><strong>Transaction implementation</strong>: Since the storage system provides a unified file view to the upper layer, Aurora&rsquo;s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC.</li>
-<li><strong>Background acceleration for foreground processing</strong>: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc.</li>
-</ul>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" alt="Aurora Architecture Overview"></p>
         </div>
       </article>
       
@@ -209,31 +197,6 @@
 </li>
 <li>
 <p>School/University: <a href="https://en.wikipedia.org/wiki/Beijing_University_of_Posts_and_Telecommunications">Beijing University of Posts and Telecommunications</a></p>
-</li>
-<li>
-<p>Graduation Date: July, 2022</p>
-</li>
-<li>
-<p>Major/Focus: Software Engineering</p>
-</li>
-<li>
-<p>Location: Beijing, China</p>
-</li>
-<li>
-<p>Timezone: China Standard Time (CST), UTC +8</p>
-</li>
-<li>
-<p>Github Profile: <a href="https://github.com/noneback">https://github.com/noneback</a></p>
-</li>
-<li>
-<p>Personal Blog: <a href="http://noneback.github.io">http://noneback.github.io</a></p>
-</li>
-</ul>
-<h3 id="open-source-experience">Open Source Experience</h3>
-<p>I used to make contribution on those open source projects:</p>
-<ul>
-<li>
-<p><a href="https://github.com/matrixorigin/matrixone">MaxtrixOne</a> : Hyperconverged cloud-edge native database</p>
         </div>
       </article>
       
@@ -286,7 +249,6 @@
   
 <p>
           <p><strong>Database indexes</strong> are sorted data structures in DBMS that help in quickly querying and updating data in a database. Generally, data structures used for building indexes include B-trees, B+ trees, hash tables, etc.</p>
-<p>MySQL uses B+ trees to build indexes. The reason for this choice is that a B+ tree node can store more data, and in a B+ tree, only leaf nodes store data, while non-leaf nodes store only indexes. This allows the index to be stored in memory as much as possible, reducing tree height, minimizing disk I/O when querying indexes, and greatly improving query efficiency.</p>
         </div>
       </article>
       </div>

@@ -156,18 +156,6 @@
   
 <p>
           <p>This article introduces the design considerations of AWS&rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead.</p>
-<hr>
-<p>Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios.</p>
-<p>In terms of design, there are several aspects worth noting:</p>
-<ul>
-<li>The design premise of Aurora is that with databases moving to the cloud, thanks to advancements in cloud infrastructure, the biggest bottleneck for databases has shifted from compute and storage to the network. This was an important premise for AWS when designing Aurora. Based on this premise, Aurora revisits the concept of &ldquo;Log is Database&rdquo;, pushing only the RedoLog down to the storage layer.</li>
-<li><strong>Storage-compute separation</strong>: The database storage layer interfaces with a distributed storage system, which provides reliability and security guarantees. The compute and storage layers can scale independently. The storage system provides a unified data view to the upper layers, significantly improving the efficiency of core functions and operations (such as backup, data recovery, and high availability).</li>
-<li><strong>Interesting reliability guarantees</strong>: For example, quorum-based NRW consistency protocol, where read and write operations on storage nodes require majority voting, ensures dual-AZ level fault tolerance. Sharding is used to reduce failure handling time, improving the SLA. Most reads occur during database recovery when the current state needs to be restored.</li>
-<li><strong>Single-writer multi-reader</strong>: Unlike NewSQL products with a shared-nothing architecture, Aurora provides only a single write node. This simplifies data consistency guarantees since the single write node can use the RedoLog LSN as a logical clock to maintain the partial order of data updates. By pushing the RedoLog to all nodes and applying these operations in order, consistency can be achieved.</li>
-<li><strong>Transaction implementation</strong>: Since the storage system provides a unified file view to the upper layer, Aurora&rsquo;s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC.</li>
-<li><strong>Background acceleration for foreground processing</strong>: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc.</li>
-</ul>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" alt="Aurora Architecture Overview"></p>
         </div>
       </article>
       </div>

@@ -154,7 +154,6 @@
   
 <p>
           <p>Originally, I wanted to replace Manjaro KDE with DWM, but I got stuck at the boot screen, and while trying to fix it, I ended up corrupting the bootloader. So, I decided to go all in, format the entire disk, and try setting up an Arch + DWM development environment. Here, I&rsquo;m documenting the process to assist with future repairs and device migrations.</p>
-<p>This is not a step-by-step guide, but rather a concise record of my journey.</p>
         </div>
       </article>
       
@@ -183,46 +182,6 @@
 <p>
           <p>Let&rsquo;s start with epoll.</p>
 <p>epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.</p>
-<h2 id="usage">Usage</h2>
-<h3 id="api">API</h3>
-<p>epoll has three primary system calls:</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cm">/** epoll_create
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Creates an epoll instance and returns a file descriptor for it.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  size: Indicates the number of file descriptors to be monitored by epfd.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_create</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="cm">/** epoll_ctl
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Adds or modifies a file descriptor to be monitored by epoll.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  epfd: The epoll file descriptor.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  op: Operation type.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_ADD: Add a new fd to epfd.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_MOD: Modify an already registered fd.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_DEL: Remove an fd from epfd.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  fd: The file descriptor to be monitored.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  event: Specifies the type of event to be monitored.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed).
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLOUT: Indicates the fd is ready for writing.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLPRI: Indicates urgent data can be read.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLERR: Indicates an error occurred on the fd.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLHUP: Indicates the fd has been hung up.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT).
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_ctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">op</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="o">*</span><span class="n">event</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="cm">/** epoll_wait
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Collects events that have been triggered and returns the number of triggered events.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  epfd: The epoll file descriptor.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  events: Array of epoll events that will be populated with triggered events.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  maxevents: Indicates the size of the events array.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> *  timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, &gt;0 waits for the specified duration.
-</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_wait</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="o">*</span><span class="n">events</span><span class="p">,</span> <span class="kt">int</span> <span class="n">maxevents</span><span class="p">,</span> <span class="kt">int</span> <span class="n">timeout</span><span class="p">);</span>
-</span></span></code></pre></div><h3 id="processing-flow">Processing Flow</h3>
-<h4 id="epoll_create">epoll_create</h4>
-<p>When a process calls <code>epoll_create</code>, the Linux kernel creates an <code>eventpoll</code> structure:</p>
         </div>
       </article>
       
@@ -248,11 +207,6 @@
   
 <p>
           <p><strong>Linux Cgroups</strong> (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it&rsquo;s easy to limit a process&rsquo;s resource usage and monitor its metrics in real time.</p>
-<h2 id="three-components-of-cgroups">Three Components of Cgroups</h2>
-<ul>
-<li>
-<p><strong>cgroup</strong></p>
-<p>A mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems.</p>
         </div>
       </article>
       </div>

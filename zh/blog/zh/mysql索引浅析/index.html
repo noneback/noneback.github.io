@@ -3,8 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MySQL索引浅析</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。
-MySQL中使用的是B&#43;树构建索引。理由是B&#43;树的一个节点可以存储更多的数据，并且B&#43;树中，仅有叶子节点存储数据，非叶子节点仅存储索引，故而能将索引尽量多的保存在内存中，减少了树高，也降低了查询索引时进入磁盘IO的次数，极大提高查询的效率。">
+    <meta name="description" content="Ladder@数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/">
         <meta name="google-site-verification" content="xxx">
@@ -33,8 +32,7 @@ MySQL中使用的是B&#43;树构建索引。理由是B&#43;树的一个节点可
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/mysql%E7%B4%A2%E5%BC%95%E6%B5%85%E6%9E%90/">
 	<meta property="og:site_name" content="NoneBack">
 	<meta property="og:title" content="MySQL索引浅析">
-	<meta property="og:description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。
-MySQL中使用的是B&#43;树构建索引。理由是B&#43;树的一个节点可以存储更多的数据，并且B&#43;树中，仅有叶子节点存储数据，非叶子节点仅存储索引，故而能将索引尽量多的保存在内存中，减少了树高，也降低了查询索引时进入磁盘IO的次数，极大提高查询的效率。">
+	<meta property="og:description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。">
 	<meta property="og:locale" content="zh">
 	<meta property="og:type" content="article">
 		<meta property="article:section" content="blog">
@@ -47,8 +45,7 @@ MySQL中使用的是B&#43;树构建索引。理由是B&#43;树的一个节点可
 
 	<meta name="twitter:card" content="summary">
 	<meta name="twitter:title" content="MySQL索引浅析">
-	<meta name="twitter:description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。
-MySQL中使用的是B&#43;树构建索引。理由是B&#43;树的一个节点可以存储更多的数据，并且B&#43;树中，仅有叶子节点存储数据，非叶子节点仅存储索引，故而能将索引尽量多的保存在内存中，减少了树高，也降低了查询索引时进入磁盘IO的次数，极大提高查询的效率。">
+	<meta name="twitter:description" content="数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B&#43;树，哈希表等。">
 
 
 <script type="application/ld+json">
@@ -77,7 +74,7 @@ MySQL中使用的是B&#43;树构建索引。理由是B&#43;树的一个节点可
   "@type": "BlogPosting",
   "headline": "MySQL索引浅析",
   "name": "MySQL索引浅析",
-  "description": "数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B+树，哈希表等。\nMySQL中使用的是B+树构建索引。理由是B+树的一个节点可以存储更多的数据，并且B+树中，仅有叶子节点存储数据，非叶子节点仅存储索引，故而能将索引尽量多的保存在内存中，减少了树高，也降低了查询索引时进入磁盘IO的次数，极大提高查询的效率。\n",
+  "description": "数据库索引，是DBMS中一个排序的数据结构，以协助快速查询、更新数据库中数据。一般来说，用于构建索引的数据结构有B树，B+树，哈希表等。\n",
   "keywords": [
     "DB", "MySQL"
   ],

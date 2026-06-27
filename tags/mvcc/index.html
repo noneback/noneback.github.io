@@ -156,9 +156,6 @@
           <p>LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.</p>
 <p>Sequence Number
 LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.</p>
-<p><img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt=""></p>
-<p>Versioning
-Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information. VersionEdit records version changes.</p>
         </div>
       </article>
       </div>

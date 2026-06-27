@@ -162,16 +162,6 @@ T-&gt;T*F|T/F|F
 F-&gt;(E)|num
 </code></pre><h2 id="dfa">DFA</h2>
 <p>首先要根据文法构建一个 DFA</p>
-<h3 id="构造拓广文法-gs">构造拓广文法 G(s)</h3>
-<pre tabindex="0"><code>拓广文法G：
-S-&gt;E
-E-&gt;E+T|E-T|T
-T-&gt;T*F|T/F|F
-F-&gt;(E)|num
-</code></pre><h3 id="构造有效项目集和相应-dfa">构造有效项目集和相应 DFA</h3>
-<p><img src="https://i.loli.net/2020/11/22/Hz5lLiGA9P2woWq.png" alt="DFA.png"></p>
-<h2 id="slr">SLR</h2>
-<p>从 DFA 中可以观察到使用 LR(0)将会有 Shift-Reduce 冲突，所以最终使用 SLR 分析。</p>
         </div>
       </article>
       

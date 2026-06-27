@@ -3,9 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prometheus--TSDB</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system.
-This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.
-Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.">
+    <meta name="description" content="Ladder@Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/prometheus-tsdb/">
         <meta name="google-site-verification" content="xxx">
@@ -34,9 +32,7 @@ Analyzing the source code of such projects can often be of low value unless I sp
     <meta property="og:url" content="https://noneback.github.io/blog/prometheus-tsdb/">
 	<meta property="og:site_name" content="NoneBack">
 	<meta property="og:title" content="Prometheus--TSDB">
-	<meta property="og:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system.
-This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.
-Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.">
+	<meta property="og:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system.">
 	<meta property="og:locale" content="en">
 	<meta property="og:type" content="article">
 		<meta property="article:section" content="blog">
@@ -49,9 +45,7 @@ Analyzing the source code of such projects can often be of low value unless I sp
 
 	<meta name="twitter:card" content="summary">
 	<meta name="twitter:title" content="Prometheus--TSDB">
-	<meta name="twitter:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system.
-This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.
-Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.">
+	<meta name="twitter:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system.">
 
 
 <script type="application/ld+json">
@@ -80,7 +74,7 @@ Analyzing the source code of such projects can often be of low value unless I sp
   "@type": "BlogPosting",
   "headline": "Prometheus--TSDB",
   "name": "Prometheus--TSDB",
-  "description": "Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I\u0026rsquo;m diving into the standard open-source monitoring system.\nThis article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.\nAnalyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.\n",
+  "description": "Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I\u0026rsquo;m diving into the standard open-source monitoring system.\n",
   "keywords": [
     "Prometheus", "TSDB", "Observability"
   ],
@@ -232,11 +226,11 @@ Analyzing the source code of such projects can often be of low value unless I sp
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
-            
-            
             
             
             

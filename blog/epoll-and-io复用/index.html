@@ -4,47 +4,7 @@
     <title>Epoll and IO Multiplexing</title>
     <meta charset="utf-8">
     <meta name="description" content="Ladder@Let&rsquo;s start with epoll.
-epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.
-Usage
-API
-epoll has three primary system calls:
-/** epoll_create
- *  Creates an epoll instance and returns a file descriptor for it.
- *  Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
- *  size: Indicates the number of file descriptors to be monitored by epfd.
- */
-int epoll_create(int size);
-
-/** epoll_ctl
- *  Adds or modifies a file descriptor to be monitored by epoll.
- *  epfd: The epoll file descriptor.
- *  op: Operation type.
- *       EPOLL_CTL_ADD: Add a new fd to epfd.
- *       EPOLL_CTL_MOD: Modify an already registered fd.
- *       EPOLL_CTL_DEL: Remove an fd from epfd.
- *  fd: The file descriptor to be monitored.
- *  event: Specifies the type of event to be monitored.
- *         EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed).
- *         EPOLLOUT: Indicates the fd is ready for writing.
- *         EPOLLPRI: Indicates urgent data can be read.
- *         EPOLLERR: Indicates an error occurred on the fd.
- *         EPOLLHUP: Indicates the fd has been hung up.
- *         EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT).
- *         EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd.
- */
-int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
-
-/** epoll_wait
- *  Collects events that have been triggered and returns the number of triggered events.
- *  epfd: The epoll file descriptor.
- *  events: Array of epoll events that will be populated with triggered events.
- *  maxevents: Indicates the size of the events array.
- *  timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, &gt;0 waits for the specified duration.
- */
-int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
-Processing Flow
-epoll_create
-When a process calls epoll_create, the Linux kernel creates an eventpoll structure:">
+epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/epoll-and-io%E5%A4%8D%E7%94%A8/">
         <meta name="google-site-verification" content="xxx">
@@ -74,9 +34,7 @@ When a process calls epoll_create, the Linux kernel creates an eventpoll structu
 	<meta property="og:site_name" content="NoneBack">
 	<meta property="og:title" content="Epoll and IO Multiplexing">
 	<meta property="og:description" content="Let’s start with epoll.
-epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system’s maximum file open limit, providing excellent performance.
-Usage API epoll has three primary system calls:
-/** epoll_create * Creates an epoll instance and returns a file descriptor for it. * Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources. * size: Indicates the number of file descriptors to be monitored by epfd. */ int epoll_create(int size); /** epoll_ctl * Adds or modifies a file descriptor to be monitored by epoll. * epfd: The epoll file descriptor. * op: Operation type. * EPOLL_CTL_ADD: Add a new fd to epfd. * EPOLL_CTL_MOD: Modify an already registered fd. * EPOLL_CTL_DEL: Remove an fd from epfd. * fd: The file descriptor to be monitored. * event: Specifies the type of event to be monitored. * EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed). * EPOLLOUT: Indicates the fd is ready for writing. * EPOLLPRI: Indicates urgent data can be read. * EPOLLERR: Indicates an error occurred on the fd. * EPOLLHUP: Indicates the fd has been hung up. * EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT). * EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd. */ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event); /** epoll_wait * Collects events that have been triggered and returns the number of triggered events. * epfd: The epoll file descriptor. * events: Array of epoll events that will be populated with triggered events. * maxevents: Indicates the size of the events array. * timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, &gt;0 waits for the specified duration. */ int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout); Processing Flow epoll_create When a process calls epoll_create, the Linux kernel creates an eventpoll structure:">
+epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system’s maximum file open limit, providing excellent performance.">
 	<meta property="og:locale" content="en">
 	<meta property="og:type" content="article">
 		<meta property="article:section" content="blog">
@@ -91,9 +49,7 @@ Usage API epoll has three primary system calls:
 	<meta name="twitter:card" content="summary">
 	<meta name="twitter:title" content="Epoll and IO Multiplexing">
 	<meta name="twitter:description" content="Let’s start with epoll.
-epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system’s maximum file open limit, providing excellent performance.
-Usage API epoll has three primary system calls:
-/** epoll_create * Creates an epoll instance and returns a file descriptor for it. * Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources. * size: Indicates the number of file descriptors to be monitored by epfd. */ int epoll_create(int size); /** epoll_ctl * Adds or modifies a file descriptor to be monitored by epoll. * epfd: The epoll file descriptor. * op: Operation type. * EPOLL_CTL_ADD: Add a new fd to epfd. * EPOLL_CTL_MOD: Modify an already registered fd. * EPOLL_CTL_DEL: Remove an fd from epfd. * fd: The file descriptor to be monitored. * event: Specifies the type of event to be monitored. * EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed). * EPOLLOUT: Indicates the fd is ready for writing. * EPOLLPRI: Indicates urgent data can be read. * EPOLLERR: Indicates an error occurred on the fd. * EPOLLHUP: Indicates the fd has been hung up. * EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT). * EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd. */ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event); /** epoll_wait * Collects events that have been triggered and returns the number of triggered events. * epfd: The epoll file descriptor. * events: Array of epoll events that will be populated with triggered events. * maxevents: Indicates the size of the events array. * timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, &gt;0 waits for the specified duration. */ int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout); Processing Flow epoll_create When a process calls epoll_create, the Linux kernel creates an eventpoll structure:">
+epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system’s maximum file open limit, providing excellent performance.">
 
 
 <script type="application/ld+json">
@@ -122,7 +78,7 @@ Usage API epoll has three primary system calls:
   "@type": "BlogPosting",
   "headline": "Epoll and IO Multiplexing",
   "name": "Epoll and IO Multiplexing",
-  "description": "Let\u0026rsquo;s start with epoll.\nepoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system\u0026rsquo;s maximum file open limit, providing excellent performance.\nUsage API epoll has three primary system calls:\n/** epoll_create * Creates an epoll instance and returns a file descriptor for it. * Needs to be closed afterward, as epfd also consumes the system\u0026#39;s fd resources. * size: Indicates the number of file descriptors to be monitored by epfd. */ int epoll_create(int size); /** epoll_ctl * Adds or modifies a file descriptor to be monitored by epoll. * epfd: The epoll file descriptor. * op: Operation type. * EPOLL_CTL_ADD: Add a new fd to epfd. * EPOLL_CTL_MOD: Modify an already registered fd. * EPOLL_CTL_DEL: Remove an fd from epfd. * fd: The file descriptor to be monitored. * event: Specifies the type of event to be monitored. * EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed). * EPOLLOUT: Indicates the fd is ready for writing. * EPOLLPRI: Indicates urgent data can be read. * EPOLLERR: Indicates an error occurred on the fd. * EPOLLHUP: Indicates the fd has been hung up. * EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT). * EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd. */ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event); /** epoll_wait * Collects events that have been triggered and returns the number of triggered events. * epfd: The epoll file descriptor. * events: Array of epoll events that will be populated with triggered events. * maxevents: Indicates the size of the events array. * timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, \u0026gt;0 waits for the specified duration. */ int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout); Processing Flow epoll_create When a process calls epoll_create, the Linux kernel creates an eventpoll structure:\n",
+  "description": "Let\u0026rsquo;s start with epoll.\nepoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system\u0026rsquo;s maximum file open limit, providing excellent performance.\n",
   "keywords": [
     "OS", "Linux", "SysCall"
   ],
@@ -274,11 +230,11 @@ Usage API epoll has three primary system calls:
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
-            
-            
             
             
             

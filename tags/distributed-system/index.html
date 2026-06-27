@@ -154,9 +154,6 @@
   
 <p>
           <p>It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding.</p>
-<h2 id="percolator-and-2pc">Percolator and 2PC</h2>
-<h3 id="2pc">2PC</h3>
-<p>The Two-Phase Commit (2PC) protocol involves two types of roles: <strong>Coordinator and Participant</strong>. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator&rsquo;s requests, completing prepare operations and commit/abort operations based on those requests.</p>
         </div>
       </article>
       
@@ -180,8 +177,6 @@
   
 <p>
           <p>An old paper by AWS, Dynamo has been in the market for a long time, and the architecture has likely evolved since the paper&rsquo;s publication. Despite this, the paper was selected as one of the SIGMOD best papers of the year, and there are still many valuable lessons to learn.</p>
-<h2 id="design">Design</h2>
-<p>Dynamo is a NoSQL product that provides a key-value storage interface. It emphasizes high availability rather than consistency, which leads to differences in architectural design and technical choices compared to other systems.</p>
         </div>
       </article>
       
@@ -209,18 +204,6 @@
   
 <p>
           <p>This article introduces the design considerations of AWS&rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead.</p>
-<hr>
-<p>Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios.</p>
-<p>In terms of design, there are several aspects worth noting:</p>
-<ul>
-<li>The design premise of Aurora is that with databases moving to the cloud, thanks to advancements in cloud infrastructure, the biggest bottleneck for databases has shifted from compute and storage to the network. This was an important premise for AWS when designing Aurora. Based on this premise, Aurora revisits the concept of &ldquo;Log is Database&rdquo;, pushing only the RedoLog down to the storage layer.</li>
-<li><strong>Storage-compute separation</strong>: The database storage layer interfaces with a distributed storage system, which provides reliability and security guarantees. The compute and storage layers can scale independently. The storage system provides a unified data view to the upper layers, significantly improving the efficiency of core functions and operations (such as backup, data recovery, and high availability).</li>
-<li><strong>Interesting reliability guarantees</strong>: For example, quorum-based NRW consistency protocol, where read and write operations on storage nodes require majority voting, ensures dual-AZ level fault tolerance. Sharding is used to reduce failure handling time, improving the SLA. Most reads occur during database recovery when the current state needs to be restored.</li>
-<li><strong>Single-writer multi-reader</strong>: Unlike NewSQL products with a shared-nothing architecture, Aurora provides only a single write node. This simplifies data consistency guarantees since the single write node can use the RedoLog LSN as a logical clock to maintain the partial order of data updates. By pushing the RedoLog to all nodes and applying these operations in order, consistency can be achieved.</li>
-<li><strong>Transaction implementation</strong>: Since the storage system provides a unified file view to the upper layer, Aurora&rsquo;s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC.</li>
-<li><strong>Background acceleration for foreground processing</strong>: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc.</li>
-</ul>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" alt="Aurora Architecture Overview"></p>
         </div>
       </article>
       
@@ -246,8 +229,6 @@
   
 <p>
           <p>This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&rsquo;s best to refer directly to the original paper.</p>
-<h2 id="introduction">Introduction</h2>
-<p>In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.</p>
         </div>
       </article>
       
@@ -273,11 +254,6 @@
   
 <p>
           <p>This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic decisions. These trade-offs are the most insightful aspects of this article.</p>
-<h2 id="positioning">Positioning</h2>
-<p>ZooKeeper is a wait-free, high-performance coordination service for distributed applications. It supports the coordination needs of distributed applications by providing coordination primitives (specific APIs and data models).</p>
-<h2 id="design">Design</h2>
-<h3 id="keywords">Keywords</h3>
-<p>There are two key phrases in ZooKeeper&rsquo;s positioning: <strong>high performance</strong> and <strong>distributed application coordination service</strong>.</p>
         </div>
       </article>
       </div>

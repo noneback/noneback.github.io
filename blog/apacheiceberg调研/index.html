@@ -10,58 +10,7 @@ A schema semantic abstraction between storage and computation.
 Developed and open-sourced by Netflix to enhance scalability, reliability, and usability.
 
 Background
-Issues encountered when migrating HIVE to the cloud:
-
-Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS.
-Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.
-Unsafe operations, CBO unfriendly, etc.
-
-Features
-
-Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition.
-
-Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp).
-
-
-Supports object storage with minimal dependency on FS semantics.
-ACID semantics support, parallel reads, serialized write operations:
-
-Separation of read and write snapshots.
-Optimistic handling of write parallel conflicts, retry to ensure writes.
-
-
-Snapshot support:
-
-Data rollback and time travel.
-Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (related API doc).
-Incremental reading can be achieved by comparing snapshot differences.
-
-
-Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (deleteWith).
-High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg&rsquo;s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API.
-Others: file-level encryption and decryption.
-
-Ecosystem
-
-Community support for OSS, Flink, Spark, and Presto:
-
-Flink (detail): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (0.13.0-release-notes).
-Presto: Iceberg connector.
-Aliyun OSS: # pr 3689.
-
-
-Integration with other components:
-
-Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (# pr 3689).
-Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC.
-Catalog: Customizable (Doc: Custom Catalog Implementation), currently supports JDBC, Hive Metastore, Hadoop, etc.
-Integration with computation layer: Provides native JAVA &amp; Python APIs, with a high level of abstraction, supporting most computation engines.
-
-
-Open and neutral community, allowing contributions to improve influence.
-
-Table Specification
-Specification for organizing data files and metadata files.">
+Issues encountered when migrating HIVE to the cloud:">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/apacheiceberg%E8%B0%83%E7%A0%94/">
         <meta name="google-site-verification" content="xxx">
@@ -90,8 +39,7 @@ Specification for organizing data files and metadata files.">
     <meta property="og:url" content="https://noneback.github.io/blog/apacheiceberg%E8%B0%83%E7%A0%94/">
 	<meta property="og:site_name" content="NoneBack">
 	<meta property="og:title" content="Apache-Iceberg Quick Investigation">
-	<meta property="og:description" content="A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:
-Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck. Unsafe operations, CBO unfriendly, etc. Features Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition. Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp). Supports object storage with minimal dependency on FS semantics. ACID semantics support, parallel reads, serialized write operations: Separation of read and write snapshots. Optimistic handling of write parallel conflicts, retry to ensure writes. Snapshot support: Data rollback and time travel. Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (related API doc). Incremental reading can be achieved by comparing snapshot differences. Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (deleteWith). High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg’s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API. Others: file-level encryption and decryption. Ecosystem Community support for OSS, Flink, Spark, and Presto: Flink (detail): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (0.13.0-release-notes). Presto: Iceberg connector. Aliyun OSS: # pr 3689. Integration with other components: Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (# pr 3689). Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC. Catalog: Customizable (Doc: Custom Catalog Implementation), currently supports JDBC, Hive Metastore, Hadoop, etc. Integration with computation layer: Provides native JAVA &amp; Python APIs, with a high level of abstraction, supporting most computation engines. Open and neutral community, allowing contributions to improve influence. Table Specification Specification for organizing data files and metadata files.">
+	<meta property="og:description" content="A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:">
 	<meta property="og:locale" content="en">
 	<meta property="og:type" content="article">
 		<meta property="article:section" content="blog">
@@ -104,8 +52,7 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
 
 	<meta name="twitter:card" content="summary">
 	<meta name="twitter:title" content="Apache-Iceberg Quick Investigation">
-	<meta name="twitter:description" content="A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:
-Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck. Unsafe operations, CBO unfriendly, etc. Features Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition. Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp). Supports object storage with minimal dependency on FS semantics. ACID semantics support, parallel reads, serialized write operations: Separation of read and write snapshots. Optimistic handling of write parallel conflicts, retry to ensure writes. Snapshot support: Data rollback and time travel. Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (related API doc). Incremental reading can be achieved by comparing snapshot differences. Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (deleteWith). High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg’s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API. Others: file-level encryption and decryption. Ecosystem Community support for OSS, Flink, Spark, and Presto: Flink (detail): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (0.13.0-release-notes). Presto: Iceberg connector. Aliyun OSS: # pr 3689. Integration with other components: Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (# pr 3689). Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC. Catalog: Customizable (Doc: Custom Catalog Implementation), currently supports JDBC, Hive Metastore, Hadoop, etc. Integration with computation layer: Provides native JAVA &amp; Python APIs, with a high level of abstraction, supporting most computation engines. Open and neutral community, allowing contributions to improve influence. Table Specification Specification for organizing data files and metadata files.">
+	<meta name="twitter:description" content="A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:">
 
 
 <script type="application/ld+json">
@@ -134,7 +81,7 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
   "@type": "BlogPosting",
   "headline": "Apache-Iceberg Quick Investigation",
   "name": "Apache-Iceberg Quick Investigation",
-  "description": " A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:\nDependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck. Unsafe operations, CBO unfriendly, etc. Features Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition. Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp). Supports object storage with minimal dependency on FS semantics. ACID semantics support, parallel reads, serialized write operations: Separation of read and write snapshots. Optimistic handling of write parallel conflicts, retry to ensure writes. Snapshot support: Data rollback and time travel. Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (related API doc). Incremental reading can be achieved by comparing snapshot differences. Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (deleteWith). High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg\u0026rsquo;s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API. Others: file-level encryption and decryption. Ecosystem Community support for OSS, Flink, Spark, and Presto: Flink (detail): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (0.13.0-release-notes). Presto: Iceberg connector. Aliyun OSS: # pr 3689. Integration with other components: Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (# pr 3689). Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC. Catalog: Customizable (Doc: Custom Catalog Implementation), currently supports JDBC, Hive Metastore, Hadoop, etc. Integration with computation layer: Provides native JAVA \u0026amp; Python APIs, with a high level of abstraction, supporting most computation engines. Open and neutral community, allowing contributions to improve influence. Table Specification Specification for organizing data files and metadata files.\n",
+  "description": " A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:\n",
   "keywords": [
     "lake house", "storage", "big data"
   ],
@@ -286,11 +233,11 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
-            
-            
             
             
             

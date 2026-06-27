@@ -156,9 +156,6 @@
           <p>LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.</p>
 <p>Sequence Number
 LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.</p>
-<p><img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt=""></p>
-<p>Versioning
-Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information. VersionEdit records version changes.</p>
         </div>
       </article>
       
@@ -184,15 +181,6 @@ Every change to the sstable file collection triggers a version upgrade in LevelD
   
 <p>
           <p>This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.</p>
-<h2 id="main-process">Main Process</h2>
-<p>The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a <code>WriteBatch</code>, and then it is executed.</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">batch</span><span class="p">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="nf">Write</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">batch</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><h3 id="writebatch">WriteBatch</h3>
-<p><code>WriteBatch</code> is an encapsulation of a group of update operations, which are applied <strong>atomically</strong> to the state machine. A block of memory is used to save the user&rsquo;s update operations.</p>
         </div>
       </article>
       
@@ -218,10 +206,6 @@ Every change to the sstable file collection triggers a version upgrade in LevelD
   
 <p>
           <p>This is the first chapter of my notes on reading the LevelDB source code, focusing on the startup process of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.</p>
-<p>A code repository with annotations will be shared on GitHub later for those interested in studying it.</p>
-<h2 id="prerequisites">Prerequisites</h2>
-<h3 id="database-files">Database Files</h3>
-<p>For now, I won&rsquo;t delve into the encoding and naming details of these files (as I haven&rsquo;t reached that part yet). I&rsquo;ll focus on the meaning and role of each file.</p>
         </div>
       </article>
       </div>

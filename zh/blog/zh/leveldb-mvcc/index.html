@@ -3,9 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LevelDB MVCC</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。
-Sequence Number
-LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。">
+    <meta name="description" content="Ladder@LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/leveldb-mvcc/">
         <meta name="google-site-verification" content="xxx">
@@ -34,8 +32,7 @@ LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/leveldb-mvcc/">
 	<meta property="og:site_name" content="NoneBack">
 	<meta property="og:title" content="LevelDB MVCC">
-	<meta property="og:description" content="LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。
-Sequence Number LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。">
+	<meta property="og:description" content="LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。">
 	<meta property="og:locale" content="zh">
 	<meta property="og:type" content="article">
 		<meta property="article:section" content="blog">
@@ -48,8 +45,7 @@ Sequence Number LevelDB通过Sequence Number作为逻辑时钟，维护了单个
 
 	<meta name="twitter:card" content="summary">
 	<meta name="twitter:title" content="LevelDB MVCC">
-	<meta name="twitter:description" content="LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。
-Sequence Number LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。">
+	<meta name="twitter:description" content="LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。">
 
 
 <script type="application/ld+json">
@@ -78,7 +74,7 @@ Sequence Number LevelDB通过Sequence Number作为逻辑时钟，维护了单个
   "@type": "BlogPosting",
   "headline": "LevelDB MVCC",
   "name": "LevelDB MVCC",
-  "description": "LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。\nSequence Number LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。\n",
+  "description": "LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。\n",
   "keywords": [
     "LevelDB", "MVCC"
   ],

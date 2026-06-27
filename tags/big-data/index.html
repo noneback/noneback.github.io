@@ -158,70 +158,6 @@
           <p>The Iceberg community provides an official Flink Connector, and this chapter&rsquo;s source code analysis is based on that.</p>
 <h2 id="overview-of-the-write-submission-process">Overview of the Write Submission Process</h2>
 <p>Flink writes data through <code>RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream</code>. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).</p>
-<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1655962006990-826460c7-b6fc-4efe-a8e0-65cc080ffea9.png" alt="Flink-Iceberg Write Flow"></p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">DataStreamSink</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">chainIcebergOperators</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkArgument</span><span class="p">(</span><span class="n">inputCreator</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s">&#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkNotNull</span><span class="p">(</span><span class="n">tableLoader</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;Table loader shouldn&#39;t be null&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rowDataInput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inputCreator</span><span class="p">.</span><span class="na">apply</span><span class="p">(</span><span class="n">uidPrefix</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">table</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">tableLoader</span><span class="p">.</span><span class="na">open</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">TableLoader</span><span class="w"> </span><span class="n">loader</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tableLoader</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">loader</span><span class="p">.</span><span class="na">loadTable</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">IOException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UncheckedIOException</span><span class="p">(</span><span class="s">&#34;Failed to load iceberg table from table loader: &#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tableLoader</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">checkAndGetEqualityFieldIds</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">RowType</span><span class="w"> </span><span class="n">flinkRowType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toFlinkRowType</span><span class="p">(</span><span class="n">table</span><span class="p">.</span><span class="na">schema</span><span class="p">(),</span><span class="w"> </span><span class="n">tableSchema</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">distributeStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">distributeDataStream</span><span class="p">(</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">rowDataInput</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">properties</span><span class="p">(),</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">spec</span><span class="p">(),</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">schema</span><span class="p">(),</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span><span class="w"> </span><span class="n">writerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">appendWriter</span><span class="p">(</span><span class="n">distributeStream</span><span class="p">,</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">equalityFieldIds</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span><span class="w"> </span><span class="n">committerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">appendCommitter</span><span class="p">(</span><span class="n">writerStream</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">appendDummySink</span><span class="p">(</span><span class="n">committerStream</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span></code></pre></div><h2 id="write-process-source-code-analysis">Write Process Source Code Analysis</h2>
-<h3 id="writestream">WriteStream</h3>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">appendWriter</span><span class="p">(</span><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">RowType</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">                                                             </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">boolean</span><span class="w"> </span><span class="n">upsertMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upsert</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">PropertyUtil</span><span class="p">.</span><span class="na">propertyAsBoolean</span><span class="p">(</span><span class="n">table</span><span class="p">.</span><span class="na">properties</span><span class="p">(),</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">UPSERT_ENABLED</span><span class="p">,</span><span class="w"> </span><span class="n">UPSERT_ENABLED_DEFAULT</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">upsertMode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkState</span><span class="p">(</span><span class="o">!</span><span class="n">overwrite</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="s">&#34;OVERWRITE mode shouldn&#39;t be enabled when configuring to use UPSERT data stream.&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkState</span><span class="p">(</span><span class="o">!</span><span class="n">equalityFieldIds</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">(),</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="s">&#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">table</span><span class="p">.</span><span class="na">spec</span><span class="p">().</span><span class="na">isUnpartitioned</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">PartitionField</span><span class="w"> </span><span class="n">partitionField</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">spec</span><span class="p">().</span><span class="na">fields</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkState</span><span class="p">(</span><span class="n">equalityFieldIds</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="n">partitionField</span><span class="p">.</span><span class="na">sourceId</span><span class="p">()),</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="n">partitionField</span><span class="p">,</span><span class="w"> </span><span class="n">equalityFieldColumns</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">IcebergStreamWriter</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">streamWriter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createStreamWriter</span><span class="p">(</span><span class="n">table</span><span class="p">,</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">,</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="p">,</span><span class="w"> </span><span class="n">upsertMode</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">parallelism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">writeParallelism</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">()</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">writeParallelism</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span><span class="w"> </span><span class="n">writerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">transform</span><span class="p">(</span><span class="n">operatorName</span><span class="p">(</span><span class="n">ICEBERG_STREAM_WRITER_NAME</span><span class="p">),</span><span class="w"> </span><span class="n">TypeInformation</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">WriteResult</span><span class="p">.</span><span class="na">class</span><span class="p">),</span><span class="w"> </span><span class="n">streamWriter</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">setParallelism</span><span class="p">(</span><span class="n">parallelism</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uidPrefix</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">writerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">writerStream</span><span class="p">.</span><span class="na">uid</span><span class="p">(</span><span class="n">uidPrefix</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34;-writer&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">writerStream</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span></code></pre></div><p>The <code>WriterStream</code> operator is transformed from the <code>distributeStream</code>, with <code>RowData</code> as input and <code>WriteResult</code> as output. The transformation logic is encapsulated in the <code>IcebergStreamWriter</code>, which processes each element using <code>processElement</code>:</p>
         </div>
       </article>
       
@@ -247,16 +183,6 @@
   
 <p>
           <p>Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.</p>
-<p>Research Focus: ORC file encoding, file organization, and indexing support.</p>
-<h2 id="file-layout">File Layout</h2>
-<p>An ORC file can be divided into three main sections:</p>
-<ul>
-<li><strong>Header</strong>: Identifies the file type.</li>
-<li><strong>Body</strong>: Contains row data and indexes, as shown below.</li>
-<li><strong>Tail</strong>: Contains top-level file information.</li>
-</ul>
-<blockquote>
-<p>ORC Specification v1</p>
         </div>
       </article>
       
@@ -289,57 +215,6 @@
 </ul>
 <h2 id="background">Background</h2>
 <p>Issues encountered when migrating HIVE to the cloud:</p>
-<ul>
-<li>Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS.</li>
-<li>Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.</li>
-<li>Unsafe operations, CBO unfriendly, etc.</li>
-</ul>
-<h2 id="features">Features</h2>
-<ul>
-<li>Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition.
-<ul>
-<li>Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp).</li>
-</ul>
-</li>
-<li>Supports object storage with minimal dependency on FS semantics.</li>
-<li>ACID semantics support, parallel reads, serialized write operations:
-<ul>
-<li>Separation of read and write snapshots.</li>
-<li>Optimistic handling of write parallel conflicts, retry to ensure writes.</li>
-</ul>
-</li>
-<li>Snapshot support:
-<ul>
-<li>Data rollback and time travel.</li>
-<li>Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (<a href="https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html">related API doc</a>).</li>
-<li>Incremental reading can be achieved by comparing snapshot differences.</li>
-</ul>
-</li>
-<li>Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (<a href="https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html#deleteWith-java.util.function.Consumer-">deleteWith</a>).</li>
-<li>High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg&rsquo;s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API.</li>
-<li>Others: file-level encryption and decryption.</li>
-</ul>
-<h2 id="ecosystem">Ecosystem</h2>
-<ul>
-<li>Community support for OSS, Flink, Spark, and Presto:
-<ul>
-<li>Flink (<a href="https://iceberg.apache.org/docs/latest/flink/">detail</a>): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (<a href="https://iceberg.apache.org/releases/#0130-release-notes">0.13.0-release-notes</a>).</li>
-<li>Presto: <a href="https://prestodb.io/docs/current/connector/iceberg.html">Iceberg connector</a>.</li>
-<li>Aliyun OSS: <a href="https://github.com/apache/iceberg/pull/3686/files"># pr 3689</a>.</li>
-</ul>
-</li>
-<li>Integration with other components:
-<ul>
-<li>Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (<a href="https://github.com/apache/iceberg/pull/3686/files"># pr 3689</a>).</li>
-<li>Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC.</li>
-<li>Catalog: Customizable (<a href="https://iceberg.apache.org/docs/latest/custom-catalog/">Doc: Custom Catalog Implementation</a>), currently supports JDBC, Hive Metastore, Hadoop, etc.</li>
-<li>Integration with computation layer: Provides native JAVA &amp; Python APIs, with a high level of abstraction, supporting most computation engines.</li>
-</ul>
-</li>
-<li>Open and neutral community, allowing contributions to improve influence.</li>
-</ul>
-<h2 id="table-specification">Table Specification</h2>
-<p>Specification for organizing data files and metadata files.</p>
         </div>
       </article>
       </div>

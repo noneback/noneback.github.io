@@ -5,71 +5,7 @@
     <meta charset="utf-8">
     <meta name="description" content="Ladder@The Iceberg community provides an official Flink Connector, and this chapter&rsquo;s source code analysis is based on that.
 Overview of the Write Submission Process
-Flink writes data through RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).
-
-private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() {
-    Preconditions.checkArgument(inputCreator != null,
-        &#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;);
-    Preconditions.checkNotNull(tableLoader, &#34;Table loader shouldn&#39;t be null&#34;);
-
-    DataStream&lt;RowData&gt; rowDataInput = inputCreator.apply(uidPrefix);
-
-    if (table == null) {
-        tableLoader.open();
-        try (TableLoader loader = tableLoader) {
-            this.table = loader.loadTable();
-        } catch (IOException e) {
-            throw new UncheckedIOException(&#34;Failed to load iceberg table from table loader: &#34; &#43; tableLoader, e);
-        }
-    }
-
-    List&lt;Integer&gt; equalityFieldIds = checkAndGetEqualityFieldIds();
-
-    RowType flinkRowType = toFlinkRowType(table.schema(), tableSchema);
-
-    DataStream&lt;RowData&gt; distributeStream = distributeDataStream(
-        rowDataInput, table.properties(), equalityFieldIds, table.spec(), table.schema(), flinkRowType);
-
-    SingleOutputStreamOperator&lt;WriteResult&gt; writerStream = appendWriter(distributeStream, flinkRowType,
-        equalityFieldIds);
-
-    SingleOutputStreamOperator&lt;Void&gt; committerStream = appendCommitter(writerStream);
-
-    return appendDummySink(committerStream);
-}
-Write Process Source Code Analysis
-WriteStream
-private SingleOutputStreamOperator&lt;WriteResult&gt; appendWriter(DataStream&lt;RowData&gt; input, RowType flinkRowType,
-                                                             List&lt;Integer&gt; equalityFieldIds) {
-    boolean upsertMode = upsert || PropertyUtil.propertyAsBoolean(table.properties(),
-        UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT);
-
-    if (upsertMode) {
-        Preconditions.checkState(!overwrite,
-            &#34;OVERWRITE mode shouldn&#39;t be enabled when configuring to use UPSERT data stream.&#34;);
-        Preconditions.checkState(!equalityFieldIds.isEmpty(),
-            &#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;);
-        if (!table.spec().isUnpartitioned()) {
-            for (PartitionField partitionField : table.spec().fields()) {
-                Preconditions.checkState(equalityFieldIds.contains(partitionField.sourceId()),
-                    &#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;,
-                    partitionField, equalityFieldColumns);
-            }
-        }
-    }
-
-    IcebergStreamWriter&lt;RowData&gt; streamWriter = createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode);
-
-    int parallelism = writeParallelism == null ? input.getParallelism() : writeParallelism;
-    SingleOutputStreamOperator&lt;WriteResult&gt; writerStream = input
-        .transform(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.of(WriteResult.class), streamWriter)
-        .setParallelism(parallelism);
-    if (uidPrefix != null) {
-        writerStream = writerStream.uid(uidPrefix &#43; &#34;-writer&#34;);
-    }
-    return writerStream;
-}
-The WriterStream operator is transformed from the distributeStream, with RowData as input and WriteResult as output. The transformation logic is encapsulated in the IcebergStreamWriter, which processes each element using processElement:">
+Flink writes data through RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/">
         <meta name="google-site-verification" content="xxx">
@@ -99,8 +35,7 @@ The WriterStream operator is transformed from the distributeStream, with RowData
 	<meta property="og:site_name" content="NoneBack">
 	<meta property="og:title" content="Flink-Iceberg-Connector Write Process">
 	<meta property="og:description" content="The Iceberg community provides an official Flink Connector, and this chapter’s source code analysis is based on that.
-Overview of the Write Submission Process Flink writes data through RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).
-private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Preconditions.checkArgument(inputCreator != null, &#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;); Preconditions.checkNotNull(tableLoader, &#34;Table loader shouldn&#39;t be null&#34;); DataStream&lt;RowData&gt; rowDataInput = inputCreator.apply(uidPrefix); if (table == null) { tableLoader.open(); try (TableLoader loader = tableLoader) { this.table = loader.loadTable(); } catch (IOException e) { throw new UncheckedIOException(&#34;Failed to load iceberg table from table loader: &#34; &#43; tableLoader, e); } } List&lt;Integer&gt; equalityFieldIds = checkAndGetEqualityFieldIds(); RowType flinkRowType = toFlinkRowType(table.schema(), tableSchema); DataStream&lt;RowData&gt; distributeStream = distributeDataStream( rowDataInput, table.properties(), equalityFieldIds, table.spec(), table.schema(), flinkRowType); SingleOutputStreamOperator&lt;WriteResult&gt; writerStream = appendWriter(distributeStream, flinkRowType, equalityFieldIds); SingleOutputStreamOperator&lt;Void&gt; committerStream = appendCommitter(writerStream); return appendDummySink(committerStream); } Write Process Source Code Analysis WriteStream private SingleOutputStreamOperator&lt;WriteResult&gt; appendWriter(DataStream&lt;RowData&gt; input, RowType flinkRowType, List&lt;Integer&gt; equalityFieldIds) { boolean upsertMode = upsert || PropertyUtil.propertyAsBoolean(table.properties(), UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT); if (upsertMode) { Preconditions.checkState(!overwrite, &#34;OVERWRITE mode shouldn&#39;t be enabled when configuring to use UPSERT data stream.&#34;); Preconditions.checkState(!equalityFieldIds.isEmpty(), &#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;); if (!table.spec().isUnpartitioned()) { for (PartitionField partitionField : table.spec().fields()) { Preconditions.checkState(equalityFieldIds.contains(partitionField.sourceId()), &#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;, partitionField, equalityFieldColumns); } } } IcebergStreamWriter&lt;RowData&gt; streamWriter = createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode); int parallelism = writeParallelism == null ? input.getParallelism() : writeParallelism; SingleOutputStreamOperator&lt;WriteResult&gt; writerStream = input .transform(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.of(WriteResult.class), streamWriter) .setParallelism(parallelism); if (uidPrefix != null) { writerStream = writerStream.uid(uidPrefix &#43; &#34;-writer&#34;); } return writerStream; } The WriterStream operator is transformed from the distributeStream, with RowData as input and WriteResult as output. The transformation logic is encapsulated in the IcebergStreamWriter, which processes each element using processElement:">
+Overview of the Write Submission Process Flink writes data through RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).">
 	<meta property="og:locale" content="en">
 	<meta property="og:type" content="article">
 		<meta property="article:section" content="blog">
@@ -115,8 +50,7 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
 	<meta name="twitter:card" content="summary">
 	<meta name="twitter:title" content="Flink-Iceberg-Connector Write Process">
 	<meta name="twitter:description" content="The Iceberg community provides an official Flink Connector, and this chapter’s source code analysis is based on that.
-Overview of the Write Submission Process Flink writes data through RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).
-private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Preconditions.checkArgument(inputCreator != null, &#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;); Preconditions.checkNotNull(tableLoader, &#34;Table loader shouldn&#39;t be null&#34;); DataStream&lt;RowData&gt; rowDataInput = inputCreator.apply(uidPrefix); if (table == null) { tableLoader.open(); try (TableLoader loader = tableLoader) { this.table = loader.loadTable(); } catch (IOException e) { throw new UncheckedIOException(&#34;Failed to load iceberg table from table loader: &#34; &#43; tableLoader, e); } } List&lt;Integer&gt; equalityFieldIds = checkAndGetEqualityFieldIds(); RowType flinkRowType = toFlinkRowType(table.schema(), tableSchema); DataStream&lt;RowData&gt; distributeStream = distributeDataStream( rowDataInput, table.properties(), equalityFieldIds, table.spec(), table.schema(), flinkRowType); SingleOutputStreamOperator&lt;WriteResult&gt; writerStream = appendWriter(distributeStream, flinkRowType, equalityFieldIds); SingleOutputStreamOperator&lt;Void&gt; committerStream = appendCommitter(writerStream); return appendDummySink(committerStream); } Write Process Source Code Analysis WriteStream private SingleOutputStreamOperator&lt;WriteResult&gt; appendWriter(DataStream&lt;RowData&gt; input, RowType flinkRowType, List&lt;Integer&gt; equalityFieldIds) { boolean upsertMode = upsert || PropertyUtil.propertyAsBoolean(table.properties(), UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT); if (upsertMode) { Preconditions.checkState(!overwrite, &#34;OVERWRITE mode shouldn&#39;t be enabled when configuring to use UPSERT data stream.&#34;); Preconditions.checkState(!equalityFieldIds.isEmpty(), &#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;); if (!table.spec().isUnpartitioned()) { for (PartitionField partitionField : table.spec().fields()) { Preconditions.checkState(equalityFieldIds.contains(partitionField.sourceId()), &#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;, partitionField, equalityFieldColumns); } } } IcebergStreamWriter&lt;RowData&gt; streamWriter = createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode); int parallelism = writeParallelism == null ? input.getParallelism() : writeParallelism; SingleOutputStreamOperator&lt;WriteResult&gt; writerStream = input .transform(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.of(WriteResult.class), streamWriter) .setParallelism(parallelism); if (uidPrefix != null) { writerStream = writerStream.uid(uidPrefix &#43; &#34;-writer&#34;); } return writerStream; } The WriterStream operator is transformed from the distributeStream, with RowData as input and WriteResult as output. The transformation logic is encapsulated in the IcebergStreamWriter, which processes each element using processElement:">
+Overview of the Write Submission Process Flink writes data through RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).">
 
 
 <script type="application/ld+json">
@@ -145,7 +79,7 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
   "@type": "BlogPosting",
   "headline": "Flink-Iceberg-Connector Write Process",
   "name": "Flink-Iceberg-Connector Write Process",
-  "description": "The Iceberg community provides an official Flink Connector, and this chapter\u0026rsquo;s source code analysis is based on that.\nOverview of the Write Submission Process Flink writes data through RowData -\u0026gt; distributeStream -\u0026gt; WriterStream -\u0026gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).\nprivate \u0026lt;T\u0026gt; DataStreamSink\u0026lt;T\u0026gt; chainIcebergOperators() { Preconditions.checkArgument(inputCreator != null, \u0026#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.\u0026#34;); Preconditions.checkNotNull(tableLoader, \u0026#34;Table loader shouldn\u0026#39;t be null\u0026#34;); DataStream\u0026lt;RowData\u0026gt; rowDataInput = inputCreator.apply(uidPrefix); if (table == null) { tableLoader.open(); try (TableLoader loader = tableLoader) { this.table = loader.loadTable(); } catch (IOException e) { throw new UncheckedIOException(\u0026#34;Failed to load iceberg table from table loader: \u0026#34; + tableLoader, e); } } List\u0026lt;Integer\u0026gt; equalityFieldIds = checkAndGetEqualityFieldIds(); RowType flinkRowType = toFlinkRowType(table.schema(), tableSchema); DataStream\u0026lt;RowData\u0026gt; distributeStream = distributeDataStream( rowDataInput, table.properties(), equalityFieldIds, table.spec(), table.schema(), flinkRowType); SingleOutputStreamOperator\u0026lt;WriteResult\u0026gt; writerStream = appendWriter(distributeStream, flinkRowType, equalityFieldIds); SingleOutputStreamOperator\u0026lt;Void\u0026gt; committerStream = appendCommitter(writerStream); return appendDummySink(committerStream); } Write Process Source Code Analysis WriteStream private SingleOutputStreamOperator\u0026lt;WriteResult\u0026gt; appendWriter(DataStream\u0026lt;RowData\u0026gt; input, RowType flinkRowType, List\u0026lt;Integer\u0026gt; equalityFieldIds) { boolean upsertMode = upsert || PropertyUtil.propertyAsBoolean(table.properties(), UPSERT_ENABLED, UPSERT_ENABLED_DEFAULT); if (upsertMode) { Preconditions.checkState(!overwrite, \u0026#34;OVERWRITE mode shouldn\u0026#39;t be enabled when configuring to use UPSERT data stream.\u0026#34;); Preconditions.checkState(!equalityFieldIds.isEmpty(), \u0026#34;Equality field columns shouldn\u0026#39;t be empty when configuring to use UPSERT data stream.\u0026#34;); if (!table.spec().isUnpartitioned()) { for (PartitionField partitionField : table.spec().fields()) { Preconditions.checkState(equalityFieldIds.contains(partitionField.sourceId()), \u0026#34;In UPSERT mode, partition field \u0026#39;%s\u0026#39; should be included in equality fields: \u0026#39;%s\u0026#39;\u0026#34;, partitionField, equalityFieldColumns); } } } IcebergStreamWriter\u0026lt;RowData\u0026gt; streamWriter = createStreamWriter(table, flinkRowType, equalityFieldIds, upsertMode); int parallelism = writeParallelism == null ? input.getParallelism() : writeParallelism; SingleOutputStreamOperator\u0026lt;WriteResult\u0026gt; writerStream = input .transform(operatorName(ICEBERG_STREAM_WRITER_NAME), TypeInformation.of(WriteResult.class), streamWriter) .setParallelism(parallelism); if (uidPrefix != null) { writerStream = writerStream.uid(uidPrefix + \u0026#34;-writer\u0026#34;); } return writerStream; } The WriterStream operator is transformed from the distributeStream, with RowData as input and WriteResult as output. The transformation logic is encapsulated in the IcebergStreamWriter, which processes each element using processElement:\n",
+  "description": "The Iceberg community provides an official Flink Connector, and this chapter\u0026rsquo;s source code analysis is based on that.\nOverview of the Write Submission Process Flink writes data through RowData -\u0026gt; distributeStream -\u0026gt; WriterStream -\u0026gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).\n",
   "keywords": [
     "big data", "lake house", "stream compute", "storage"
   ],
@@ -297,11 +231,11 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
             
             
             
+            
+            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
-            
-            
             
             
             

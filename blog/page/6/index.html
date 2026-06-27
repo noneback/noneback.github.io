@@ -168,18 +168,9 @@
     </small>
   
 <p>
-              <h1 id="transactions-and-distributed-transactions">Transactions and Distributed Transactions</h1>
-<h2 id="transactions">Transactions</h2>
-<p>A <strong>transaction</strong> is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the <strong>atomicity</strong> of transaction operations: when a transaction is successful, it means that all operations in the transaction have been fully executed; if the transaction fails, all executed SQL operations are rolled back.</p>
-<p>A single-node database transaction has four main properties:</p>
-<ul>
-<li><strong>Atomicity</strong>: The transaction is executed as a whole. Either all operations within the transaction are executed, or none are executed.</li>
-<li><strong>Consistency</strong>: The transaction must ensure that the database moves from one consistent state to another. Consistent states mean that the data in the database must satisfy all integrity constraints.</li>
-<li><strong>Isolation</strong>: When multiple transactions are executed concurrently, the execution of one transaction should not affect the execution of others.</li>
-<li><strong>Durability</strong>: Changes made by a committed transaction should be permanently stored in the database.</li>
-</ul>
-<h2 id="distributed-transactions">Distributed Transactions</h2>
-<p>A <strong>distributed transaction</strong> is a transaction where the <strong>participants</strong>, <strong>transaction-supporting servers</strong>, <strong>resource servers</strong>, and <strong>transaction manager</strong> are located on different nodes of a distributed system.</p>
+              
+                <p>Transactions and Distributed Transactions Transactions A transaction is a logical unit of work in a database, composed of a finite sequence of database operations. The database must ensure the …</p>
+              
           </div>
         </article>
       
@@ -204,10 +195,11 @@
     </small>
   
 <p>
-              <p>The motivation for this post comes from an interview question I was asked: What is CPU false sharing?</p>
-<h2 id="cpu-cache">CPU Cache</h2>
-<p>Let&rsquo;s start by discussing CPU cache.</p>
-<p>CPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor&rsquo;s frequency.</p>
+              
+                <p>The motivation for this post comes from an interview question I was asked: What is CPU false sharing?
+CPU Cache Let&rsquo;s start by discussing CPU cache.
+CPU cache is a type of storage medium …</p>
+              
           </div>
         </article>
       
@@ -232,8 +224,9 @@
     </small>
   
 <p>
-              <p><strong>Database indexes</strong> are sorted data structures in DBMS that help in quickly querying and updating data in a database. Generally, data structures used for building indexes include B-trees, B+ trees, hash tables, etc.</p>
-<p>MySQL uses B+ trees to build indexes. The reason for this choice is that a B+ tree node can store more data, and in a B+ tree, only leaf nodes store data, while non-leaf nodes store only indexes. This allows the index to be stored in memory as much as possible, reducing tree height, minimizing disk I/O when querying indexes, and greatly improving query efficiency.</p>
+              
+                <p>Database indexes are sorted data structures in DBMS that help in quickly querying and updating data in a database. Generally, data structures used for building indexes include B-trees, B+ trees, hash …</p>
+              
           </div>
         </article>
       
@@ -258,14 +251,9 @@
     </small>
   
 <p>
-              <p>HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses <a href="https://developer.mozilla.org/en-US/docs/Glossary/SSL">SSL</a> or <a href="https://developer.mozilla.org/en-US/docs/Glossary/TLS">TLS</a> to encrypt communication between the client and the server.</p>
-<h2 id="problems-with-http">Problems with HTTP</h2>
-<ul>
-<li>Communication uses plain text, making it susceptible to eavesdropping.</li>
-<li>Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks).</li>
-<li>Cannot guarantee message integrity, making it possible for messages to be altered (e.g., Man-in-the-Middle attacks).</li>
-</ul>
-<p>To address these issues, we need:</p>
+              
+                <p>HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and …</p>
+              
           </div>
         </article>
       
@@ -290,11 +278,9 @@
     </small>
   
 <p>
-              <p>The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.</p>
-<p>This is the first chapter of my Distributed System study notes.</p>
-<hr>
-<h2 id="about-the-paper">About the Paper</h2>
-<p>The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the <strong>Distributed</strong> MapReduce System, including the Master data structure, fault tolerance, and some refinements.</p>
+              
+                <p>The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I …</p>
+              
           </div>
         </article>
       </div>

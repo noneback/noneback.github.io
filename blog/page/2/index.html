@@ -166,9 +166,9 @@
     </small>
   
 <p>
-              <p>An old paper by AWS, Dynamo has been in the market for a long time, and the architecture has likely evolved since the paper&rsquo;s publication. Despite this, the paper was selected as one of the SIGMOD best papers of the year, and there are still many valuable lessons to learn.</p>
-<h2 id="design">Design</h2>
-<p>Dynamo is a NoSQL product that provides a key-value storage interface. It emphasizes high availability rather than consistency, which leads to differences in architectural design and technical choices compared to other systems.</p>
+              
+                <p>An old paper by AWS, Dynamo has been in the market for a long time, and the architecture has likely evolved since the paper&rsquo;s publication. Despite this, the paper was selected as one of the …</p>
+              
           </div>
         </article>
       
@@ -195,19 +195,9 @@
     </small>
   
 <p>
-              <p>This article introduces the design considerations of AWS&rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead.</p>
-<hr>
-<p>Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios.</p>
-<p>In terms of design, there are several aspects worth noting:</p>
-<ul>
-<li>The design premise of Aurora is that with databases moving to the cloud, thanks to advancements in cloud infrastructure, the biggest bottleneck for databases has shifted from compute and storage to the network. This was an important premise for AWS when designing Aurora. Based on this premise, Aurora revisits the concept of &ldquo;Log is Database&rdquo;, pushing only the RedoLog down to the storage layer.</li>
-<li><strong>Storage-compute separation</strong>: The database storage layer interfaces with a distributed storage system, which provides reliability and security guarantees. The compute and storage layers can scale independently. The storage system provides a unified data view to the upper layers, significantly improving the efficiency of core functions and operations (such as backup, data recovery, and high availability).</li>
-<li><strong>Interesting reliability guarantees</strong>: For example, quorum-based NRW consistency protocol, where read and write operations on storage nodes require majority voting, ensures dual-AZ level fault tolerance. Sharding is used to reduce failure handling time, improving the SLA. Most reads occur during database recovery when the current state needs to be restored.</li>
-<li><strong>Single-writer multi-reader</strong>: Unlike NewSQL products with a shared-nothing architecture, Aurora provides only a single write node. This simplifies data consistency guarantees since the single write node can use the RedoLog LSN as a logical clock to maintain the partial order of data updates. By pushing the RedoLog to all nodes and applying these operations in order, consistency can be achieved.</li>
-<li><strong>Transaction implementation</strong>: Since the storage system provides a unified file view to the upper layer, Aurora&rsquo;s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC.</li>
-<li><strong>Background acceleration for foreground processing</strong>: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc.</li>
-</ul>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" alt="Aurora Architecture Overview"></p>
+              
+                <p>This article introduces the design considerations of AWS&rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW …</p>
+              
           </div>
         </article>
       
@@ -232,9 +222,9 @@
     </small>
   
 <p>
-              <p>This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&rsquo;s best to refer directly to the original paper.</p>
-<h2 id="introduction">Introduction</h2>
-<p>In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.</p>
+              
+                <p>This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those …</p>
+              
           </div>
         </article>
       
@@ -259,12 +249,9 @@
     </small>
   
 <p>
-              <p>This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic decisions. These trade-offs are the most insightful aspects of this article.</p>
-<h2 id="positioning">Positioning</h2>
-<p>ZooKeeper is a wait-free, high-performance coordination service for distributed applications. It supports the coordination needs of distributed applications by providing coordination primitives (specific APIs and data models).</p>
-<h2 id="design">Design</h2>
-<h3 id="keywords">Keywords</h3>
-<p>There are two key phrases in ZooKeeper&rsquo;s positioning: <strong>high performance</strong> and <strong>distributed application coordination service</strong>.</p>
+              
+                <p>This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic …</p>
+              
           </div>
         </article>
       
@@ -291,73 +278,10 @@
     </small>
   
 <p>
-              <p>The Iceberg community provides an official Flink Connector, and this chapter&rsquo;s source code analysis is based on that.</p>
-<h2 id="overview-of-the-write-submission-process">Overview of the Write Submission Process</h2>
-<p>Flink writes data through <code>RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream</code>. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).</p>
-<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1655962006990-826460c7-b6fc-4efe-a8e0-65cc080ffea9.png" alt="Flink-Iceberg Write Flow"></p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">DataStreamSink</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">chainIcebergOperators</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkArgument</span><span class="p">(</span><span class="n">inputCreator</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s">&#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkNotNull</span><span class="p">(</span><span class="n">tableLoader</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;Table loader shouldn&#39;t be null&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rowDataInput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inputCreator</span><span class="p">.</span><span class="na">apply</span><span class="p">(</span><span class="n">uidPrefix</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">table</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">tableLoader</span><span class="p">.</span><span class="na">open</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">TableLoader</span><span class="w"> </span><span class="n">loader</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tableLoader</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">loader</span><span class="p">.</span><span class="na">loadTable</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">IOException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UncheckedIOException</span><span class="p">(</span><span class="s">&#34;Failed to load iceberg table from table loader: &#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tableLoader</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">checkAndGetEqualityFieldIds</span><span class="p">();</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">RowType</span><span class="w"> </span><span class="n">flinkRowType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toFlinkRowType</span><span class="p">(</span><span class="n">table</span><span class="p">.</span><span class="na">schema</span><span class="p">(),</span><span class="w"> </span><span class="n">tableSchema</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">distributeStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">distributeDataStream</span><span class="p">(</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">rowDataInput</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">properties</span><span class="p">(),</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">spec</span><span class="p">(),</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">schema</span><span class="p">(),</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span><span class="w"> </span><span class="n">writerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">appendWriter</span><span class="p">(</span><span class="n">distributeStream</span><span class="p">,</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">equalityFieldIds</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span><span class="w"> </span><span class="n">committerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">appendCommitter</span><span class="p">(</span><span class="n">writerStream</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">appendDummySink</span><span class="p">(</span><span class="n">committerStream</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span></code></pre></div><h2 id="write-process-source-code-analysis">Write Process Source Code Analysis</h2>
-<h3 id="writestream">WriteStream</h3>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">appendWriter</span><span class="p">(</span><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">RowType</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">                                                             </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">boolean</span><span class="w"> </span><span class="n">upsertMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upsert</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">PropertyUtil</span><span class="p">.</span><span class="na">propertyAsBoolean</span><span class="p">(</span><span class="n">table</span><span class="p">.</span><span class="na">properties</span><span class="p">(),</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">UPSERT_ENABLED</span><span class="p">,</span><span class="w"> </span><span class="n">UPSERT_ENABLED_DEFAULT</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">upsertMode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkState</span><span class="p">(</span><span class="o">!</span><span class="n">overwrite</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="s">&#34;OVERWRITE mode shouldn&#39;t be enabled when configuring to use UPSERT data stream.&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkState</span><span class="p">(</span><span class="o">!</span><span class="n">equalityFieldIds</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">(),</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="s">&#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">table</span><span class="p">.</span><span class="na">spec</span><span class="p">().</span><span class="na">isUnpartitioned</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">PartitionField</span><span class="w"> </span><span class="n">partitionField</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">spec</span><span class="p">().</span><span class="na">fields</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkState</span><span class="p">(</span><span class="n">equalityFieldIds</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="n">partitionField</span><span class="p">.</span><span class="na">sourceId</span><span class="p">()),</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;</span><span class="p">,</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="n">partitionField</span><span class="p">,</span><span class="w"> </span><span class="n">equalityFieldColumns</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">IcebergStreamWriter</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">streamWriter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createStreamWriter</span><span class="p">(</span><span class="n">table</span><span class="p">,</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">,</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="p">,</span><span class="w"> </span><span class="n">upsertMode</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">parallelism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">writeParallelism</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">()</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">writeParallelism</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span><span class="w"> </span><span class="n">writerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">transform</span><span class="p">(</span><span class="n">operatorName</span><span class="p">(</span><span class="n">ICEBERG_STREAM_WRITER_NAME</span><span class="p">),</span><span class="w"> </span><span class="n">TypeInformation</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">WriteResult</span><span class="p">.</span><span class="na">class</span><span class="p">),</span><span class="w"> </span><span class="n">streamWriter</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">setParallelism</span><span class="p">(</span><span class="n">parallelism</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uidPrefix</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">writerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">writerStream</span><span class="p">.</span><span class="na">uid</span><span class="p">(</span><span class="n">uidPrefix</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34;-writer&#34;</span><span class="p">);</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">writerStream</span><span class="p">;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span></code></pre></div><p>The <code>WriterStream</code> operator is transformed from the <code>distributeStream</code>, with <code>RowData</code> as input and <code>WriteResult</code> as output. The transformation logic is encapsulated in the <code>IcebergStreamWriter</code>, which processes each element using <code>processElement</code>:</p>
+              
+                <p>The Iceberg community provides an official Flink Connector, and this chapter&rsquo;s source code analysis is based on that.
+Overview of the Write Submission Process Flink writes data through RowData …</p>
+              
           </div>
         </article>
       </div>

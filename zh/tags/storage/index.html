@@ -154,8 +154,6 @@
   
 <p>
           <p>LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。</p>
-<h2 id="sequence-number">Sequence Number</h2>
-<p>LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。</p>
         </div>
       </article>
       
@@ -250,8 +248,6 @@ Dynamo的设计目标是提供一个高可用的KV Store，保证<strong>always 
   
 <p>
           <p>Iceberg社区提供了Flink Connector的官方实现，本章源码阅读正是基于此。</p>
-<h2 id="写入提交流程总览">写入提交流程总览</h2>
-<p>Flink 通过 <code>RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream</code>，在写入数据提交之前，数据以中间文件形式存在，提交之后对系统可见（写入manifest + snapshot + metadata，数据文件对外部可见）</p>
         </div>
       </article>
       
