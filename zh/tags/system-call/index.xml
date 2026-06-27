@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>System Call on NoneBack</title><link>https://noneback.github.io/zh/tags/system-call/</link><description>Recent content in System Call on NoneBack created by</description><generator>Hugo -- gohugo.io</generator><language>zh</language><copyright>@NoneBack All rights reserved</copyright><lastBuildDate>Thu, 18 Feb 2021 15:56:31 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/system-call/index.xml" rel="self" type="application/rss+xml"/><item><title>Linux中的Fork</title><link>https://noneback.github.io/zh/blog/zh/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/</link><pubDate>Thu, 18 Feb 2021 15:56:31 +0800</pubDate><guid>https://noneback.github.io/zh/blog/zh/%E5%AF%B9linux%E4%B8%ADfork%E7%9A%84%E7%90%86%E8%A7%A3/</guid><description>&lt;p&gt;这原本是大二时学习操作系统是写下的一篇博客，近几日对它稍微添加了一些COW的内容。&lt;/p&gt;
+&lt;h2 id="前言"&gt;&lt;strong&gt;前言&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;最近最学习操作系统，在《operating system concept》的进程一章节中中有这样一段代码:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-c" data-lang="c"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;stdio.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;sys/types.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;unistd.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(){&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;pid_t&lt;/span&gt; &lt;span class="n"&gt;pid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;pid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nf"&gt;fork&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pid&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;){&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;//create process failed
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;Failed&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pid&lt;/span&gt;&lt;span class="o"&gt;==&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;){&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;//child process;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;printf&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;Child pid %d&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="nf"&gt;getpid&lt;/span&gt;&lt;span class="p"&gt;());&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;execlp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;/bin/ls&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;ls&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;//parent process;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;Parent pid %d&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="nf"&gt;getpid&lt;/span&gt;&lt;span class="p"&gt;());&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;wait&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;printf&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;Child complete&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;查阅了些资料，看了几回才稍微看懂一点fork()的用法，于是写下这篇博客记录一下。&lt;/p&gt;
+&lt;h2 id="fork函数介绍"&gt;fork()函数介绍&lt;/h2&gt;
+&lt;p&gt;简介：建立一个新的进程&lt;/p&gt;
+&lt;p&gt;表头文件：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-c" data-lang="c"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;uistd.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;定义函数：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-c" data-lang="c"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;pid_t&lt;/span&gt; &lt;span class="nf"&gt;vfork&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;函数说明：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;vfork()会产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。Linux 使用copy-on-write(COW)技术，只有当其中一进程试图修改欲复制的空间时才会做真正的复制动作，由于这些继承的信息是复制而来，并非指相同的内存空间，因此子进程对这些变量的修改和父进程并不会同步。此外，子进程不会继承父进程的文件锁定和未处理的信号。注意，Linux不保证子进程会比父进程先执行或晚执行，因此编写程序时要留意
+死锁或竞争条件的发生。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;返回值：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;如果vfork()成功则在父进程会返回新建立的子进程代码(PID)，而在新建立的子进程中则返回0&lt;/strong&gt;。如果vfork 失败则直接返回-1，失败原因存于errno中。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;错误代码：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;EAGAIN 内存不足。ENOMEM 内存不足，无法配置核心所需的数据结构空间。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id="函数使用分析"&gt;&lt;strong&gt;函数使用分析&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;首先我们看看开头代码的运行结果：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://i.loli.net/2019/09/30/6kj5yDTvsin42gd.jpg" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;Linux中进程是通过链表进行组织的，所以本文中使用 ParentProcess-&amp;gt;ChildrenProcess的格式展示。&lt;/p&gt;
+&lt;p&gt;下面开始上面分析结果：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;首先，fork()函数会调用两次，第一次在父进程中返回，返回子进程的pid(一般大于零），第二次是在子进程中调用，返回0;当fork()失败时，返回一个负数。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;父进程开使执行，调用fork()，返回一个子进程pid(&amp;gt;0)，执行打印&lt;em&gt;Parent pid 25974&lt;/em&gt;,然后等待子进程。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;子进程在父进程调用fork()后开始执行，在子进程中fork()返回０（并不是实际意义上的调用之后返回，而是在子进程中直接返回了０,在后面在解释），执行父进程fork()后面的语句，即&lt;em&gt;execlp(&amp;quot;/bin/ls&amp;quot;,&amp;ldquo;ls&amp;rdquo;,NULL)&lt;/em&gt;，即调用ls，打印当前目录的文件，子进程结束。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;父进程接受信号，结束主进程。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id="理解fork的执行"&gt;理解fork的执行&lt;/h2&gt;
+&lt;p&gt;现在我们来看看这一段代码：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-c" data-lang="c"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt;/*
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * @Description: In User Settings Edit
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * @Author: NoneBack
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * @Date: 2019-09-30 01:00:29
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * @LastEditTime: 2019-09-30 22:52:24
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * @LastEditors: NoneBack
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;stdio.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;unistd.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;i son/pa ppid pid fpid&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// ppid指当前进程的父进程pid
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// pid指当前进程的pid,
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// fpid指fork返回给当前进程的值
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;pid_t&lt;/span&gt; &lt;span class="n"&gt;fpid&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nf"&gt;fork&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fpid&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;%d child %4d %4d %4d&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;getppid&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="nf"&gt;getpid&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="n"&gt;fpid&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;else&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;%d parent %4d %4d %4d&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;getppid&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="nf"&gt;getpid&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="n"&gt;fpid&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;wait&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt; &lt;span class="c1"&gt;//等待子进程
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;下面是它的执行结果：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://i.loli.net/2019/09/30/1ikRMdFGDxwXA3t.jpg" alt="选区_010.jpg"&gt;&lt;/p&gt;
+&lt;p&gt;下面我们来看看为什么会有这样的结果：&lt;/p&gt;
+&lt;p&gt;１．首先父进程中，i=0时，打印&lt;code&gt;0 parent 26826 26917 26918&lt;/code&gt;，随后父进程等待子进程执行。&lt;/p&gt;
+&lt;p&gt;子进程接着拷贝父进程（连同ＰＣ），接着父进程中i=0时fork()之后的代码运行，打印&lt;code&gt;0 child 26917 26918 0&lt;/code&gt;，此时子进程在i=0时的fork()返回０。&lt;/p&gt;
+&lt;p&gt;子进程i=1时候的fork()接着生成一个孙子进程，并返回其pid,子进程打印&lt;code&gt;1 parent 26917 26918 26919&lt;/code&gt;，生成的孙子进程中从i=1的fork()出接着执行，此处的fork()返回０，打印&lt;code&gt;1 child 26918 26919 0&lt;/code&gt;。第一个子进程结束。&lt;/p&gt;
+&lt;p&gt;２.父进程中i=1时，执行fork()，生成子进程，打　印&lt;code&gt;1 parent 26826 26917 26920&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;子进程接着执行1=1时，fork()之后的代码,打印&lt;code&gt;1 child 26917 26920 0&lt;/code&gt;。进程结束。&lt;/p&gt;
+&lt;p&gt;至于为什么父进程是１,这是另一方面的知识，暂且不管。&lt;/p&gt;
+&lt;h2 id="fork里的cow机制"&gt;Fork里的COW机制&lt;/h2&gt;
+&lt;p&gt;一开始便说了，fork执行之后,产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。这里的复制使用了COW（&lt;strong&gt;Copy on Write&lt;/strong&gt;）机制。&lt;/p&gt;
+&lt;h3 id="什么是copy-on-write"&gt;什么是Copy On Write&lt;/h3&gt;
+&lt;p&gt;COW本质上是一种&lt;strong&gt;Lazy Copy&lt;/strong&gt;的思想。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;写入时复制（英语：Copy-on-write，简称COW）是一种计算机程序设计领域的优化策略。&lt;/p&gt;
+&lt;p&gt;其核心思想是，如果有多个调用者（callers）同时请求相同资源（如内存或磁盘上的数据存储），他们会共同获取相同的指针指向相同的资源，直到某个调用者试图修改资源的内容时，系统才会真正复制一份专用副本（private copy）给该调用者，而其他调用者所见到的最初的资源仍然保持不变。这过程对其他的调用者都是透明的（transparently）。&lt;/p&gt;
+&lt;p&gt;此作法主要的优点是如果调用者没有修改该资源，就不会有副本（private copy）被建立，因此多个调用者只是读取操作时可以共享同一份资源。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;在使用fork创建子进程时，只有当有进程需要修改的时候才会真正的执行数据的拷贝，之后再在进程自己的数据段修改数据。否则，如果进程只有读请求的话，实际上不需要不执行资源的复制，只需要在不同进程之间维护对资源的引用即可。&lt;/p&gt;
+&lt;h3 id="fork中cow技术实现原理"&gt;fork中COW技术实现原理&lt;/h3&gt;
+&lt;p&gt;fork()之后，kernel把父进程中所有的内存页的权限都设为read-only，然后子进程的地址空间指向父进程。当父子进程都只读内存时，相安无事。&lt;/p&gt;
+&lt;p&gt;当其中某个进程写内存时，CPU硬件检测到内存页是read-only的，于是触发页异常中断（page-fault），陷入kernel的一个中断例程。&lt;/p&gt;
+&lt;p&gt;中断例程中，kernel就会&lt;strong&gt;把触发的异常的页复制一份&lt;/strong&gt;，于是父子进程各自持有独立的一份，之后进程再修改对应的数据。&lt;/p&gt;
+&lt;h2 id="总结"&gt;总结&lt;/h2&gt;
+&lt;p&gt;fork()会返回两次，第一次在父进程中返回fork()出的子进程的pid,第二此在子进程中返回０，接着从fork()处之后的代码开始执行。&lt;/p&gt;
+&lt;p&gt;fork()会产生一个新的子进程，其子进程会复制父进程的数据与堆栈空间，并继承父进程的用户代码，组代码，环境变量、已打开的文件代码、工作目录和资源限制等。&lt;/p&gt;
+&lt;p&gt;复制资源的核心是&lt;strong&gt;COW思想&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;好处&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;COW技术可&lt;strong&gt;减少&lt;/strong&gt;分配和复制大量资源时带来的&lt;strong&gt;瞬间延时&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;COW技术可减少&lt;strong&gt;不必要的资源分配&lt;/strong&gt;。比如fork进程时，并不是所有的页面都需要复制，父进程的&lt;strong&gt;代码段和只读数据段都不被允许修改，所以无需复制&lt;/strong&gt;。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;缺点&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;如果在fork()之后，父子进程都还需要继续进行写操作，&lt;strong&gt;那么会产生大量的分页错误(页异常中断page-fault)&lt;/strong&gt;，这样就得不偿失。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="参考"&gt;参考&lt;/h2&gt;
+&lt;p&gt;&lt;a href="https://www.kancloud.cn/wizardforcel/linux-c-api-ref/98511"&gt;vfork&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://cloud.tencent.com/developer/article/1338482"&gt;fork函数详解&lt;/a&gt;&lt;/p&gt;</description></item></channel></rss>

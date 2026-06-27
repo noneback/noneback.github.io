@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Linux on NoneBack</title><link>https://noneback.github.io/tags/linux/</link><description>Recent content in Linux on NoneBack created by</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>@NoneBack All rights reserved</copyright><lastBuildDate>Sat, 15 Jan 2022 23:13:16 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/linux/index.xml" rel="self" type="application/rss+xml"/><item><title>Arch + DWM Setup Attempt</title><link>https://noneback.github.io/blog/arch+dwm%E5%A5%97%E9%A4%90/</link><pubDate>Sat, 15 Jan 2022 23:13:16 +0800</pubDate><guid>https://noneback.github.io/blog/arch+dwm%E5%A5%97%E9%A4%90/</guid><description>&lt;p&gt;Originally, I wanted to replace Manjaro KDE with DWM, but I got stuck at the boot screen, and while trying to fix it, I ended up corrupting the bootloader. So, I decided to go all in, format the entire disk, and try setting up an Arch + DWM development environment. Here, I&amp;rsquo;m documenting the process to assist with future repairs and device migrations.&lt;/p&gt;
+&lt;p&gt;This is not a step-by-step guide, but rather a concise record of my journey.&lt;/p&gt;
+&lt;h2 id="installing-arch-linux"&gt;Installing Arch Linux&lt;/h2&gt;
+&lt;h3 id="preparation"&gt;Preparation&lt;/h3&gt;
+&lt;h4 id="environment-for-installing-arch"&gt;Environment for Installing Arch&lt;/h4&gt;
+&lt;p&gt;To create the installation USB, you&amp;rsquo;ll need:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;16GB+ USB drive&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Rufus&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Windows machine&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Arch Linux ISO&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;After creating the bootable USB, boot from it to start Arch Linux.&lt;/p&gt;
+&lt;h4 id="network-and-mirrors"&gt;Network and Mirrors&lt;/h4&gt;
+&lt;p&gt;Connect to WiFi using &lt;code&gt;iwctl&lt;/code&gt;, then update the system clock and modify the Pacman mirror list.&lt;/p&gt;
+&lt;h3 id="installing-arch-linux-1"&gt;Installing Arch Linux&lt;/h3&gt;
+&lt;h4 id="disk-partitioning"&gt;Disk Partitioning&lt;/h4&gt;
+&lt;p&gt;The disk should be divided into three main parts: Boot, Swap, and Root partitions.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Mount Point&lt;/th&gt;
+&lt;th&gt;Partition&lt;/th&gt;
+&lt;th&gt;&lt;a href="https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs"&gt;Partition Type&lt;/a&gt;&lt;/th&gt;
+&lt;th&gt;Suggested Size&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;/mnt/boot&lt;/code&gt; or &lt;code&gt;/mnt/efi&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;/dev/*efi_system_partition*&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href="https://wiki.archlinux.org/title/EFI_system_partition_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29"&gt;EFI System Partition&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;At least 260 MiB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;[SWAP]&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;/dev/*swap_partition*&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Linux swap&lt;/td&gt;
+&lt;td&gt;More than 512 MiB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;/mnt&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;/dev/*root_partition*&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Linux x86-64 Root (/)&lt;/td&gt;
+&lt;td&gt;Remaining Space&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;fdisk -l &lt;span class="c1"&gt;# View disk information&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cfdisk /dev/nvme &lt;span class="c1"&gt;# Partition the disk&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id="formatting-partitions"&gt;Formatting Partitions&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkfs.ext4 &lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;root&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkswap &lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;swap&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkfs.fat -F &lt;span class="m"&gt;32&lt;/span&gt; &lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;efi&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id="configuring-partitions-and-installing-the-system"&gt;Configuring Partitions and Installing the System&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Mount Root: &lt;code&gt;mount /dev/${root_partition} /mnt&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Mount EFI: &lt;code&gt;mount /dev/${efi_partition} /mnt/boot/efi&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Activate Swap: &lt;code&gt;swapon /dev/${swap_partition}&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Install Kernel and Essential Packages: &lt;code&gt;pacstrap /mnt base linux linux-firmware&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Generate &lt;code&gt;fstab&lt;/code&gt; Config: &lt;code&gt;genfstab -U /mnt &amp;gt;&amp;gt; /mnt/etc/fstab&lt;/code&gt; (check for correctness)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The system should now be installed, but there is no bootloader, so we need to install GRUB.&lt;/p&gt;
+&lt;h4 id="other-configurations-before-booting"&gt;Other Configurations Before Booting&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Change root to the new system:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mount /dev/&lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;root_partition&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt; /mnt
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;arch-chroot /mnt
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Set timezone and sync time.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Configure language by editing &lt;strong&gt;locale.gen&lt;/strong&gt; and &lt;strong&gt;locale.conf&lt;/strong&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Network configuration: set &lt;strong&gt;hostname&lt;/strong&gt; and &lt;strong&gt;hosts&lt;/strong&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Set the root password.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Install the GRUB bootloader and EFI tools: &lt;code&gt;grub-install --target=x86_64-efi --efi-directory=esp --bootloader-id=GRUB&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Install and start &lt;strong&gt;iwd&lt;/strong&gt; to connect to WiFi.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Boot into Arch Linux.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="post-boot-configuration"&gt;Post-Boot Configuration&lt;/h3&gt;
+&lt;h4 id="install-essential-software"&gt;Install Essential Software&lt;/h4&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Purpose&lt;/th&gt;
+&lt;th&gt;Software&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Bluetooth&lt;/td&gt;
+&lt;td&gt;bluetoothctl&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Network&lt;/td&gt;
+&lt;td&gt;iwd&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Daily Use&lt;/td&gt;
+&lt;td&gt;nvim, ranger, zsh&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Sound&lt;/td&gt;
+&lt;td&gt;alsamixer&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Input Method&lt;/td&gt;
+&lt;td&gt;fcitx5-im, fcitx5-chinese-addons&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Proxy&lt;/td&gt;
+&lt;td&gt;clash&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id="installing-the-desktop-environment"&gt;Installing the Desktop Environment&lt;/h3&gt;
+&lt;h4 id="install-xorg"&gt;Install Xorg&lt;/h4&gt;
+&lt;p&gt;&lt;a href="https://wiki.archlinux.org/title/Xorg_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29"&gt;Xorg&lt;/a&gt; provides an open-source implementation of the X window system, which is the basis for graphical user interfaces.&lt;/p&gt;
+&lt;p&gt;Install: &lt;strong&gt;xorg-server&lt;/strong&gt;, &lt;strong&gt;xorg-apps&lt;/strong&gt;, &lt;strong&gt;xrandr&lt;/strong&gt;, &lt;strong&gt;xinit&lt;/strong&gt;.&lt;/p&gt;
+&lt;h4 id="install-desktop-companion-software"&gt;Install Desktop Companion Software&lt;/h4&gt;
+&lt;p&gt;I used the Suckless tiling window management suite: &lt;strong&gt;dwm&lt;/strong&gt;, &lt;strong&gt;slock&lt;/strong&gt;, &lt;strong&gt;st&lt;/strong&gt;, &lt;strong&gt;dmenu&lt;/strong&gt;, &lt;strong&gt;slim&lt;/strong&gt;, &lt;strong&gt;slstatus&lt;/strong&gt;.&lt;/p&gt;
+&lt;h4 id="configure-xinitc-and-xprofile"&gt;Configure &lt;code&gt;.xinitc&lt;/code&gt; and &lt;code&gt;.xprofile&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;Add to &lt;code&gt;.xinitc&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# .xinitc&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;fcitx5 &lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;xautolock -time &lt;span class="m"&gt;10&lt;/span&gt; -locker slock &lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;autorandr -l home
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;picom -b
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;exec&lt;/span&gt; slstatus &lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;exec&lt;/span&gt; dwm
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# .xprofile&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;export&lt;/span&gt; &lt;span class="nv"&gt;INPUT_METHOD&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;export&lt;/span&gt; &lt;span class="nv"&gt;GTK_IM_MODULE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;export&lt;/span&gt; &lt;span class="nv"&gt;QT_IM_MODULE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;export&lt;/span&gt; &lt;span class="nv"&gt;XMODIFIERS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;@im&lt;span class="o"&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id="customization-and-usability"&gt;Customization and Usability&lt;/h4&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Purpose&lt;/th&gt;
+&lt;th&gt;Software&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Wallpaper&lt;/td&gt;
+&lt;td&gt;feh&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Window Effects&lt;/td&gt;
+&lt;td&gt;picom&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Screen Lock&lt;/td&gt;
+&lt;td&gt;xautolock&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Multi-Screen&lt;/td&gt;
+&lt;td&gt;autorandr&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Power Saving&lt;/td&gt;
+&lt;td&gt;tlp&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id="additional-notes"&gt;Additional Notes&lt;/h2&gt;
+&lt;p&gt;For more detailed instructions, please refer to the official installation documentation.&lt;/p&gt;
+&lt;h2 id="references"&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://wiki.archlinux.org/title/Installation_guide_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29#%E5%BB%BA%E7%AB%8B%E7%A1%AC%E7%9B%98%E5%88%86%E5%8C%BA"&gt;Arch Linux Install Wiki&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://wiki.archlinux.org/title/Category:X_server_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29"&gt;X Server Wiki&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/noneback/dwm-releated"&gt;Personal DWM Desktop&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item><item><title>Epoll and IO Multiplexing</title><link>https://noneback.github.io/blog/epoll-and-io%E5%A4%8D%E7%94%A8/</link><pubDate>Sun, 15 Aug 2021 21:47:45 +0800</pubDate><guid>https://noneback.github.io/blog/epoll-and-io%E5%A4%8D%E7%94%A8/</guid><description>&lt;p&gt;Let&amp;rsquo;s start with epoll.&lt;/p&gt;
+&lt;p&gt;epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&amp;rsquo;s maximum file open limit, providing excellent performance.&lt;/p&gt;
+&lt;h2 id="usage"&gt;Usage&lt;/h2&gt;
+&lt;h3 id="api"&gt;API&lt;/h3&gt;
+&lt;p&gt;epoll has three primary system calls:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt;/** epoll_create
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * Creates an epoll instance and returns a file descriptor for it.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * Needs to be closed afterward, as epfd also consumes the system&amp;#39;s fd resources.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * size: Indicates the number of file descriptors to be monitored by epfd.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;epoll_create&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt;/** epoll_ctl
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * Adds or modifies a file descriptor to be monitored by epoll.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * epfd: The epoll file descriptor.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * op: Operation type.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLL_CTL_ADD: Add a new fd to epfd.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLL_CTL_MOD: Modify an already registered fd.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLL_CTL_DEL: Remove an fd from epfd.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * fd: The file descriptor to be monitored.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * event: Specifies the type of event to be monitored.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed).
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLLOUT: Indicates the fd is ready for writing.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLLPRI: Indicates urgent data can be read.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLLERR: Indicates an error occurred on the fd.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLLHUP: Indicates the fd has been hung up.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT).
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;epoll_ctl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;epfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;op&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;epoll_event&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;event&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt;/** epoll_wait
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * Collects events that have been triggered and returns the number of triggered events.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * epfd: The epoll file descriptor.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * events: Array of epoll events that will be populated with triggered events.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * maxevents: Indicates the size of the events array.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, &amp;gt;0 waits for the specified duration.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;epoll_wait&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;epfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;epoll_event&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;maxevents&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;timeout&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="processing-flow"&gt;Processing Flow&lt;/h3&gt;
+&lt;h4 id="epoll_create"&gt;epoll_create&lt;/h4&gt;
+&lt;p&gt;When a process calls &lt;code&gt;epoll_create&lt;/code&gt;, the Linux kernel creates an &lt;code&gt;eventpoll&lt;/code&gt; structure:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;eventpoll&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;spinlock_t&lt;/span&gt; &lt;span class="n"&gt;lock&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;mutex&lt;/span&gt; &lt;span class="n"&gt;mtx&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;wait_queue_head_t&lt;/span&gt; &lt;span class="n"&gt;wq&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;wait_queue_head_t&lt;/span&gt; &lt;span class="n"&gt;poll_wait&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;list_head&lt;/span&gt; &lt;span class="n"&gt;rdllist&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;rb_root&lt;/span&gt; &lt;span class="n"&gt;rbr&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;epitem&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;ovflist&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;user_struct&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;file&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;file&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;visited&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;list_head&lt;/span&gt; &lt;span class="n"&gt;visited_list_link&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;};&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;During &lt;code&gt;epoll_create&lt;/code&gt;, epoll registers a red-black tree with the kernel, which is used to store the monitored sockets. When &lt;code&gt;epoll_create&lt;/code&gt; is called, a file node is created in this red-black tree, and the corresponding socket fd is registered.&lt;/p&gt;
+&lt;p&gt;Additionally, a doubly linked list is created to store events that are ready.&lt;/p&gt;
+&lt;h4 id="epoll_ctl"&gt;epoll_ctl&lt;/h4&gt;
+&lt;p&gt;For each monitored event, an &lt;code&gt;epitem&lt;/code&gt; structure is created:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;epitem&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;rb_node&lt;/span&gt; &lt;span class="n"&gt;rbn&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;list_head&lt;/span&gt; &lt;span class="n"&gt;rdllink&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;epitem&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;next&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;epoll_filefd&lt;/span&gt; &lt;span class="n"&gt;ffd&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;nwait&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;list_head&lt;/span&gt; &lt;span class="n"&gt;pwqlist&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;eventpoll&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;ep&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;list_head&lt;/span&gt; &lt;span class="n"&gt;fllink&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;epoll_event&lt;/span&gt; &lt;span class="n"&gt;event&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;};&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;img src="https://i.loli.net/2021/08/15/ZH6Pixq4X5BLc2z.png" alt="epitem structure"&gt;&lt;/p&gt;
+&lt;p&gt;When &lt;code&gt;epoll_ctl&lt;/code&gt; is called, the socket fd is registered to the &lt;code&gt;eventpoll&lt;/code&gt;&amp;rsquo;s red-black tree, and a callback function is registered with the kernel interrupt handler. When an interrupt occurs for the fd, it is added to the ready list.&lt;/p&gt;
+&lt;h4 id="epoll_wait"&gt;epoll_wait&lt;/h4&gt;
+&lt;p&gt;When &lt;code&gt;epoll_wait&lt;/code&gt; is called, it simply checks if there is data in the list of ready events (&lt;code&gt;epitem&lt;/code&gt;). If there is data, it returns immediately; otherwise, it sleeps until either data arrives or the timeout expires.&lt;/p&gt;
+&lt;h2 id="epoll-usage-model"&gt;Epoll Usage Model&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(;;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;nfds&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;epoll_wait&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;epfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;events&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;20&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;500&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;nfds&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;listenfd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;connfd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;accept&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;listenfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sockaddr&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;clientaddr&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;clilen&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;ev&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;connfd&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;ev&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;EPOLLIN&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;EPOLLET&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;epoll_ctl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;epfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;EPOLL_CTL_ADD&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;connfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;ev&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="nf"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;EPOLLIN&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;n&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sockfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;ev&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ptr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;md&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;ev&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;EPOLLOUT&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;EPOLLET&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;epoll_ctl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;epfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;EPOLL_CTL_MOD&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;sockfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;ev&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="nf"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;EPOLLOUT&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;myepoll_data&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;md&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;myepoll_data&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ptr&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;sockfd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;md&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;send&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sockfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;md&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;ptr&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;strlen&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="n"&gt;md&lt;/span&gt;&lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;ptr&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;ev&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sockfd&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;ev&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;events&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;EPOLLIN&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;EPOLLET&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;epoll_ctl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;epfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;EPOLL_CTL_MOD&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;sockfd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;ev&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Other processing
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="blocking-io-non-blocking-io-and-io-multiplexing"&gt;Blocking IO, Non-blocking IO, and IO Multiplexing&lt;/h2&gt;
+&lt;h3 id="blocking-io"&gt;Blocking IO&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Blocking IO&lt;/strong&gt; means that a thread waits for data to arrive, releasing the CPU until the data is available. When data arrives, the thread is rescheduled to run.&lt;/p&gt;
+&lt;p&gt;In scenarios with many read/write requests, frequent context switching and thread scheduling can lead to inefficiency.&lt;/p&gt;
+&lt;h3 id="non-blocking-io"&gt;Non-blocking IO&lt;/h3&gt;
+&lt;p&gt;In &lt;strong&gt;non-blocking IO&lt;/strong&gt;, a user thread makes an IO request, and if data is not yet available, it returns immediately. The thread must keep checking until the data is ready, at which point it can proceed.&lt;/p&gt;
+&lt;p&gt;Non-blocking IO has a significant drawback: the thread must constantly poll, which can lead to high CPU usage.&lt;/p&gt;
+&lt;h3 id="io-multiplexing"&gt;IO Multiplexing&lt;/h3&gt;
+&lt;p&gt;Blocking IO occupies resources, and excessive context switching can be inefficient. Non-blocking IO can lead to high CPU utilization due to constant polling.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;IO multiplexing&lt;/strong&gt; manages multiple file descriptors in a single thread, reducing context switching and idle CPU usage. Mechanisms like select, poll, and epoll were developed to implement this concept, with epoll being the most scalable and efficient.&lt;/p&gt;
+&lt;h2 id="references"&gt;References&lt;/h2&gt;
+&lt;p&gt;&lt;a href="https://www.cnblogs.com/lojunren/p/3856290.html"&gt;Linux IO Multiplexing and epoll Explained&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://www.infoq.cn/article/26lpjzsp9echwgnic7lq"&gt;Deep Dive into epoll&lt;/a&gt;&lt;/p&gt;</description></item><item><title>Linux Cgroups Overview</title><link>https://noneback.github.io/blog/linux-cgroups%E7%AE%80%E4%BB%8B/</link><pubDate>Tue, 08 Jun 2021 22:26:17 +0800</pubDate><guid>https://noneback.github.io/blog/linux-cgroups%E7%AE%80%E4%BB%8B/</guid><description>&lt;p&gt;&lt;strong&gt;Linux Cgroups&lt;/strong&gt; (Control Groups) provide the ability to limit, control, and monitor the resources used by a group of processes and their future child processes. These resources include CPU, memory, storage, and network. With Cgroups, it&amp;rsquo;s easy to limit a process&amp;rsquo;s resource usage and monitor its metrics in real time.&lt;/p&gt;
+&lt;h2 id="three-components-of-cgroups"&gt;Three Components of Cgroups&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;cgroup&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;A mechanism for managing groups of processes. A cgroup contains a group of processes, and various Linux subsystem parameters can be configured on this cgroup, associating a group of processes with a group of system parameters from subsystems.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;subsystem&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;A module that controls a set of resources.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png" alt="Subsystem"&gt;&lt;/p&gt;
+&lt;p&gt;Each subsystem is linked to a cgroup that defines the respective limits, and the subsystem imposes these limits on the processes in the cgroup.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;hierarchy&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;A hierarchy is a tree structure that links multiple cgroups. With this tree structure, cgroups can inherit attributes from their parent cgroups.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Example Scenario:
+Suppose there is a group of periodic tasks limited by &lt;code&gt;cgroup1&lt;/code&gt; in terms of CPU usage. If one of these tasks is a logging process that also needs to be limited by disk I/O, a new &lt;code&gt;cgroup2&lt;/code&gt; can be created that inherits from &lt;code&gt;cgroup1&lt;/code&gt;. &lt;code&gt;cgroup2&lt;/code&gt; will inherit the CPU limit from &lt;code&gt;cgroup1&lt;/code&gt; and add its own disk I/O limitation, without affecting other processes in &lt;code&gt;cgroup1&lt;/code&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="relationships-between-the-three"&gt;Relationships Between the Three&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;When a new hierarchy is created, all processes in the system &lt;strong&gt;join&lt;/strong&gt; the &lt;strong&gt;root cgroup&lt;/strong&gt; of that hierarchy by default. This root cgroup is created automatically with the hierarchy.&lt;/li&gt;
+&lt;li&gt;A subsystem can only be attached to one hierarchy.&lt;/li&gt;
+&lt;li&gt;A hierarchy can have multiple subsystems attached.&lt;/li&gt;
+&lt;li&gt;A process can belong to multiple cgroups in different hierarchies.&lt;/li&gt;
+&lt;li&gt;A child process is in the same cgroup as its parent process but can be moved to a different cgroup later.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="kernel-interface"&gt;Kernel Interface&lt;/h2&gt;
+&lt;p&gt;Hierarchies in cgroups are organized in a &lt;strong&gt;tree&lt;/strong&gt; structure. The kernel provides a &lt;strong&gt;virtual tree-like file system&lt;/strong&gt; to configure cgroups, making it intuitive to work with them through a hierarchical directory structure.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Create a hierarchy and add sub-cgroups:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkdir cgroup &lt;span class="c1"&gt;# Create mount point&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mount -t cgroup -o none,name&lt;span class="o"&gt;=&lt;/span&gt;cgroup-test cgroup-test ./cgroup-test &lt;span class="c1"&gt;# Mount hierarchy&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mkdir cgroup-1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mkdir cgroup-2
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;tree
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── cgroup-1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│ ├── cgroup.clone_children
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│ ├── cgroup.procs
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│ ├── notify_on_release
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│ └── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── cgroup-2
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│ ├── cgroup.clone_children
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│ ├── cgroup.procs
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│ ├── notify_on_release
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│ └── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── cgroup.clone_children
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── cgroup.procs
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── cgroup.sane_behavior
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── notify_on_release
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── release_agent
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;Meaning of Different Files&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png" alt="File Descriptions"&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Add and move processes to a cgroup (move process PID into the corresponding &lt;code&gt;tasks&lt;/code&gt; file):&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo sh -c &lt;span class="s2"&gt;&amp;#34;echo &lt;/span&gt;&lt;span class="nv"&gt;$$&lt;/span&gt;&lt;span class="s2"&gt; &amp;gt;&amp;gt; ./cgroup-1/tasks&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;# Move terminal process to cgroup-1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cat /proc/&lt;span class="nv"&gt;$$&lt;/span&gt;/cgroup
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;gt;&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;13:name&lt;span class="o"&gt;=&lt;/span&gt;cgroup-test:/cgroup-1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;12:memory:/user.slice/user-1002.slice/session-12331.scope
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;11:perf_event:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;10:cpuset:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;9:freezer:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;8:blkio:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;7:rdma:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;6:hugetlb:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;5:pids:/user.slice/user-1002.slice/session-12331.scope
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4:cpu,cpuacct:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;3:net_cls,net_prio:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2:devices:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1:name&lt;span class="o"&gt;=&lt;/span&gt;systemd:/user.slice/user-1002.slice/session-12331.scope
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0::/user.slice/user-1002.slice/session-12331.scope
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Limit cgroup resource usage via subsystems:&lt;/p&gt;
+&lt;p&gt;First, link the hierarchy to a subsystem. By default, the system links the hierarchy to a memory subsystem.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# Start a memory-intensive stress process without any limitations&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mkdir test-limit-memory &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nb"&gt;cd&lt;/span&gt; test-limit-memory &lt;span class="c1"&gt;# Create a cgroup&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo sh -c &lt;span class="s2"&gt;&amp;#34;echo &amp;#34;&lt;/span&gt;100m&lt;span class="s2"&gt;&amp;#34; &amp;gt; memory.limit&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;# Set max memory usage to 100m&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo sh -c &lt;span class="s2"&gt;&amp;#34;echo &lt;/span&gt;&lt;span class="nv"&gt;$$&lt;/span&gt;&lt;span class="s2"&gt; &amp;gt; tasks&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;# Move current process to cgroup&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="observation"&gt;Observation&lt;/h4&gt;
+&lt;p&gt;The memory usage of the process is limited by the specified setting.&lt;/p&gt;</description></item></channel></rss>
