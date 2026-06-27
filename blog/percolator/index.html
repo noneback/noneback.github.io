@@ -3,7 +3,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding. Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a">
+    <meta name="description" content="Ladder@It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding.
+Percolator and 2PC
+2PC
+The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator&rsquo;s requests, completing prepare operations and commit/abort operations based on those requests.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/percolator/">
         <meta name="google-site-verification" content="xxx">
@@ -11,12 +14,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,30 +28,29 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/blog/percolator/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications">
-  <meta property="og:description" content="It has been a while since I last studied, and I wanted to learn something interesting. This time, I’ll be covering Percolator, a distributed transaction system. I won’t translate the paper or delve into detailed algorithms; I’ll just document my understanding. Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2023-09-28T10:43:23+08:00">
-    <meta property="article:modified_time" content="2023-09-28T10:43:23+08:00">
-    <meta property="article:tag" content="Distributed System">
-    <meta property="article:tag" content="Transaction">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications">
+	<meta property="og:description" content="It has been a while since I last studied, and I wanted to learn something interesting. This time, I’ll be covering Percolator, a distributed transaction system. I won’t translate the paper or delve into detailed algorithms; I’ll just document my understanding.
+Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator’s requests, completing prepare operations and commit/abort operations based on those requests.">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2023-09-28T10:43:23+08:00">
+		<meta property="article:modified_time" content="2023-09-28T10:43:23+08:00">
+		<meta property="article:tag" content="Distributed System">
+		<meta property="article:tag" content="Transaction">
+		<meta property="article:tag" content="Paper Reading">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications">
-  <meta name="twitter:description" content="It has been a while since I last studied, and I wanted to learn something interesting. This time, I’ll be covering Percolator, a distributed transaction system. I won’t translate the paper or delve into detailed algorithms; I’ll just document my understanding. Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications">
+	<meta name="twitter:description" content="It has been a while since I last studied, and I wanted to learn something interesting. This time, I’ll be covering Percolator, a distributed transaction system. I won’t translate the paper or delve into detailed algorithms; I’ll just document my understanding.
+Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator’s requests, completing prepare operations and commit/abort operations based on those requests.">
 
 
 <script type="application/ld+json">
@@ -79,7 +79,7 @@
   "@type": "BlogPosting",
   "headline": "Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications",
   "name": "Percolator: Large-scale Incremental Processing Using Distributed Transactions and Notifications",
-  "description": "It has been a while since I last studied, and I wanted to learn something interesting. This time, I\u0026rsquo;ll be covering Percolator, a distributed transaction system. I won\u0026rsquo;t translate the paper or delve into detailed algorithms; I\u0026rsquo;ll just document my understanding. Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a",
+  "description": "It has been a while since I last studied, and I wanted to learn something interesting. This time, I\u0026rsquo;ll be covering Percolator, a distributed transaction system. I won\u0026rsquo;t translate the paper or delve into detailed algorithms; I\u0026rsquo;ll just document my understanding.\nPercolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator\u0026rsquo;s requests, completing prepare operations and commit/abort operations based on those requests.\n",
   "keywords": [
     "Percolator", "Distributed System", "Transaction"
   ],
@@ -147,22 +147,30 @@
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -223,11 +231,11 @@
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -255,12 +263,19 @@
       
       <a href="https://noneback.github.io/tags/transaction/">Transaction</a>
       
+      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
+      
     </small>
   
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>Table of Contents</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#percolator-and-2pc">Percolator and 2PC</a>
       <ul>
@@ -280,6 +295,10 @@
     <li><a href="#references">References</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><p>It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding.</p>
@@ -319,7 +338,7 @@ end
 <blockquote>
 <p><code>lock + write + data</code>: for transactions, where <code>lock</code> indicates that a cell is held by a transaction, and <code>write</code> represents the data visibility.</p>
 <p><code>notify + ack</code>: for watcher or notifier mechanisms.</p>
-<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png" src="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png"></p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/20230927163910.png"></p>
 </blockquote>
 </li>
 </ul>
@@ -333,7 +352,7 @@ end
 </ol>
 <blockquote>
 <p>The locking process utilizes the primary-secondary mechanism, where one write is chosen as the <strong>primary</strong> and all others as <strong>secondary</strong>. The secondary locks point to the primary.</p>
-<p><img alt="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png" src="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png"></p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png" alt="https://raw.githubusercontent.com/noneback/images/picgo/202309271613141.png"></p>
 </blockquote>
 <p>Clearly, data in the prewrite phase is invisible to other transactions.</p>
 <h4 id="commit">Commit</h4>
@@ -356,9 +375,9 @@ end
 <h2 id="percolator-in-tidb">Percolator in TiDB</h2>
 <p>Based on our analysis above, Percolator is an optimized 2PC distributed transaction implementation, relying on a storage engine that supports single-node transactions.</p>
 <p>Let&rsquo;s briefly look at how TiDB uses Percolator to implement distributed transactions.</p>
-<p><img alt="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png" src="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png"></p>
+<p><img src="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png" alt="https://download.pingcap.com/images/docs-cn/tidb-architecture-v6.png"></p>
 <p>The architecture of TiDB and TiKV is shown above. Data from relational tables in TiDB is ultimately mapped to KV pairs in TiKV. TiKV is a distributed KV store based on Raft and RocksDB. RocksDB supports transactional operations on KV pairs.</p>
-<p><img alt="https://download.pingcap.com/images/docs/tikv-rocksdb.png" src="https://download.pingcap.com/images/docs/tikv-rocksdb.png"></p>
+<p><img src="https://download.pingcap.com/images/docs/tikv-rocksdb.png" alt="https://download.pingcap.com/images/docs/tikv-rocksdb.png"></p>
 <p>Thus, the transaction path in TiDB is as follows: a relational table transaction is converted into a set of KV transactions, which are executed based on Percolator to achieve relational table transaction operations.</p>
 <blockquote>
 <p>Of course, it cannot provide the same transactional semantics and performance guarantees as a single-node TP database. However, a shared-nothing architecture has its own advantages, which may make this trade-off acceptable.</p>
@@ -391,6 +410,26 @@ end
       </svg>
     </a>
     
+  </div>
+  
+
+  
+  
+  <div class="related-resources">
+    <h3>Related Resources</h3>
+    <ul>
+    
+      <li><a href="/blog/mit6.824-raft/">MIT6.824-Raft</a></li>
+    
+      <li><a href="/blog/dfs-haystack/">DFS-Haystack</a></li>
+    
+      <li><a href="/blog/mit6.824-bigtable/">MIT6.824 Bigtable</a></li>
+    
+      <li><a href="/blog/mit6.824-mapreduce/">MIT6.824-MapReduce</a></li>
+    
+      <li><a href="/blog/dynamo/">Dynamo: Amazon’s Highly Available Key-value Store</a></li>
+    
+    </ul>
   </div>
   
 
@@ -428,12 +467,16 @@ end
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -454,45 +497,64 @@ end
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

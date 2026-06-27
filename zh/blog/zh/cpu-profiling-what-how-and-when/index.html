@@ -3,7 +3,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CPU Profiling: What, How, and When</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@What: 什么是CPU Profiling 一种程序CPU性能分析的技术。通过收集程序执行时的详细数据（例如函数调用频率、耗时、调用栈等），帮助开发者识别性能瓶颈，优化">
+    <meta name="description" content="Ladder@What: 什么是CPU Profiling
+一种程序CPU性能分析的技术。通过收集程序执行时的详细数据（例如函数调用频率、耗时、调用栈等），帮助开发者识别性能瓶颈，优化代码效率。一般用于性能分析，根因诊断的场景。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/cpu-profiling-what-how-and-when/">
         <meta name="google-site-verification" content="xxx">
@@ -11,12 +12,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,29 +26,26 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/cpu-profiling-what-how-and-when/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="CPU Profiling: What, How, and When">
-  <meta property="og:description" content="What: 什么是CPU Profiling 一种程序CPU性能分析的技术。通过收集程序执行时的详细数据（例如函数调用频率、耗时、调用栈等），帮助开发者识别性能瓶颈，优化">
-  <meta property="og:locale" content="zh">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2025-03-10T14:46:54+08:00">
-    <meta property="article:modified_time" content="2025-03-10T14:46:54+08:00">
-    <meta property="article:tag" content="Performance Analysis">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="CPU Profiling: What, How, and When">
+	<meta property="og:description" content="What: 什么是CPU Profiling 一种程序CPU性能分析的技术。通过收集程序执行时的详细数据（例如函数调用频率、耗时、调用栈等），帮助开发者识别性能瓶颈，优化代码效率。一般用于性能分析，根因诊断的场景。">
+	<meta property="og:locale" content="zh">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2025-03-10T14:46:54+08:00">
+		<meta property="article:modified_time" content="2025-03-10T14:46:54+08:00">
+		<meta property="article:tag" content="Performance">
+		<meta property="article:tag" content="Profiling">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="CPU Profiling: What, How, and When">
-  <meta name="twitter:description" content="What: 什么是CPU Profiling 一种程序CPU性能分析的技术。通过收集程序执行时的详细数据（例如函数调用频率、耗时、调用栈等），帮助开发者识别性能瓶颈，优化">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="CPU Profiling: What, How, and When">
+	<meta name="twitter:description" content="What: 什么是CPU Profiling 一种程序CPU性能分析的技术。通过收集程序执行时的详细数据（例如函数调用频率、耗时、调用栈等），帮助开发者识别性能瓶颈，优化代码效率。一般用于性能分析，根因诊断的场景。">
 
 
 <script type="application/ld+json">
@@ -78,7 +74,7 @@
   "@type": "BlogPosting",
   "headline": "CPU Profiling: What, How, and When",
   "name": "CPU Profiling: What, How, and When",
-  "description": "What: 什么是CPU Profiling 一种程序CPU性能分析的技术。通过收集程序执行时的详细数据（例如函数调用频率、耗时、调用栈等），帮助开发者识别性能瓶颈，优化",
+  "description": "What: 什么是CPU Profiling 一种程序CPU性能分析的技术。通过收集程序执行时的详细数据（例如函数调用频率、耗时、调用栈等），帮助开发者识别性能瓶颈，优化代码效率。一般用于性能分析，根因诊断的场景。\n",
   "keywords": [
     "CPU Profiler", "Trouble-shooting"
   ],
@@ -146,22 +142,209 @@
         });
     });
 </script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+    function initMermaid() {
+        
+        var isDark = document.documentElement.hasAttribute('data-dark-mode') ||
+                     document.documentElement.hasAttribute('icy-dark-mode');
+
+        
+        var lightTheme = {
+            fontFamily: '"LXGW WenKai", sans-serif',
+            fontSize: '14px',
+            primaryColor: '#e3f2fd',
+            primaryTextColor: '#1a1a2e',
+            primaryBorderColor: '#90caf9',
+            secondaryColor: '#e8f5e9',
+            secondaryTextColor: '#1a1a2e',
+            secondaryBorderColor: '#a5d6a7',
+            tertiaryColor: '#fff3e0',
+            tertiaryTextColor: '#1a1a2e',
+            tertiaryBorderColor: '#ffcc80',
+            lineColor: '#546e7a',
+            arrowheadColor: '#546e7a',
+            background: '#ffffff',
+            mainBkg: '#e3f2fd',
+            secondBkg: '#e8f5e9',
+            thirdBkg: '#fff3e0',
+            nodeBorder: '#90caf9',
+            clusterBkg: '#f5f5f5',
+            clusterBorder: '#bdbdbd',
+            defaultRenderer: 'elk',
+            textColor: '#212121',
+            edgeLabelBackground: '#ffffff',
+            classText: '#212121',
+            fillType0: '#e3f2fd',
+            fillType1: '#e8f5e9',
+            fillType2: '#fff3e0',
+            strokeColor0: '#90caf9',
+            strokeColor1: '#a5d6a7',
+            strokeColor2: '#ffcc80'
+        };
+
+        
+        var darkTheme = {
+            fontFamily: '"LXGW WenKai", sans-serif',
+            fontSize: '14px',
+            primaryColor: '#1a3a40',
+            primaryTextColor: '#e0f0ed',
+            primaryBorderColor: '#4db6ac',
+            secondaryColor: '#1e3328',
+            secondaryTextColor: '#d0ecd8',
+            secondaryBorderColor: '#66bb6a',
+            tertiaryColor: '#2e2a1a',
+            tertiaryTextColor: '#f0e8c8',
+            tertiaryBorderColor: '#c8a84e',
+            lineColor: '#84ebd9',
+            arrowheadColor: '#84ebd9',
+            background: '#181a1b',
+            mainBkg: '#1a3a40',
+            secondBkg: '#1e3328',
+            thirdBkg: '#2e2a1a',
+            nodeBorder: '#4db6ac',
+            clusterBkg: '#1c2c2e',
+            clusterBorder: '#2e5c56',
+            defaultRenderer: 'elk',
+            textColor: '#dadada',
+            edgeLabelBackground: '#181a1b',
+            classText: '#dadada',
+            fillType0: '#1a3a40',
+            fillType1: '#1e3328',
+            fillType2: '#2e2a1a',
+            strokeColor0: '#4db6ac',
+            strokeColor1: '#66bb6a',
+            strokeColor2: '#c8a84e'
+        };
+
+        var themeVars = isDark ? darkTheme : lightTheme;
+
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: isDark ? 'dark' : 'base',
+            securityLevel: 'loose',
+            logLevel: 'fatal',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                padding: 20,
+                nodeSpacing: 50,
+                rankSpacing: 50,
+                diagramPaddingX: 20,
+                diagramPaddingY: 20
+            },
+            sequence: {
+                useMaxWidth: true,
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                actorBorder: themeVars.primaryBorderColor,
+                actorBkg: themeVars.primaryColor,
+                actorTextColor: themeVars.primaryTextColor,
+                actorLineColor: themeVars.lineColor,
+                signalColor: themeVars.lineColor,
+                signalTextColor: themeVars.textColor,
+                labelBoxBkgColor: themeVars.secondaryColor,
+                labelBoxBorderColor: themeVars.secondaryBorderColor,
+                labelTextColor: themeVars.textColor,
+                noteBkgColor: themeVars.tertiaryColor,
+                noteBorderColor: themeVars.tertiaryBorderColor,
+                noteTextColor: themeVars.tertiaryTextColor
+            },
+            themeVariables: themeVars
+        });
+
+        
+        document.querySelectorAll('.mermaid').forEach(function(el) {
+            el.removeAttribute('data-processed');
+        });
+        mermaid.run({
+            querySelector: '.mermaid'
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        
+        document.querySelectorAll('code.language-mermaid').forEach(function(el) {
+            var pre = el.parentElement;
+            var container = pre.parentElement;
+            var div = document.createElement('div');
+            div.className = 'mermaid';
+            var text = el.textContent;
+            div.textContent = text;
+            div.dataset.mermaidSource = text;
+            if (container && container.classList.contains('highlight')) {
+                container.parentNode.replaceChild(div, container);
+            } else {
+                pre.parentNode.replaceChild(div, pre);
+            }
+        });
+
+        initMermaid();
+
+        
+        var observer = new MutationObserver(function() {
+            
+            document.querySelectorAll('.mermaid').forEach(function(el) {
+                if (el.dataset.mermaidSource) {
+                    el.textContent = el.dataset.mermaidSource;
+                    el.removeAttribute('data-processed');
+                }
+            });
+            initMermaid();
+        });
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-dark-mode', 'icy-dark-mode']
+        });
+    });
+</script>
+<style>
+    .mermaid {
+        text-align: center;
+        margin: 2rem 0;
+        padding: 1.5rem;
+        background: transparent;
+        border-radius: 0.75rem;
+    }
+    .mermaid svg {
+        max-width: 100%;
+        height: auto;
+    }
+    [data-dark-mode] .mermaid,
+    [icy-dark-mode] .mermaid {
+        background: rgba(255, 255, 255, 0.015);
+        border: 1px solid rgba(132, 235, 217, 0.1);
+    }
+</style>
+
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -250,14 +433,21 @@
       ·
       
       
-      <a href="https://noneback.github.io/zh/tags/performance-analysis/">Performance Analysis</a>
+      <a href="https://noneback.github.io/zh/tags/performance/">Performance</a>
+      
+      <a href="https://noneback.github.io/zh/tags/profiling/">Profiling</a>
       
     </small>
   
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>目录</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#what什么是cpuprofiling">What: 什么是CPU Profiling</a></li>
     <li><a href="#howprofiling数据是怎么获取的">How: Profiling 数据是怎么获取的</a>
@@ -274,6 +464,10 @@
     <li><a href="#ref">Ref</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><h2 id="what什么是cpuprofiling">What: 什么是CPU Profiling</h2>
@@ -295,117 +489,117 @@
 <p>一般会使用 OS 内核提供的epbf 或者 perf event 接口进行堆栈采样。</p>
 <p>前者可以通过 eBPF 程序（如 <code>bpf_get_stackid</code>）直接捕获完整用户态和内核态调用栈，无需额外堆栈回溯，获取到完整的堆栈IP 信息。</p>
 <p>使用 <code>perf_event_open</code> 接口获取指令指针（RIP），比如perf record命令，此时无法获取完整的调用栈，只获取了当前执行的函数地址，所以也只能根据地址找到触发采样的函数名称</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>            node <span style="color:#ae81ff">3236535</span> 34397396.208842:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:           110c800 v8::internal::Heap_CombinedGenerationalAndSharedBarrierSlow+0x0 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>            node <span style="color:#ae81ff">3236535</span> 34397396.354632:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:      7f7d63e87ef4 Builtins_LoadIC+0x574 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>            node <span style="color:#ae81ff">3236535</span> 34397396.451226:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:  ffffffff889bbb0e syscall_enter_from_user_mode+0xe <span style="color:#f92672">([</span>kernel.kallsyms<span style="color:#f92672">])</span>
-</span></span><span style="display:flex;"><span>            node <span style="color:#ae81ff">3236535</span> 34397397.580029:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:           18c73f1 uv__metrics_update_idle_time+0x11 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>            node <span style="color:#ae81ff">3236535</span> 34397397.649952:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:      7f7d63e87f0f Builtins_LoadIC+0x58f <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>            node <span style="color:#ae81ff">3236535</span> 34397399.340595:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:      7f7d63e8b353 Builtins_LoadICTrampoline+0x13 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>            node <span style="color:#ae81ff">3236535</span> 34397399.340842:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:      7f7d6ba9022c malloc+0x18c <span style="color:#f92672">(</span>/usr/lib/x86_64-linux-gnu/libc.so.6<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>            node <span style="color:#ae81ff">3236535</span> 34397399.341095:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:           19d3913 Builtins_FulfillPromise+0x193 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">            node <span class="m">3236535</span> 34397396.208842:     <span class="m">250000</span> cpu-clock:pppH:           110c800 v8::internal::Heap_CombinedGenerationalAndSharedBarrierSlow+0x0 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">            node <span class="m">3236535</span> 34397396.354632:     <span class="m">250000</span> cpu-clock:pppH:      7f7d63e87ef4 Builtins_LoadIC+0x574 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">            node <span class="m">3236535</span> 34397396.451226:     <span class="m">250000</span> cpu-clock:pppH:  ffffffff889bbb0e syscall_enter_from_user_mode+0xe <span class="o">([</span>kernel.kallsyms<span class="o">])</span>
+</span></span><span class="line"><span class="cl">            node <span class="m">3236535</span> 34397397.580029:     <span class="m">250000</span> cpu-clock:pppH:           18c73f1 uv__metrics_update_idle_time+0x11 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">            node <span class="m">3236535</span> 34397397.649952:     <span class="m">250000</span> cpu-clock:pppH:      7f7d63e87f0f Builtins_LoadIC+0x58f <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">            node <span class="m">3236535</span> 34397399.340595:     <span class="m">250000</span> cpu-clock:pppH:      7f7d63e8b353 Builtins_LoadICTrampoline+0x13 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">            node <span class="m">3236535</span> 34397399.340842:     <span class="m">250000</span> cpu-clock:pppH:      7f7d6ba9022c malloc+0x18c <span class="o">(</span>/usr/lib/x86_64-linux-gnu/libc.so.6<span class="o">)</span>
+</span></span><span class="line"><span class="cl">            node <span class="m">3236535</span> 34397399.341095:     <span class="m">250000</span> cpu-clock:pppH:           19d3913 Builtins_FulfillPromise+0x193 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
 </span></span></code></pre></div><p>通过Stack Unwind（比如<code>libunwind</code>）进行堆栈回溯以此来获取完整的堆栈信息,<code>perf record -g</code>。</p>
 <blockquote>
 <p>stack unwind 参考: <a href="https://zhuanlan.zhihu.com/p/460686470">https://zhuanlan.zhihu.com/p/460686470</a></p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>node <span style="color:#ae81ff">3236535</span> 34397238.259753:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH: 
-</span></span><span style="display:flex;"><span>            7f7d44339100 <span style="color:#f92672">[</span>unknown<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>/tmp/perf-3236535.map<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                 18ea0dc Builtins_JSEntryTrampoline+0x5c <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                 18e9e03 Builtins_JSEntry+0x83 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                 106692b v8::internal::<span style="color:#f92672">(</span>anonymous namespace<span style="color:#f92672">)</span>::Invoke+0x12b <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                 10679c4 v8::internal::Execution::Call+0x64 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                  f2a09d v8::Function::Call+0x14d <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                  c1c738 node::Environment::RunTimers+0x208 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                 18c46f2 uv__run_timers+0x22 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                 18c8524 uv_run+0x2f4 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                  bd3be6 node::SpinEventLoopInternal+0x156 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                  d18564 node::NodeMainInstance::Run+0x94 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                  d18ffd node::NodeMainInstance::Run+0xcd <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                  c7d43f node::Start+0x58f <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>            7f7d6ba14d90 __libc_start_call_main+0x80 <span style="color:#f92672">(</span>/usr/lib/x86_64-linux-gnu/libc.so.6<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">node <span class="m">3236535</span> 34397238.259753:     <span class="m">250000</span> cpu-clock:pppH: 
+</span></span><span class="line"><span class="cl">            7f7d44339100 <span class="o">[</span>unknown<span class="o">]</span> <span class="o">(</span>/tmp/perf-3236535.map<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                 18ea0dc Builtins_JSEntryTrampoline+0x5c <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                 18e9e03 Builtins_JSEntry+0x83 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                 106692b v8::internal::<span class="o">(</span>anonymous namespace<span class="o">)</span>::Invoke+0x12b <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                 10679c4 v8::internal::Execution::Call+0x64 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                  f2a09d v8::Function::Call+0x14d <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                  c1c738 node::Environment::RunTimers+0x208 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                 18c46f2 uv__run_timers+0x22 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                 18c8524 uv_run+0x2f4 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                  bd3be6 node::SpinEventLoopInternal+0x156 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                  d18564 node::NodeMainInstance::Run+0x94 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                  d18ffd node::NodeMainInstance::Run+0xcd <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                  c7d43f node::Start+0x58f <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">            7f7d6ba14d90 __libc_start_call_main+0x80 <span class="o">(</span>/usr/lib/x86_64-linux-gnu/libc.so.6<span class="o">)</span>
 </span></span></code></pre></div><h3 id="地址翻译">地址翻译</h3>
 <p>采样后得到的地址信息是进程的虚拟地址信息，即：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>7f7d44339100
-</span></span><span style="display:flex;"><span>18ea0dc
-</span></span><span style="display:flex;"><span>18e9e03
-</span></span><span style="display:flex;"><span>106692b
-</span></span><span style="display:flex;"><span>10679c4
-</span></span><span style="display:flex;"><span>f2a09d
-</span></span><span style="display:flex;"><span>c1c738
-</span></span><span style="display:flex;"><span>18c46f2
-</span></span><span style="display:flex;"><span>18c8524
-</span></span><span style="display:flex;"><span>bd3be6
-</span></span><span style="display:flex;"><span>d18564
-</span></span><span style="display:flex;"><span>d18ffd
-</span></span><span style="display:flex;"><span>c7d43f
-</span></span><span style="display:flex;"><span>7f7d6ba14d90
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">7f7d44339100
+</span></span><span class="line"><span class="cl">18ea0dc
+</span></span><span class="line"><span class="cl">18e9e03
+</span></span><span class="line"><span class="cl">106692b
+</span></span><span class="line"><span class="cl">10679c4
+</span></span><span class="line"><span class="cl">f2a09d
+</span></span><span class="line"><span class="cl">c1c738
+</span></span><span class="line"><span class="cl">18c46f2
+</span></span><span class="line"><span class="cl">18c8524
+</span></span><span class="line"><span class="cl">bd3be6
+</span></span><span class="line"><span class="cl">d18564
+</span></span><span class="line"><span class="cl">d18ffd
+</span></span><span class="line"><span class="cl">c7d43f
+</span></span><span class="line"><span class="cl">7f7d6ba14d90
 </span></span></code></pre></div><p>我们还需要将虚拟地址翻译成 ELF + OFFSET ，以便下一步进行函数符号的翻译。</p>
 <p>利用<code>/proc/pid/maps</code>里记录的信息就可以实现<code>V_ADDR  --&gt; (ELF, OFFSET)</code> 的翻译。maps里记录的信息的关键信息有:<code>&lt;地址范围&gt;  &lt;权限&gt;  &lt;文件偏移&gt; &lt;inode&gt;  &lt;文件路径&gt;</code></p>
 <blockquote>
 <p>procfs maps 参考:  <a href="https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html">https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html</a></p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>00400000-00b81000 r--p <span style="color:#ae81ff">00000000</span> fc:03 <span style="color:#ae81ff">550055</span>                             /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node
-</span></span><span style="display:flex;"><span>00b81000-00b83000 r-xp <span style="color:#ae81ff">00781000</span> fc:03 <span style="color:#ae81ff">550055</span>                             /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node
-</span></span><span style="display:flex;"><span>......
-</span></span><span style="display:flex;"><span>7f7d6bf3c000-7f7d6bf3d000 ---p 0021a000 fc:03 <span style="color:#ae81ff">67</span>                         /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30
-</span></span><span style="display:flex;"><span>7f7d6bf3d000-7f7d6bf48000 r--p 0021a000 fc:03 <span style="color:#ae81ff">67</span>                         /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30
-</span></span><span style="display:flex;"><span>7f7d6bf48000-7f7d6bf4b000 rw-p <span style="color:#ae81ff">00225000</span> fc:03 <span style="color:#ae81ff">67</span>                         /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30
-</span></span><span style="display:flex;"><span>......
-</span></span><span style="display:flex;"><span>7f7d6bf52000-7f7d6bf53000 rw-p <span style="color:#ae81ff">00003000</span> fc:03 <span style="color:#ae81ff">3952</span>                       /usr/lib/x86_64-linux-gnu/libdl.so.2
-</span></span><span style="display:flex;"><span>......
-</span></span><span style="display:flex;"><span>7f7d6bf56000-7f7d6bf57000 ---p <span style="color:#ae81ff">00000000</span> 00:00 <span style="color:#ae81ff">0</span> 
-</span></span><span style="display:flex;"><span>7f7d6bf57000-7f7d6bf61000 rw-p <span style="color:#ae81ff">00000000</span> 00:00 <span style="color:#ae81ff">0</span> 
-</span></span><span style="display:flex;"><span>7f7d6bf61000-7f7d6bf63000 r--p <span style="color:#ae81ff">00000000</span> fc:03 <span style="color:#ae81ff">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-</span></span><span style="display:flex;"><span>7f7d6bf63000-7f7d6bf8d000 r-xp <span style="color:#ae81ff">00002000</span> fc:03 <span style="color:#ae81ff">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-</span></span><span style="display:flex;"><span>7f7d6bf8d000-7f7d6bf98000 r--p 0002c000 fc:03 <span style="color:#ae81ff">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-</span></span><span style="display:flex;"><span>7f7d6bf99000-7f7d6bf9b000 r--p <span style="color:#ae81ff">00037000</span> fc:03 <span style="color:#ae81ff">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-</span></span><span style="display:flex;"><span>7f7d6bf9b000-7f7d6bf9d000 rw-p <span style="color:#ae81ff">00039000</span> fc:03 <span style="color:#ae81ff">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">00400000-00b81000 r--p <span class="m">00000000</span> fc:03 <span class="m">550055</span>                             /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node
+</span></span><span class="line"><span class="cl">00b81000-00b83000 r-xp <span class="m">00781000</span> fc:03 <span class="m">550055</span>                             /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node
+</span></span><span class="line"><span class="cl">......
+</span></span><span class="line"><span class="cl">7f7d6bf3c000-7f7d6bf3d000 ---p 0021a000 fc:03 <span class="m">67</span>                         /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30
+</span></span><span class="line"><span class="cl">7f7d6bf3d000-7f7d6bf48000 r--p 0021a000 fc:03 <span class="m">67</span>                         /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30
+</span></span><span class="line"><span class="cl">7f7d6bf48000-7f7d6bf4b000 rw-p <span class="m">00225000</span> fc:03 <span class="m">67</span>                         /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30
+</span></span><span class="line"><span class="cl">......
+</span></span><span class="line"><span class="cl">7f7d6bf52000-7f7d6bf53000 rw-p <span class="m">00003000</span> fc:03 <span class="m">3952</span>                       /usr/lib/x86_64-linux-gnu/libdl.so.2
+</span></span><span class="line"><span class="cl">......
+</span></span><span class="line"><span class="cl">7f7d6bf56000-7f7d6bf57000 ---p <span class="m">00000000</span> 00:00 <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">7f7d6bf57000-7f7d6bf61000 rw-p <span class="m">00000000</span> 00:00 <span class="m">0</span> 
+</span></span><span class="line"><span class="cl">7f7d6bf61000-7f7d6bf63000 r--p <span class="m">00000000</span> fc:03 <span class="m">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+</span></span><span class="line"><span class="cl">7f7d6bf63000-7f7d6bf8d000 r-xp <span class="m">00002000</span> fc:03 <span class="m">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+</span></span><span class="line"><span class="cl">7f7d6bf8d000-7f7d6bf98000 r--p 0002c000 fc:03 <span class="m">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+</span></span><span class="line"><span class="cl">7f7d6bf99000-7f7d6bf9b000 r--p <span class="m">00037000</span> fc:03 <span class="m">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+</span></span><span class="line"><span class="cl">7f7d6bf9b000-7f7d6bf9d000 rw-p <span class="m">00039000</span> fc:03 <span class="m">2928</span>                       /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
 </span></span></code></pre></div><p>maps里记录了不同ELF段在虚拟内存的映射，以及对应ELF文件基地址。我们使用函数把虚拟地址匹配到ELF段，之后再基于地址偏移我们就可以找到相对ELF文件偏移地址，即<code>offset = 虚拟地址 - 内存段起始地址 + 文件偏移</code></p>
 <h3 id="符号翻译">符号翻译</h3>
 <p>通过地址翻译，我们现在找到了虚拟地址对应的<code>[ELF, offset]</code>。基于这个信息，我们可以结合符号表以及调试信息翻译出堆栈符号。</p>
 <p>使用 ELF 文件中的符号表，或者使用 <code>dwarf debuginfo</code>的信息，我们可以将地址翻译成函数符号。</p>
 <p>比如读取动态库的<code>dynsym</code>部分记录的函数符号信息，再根据offset查找。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># nm -D  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node | grep malloc</span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># &lt;地址&gt; &lt;类型&gt; &lt;符号名&gt;</span>
-</span></span><span style="display:flex;"><span>00000000055f9d18 D ares_malloc
-</span></span><span style="display:flex;"><span>0000000001f1a2a0 T ares_malloc_data
-</span></span><span style="display:flex;"><span>0000000001f1b6e0 T ares_malloc_zero
-</span></span><span style="display:flex;"><span>0000000001bf5680 T CRYPTO_malloc
-</span></span><span style="display:flex;"><span>0000000001bf67d0 T CRYPTO_secure_malloc
-</span></span><span style="display:flex;"><span>0000000001bf66f0 T CRYPTO_secure_malloc_done
-</span></span><span style="display:flex;"><span>0000000001bf62d0 T CRYPTO_secure_malloc_init
-</span></span><span style="display:flex;"><span>0000000001bf67c0 T CRYPTO_secure_malloc_initialized
-</span></span><span style="display:flex;"><span>                 U malloc@GLIBC_2.2.5
-</span></span><span style="display:flex;"><span>                 U malloc_usable_size@GLIBC_2.2.5
-</span></span><span style="display:flex;"><span>0000000001f5cce0 T nghttp2_mem_malloc
-</span></span><span style="display:flex;"><span>0000000001fdaaa0 T ngtcp2_mem_malloc
-</span></span><span style="display:flex;"><span>00000000020853f0 T uprv_malloc_75
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># nm -D  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node | grep malloc</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># &lt;地址&gt; &lt;类型&gt; &lt;符号名&gt;</span>
+</span></span><span class="line"><span class="cl">00000000055f9d18 D ares_malloc
+</span></span><span class="line"><span class="cl">0000000001f1a2a0 T ares_malloc_data
+</span></span><span class="line"><span class="cl">0000000001f1b6e0 T ares_malloc_zero
+</span></span><span class="line"><span class="cl">0000000001bf5680 T CRYPTO_malloc
+</span></span><span class="line"><span class="cl">0000000001bf67d0 T CRYPTO_secure_malloc
+</span></span><span class="line"><span class="cl">0000000001bf66f0 T CRYPTO_secure_malloc_done
+</span></span><span class="line"><span class="cl">0000000001bf62d0 T CRYPTO_secure_malloc_init
+</span></span><span class="line"><span class="cl">0000000001bf67c0 T CRYPTO_secure_malloc_initialized
+</span></span><span class="line"><span class="cl">                 U malloc@GLIBC_2.2.5
+</span></span><span class="line"><span class="cl">                 U malloc_usable_size@GLIBC_2.2.5
+</span></span><span class="line"><span class="cl">0000000001f5cce0 T nghttp2_mem_malloc
+</span></span><span class="line"><span class="cl">0000000001fdaaa0 T ngtcp2_mem_malloc
+</span></span><span class="line"><span class="cl">00000000020853f0 T uprv_malloc_75
 </span></span></code></pre></div><p>又或者读取ELF的dwarf信息，不仅能找到符号表，还能获取函数在源码中的位置。</p>
 <blockquote>
 <p>dwarf参考：<a href="https://www.hitzhangjie.pro/debugger101.io/8-dwarf/">https://www.hitzhangjie.pro/debugger101.io/8-dwarf/</a></p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># readelf --debug-dump=info  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node | less</span>
-</span></span><span style="display:flex;"><span>&lt;1&gt;&lt;1980&gt;: Abbrev Number: <span style="color:#ae81ff">41</span> <span style="color:#f92672">(</span>DW_TAG_subprogram<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>    &lt;1981&gt;   DW_AT_external    : <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>    &lt;1981&gt;   DW_AT_name        : <span style="color:#f92672">(</span>indirect string, offset: 0x734<span style="color:#f92672">)</span>: uv__make_close_pending <span style="color:#75715e"># function name</span>
-</span></span><span style="display:flex;"><span>    &lt;1985&gt;   DW_AT_decl_file   : <span style="color:#ae81ff">19</span>
-</span></span><span style="display:flex;"><span>    &lt;1986&gt;   DW_AT_decl_line   : <span style="color:#ae81ff">247</span>
-</span></span><span style="display:flex;"><span>    &lt;1987&gt;   DW_AT_decl_column : <span style="color:#ae81ff">6</span>
-</span></span><span style="display:flex;"><span>    &lt;1988&gt;   DW_AT_prototyped  : <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>    &lt;1988&gt;   DW_AT_declaration : <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>    &lt;1988&gt;   DW_AT_sibling     : &lt;0x1992&gt;
-</span></span><span style="display:flex;"><span> &lt;2&gt;&lt;198c&gt;: Abbrev Number: <span style="color:#ae81ff">21</span> <span style="color:#f92672">(</span>DW_TAG_formal_parameter<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>    &lt;198d&gt;   DW_AT_type        : &lt;0x12a8&gt;
-</span></span><span style="display:flex;"><span> &lt;2&gt;&lt;1991&gt;: Abbrev Number: <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span> &lt;1&gt;&lt;1992&gt;: Abbrev Number: <span style="color:#ae81ff">42</span> <span style="color:#f92672">(</span>DW_TAG_subprogram<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>    &lt;1993&gt;   DW_AT_external    : <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>    &lt;1993&gt;   DW_AT_name        : <span style="color:#f92672">(</span>indirect string, offset: 0x1022<span style="color:#f92672">)</span>: __assert_fail
-</span></span><span style="display:flex;"><span>    &lt;1997&gt;   DW_AT_decl_file   : <span style="color:#ae81ff">18</span>
-</span></span><span style="display:flex;"><span>    &lt;1998&gt;   DW_AT_decl_line   : <span style="color:#ae81ff">67</span>
-</span></span><span style="display:flex;"><span>    &lt;1999&gt;   DW_AT_decl_column : <span style="color:#ae81ff">13</span>
-</span></span><span style="display:flex;"><span>    &lt;199a&gt;   DW_AT_prototyped  : <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>    &lt;199a&gt;   DW_AT_noreturn    : <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>    &lt;199a&gt;   DW_AT_declaration : <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>    &lt;199a&gt;   DW_AT_sibling     : &lt;0x19b3&gt;
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># readelf --debug-dump=info  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node | less</span>
+</span></span><span class="line"><span class="cl">&lt;1&gt;&lt;1980&gt;: Abbrev Number: <span class="m">41</span> <span class="o">(</span>DW_TAG_subprogram<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    &lt;1981&gt;   DW_AT_external    : <span class="m">1</span>
+</span></span><span class="line"><span class="cl">    &lt;1981&gt;   DW_AT_name        : <span class="o">(</span>indirect string, offset: 0x734<span class="o">)</span>: uv__make_close_pending <span class="c1"># function name</span>
+</span></span><span class="line"><span class="cl">    &lt;1985&gt;   DW_AT_decl_file   : <span class="m">19</span>
+</span></span><span class="line"><span class="cl">    &lt;1986&gt;   DW_AT_decl_line   : <span class="m">247</span>
+</span></span><span class="line"><span class="cl">    &lt;1987&gt;   DW_AT_decl_column : <span class="m">6</span>
+</span></span><span class="line"><span class="cl">    &lt;1988&gt;   DW_AT_prototyped  : <span class="m">1</span>
+</span></span><span class="line"><span class="cl">    &lt;1988&gt;   DW_AT_declaration : <span class="m">1</span>
+</span></span><span class="line"><span class="cl">    &lt;1988&gt;   DW_AT_sibling     : &lt;0x1992&gt;
+</span></span><span class="line"><span class="cl"> &lt;2&gt;&lt;198c&gt;: Abbrev Number: <span class="m">21</span> <span class="o">(</span>DW_TAG_formal_parameter<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    &lt;198d&gt;   DW_AT_type        : &lt;0x12a8&gt;
+</span></span><span class="line"><span class="cl"> &lt;2&gt;&lt;1991&gt;: Abbrev Number: <span class="m">0</span>
+</span></span><span class="line"><span class="cl"> &lt;1&gt;&lt;1992&gt;: Abbrev Number: <span class="m">42</span> <span class="o">(</span>DW_TAG_subprogram<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    &lt;1993&gt;   DW_AT_external    : <span class="m">1</span>
+</span></span><span class="line"><span class="cl">    &lt;1993&gt;   DW_AT_name        : <span class="o">(</span>indirect string, offset: 0x1022<span class="o">)</span>: __assert_fail
+</span></span><span class="line"><span class="cl">    &lt;1997&gt;   DW_AT_decl_file   : <span class="m">18</span>
+</span></span><span class="line"><span class="cl">    &lt;1998&gt;   DW_AT_decl_line   : <span class="m">67</span>
+</span></span><span class="line"><span class="cl">    &lt;1999&gt;   DW_AT_decl_column : <span class="m">13</span>
+</span></span><span class="line"><span class="cl">    &lt;199a&gt;   DW_AT_prototyped  : <span class="m">1</span>
+</span></span><span class="line"><span class="cl">    &lt;199a&gt;   DW_AT_noreturn    : <span class="m">1</span>
+</span></span><span class="line"><span class="cl">    &lt;199a&gt;   DW_AT_declaration : <span class="m">1</span>
+</span></span><span class="line"><span class="cl">    &lt;199a&gt;   DW_AT_sibling     : &lt;0x19b3&gt;
 </span></span></code></pre></div><p>得到了符号后，部分符号需要做demangle处理，以提升可读性，比如使用c++filt工具：</p>
 <blockquote>
 <p>将C++源程序标识符(original C++ source identifier)转换成C++ ABI标识符(C++ ABI identifier)的过程称为mangle；相反的过程称为demangle。</p>
@@ -413,30 +607,30 @@
 <blockquote>
 <p>参考：<a href="https://www.cnblogs.com/BloodAndBone/p/7912179.html">https://www.cnblogs.com/BloodAndBone/p/7912179.html</a></p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># nm -D  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node | grep T | tail      </span>
-</span></span><span style="display:flex;"><span>0000000005611b78 u _ZZN5cppgc8internal14StatsCollector13InternalScopeILNS1_13TraceCategoryE0ELNS1_12ScopeContextE1EE14StartTraceImplEvE28trace_event_unique_atomic448
-</span></span><span style="display:flex;"><span>000000000562bb60 u _ZZNK2v88internal8compiler26SimplifiedLoweringVerifier15InputTruncationEPNS1_4NodeEiE14any_truncation
-</span></span><span style="display:flex;"><span>0000000002875e70 u _ZZNK4node7TCPWrap14MemoryInfoNameEvE20error_and_abort_args
-</span></span><span style="display:flex;"><span><span style="color:#ae81ff">0000000003480720</span> u _ZZNSt8__detail13__to_chars_16IjEENSt9enable_ifIXsrSt5__or_IJS2_IJSt7is_sameINSt9remove_cvIT_E4typeEaES3_IS7_sES3_IS7_iES3_IS7_lES3_IS7_xES3_IS7_nEEES2_IJS3_IS7_hES3_IS7_tES3_IS7_jES3_IS7_mES3_IS7_yES3_IS7_oEEES3_IcS7_EEE5valueESt15to_chars_resultE4typeEPcSR_S5_E8__digits
-</span></span><span style="display:flex;"><span>000000000281a780 u _ZZNSt8__detail18__to_chars_10_implIjEEvPcjT_E8__digits
-</span></span><span style="display:flex;"><span>000000000281a6a0 u _ZZNSt8__detail18__to_chars_10_implImEEvPcjT_E8__digits
-</span></span><span style="display:flex;"><span>0000000002122cc0 W _ZZSt9call_onceIRFvvEJEEvRSt9once_flagOT_DpOT0_ENUlvE0_4_FUNEv
-</span></span><span style="display:flex;"><span><span style="color:#ae81ff">0000000005600930</span> u _ZZZN4node14ThreadPoolWork12ScheduleWorkEvENKUlP9uv_work_sE_clES2_E27trace_event_unique_atomic42
-</span></span><span style="display:flex;"><span><span style="color:#ae81ff">0000000005600928</span> u _ZZZN4node14ThreadPoolWork12ScheduleWorkEvENKUlP9uv_work_sE_clES2_E27trace_event_unique_atomic45
-</span></span><span style="display:flex;"><span><span style="color:#ae81ff">0000000005600920</span> u _ZZZN4node14ThreadPoolWork12ScheduleWorkEvENKUlP9uv_work_siE0_clES2_iE27trace_event_unique_atomic51
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># demangle 处理后</span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># nm -D  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node | grep T | tail | c++filt</span>
-</span></span><span style="display:flex;"><span>0000000005611b78 u cppgc::internal::StatsCollector::InternalScope&lt;<span style="color:#f92672">(</span>cppgc::internal::StatsCollector::TraceCategory<span style="color:#f92672">)</span>0, <span style="color:#f92672">(</span>cppgc::internal::StatsCollector::ScopeContext<span style="color:#f92672">)</span>1&gt;::StartTraceImpl<span style="color:#f92672">()</span>::trace_event_unique_atomic448
-</span></span><span style="display:flex;"><span>000000000562bb60 u v8::internal::compiler::SimplifiedLoweringVerifier::InputTruncation<span style="color:#f92672">(</span>v8::internal::compiler::Node*, int<span style="color:#f92672">)</span> const::any_truncation
-</span></span><span style="display:flex;"><span>0000000002875e70 u node::TCPWrap::MemoryInfoName<span style="color:#f92672">()</span> const::error_and_abort_args
-</span></span><span style="display:flex;"><span><span style="color:#ae81ff">0000000003480720</span> u std::__detail::__to_chars_16&lt;unsigned int&gt;<span style="color:#f92672">(</span>char*, char*, unsigned int<span style="color:#f92672">)</span>::__digits
-</span></span><span style="display:flex;"><span>000000000281a780 u std::__detail::__to_chars_10_impl&lt;unsigned int&gt;<span style="color:#f92672">(</span>char*, unsigned int, unsigned int<span style="color:#f92672">)</span>::__digits
-</span></span><span style="display:flex;"><span>000000000281a6a0 u std::__detail::__to_chars_10_impl&lt;unsigned long&gt;<span style="color:#f92672">(</span>char*, unsigned int, unsigned long<span style="color:#f92672">)</span>::__digits
-</span></span><span style="display:flex;"><span>0000000002122cc0 W std::call_once&lt;void <span style="color:#f92672">(</span>&amp;<span style="color:#f92672">)()</span>&gt;<span style="color:#f92672">(</span>std::once_flag&amp;, void <span style="color:#f92672">(</span>&amp;<span style="color:#f92672">)())</span>::<span style="color:#f92672">{</span>lambda<span style="color:#f92672">()</span><span style="color:#75715e">#2}::_FUN()</span>
-</span></span><span style="display:flex;"><span><span style="color:#ae81ff">0000000005600930</span> u node::ThreadPoolWork::ScheduleWork<span style="color:#f92672">()</span>::<span style="color:#f92672">{</span>lambda<span style="color:#f92672">(</span>uv_work_s*<span style="color:#f92672">)</span><span style="color:#75715e">#1}::operator()(uv_work_s*) const::trace_event_unique_atomic42</span>
-</span></span><span style="display:flex;"><span><span style="color:#ae81ff">0000000005600928</span> u node::ThreadPoolWork::ScheduleWork<span style="color:#f92672">()</span>::<span style="color:#f92672">{</span>lambda<span style="color:#f92672">(</span>uv_work_s*<span style="color:#f92672">)</span><span style="color:#75715e">#1}::operator()(uv_work_s*) const::trace_event_unique_atomic45</span>
-</span></span><span style="display:flex;"><span><span style="color:#ae81ff">0000000005600920</span> u node::ThreadPoolWork::ScheduleWork<span style="color:#f92672">()</span>::<span style="color:#f92672">{</span>lambda<span style="color:#f92672">(</span>uv_work_s*, int<span style="color:#f92672">)</span><span style="color:#75715e">#2}::operator()(uv_work_s*, int) const::trace_event_unique_atomic51</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># nm -D  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node | grep T | tail      </span>
+</span></span><span class="line"><span class="cl">0000000005611b78 u _ZZN5cppgc8internal14StatsCollector13InternalScopeILNS1_13TraceCategoryE0ELNS1_12ScopeContextE1EE14StartTraceImplEvE28trace_event_unique_atomic448
+</span></span><span class="line"><span class="cl">000000000562bb60 u _ZZNK2v88internal8compiler26SimplifiedLoweringVerifier15InputTruncationEPNS1_4NodeEiE14any_truncation
+</span></span><span class="line"><span class="cl">0000000002875e70 u _ZZNK4node7TCPWrap14MemoryInfoNameEvE20error_and_abort_args
+</span></span><span class="line"><span class="cl"><span class="m">0000000003480720</span> u _ZZNSt8__detail13__to_chars_16IjEENSt9enable_ifIXsrSt5__or_IJS2_IJSt7is_sameINSt9remove_cvIT_E4typeEaES3_IS7_sES3_IS7_iES3_IS7_lES3_IS7_xES3_IS7_nEEES2_IJS3_IS7_hES3_IS7_tES3_IS7_jES3_IS7_mES3_IS7_yES3_IS7_oEEES3_IcS7_EEE5valueESt15to_chars_resultE4typeEPcSR_S5_E8__digits
+</span></span><span class="line"><span class="cl">000000000281a780 u _ZZNSt8__detail18__to_chars_10_implIjEEvPcjT_E8__digits
+</span></span><span class="line"><span class="cl">000000000281a6a0 u _ZZNSt8__detail18__to_chars_10_implImEEvPcjT_E8__digits
+</span></span><span class="line"><span class="cl">0000000002122cc0 W _ZZSt9call_onceIRFvvEJEEvRSt9once_flagOT_DpOT0_ENUlvE0_4_FUNEv
+</span></span><span class="line"><span class="cl"><span class="m">0000000005600930</span> u _ZZZN4node14ThreadPoolWork12ScheduleWorkEvENKUlP9uv_work_sE_clES2_E27trace_event_unique_atomic42
+</span></span><span class="line"><span class="cl"><span class="m">0000000005600928</span> u _ZZZN4node14ThreadPoolWork12ScheduleWorkEvENKUlP9uv_work_sE_clES2_E27trace_event_unique_atomic45
+</span></span><span class="line"><span class="cl"><span class="m">0000000005600920</span> u _ZZZN4node14ThreadPoolWork12ScheduleWorkEvENKUlP9uv_work_siE0_clES2_iE27trace_event_unique_atomic51
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># demangle 处理后</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># nm -D  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node | grep T | tail | c++filt</span>
+</span></span><span class="line"><span class="cl">0000000005611b78 u cppgc::internal::StatsCollector::InternalScope&lt;<span class="o">(</span>cppgc::internal::StatsCollector::TraceCategory<span class="o">)</span>0, <span class="o">(</span>cppgc::internal::StatsCollector::ScopeContext<span class="o">)</span>1&gt;::StartTraceImpl<span class="o">()</span>::trace_event_unique_atomic448
+</span></span><span class="line"><span class="cl">000000000562bb60 u v8::internal::compiler::SimplifiedLoweringVerifier::InputTruncation<span class="o">(</span>v8::internal::compiler::Node*, int<span class="o">)</span> const::any_truncation
+</span></span><span class="line"><span class="cl">0000000002875e70 u node::TCPWrap::MemoryInfoName<span class="o">()</span> const::error_and_abort_args
+</span></span><span class="line"><span class="cl"><span class="m">0000000003480720</span> u std::__detail::__to_chars_16&lt;unsigned int&gt;<span class="o">(</span>char*, char*, unsigned int<span class="o">)</span>::__digits
+</span></span><span class="line"><span class="cl">000000000281a780 u std::__detail::__to_chars_10_impl&lt;unsigned int&gt;<span class="o">(</span>char*, unsigned int, unsigned int<span class="o">)</span>::__digits
+</span></span><span class="line"><span class="cl">000000000281a6a0 u std::__detail::__to_chars_10_impl&lt;unsigned long&gt;<span class="o">(</span>char*, unsigned int, unsigned long<span class="o">)</span>::__digits
+</span></span><span class="line"><span class="cl">0000000002122cc0 W std::call_once&lt;void <span class="o">(</span><span class="p">&amp;</span><span class="o">)()</span>&gt;<span class="o">(</span>std::once_flag<span class="p">&amp;</span>, void <span class="o">(</span><span class="p">&amp;</span><span class="o">)())</span>::<span class="o">{</span>lambda<span class="o">()</span><span class="c1">#2}::_FUN()</span>
+</span></span><span class="line"><span class="cl"><span class="m">0000000005600930</span> u node::ThreadPoolWork::ScheduleWork<span class="o">()</span>::<span class="o">{</span>lambda<span class="o">(</span>uv_work_s*<span class="o">)</span><span class="c1">#1}::operator()(uv_work_s*) const::trace_event_unique_atomic42</span>
+</span></span><span class="line"><span class="cl"><span class="m">0000000005600928</span> u node::ThreadPoolWork::ScheduleWork<span class="o">()</span>::<span class="o">{</span>lambda<span class="o">(</span>uv_work_s*<span class="o">)</span><span class="c1">#1}::operator()(uv_work_s*) const::trace_event_unique_atomic45</span>
+</span></span><span class="line"><span class="cl"><span class="m">0000000005600920</span> u node::ThreadPoolWork::ScheduleWork<span class="o">()</span>::<span class="o">{</span>lambda<span class="o">(</span>uv_work_s*, int<span class="o">)</span><span class="c1">#2}::operator()(uv_work_s*, int) const::trace_event_unique_atomic51</span>
 </span></span></code></pre></div><h3 id="堆栈输出">堆栈输出</h3>
 <p>按照指定格式组织堆栈信息，比如<code>pprof / perf script</code> 的格式，有时候可以附带上一些辅助集合的元信息（比如容器ID, 业务类型）以便更好的聚合，处理，使用数据</p>
 <h3 id="数据展示">数据展示</h3>
@@ -451,34 +645,34 @@
     D --&gt; C
 </code></pre><p>一般在与CPU有关的根因分析，性能分析这类场景会使用，比如以下场景：</p>
 <table>
-<thead>
-<tr>
-<th>场景分类</th>
-<th>典型表现</th>
-<th>工具选择</th>
-<th>数据采集策略</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>突发性CPU毛刺</strong></td>
-<td>监控图表出现锯齿状CPU峰值</td>
-<td>- 持续Profiling系统</td>
-<td>峰值前后5分钟上下文捕获 / 常规采样</td>
-</tr>
-<tr>
-<td><strong>版本性能回归</strong></td>
-<td>新版本发布后QPS/TPS下降</td>
-<td>- Differential FlameGraph</td>
-<td>A/B版本对比采样</td>
-</tr>
-<tr>
-<td><strong>CpuSys高</strong></td>
-<td>OS内核态Cpu较高占用，导致主机性能抖动</td>
-<td>- FlameGraph or Call-Chain Graph</td>
-<td>常规采样，分析内核堆栈</td>
-</tr>
-</tbody>
+	<thead>
+			<tr>
+					<th>场景分类</th>
+					<th>典型表现</th>
+					<th>工具选择</th>
+					<th>数据采集策略</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>突发性CPU毛刺</strong></td>
+					<td>监控图表出现锯齿状CPU峰值</td>
+					<td>- 持续Profiling系统</td>
+					<td>峰值前后5分钟上下文捕获 / 常规采样</td>
+			</tr>
+			<tr>
+					<td><strong>版本性能回归</strong></td>
+					<td>新版本发布后QPS/TPS下降</td>
+					<td>- Differential FlameGraph</td>
+					<td>A/B版本对比采样</td>
+			</tr>
+			<tr>
+					<td><strong>CpuSys高</strong></td>
+					<td>OS内核态Cpu较高占用，导致主机性能抖动</td>
+					<td>- FlameGraph or Call-Chain Graph</td>
+					<td>常规采样，分析内核堆栈</td>
+			</tr>
+	</tbody>
 </table>
 <p>显然，当程序没有在CPU上稳定运行，Profiling得到的数据价值就会大大降低，比如IO Bound，频繁上下文切换，瞬时进程。此时可能需要更换分析工具。</p>
 <pre tabindex="0"><code class="language-mermaid" data-lang="mermaid">graph TD
@@ -533,6 +727,18 @@
   
 
   
+  
+  <div class="related-resources">
+    <h3>相关系列文章推荐</h3>
+    <ul>
+    
+      <li><a href="/zh/blog/zh/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/">CPU伪共享</a></li>
+    
+    </ul>
+  </div>
+  
+
+  
 
 
   
@@ -566,12 +772,16 @@
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -592,45 +802,64 @@
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = '复制';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = '已复制';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = '复制';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

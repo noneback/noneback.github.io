@@ -3,8 +3,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apache-Iceberg Quick Investigation</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:
-Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.">
+    <meta name="description" content="Ladder@
+A table format for large-scale analysis of datasets.
+A specification for organizing data files and metadata files.
+A schema semantic abstraction between storage and computation.
+Developed and open-sourced by Netflix to enhance scalability, reliability, and usability.
+
+Background
+Issues encountered when migrating HIVE to the cloud:
+
+Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS.
+Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.
+Unsafe operations, CBO unfriendly, etc.
+
+Features
+
+Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition.
+
+Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp).
+
+
+Supports object storage with minimal dependency on FS semantics.
+ACID semantics support, parallel reads, serialized write operations:
+
+Separation of read and write snapshots.
+Optimistic handling of write parallel conflicts, retry to ensure writes.
+
+
+Snapshot support:
+
+Data rollback and time travel.
+Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (related API doc).
+Incremental reading can be achieved by comparing snapshot differences.
+
+
+Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (deleteWith).
+High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg&rsquo;s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API.
+Others: file-level encryption and decryption.
+
+Ecosystem
+
+Community support for OSS, Flink, Spark, and Presto:
+
+Flink (detail): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (0.13.0-release-notes).
+Presto: Iceberg connector.
+Aliyun OSS: # pr 3689.
+
+
+Integration with other components:
+
+Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (# pr 3689).
+Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC.
+Catalog: Customizable (Doc: Custom Catalog Implementation), currently supports JDBC, Hive Metastore, Hadoop, etc.
+Integration with computation layer: Provides native JAVA &amp; Python APIs, with a high level of abstraction, supporting most computation engines.
+
+
+Open and neutral community, allowing contributions to improve influence.
+
+Table Specification
+Specification for organizing data files and metadata files.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/apacheiceberg%E8%B0%83%E7%A0%94/">
         <meta name="google-site-verification" content="xxx">
@@ -12,12 +69,10 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -28,33 +83,29 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/blog/apacheiceberg%E8%B0%83%E7%A0%94/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="Apache-Iceberg Quick Investigation">
-  <meta property="og:description" content="A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:
-Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2022-10-05T19:55:54+08:00">
-    <meta property="article:modified_time" content="2022-06-05T19:55:54+08:00">
-    <meta property="article:tag" content="Lake House">
-    <meta property="article:tag" content="Storage">
-    <meta property="article:tag" content="Big Data">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="Apache-Iceberg Quick Investigation">
+	<meta property="og:description" content="A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:
+Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck. Unsafe operations, CBO unfriendly, etc. Features Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition. Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp). Supports object storage with minimal dependency on FS semantics. ACID semantics support, parallel reads, serialized write operations: Separation of read and write snapshots. Optimistic handling of write parallel conflicts, retry to ensure writes. Snapshot support: Data rollback and time travel. Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (related API doc). Incremental reading can be achieved by comparing snapshot differences. Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (deleteWith). High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg’s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API. Others: file-level encryption and decryption. Ecosystem Community support for OSS, Flink, Spark, and Presto: Flink (detail): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (0.13.0-release-notes). Presto: Iceberg connector. Aliyun OSS: # pr 3689. Integration with other components: Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (# pr 3689). Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC. Catalog: Customizable (Doc: Custom Catalog Implementation), currently supports JDBC, Hive Metastore, Hadoop, etc. Integration with computation layer: Provides native JAVA &amp; Python APIs, with a high level of abstraction, supporting most computation engines. Open and neutral community, allowing contributions to improve influence. Table Specification Specification for organizing data files and metadata files.">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2022-10-05T19:55:54+08:00">
+		<meta property="article:modified_time" content="2022-06-05T19:55:54+08:00">
+		<meta property="article:tag" content="Lakehouse">
+		<meta property="article:tag" content="Storage">
+		<meta property="article:tag" content="Big Data">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Apache-Iceberg Quick Investigation">
-  <meta name="twitter:description" content="A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:
-Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Apache-Iceberg Quick Investigation">
+	<meta name="twitter:description" content="A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:
+Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck. Unsafe operations, CBO unfriendly, etc. Features Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition. Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp). Supports object storage with minimal dependency on FS semantics. ACID semantics support, parallel reads, serialized write operations: Separation of read and write snapshots. Optimistic handling of write parallel conflicts, retry to ensure writes. Snapshot support: Data rollback and time travel. Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (related API doc). Incremental reading can be achieved by comparing snapshot differences. Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (deleteWith). High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg’s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API. Others: file-level encryption and decryption. Ecosystem Community support for OSS, Flink, Spark, and Presto: Flink (detail): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (0.13.0-release-notes). Presto: Iceberg connector. Aliyun OSS: # pr 3689. Integration with other components: Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (# pr 3689). Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC. Catalog: Customizable (Doc: Custom Catalog Implementation), currently supports JDBC, Hive Metastore, Hadoop, etc. Integration with computation layer: Provides native JAVA &amp; Python APIs, with a high level of abstraction, supporting most computation engines. Open and neutral community, allowing contributions to improve influence. Table Specification Specification for organizing data files and metadata files.">
 
 
 <script type="application/ld+json">
@@ -83,7 +134,7 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
   "@type": "BlogPosting",
   "headline": "Apache-Iceberg Quick Investigation",
   "name": "Apache-Iceberg Quick Investigation",
-  "description": "A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:\nDependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.",
+  "description": " A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:\nDependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck. Unsafe operations, CBO unfriendly, etc. Features Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition. Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp). Supports object storage with minimal dependency on FS semantics. ACID semantics support, parallel reads, serialized write operations: Separation of read and write snapshots. Optimistic handling of write parallel conflicts, retry to ensure writes. Snapshot support: Data rollback and time travel. Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (related API doc). Incremental reading can be achieved by comparing snapshot differences. Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (deleteWith). High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg\u0026rsquo;s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API. Others: file-level encryption and decryption. Ecosystem Community support for OSS, Flink, Spark, and Presto: Flink (detail): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (0.13.0-release-notes). Presto: Iceberg connector. Aliyun OSS: # pr 3689. Integration with other components: Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (# pr 3689). Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC. Catalog: Customizable (Doc: Custom Catalog Implementation), currently supports JDBC, Hive Metastore, Hadoop, etc. Integration with computation layer: Provides native JAVA \u0026amp; Python APIs, with a high level of abstraction, supporting most computation engines. Open and neutral community, allowing contributions to improve influence. Table Specification Specification for organizing data files and metadata files.\n",
   "keywords": [
     "lake house", "storage", "big data"
   ],
@@ -151,22 +202,30 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -227,11 +286,11 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -255,7 +314,7 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
       ·
       
       
-      <a href="https://noneback.github.io/tags/lake-house/">Lake House</a>
+      <a href="https://noneback.github.io/tags/lakehouse/">Lakehouse</a>
       
       <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
@@ -266,7 +325,12 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>Table of Contents</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#background">Background</a></li>
     <li><a href="#features">Features</a></li>
@@ -282,6 +346,10 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
     <li><a href="#references">References</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><ul>
@@ -343,122 +411,122 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
 </ul>
 <h2 id="table-specification">Table Specification</h2>
 <p>Specification for organizing data files and metadata files.</p>
-<p><img alt="img" src="https://iceberg.apache.org/img/iceberg-metadata.png"></p>
+<p><img src="https://iceberg.apache.org/img/iceberg-metadata.png" alt="img"></p>
 <h3 id="case-spark--iceberg--local-fs">Case: Spark + Iceberg + Local FS</h3>
 <p>Iceberg supports Parquet, Avro, ORC file formats.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#960050;background-color:#1e0010">Storage</span> <span style="color:#960050;background-color:#1e0010">organization</span>
-</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">test</span><span style="color:#ae81ff">2</span>
-</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#960050;background-color:#1e0010">data</span>
-</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">│</span>   <span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#ae81ff">00000-1</span><span style="color:#960050;background-color:#1e0010">-ccff</span><span style="color:#ae81ff">6767-12</span><span style="color:#960050;background-color:#1e0010">cc</span><span style="color:#ae81ff">-481</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">-93</span><span style="color:#960050;background-color:#1e0010">fc-db</span><span style="color:#ae81ff">9</span><span style="color:#960050;background-color:#1e0010">f</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">a</span><span style="color:#ae81ff">57438</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">-00001</span><span style="color:#960050;background-color:#1e0010">.parquet</span>
-</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">│</span>   <span style="color:#960050;background-color:#1e0010">└──</span> <span style="color:#ae81ff">00001-2-6</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">1e5</span><span style="color:#960050;background-color:#1e0010">a</span><span style="color:#ae81ff">0</span><span style="color:#960050;background-color:#1e0010">b</span><span style="color:#ae81ff">-89</span><span style="color:#960050;background-color:#1e0010">fe</span><span style="color:#ae81ff">-4e77</span><span style="color:#960050;background-color:#1e0010">-b</span><span style="color:#ae81ff">90</span><span style="color:#960050;background-color:#1e0010">a</span><span style="color:#ae81ff">-1773</span><span style="color:#960050;background-color:#1e0010">a</span><span style="color:#ae81ff">7</span><span style="color:#960050;background-color:#1e0010">fbbcc</span><span style="color:#ae81ff">8-00001</span><span style="color:#960050;background-color:#1e0010">.parquet</span>
-</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">└──</span> <span style="color:#960050;background-color:#1e0010">metadata</span>
-</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#ae81ff">2</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">dc</span><span style="color:#ae81ff">0e8</span><span style="color:#ae81ff">-1843-4</span><span style="color:#960050;background-color:#1e0010">cb</span><span style="color:#ae81ff">9-9</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">55</span><span style="color:#960050;background-color:#1e0010">-ae</span><span style="color:#ae81ff">43</span><span style="color:#960050;background-color:#1e0010">f</span><span style="color:#ae81ff">800</span><span style="color:#960050;background-color:#1e0010">bf</span><span style="color:#ae81ff">3</span><span style="color:#960050;background-color:#1e0010">f-m</span><span style="color:#ae81ff">0</span><span style="color:#960050;background-color:#1e0010">.avro</span> <span style="color:#75715e">// manifest file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#960050;background-color:#1e0010">snap</span><span style="color:#ae81ff">-8512048775051875497-1-2</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">dc</span><span style="color:#ae81ff">0e8</span><span style="color:#ae81ff">-1843-4</span><span style="color:#960050;background-color:#1e0010">cb</span><span style="color:#ae81ff">9-9</span><span style="color:#960050;background-color:#1e0010">c</span><span style="color:#ae81ff">55</span><span style="color:#960050;background-color:#1e0010">-ae</span><span style="color:#ae81ff">43</span><span style="color:#960050;background-color:#1e0010">f</span><span style="color:#ae81ff">800</span><span style="color:#960050;background-color:#1e0010">bf</span><span style="color:#ae81ff">3</span><span style="color:#960050;background-color:#1e0010">f.avro</span> <span style="color:#75715e">// manifest list file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#960050;background-color:#1e0010">v</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">.metadata.json</span> <span style="color:#75715e">// metadata file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">├──</span> <span style="color:#960050;background-color:#1e0010">v</span><span style="color:#ae81ff">2</span><span style="color:#960050;background-color:#1e0010">.metadata.json</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#960050;background-color:#1e0010">└──</span> <span style="color:#960050;background-color:#1e0010">version-hint.text</span> <span style="color:#75715e">// catalog
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="err">#</span> <span class="err">Storage</span> <span class="err">organization</span>
+</span></span><span class="line"><span class="cl"><span class="err">test</span><span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="err">├──</span> <span class="err">data</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>   <span class="err">├──</span> <span class="mi">00000-1</span><span class="err">-ccff</span><span class="mi">6767-12</span><span class="err">cc</span><span class="mi">-481</span><span class="err">c</span><span class="mi">-93</span><span class="err">fc-db</span><span class="mi">9</span><span class="err">f</span><span class="mi">1</span><span class="err">a</span><span class="mi">57438</span><span class="err">c</span><span class="mi">-00001</span><span class="err">.parquet</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>   <span class="err">└──</span> <span class="mi">00001-2-6</span><span class="err">c</span><span class="mf">1e5</span><span class="err">a</span><span class="mi">0</span><span class="err">b</span><span class="mi">-89</span><span class="err">fe</span><span class="mf">-4e77</span><span class="err">-b</span><span class="mi">90</span><span class="err">a</span><span class="mi">-1773</span><span class="err">a</span><span class="mi">7</span><span class="err">fbbcc</span><span class="mi">8-00001</span><span class="err">.parquet</span>
+</span></span><span class="line"><span class="cl"><span class="err">└──</span> <span class="err">metadata</span>
+</span></span><span class="line"><span class="cl"><span class="err">├──</span> <span class="mi">2</span><span class="err">c</span><span class="mi">1</span><span class="err">dc</span><span class="mf">0e8</span><span class="mi">-1843-4</span><span class="err">cb</span><span class="mi">9-9</span><span class="err">c</span><span class="mi">55</span><span class="err">-ae</span><span class="mi">43</span><span class="err">f</span><span class="mi">800</span><span class="err">bf</span><span class="mi">3</span><span class="err">f-m</span><span class="mi">0</span><span class="err">.avro</span> <span class="c1">// manifest file
+</span></span></span><span class="line"><span class="cl"><span class="err">├──</span> <span class="err">snap</span><span class="mi">-8512048775051875497-1-2</span><span class="err">c</span><span class="mi">1</span><span class="err">dc</span><span class="mf">0e8</span><span class="mi">-1843-4</span><span class="err">cb</span><span class="mi">9-9</span><span class="err">c</span><span class="mi">55</span><span class="err">-ae</span><span class="mi">43</span><span class="err">f</span><span class="mi">800</span><span class="err">bf</span><span class="mi">3</span><span class="err">f.avro</span> <span class="c1">// manifest list file
+</span></span></span><span class="line"><span class="cl"><span class="err">├──</span> <span class="err">v</span><span class="mi">1</span><span class="err">.metadata.json</span> <span class="c1">// metadata file
+</span></span></span><span class="line"><span class="cl"><span class="err">├──</span> <span class="err">v</span><span class="mi">2</span><span class="err">.metadata.json</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└──</span> <span class="err">version-hint.text</span> <span class="c1">// catalog
 </span></span></span></code></pre></div><h4 id="datafile">DataFile</h4>
 <p>Data files in columnar format: Parquet, ORC.</p>
 <p>There are three types of Data Files: data file, partition delete file, equality delete file.</p>
 <h4 id="manifest-file">Manifest File</h4>
 <p>Indexes data files, including statistics and partition information.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>[
-</span></span><span style="display:flex;"><span>    {
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;status&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;snapshot_id&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">1274364374047997583</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;data_file&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;file_path&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3/data/id=1/00000-31-401a9d2e-d501-434c-a38f-5df5f08ebbd7-00001.parquet&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;file_format&#34;</span>:<span style="color:#e6db74">&#34;PARQUET&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;partition&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;id&#34;</span>:{
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>                }
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;record_count&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;file_size_in_bytes&#34;</span>:<span style="color:#ae81ff">643</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;block_size_in_bytes&#34;</span>:<span style="color:#ae81ff">67108864</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;column_sizes&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">46</span>
-</span></span><span style="display:flex;"><span>                    },
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">48</span>
-</span></span><span style="display:flex;"><span>                    }
-</span></span><span style="display:flex;"><span>                ]
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;value_counts&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>                    },
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>                    }
-</span></span><span style="display:flex;"><span>                ]
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;null_value_counts&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>                    },
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>                    }
-</span></span><span style="display:flex;"><span>                ]
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;nan_value_counts&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>                ]
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;lower_bounds&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#e6db74">&#34;\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
-</span></span><span style="display:flex;"><span>                    },
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#e6db74">&#34;a&#34;</span>
-</span></span><span style="display:flex;"><span>                    }
-</span></span><span style="display:flex;"><span>                ]
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;upper_bounds&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#e6db74">&#34;\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
-</span></span><span style="display:flex;"><span>                    },
-</span></span><span style="display:flex;"><span>                    {
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;key&#34;</span>:<span style="color:#ae81ff">2</span>,
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;value&#34;</span>:<span style="color:#e6db74">&#34;a&#34;</span>
-</span></span><span style="display:flex;"><span>                    }
-</span></span><span style="display:flex;"><span>                ]
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;key_metadata&#34;</span>:<span style="color:#66d9ef">null</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;split_offsets&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;array&#34;</span>:[
-</span></span><span style="display:flex;"><span>                    <span style="color:#ae81ff">4</span>
-</span></span><span style="display:flex;"><span>                ]
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;sort_order_id&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;int&#34;</span>:<span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>            }
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    },
-</span></span><span style="display:flex;"><span>    {
-</span></span><span style="display:flex;"><span>       <span style="color:#75715e">// another data file meta
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    }
-</span></span><span style="display:flex;"><span>]
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;status&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;snapshot_id&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;long&#34;</span><span class="p">:</span><span class="mi">1274364374047997583</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;data_file&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;file_path&#34;</span><span class="p">:</span><span class="s2">&#34;/tmp/warehouse/db/test3/data/id=1/00000-31-401a9d2e-d501-434c-a38f-5df5f08ebbd7-00001.parquet&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;file_format&#34;</span><span class="p">:</span><span class="s2">&#34;PARQUET&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;partition&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;id&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;long&#34;</span><span class="p">:</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;record_count&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;file_size_in_bytes&#34;</span><span class="p">:</span><span class="mi">643</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;block_size_in_bytes&#34;</span><span class="p">:</span><span class="mi">67108864</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;column_sizes&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;array&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="mi">46</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="mi">48</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;value_counts&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;array&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;null_value_counts&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;array&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;nan_value_counts&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;array&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;lower_bounds&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;array&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="s2">&#34;\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="s2">&#34;a&#34;</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;upper_bounds&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;array&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="s2">&#34;\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;key&#34;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="s2">&#34;a&#34;</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;key_metadata&#34;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;split_offsets&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;array&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">                    <span class="mi">4</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;sort_order_id&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;int&#34;</span><span class="p">:</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">       <span class="c1">// another data file meta
+</span></span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
 </span></span></code></pre></div><h4 id="snapshot">Snapshot</h4>
 <ul>
 <li>Represents the state of a Table at a specific point in time, saved via a Manifest List File.</li>
@@ -473,168 +541,168 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
 <blockquote>
 <p>Each manifest list stores metadata about manifests, including partition stats and data file counts.</p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>[
-</span></span><span style="display:flex;"><span>    {
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;manifest_path&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3/metadata/f22b748f-a7bc-4e4c-ad6c-3e335c1c0c2b-m0.avro&#34;</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;manifest_length&#34;</span>:<span style="color:#ae81ff">6019</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;partition_spec_id&#34;</span>:<span style="color:#ae81ff">0</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;added_snapshot_id&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">1274364374047997583</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;added_data_files_count&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;int&#34;</span>:<span style="color:#ae81ff">2</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;existing_data_files_count&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;int&#34;</span>:<span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;deleted_data_files_count&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;int&#34;</span>:<span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;partitions&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;array&#34;</span>:[
-</span></span><span style="display:flex;"><span>                {
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;contains_null&#34;</span>:<span style="color:#66d9ef">false</span>,
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;contains_nan&#34;</span>:{
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;boolean&#34;</span>:<span style="color:#66d9ef">false</span>
-</span></span><span style="display:flex;"><span>                    },
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;lower_bound&#34;</span>:{
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;bytes&#34;</span>:<span style="color:#e6db74">&#34;\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
-</span></span><span style="display:flex;"><span>                    },
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;upper_bound&#34;</span>:{
-</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">&#34;bytes&#34;</span>:<span style="color:#e6db74">&#34;\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
-</span></span><span style="display:flex;"><span>                    }
-</span></span><span style="display:flex;"><span>                }
-</span></span><span style="display:flex;"><span>            ]
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;added_rows_count&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">2</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;existing_rows_count&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;deleted_rows_count&#34;</span>:{
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;long&#34;</span>:<span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    },
-</span></span><span style="display:flex;"><span>    {
-</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// another manifest file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    }
-</span></span><span style="display:flex;"><span>]
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;manifest_path&#34;</span><span class="p">:</span><span class="s2">&#34;/tmp/warehouse/db/test3/metadata/f22b748f-a7bc-4e4c-ad6c-3e335c1c0c2b-m0.avro&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;manifest_length&#34;</span><span class="p">:</span><span class="mi">6019</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;partition_spec_id&#34;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;added_snapshot_id&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;long&#34;</span><span class="p">:</span><span class="mi">1274364374047997583</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;added_data_files_count&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;int&#34;</span><span class="p">:</span><span class="mi">2</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;existing_data_files_count&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;int&#34;</span><span class="p">:</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;deleted_data_files_count&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;int&#34;</span><span class="p">:</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;partitions&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;array&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">                <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;contains_null&#34;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;contains_nan&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;boolean&#34;</span><span class="p">:</span><span class="kc">false</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;lower_bound&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;bytes&#34;</span><span class="p">:</span><span class="s2">&#34;\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;upper_bound&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                        <span class="nt">&#34;bytes&#34;</span><span class="p">:</span><span class="s2">&#34;\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000&#34;</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;added_rows_count&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;long&#34;</span><span class="p">:</span><span class="mi">2</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;existing_rows_count&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;long&#34;</span><span class="p">:</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;deleted_rows_count&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;long&#34;</span><span class="p">:</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// another manifest file
+</span></span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
 </span></span></code></pre></div><h4 id="metadata-file">Metadata File</h4>
 <p>Tracks the state of the table. When the state changes, a new metadata file is generated and replaces the previous one, <strong>ensuring atomicity</strong>.</p>
 <blockquote>
 <p>The table metadata file tracks the <strong>table schema</strong>, <strong>partitioning config</strong>, custom properties, and <strong>snapshots</strong> of the table contents.</p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;format-version&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;table-uuid&#34;</span>:<span style="color:#e6db74">&#34;175d0b61-8507-40b2-9c19-3338b05f3d48&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;location&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;last-updated-ms&#34;</span>:<span style="color:#ae81ff">1653387947819</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;last-column-id&#34;</span>:<span style="color:#ae81ff">2</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;schema&#34;</span>:{
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;struct&#34;</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;schema-id&#34;</span>:<span style="color:#ae81ff">0</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;fields&#34;</span>:[
-</span></span><span style="display:flex;"><span>            {
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;id&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;name&#34;</span>:<span style="color:#e6db74">&#34;id&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;required&#34;</span>:<span style="color:#66d9ef">false</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;long&#34;</span>
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#960050;background-color:#1e0010">Object</span>{<span style="color:#960050;background-color:#1e0010">...</span>}
-</span></span><span style="display:flex;"><span>        ]
-</span></span><span style="display:flex;"><span>    },
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;current-schema-id&#34;</span>:<span style="color:#ae81ff">0</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;schemas&#34;</span>:[
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;struct&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;schema-id&#34;</span>:<span style="color:#ae81ff">0</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;fields&#34;</span>:[
-</span></span><span style="display:flex;"><span>                {
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;id&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;name&#34;</span>:<span style="color:#e6db74">&#34;id&#34;</span>,
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;required&#34;</span>:<span style="color:#66d9ef">false</span>,
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;long&#34;</span>
-</span></span><span style="display:flex;"><span>                },
-</span></span><span style="display:flex;"><span>                <span style="color:#960050;background-color:#1e0010">Object</span>{<span style="color:#960050;background-color:#1e0010">...</span>}
-</span></span><span style="display:flex;"><span>            ]
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    ],
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;partition-spec&#34;</span>:[
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>:<span style="color:#e6db74">&#34;id&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;transform&#34;</span>:<span style="color:#e6db74">&#34;identity&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;source-id&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;field-id&#34;</span>:<span style="color:#ae81ff">1000</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    ],
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default-spec-id&#34;</span>:<span style="color:#ae81ff">0</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;partition-specs&#34;</span>:[
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;spec-id&#34;</span>:<span style="color:#ae81ff">0</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;fields&#34;</span>:[
-</span></span><span style="display:flex;"><span>                {
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;name&#34;</span>:<span style="color:#e6db74">&#34;id&#34;</span>,
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;transform&#34;</span>:<span style="color:#e6db74">&#34;identity&#34;</span>,
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;source-id&#34;</span>:<span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;field-id&#34;</span>:<span style="color:#ae81ff">1000</span>
-</span></span><span style="display:flex;"><span>                }
-</span></span><span style="display:flex;"><span>            ]
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    ],
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;last-partition-id&#34;</span>:<span style="color:#ae81ff">1000</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default-sort-order-id&#34;</span>:<span style="color:#ae81ff">0</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;sort-orders&#34;</span>:[
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;order-id&#34;</span>:<span style="color:#ae81ff">0</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;fields&#34;</span>:[
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>            ]
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    ],
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;properties&#34;</span>:{
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;owner&#34;</span>:<span style="color:#e6db74">&#34;chenlan&#34;</span>
-</span></span><span style="display:flex;"><span>    },
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;current-snapshot-id&#34;</span>:<span style="color:#ae81ff">1274364374047997700</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;snapshots&#34;</span>:[
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;snapshot-id&#34;</span>:<span style="color:#ae81ff">1274364374047997700</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;timestamp-ms&#34;</span>:<span style="color:#ae81ff">1653387947819</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;summary&#34;</span>:{
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;operation&#34;</span>:<span style="color:#e6db74">&#34;append&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;spark.app.id&#34;</span>:<span style="color:#e6db74">&#34;local-1653381214613&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;added-data-files&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;added-records&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;added-files-size&#34;</span>:<span style="color:#e6db74">&#34;1286&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;changed-partition-count&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-records&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-files-size&#34;</span>:<span style="color:#e6db74">&#34;1286&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-data-files&#34;</span>:<span style="color:#e6db74">&#34;2&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-delete-files&#34;</span>:<span style="color:#e6db74">&#34;0&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-position-deletes&#34;</span>:<span style="color:#e6db74">&#34;0&#34;</span>,
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&#34;total-equality-deletes&#34;</span>:<span style="color:#e6db74">&#34;0&#34;</span>
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;manifest-list&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3/metadata/snap-1274364374047997583-1-f22b748f-a7bc-4e4c-ad6c-3e335c1c0c2b.avro&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;schema-id&#34;</span>:<span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    ],
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;snapshot-log&#34;</span>:[
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;timestamp-ms&#34;</span>:<span style="color:#ae81ff">1653387947819</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;snapshot-id&#34;</span>:<span style="color:#ae81ff">1274364374047997700</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    ],
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;metadata-log&#34;</span>:[
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;timestamp-ms&#34;</span>:<span style="color:#ae81ff">1653387937345</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;metadata-file&#34;</span>:<span style="color:#e6db74">&#34;/tmp/warehouse/db/test3/metadata/v1.metadata.json&#34;</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    ]
-</span></span><span style="display:flex;"><span>}
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;format-version&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;table-uuid&#34;</span><span class="p">:</span><span class="s2">&#34;175d0b61-8507-40b2-9c19-3338b05f3d48&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;location&#34;</span><span class="p">:</span><span class="s2">&#34;/tmp/warehouse/db/test3&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;last-updated-ms&#34;</span><span class="p">:</span><span class="mi">1653387947819</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;last-column-id&#34;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;schema&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;struct&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;schema-id&#34;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;fields&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;id&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;name&#34;</span><span class="p">:</span><span class="s2">&#34;id&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;required&#34;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;long&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="err">Object</span><span class="p">{</span><span class="err">...</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;current-schema-id&#34;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;schemas&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;struct&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;schema-id&#34;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;fields&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">                <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;id&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;name&#34;</span><span class="p">:</span><span class="s2">&#34;id&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;required&#34;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;long&#34;</span>
+</span></span><span class="line"><span class="cl">                <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                <span class="err">Object</span><span class="p">{</span><span class="err">...</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;partition-spec&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;name&#34;</span><span class="p">:</span><span class="s2">&#34;id&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;transform&#34;</span><span class="p">:</span><span class="s2">&#34;identity&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;source-id&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;field-id&#34;</span><span class="p">:</span><span class="mi">1000</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;default-spec-id&#34;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;partition-specs&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;spec-id&#34;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;fields&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">                <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;name&#34;</span><span class="p">:</span><span class="s2">&#34;id&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;transform&#34;</span><span class="p">:</span><span class="s2">&#34;identity&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;source-id&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="nt">&#34;field-id&#34;</span><span class="p">:</span><span class="mi">1000</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;last-partition-id&#34;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;default-sort-order-id&#34;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;sort-orders&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;order-id&#34;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;fields&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;properties&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;owner&#34;</span><span class="p">:</span><span class="s2">&#34;chenlan&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;current-snapshot-id&#34;</span><span class="p">:</span><span class="mi">1274364374047997700</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;snapshots&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;snapshot-id&#34;</span><span class="p">:</span><span class="mi">1274364374047997700</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;timestamp-ms&#34;</span><span class="p">:</span><span class="mi">1653387947819</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;summary&#34;</span><span class="p">:{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;operation&#34;</span><span class="p">:</span><span class="s2">&#34;append&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;spark.app.id&#34;</span><span class="p">:</span><span class="s2">&#34;local-1653381214613&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;added-data-files&#34;</span><span class="p">:</span><span class="s2">&#34;2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;added-records&#34;</span><span class="p">:</span><span class="s2">&#34;2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;added-files-size&#34;</span><span class="p">:</span><span class="s2">&#34;1286&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;changed-partition-count&#34;</span><span class="p">:</span><span class="s2">&#34;2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;total-records&#34;</span><span class="p">:</span><span class="s2">&#34;2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;total-files-size&#34;</span><span class="p">:</span><span class="s2">&#34;1286&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;total-data-files&#34;</span><span class="p">:</span><span class="s2">&#34;2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;total-delete-files&#34;</span><span class="p">:</span><span class="s2">&#34;0&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;total-position-deletes&#34;</span><span class="p">:</span><span class="s2">&#34;0&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;total-equality-deletes&#34;</span><span class="p">:</span><span class="s2">&#34;0&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;manifest-list&#34;</span><span class="p">:</span><span class="s2">&#34;/tmp/warehouse/db/test3/metadata/snap-1274364374047997583-1-f22b748f-a7bc-4e4c-ad6c-3e335c1c0c2b.avro&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;schema-id&#34;</span><span class="p">:</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;snapshot-log&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;timestamp-ms&#34;</span><span class="p">:</span><span class="mi">1653387947819</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;snapshot-id&#34;</span><span class="p">:</span><span class="mi">1274364374047997700</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;metadata-log&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;timestamp-ms&#34;</span><span class="p">:</span><span class="mi">1653387937345</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;metadata-file&#34;</span><span class="p">:</span><span class="s2">&#34;/tmp/warehouse/db/test3/metadata/v1.metadata.json&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><h4 id="catalog">Catalog</h4>
 <p>Records the latest metadata file path.</p>
-<p><img alt="img" src="https://pic3.zhimg.com/80/v2-27edee80bbac03b462898a0564722a56_1440w.jpg"></p>
+<p><img src="https://pic3.zhimg.com/80/v2-27edee80bbac03b462898a0564722a56_1440w.jpg" alt="img"></p>
 <h3 id="features-1">Features</h3>
 <ul>
 <li>ACID semantics guarantee: Atomic table state changes + snapshot-based reads and writes.</li>
@@ -659,85 +727,85 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
 </li>
 </ul>
 <table>
-<thead>
-<tr>
-<th>Primitive type</th>
-<th>Description</th>
-<th>Requirements</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>boolean</strong></td>
-<td>True or false</td>
-<td></td>
-</tr>
-<tr>
-<td><strong>int</strong></td>
-<td>32-bit signed integers</td>
-<td>Can promote to <code>long</code></td>
-</tr>
-<tr>
-<td><strong>long</strong></td>
-<td>64-bit signed integers</td>
-<td></td>
-</tr>
-<tr>
-<td><strong>float</strong></td>
-<td><a href="https://en.wikipedia.org/wiki/IEEE_754">32-bit IEEE 754</a> floating point</td>
-<td>Can promote to double</td>
-</tr>
-<tr>
-<td><strong>double</strong></td>
-<td><a href="https://en.wikipedia.org/wiki/IEEE_754">64-bit IEEE 754</a> floating point</td>
-<td></td>
-</tr>
-<tr>
-<td><strong>decimal(P,S)</strong></td>
-<td>Fixed-point decimal; precision P, scale S</td>
-<td>Scale is fixed [1], precision must be 38 or less</td>
-</tr>
-<tr>
-<td><strong>date</strong></td>
-<td>Calendar date without timezone or time</td>
-<td></td>
-</tr>
-<tr>
-<td><strong>time</strong></td>
-<td>Time of day without date, timezone</td>
-<td>Microsecond precision [2]</td>
-</tr>
-<tr>
-<td><strong>timestamp</strong></td>
-<td>Timestamp without timezone</td>
-<td>Microsecond precision [2]</td>
-</tr>
-<tr>
-<td><strong>timestamptz</strong></td>
-<td>Timestamp with timezone</td>
-<td>Stored as UTC [2]</td>
-</tr>
-<tr>
-<td><strong>string</strong></td>
-<td>Arbitrary-length character sequences</td>
-<td>Encoded with UTF-8 [3]</td>
-</tr>
-<tr>
-<td><strong>uuid</strong></td>
-<td>Universally unique identifiers</td>
-<td>Should use 16-byte fixed</td>
-</tr>
-<tr>
-<td><strong>fixed(L)</strong></td>
-<td>Fixed-length byte array of length L</td>
-<td></td>
-</tr>
-<tr>
-<td><strong>binary</strong></td>
-<td>Arbitrary-length byte array</td>
-<td></td>
-</tr>
-</tbody>
+	<thead>
+			<tr>
+					<th>Primitive type</th>
+					<th>Description</th>
+					<th>Requirements</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>boolean</strong></td>
+					<td>True or false</td>
+					<td></td>
+			</tr>
+			<tr>
+					<td><strong>int</strong></td>
+					<td>32-bit signed integers</td>
+					<td>Can promote to <code>long</code></td>
+			</tr>
+			<tr>
+					<td><strong>long</strong></td>
+					<td>64-bit signed integers</td>
+					<td></td>
+			</tr>
+			<tr>
+					<td><strong>float</strong></td>
+					<td><a href="https://en.wikipedia.org/wiki/IEEE_754">32-bit IEEE 754</a> floating point</td>
+					<td>Can promote to double</td>
+			</tr>
+			<tr>
+					<td><strong>double</strong></td>
+					<td><a href="https://en.wikipedia.org/wiki/IEEE_754">64-bit IEEE 754</a> floating point</td>
+					<td></td>
+			</tr>
+			<tr>
+					<td><strong>decimal(P,S)</strong></td>
+					<td>Fixed-point decimal; precision P, scale S</td>
+					<td>Scale is fixed [1], precision must be 38 or less</td>
+			</tr>
+			<tr>
+					<td><strong>date</strong></td>
+					<td>Calendar date without timezone or time</td>
+					<td></td>
+			</tr>
+			<tr>
+					<td><strong>time</strong></td>
+					<td>Time of day without date, timezone</td>
+					<td>Microsecond precision [2]</td>
+			</tr>
+			<tr>
+					<td><strong>timestamp</strong></td>
+					<td>Timestamp without timezone</td>
+					<td>Microsecond precision [2]</td>
+			</tr>
+			<tr>
+					<td><strong>timestamptz</strong></td>
+					<td>Timestamp with timezone</td>
+					<td>Stored as UTC [2]</td>
+			</tr>
+			<tr>
+					<td><strong>string</strong></td>
+					<td>Arbitrary-length character sequences</td>
+					<td>Encoded with UTF-8 [3]</td>
+			</tr>
+			<tr>
+					<td><strong>uuid</strong></td>
+					<td>Universally unique identifiers</td>
+					<td>Should use 16-byte fixed</td>
+			</tr>
+			<tr>
+					<td><strong>fixed(L)</strong></td>
+					<td>Fixed-length byte array of length L</td>
+					<td></td>
+			</tr>
+			<tr>
+					<td><strong>binary</strong></td>
+					<td>Arbitrary-length byte array</td>
+					<td></td>
+			</tr>
+	</tbody>
 </table>
 <h3 id="read--write-paths">Read &amp; Write Paths</h3>
 <p>select: catalog -&gt; manifest list file -&gt; manifest file -&gt; data file -&gt; data group.</p>
@@ -779,6 +847,20 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
   
 
   
+  
+  <div class="related-resources">
+    <h3>Related Resources</h3>
+    <ul>
+    
+      <li><a href="/blog/leveldb-write/">LevelDB Write</a></li>
+    
+      <li><a href="/blog/leveldb-%E5%90%AF%E5%8A%A8/">LevelDB Startup</a></li>
+    
+    </ul>
+  </div>
+  
+
+  
 
 
   
@@ -812,12 +894,16 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -838,45 +924,64 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

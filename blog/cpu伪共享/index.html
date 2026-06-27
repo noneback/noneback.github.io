@@ -4,7 +4,8 @@
     <title>CPU False Sharing</title>
     <meta charset="utf-8">
     <meta name="description" content="Ladder@The motivation for this post comes from an interview question I was asked: What is CPU false sharing?
-CPU Cache Let&rsquo;s start by discussing CPU cache.
+CPU Cache
+Let&rsquo;s start by discussing CPU cache.
 CPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor&rsquo;s frequency.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/">
@@ -13,12 +14,10 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -29,32 +28,29 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/blog/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="CPU False Sharing">
-  <meta property="og:description" content="The motivation for this post comes from an interview question I was asked: What is CPU false sharing?
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="CPU False Sharing">
+	<meta property="og:description" content="The motivation for this post comes from an interview question I was asked: What is CPU false sharing?
 CPU Cache Let’s start by discussing CPU cache.
 CPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor’s frequency.">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2021-05-02T13:47:30+08:00">
-    <meta property="article:modified_time" content="2021-05-02T13:47:30+08:00">
-    <meta property="article:tag" content="CPU">
-    <meta property="article:tag" content="Cache">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2021-05-02T13:47:30+08:00">
+		<meta property="article:modified_time" content="2021-05-02T13:47:30+08:00">
+		<meta property="article:tag" content="CPU">
+		<meta property="article:tag" content="Cache">
+		<meta property="article:tag" content="Performance">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="CPU False Sharing">
-  <meta name="twitter:description" content="The motivation for this post comes from an interview question I was asked: What is CPU false sharing?
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="CPU False Sharing">
+	<meta name="twitter:description" content="The motivation for this post comes from an interview question I was asked: What is CPU false sharing?
 CPU Cache Let’s start by discussing CPU cache.
 CPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor’s frequency.">
 
@@ -85,7 +81,7 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
   "@type": "BlogPosting",
   "headline": "CPU False Sharing",
   "name": "CPU False Sharing",
-  "description": "The motivation for this post comes from an interview question I was asked: What is CPU false sharing?\nCPU Cache Let\u0026rsquo;s start by discussing CPU cache.\nCPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor\u0026rsquo;s frequency.",
+  "description": "The motivation for this post comes from an interview question I was asked: What is CPU false sharing?\nCPU Cache Let\u0026rsquo;s start by discussing CPU cache.\nCPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor\u0026rsquo;s frequency.\n",
   "keywords": [
     "CPU", "Cache"
   ],
@@ -153,22 +149,30 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -229,11 +233,11 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -261,12 +265,19 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
       
       <a href="https://noneback.github.io/tags/cache/">Cache</a>
       
+      <a href="https://noneback.github.io/tags/performance/">Performance</a>
+      
     </small>
   
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>Table of Contents</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#cpu-cache">CPU Cache</a></li>
     <li><a href="#cpu-cache-architecture">CPU Cache Architecture</a></li>
@@ -276,6 +287,10 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
     <li><a href="#references">References</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><p>The motivation for this post comes from an interview question I was asked: What is CPU false sharing?</p>
@@ -286,7 +301,7 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 <p>When the processor issues a memory access request, it first checks if the requested data is in the cache. If it is (a cache hit), it directly returns the data without accessing main memory. If it isn&rsquo;t (a cache miss), it loads the data from main memory into the cache before returning it to the processor.</p>
 <h2 id="cpu-cache-architecture">CPU Cache Architecture</h2>
 <p>There are usually three levels of cache between the CPU and main memory. The closer the cache is to the CPU, the faster it is but the smaller its capacity. When accessing data, the CPU first checks <strong>L1</strong>, then <strong>L2</strong>, and finally <strong>L3</strong>. If the data isn&rsquo;t in any of these caches, it must be fetched from main memory.</p>
-<p><img alt="Cache Architecture" src="https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png"></p>
+<p><img src="https://i.loli.net/2021/05/12/CSi7FqmcUZk2LTH.png" alt="Cache Architecture"></p>
 <ul>
 <li><strong>L1</strong> is close to the CPU core that uses it. L1 and L2 caches can only be used by a single CPU core.</li>
 <li><strong>L3</strong> can be shared by all CPU cores in a socket.</li>
@@ -304,7 +319,7 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 <li>When the other core reads <code>b</code>, it finds that the cache line is invalid and must reload it from main memory.</li>
 </ul>
 <p>Because the cache operates at the level of cache lines, invalidating <code>a</code>&rsquo;s cache line also invalidates <code>b</code>, and vice versa.</p>
-<p><img alt="False Sharing" src="https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg"></p>
+<p><img src="https://pic3.zhimg.com/80/v2-32672c4b2b7fc48437fc951c27497bee_1440w.jpg" alt="False Sharing"></p>
 <p>This causes a problem:</p>
 <p><code>b</code> and <code>a</code> are completely unrelated, but each time <code>a</code> is updated, <code>b</code> has to be reloaded from main memory due to a cache miss, slowing down the process.</p>
 <p><strong>CPU false sharing</strong>: When multiple threads modify independent variables that share the same cache line, they unintentionally affect each other&rsquo;s performance. This is known as false sharing.</p>
@@ -341,6 +356,9 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
   
 
   
+  
+
+  
 
 
   
@@ -374,12 +392,16 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -400,45 +422,64 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

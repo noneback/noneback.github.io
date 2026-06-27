@@ -3,7 +3,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LevelDB MVCC</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。 Sequence Number LevelDB通过Sequence Number作为逻辑时">
+    <meta name="description" content="Ladder@LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。
+Sequence Number
+LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/leveldb-mvcc/">
         <meta name="google-site-verification" content="xxx">
@@ -11,12 +13,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,30 +27,29 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/leveldb-mvcc/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="LevelDB MVCC">
-  <meta property="og:description" content="LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。 Sequence Number LevelDB通过Sequence Number作为逻辑时">
-  <meta property="og:locale" content="zh">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2025-02-08T14:06:39+08:00">
-    <meta property="article:modified_time" content="2025-02-08T14:06:39+08:00">
-    <meta property="article:tag" content="LevelDB">
-    <meta property="article:tag" content="MVCC">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="LevelDB MVCC">
+	<meta property="og:description" content="LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。
+Sequence Number LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。">
+	<meta property="og:locale" content="zh">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2025-02-08T14:06:39+08:00">
+		<meta property="article:modified_time" content="2025-02-08T14:06:39+08:00">
+		<meta property="article:tag" content="LevelDB">
+		<meta property="article:tag" content="MVCC">
+		<meta property="article:tag" content="Storage">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="LevelDB MVCC">
-  <meta name="twitter:description" content="LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。 Sequence Number LevelDB通过Sequence Number作为逻辑时">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="LevelDB MVCC">
+	<meta name="twitter:description" content="LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。
+Sequence Number LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。">
 
 
 <script type="application/ld+json">
@@ -79,7 +78,7 @@
   "@type": "BlogPosting",
   "headline": "LevelDB MVCC",
   "name": "LevelDB MVCC",
-  "description": "LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。 Sequence Number LevelDB通过Sequence Number作为逻辑时",
+  "description": "LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。\nSequence Number LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。\n",
   "keywords": [
     "LevelDB", "MVCC"
   ],
@@ -147,22 +146,30 @@
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -255,12 +262,19 @@
       
       <a href="https://noneback.github.io/zh/tags/mvcc/">MVCC</a>
       
+      <a href="https://noneback.github.io/zh/tags/storage/">Storage</a>
+      
     </small>
   
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>目录</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#sequence-number">Sequence Number</a></li>
     <li><a href="#versioning">Versioning</a></li>
@@ -268,12 +282,16 @@
     <li><a href="#reference">Reference</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><p>LevelDB通过 MVCC 实现了 sstable 读写并发以及 Snapshot Read 的功能，让我们来看看它是怎么做到的。</p>
 <h2 id="sequence-number">Sequence Number</h2>
 <p>LevelDB通过Sequence Number作为逻辑时钟，维护了单个 KV 写操作的全序关系。在 InternalKey 的编码里，将Sequence Number 编码到 InternalKey 的最后几个字节里。在写内存时，也确保了数据的有序性。</p>
-<p><img alt="Alt text" src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg"></p>
+<p><img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt="Alt text"></p>
 <h2 id="versioning">Versioning</h2>
 <p>LevelDB每次sstable文件集合变化，都会从一个Version升级成另外一个Version。Version表示DB在某个时刻的状态，每个Version中记录了某个时刻sstable以及compaction 有关的元信息。VersionEdit 描述了版本的变化。</p>
 <pre tabindex="0"><code>Version1 ---VersionEdit--&gt; Version2
@@ -281,71 +299,71 @@
 <p>Version链表描述了存储的所有Version以及变化，Version 本身使用 RC 的方式做 GC。Version Chain 描述了不同时间sstable 集合写操作的全序关系。</p>
 <p>WAL + Manifest 确保了LastSeq变更的原子性。</p>
 <p>Manifest文件作为VersionChange的WAL保证版本变更的Crush Safety, 和 Version Commit操作一起保证了VersionSet最新版本变更的原子性。</p>
-<p><img alt="x" src="https://raw.githubusercontent.com/noneback/images/picgo/202502121042060.png"></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-plain" data-lang="plain"><span style="display:flex;"><span>Write Done ---&gt; VersionEdit ---&gt; Manifest ---&gt; VersionSet
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202502121042060.png" alt="x"></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl">Write Done ---&gt; VersionEdit ---&gt; Manifest ---&gt; VersionSet
 </span></span></code></pre></div><p>在整个 Version迁移过程中，写操作导致状态变更由 VersionEdit 记录在内存中，然后写入到 Manifest里，最后再将 VersionSet 指向此 Version，这样的操作保证了 Version 变更的一致性，即Compaction导致的版本变更不会影响到正在进行的读操作。读操作也不会读取到中间状态的 sstable 文件。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionEdit</span> {
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">/** other code */</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">typedef</span> std<span style="color:#f92672">::</span>set<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">uint64_t</span><span style="color:#f92672">&gt;&gt;</span> DeletedFileSet;
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>string comparator_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> log_number_;  
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
-</span></span><span style="display:flex;"><span>    SequenceNumber last_sequence_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_comparator_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_log_number_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_prev_log_number_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_next_file_number_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> has_last_sequence_;
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, InternalKey<span style="color:#f92672">&gt;&gt;</span> compact_pointers_;
-</span></span><span style="display:flex;"><span>    DeletedFileSet deleted_files_;
-</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, FileMetaData<span style="color:#f92672">&gt;&gt;</span> new_files_;
-</span></span><span style="display:flex;"><span>};
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Version</span> {  
-</span></span><span style="display:flex;"><span>    VersionSet<span style="color:#f92672">*</span> vset_;  <span style="color:#75715e">// VersionSet to which this Version belongs
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> next_;     <span style="color:#75715e">// Next version in linked list
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      Version<span style="color:#f92672">*</span> prev_;     <span style="color:#75715e">// Previous version in linked list
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> refs_;          <span style="color:#75715e">// Number of live refs to this version
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
-</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// List of files and meta per level
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>FileMetaData<span style="color:#f92672">*&gt;</span> files_[config<span style="color:#f92672">::</span>kNumLevels];
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Next file to compact based on seek stats. （allowed_seek耗尽导致的compact）
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      FileMetaData<span style="color:#f92672">*</span> file_to_compact_;
-</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">int</span> file_to_compact_level_;
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>      <span style="color:#75715e">// Level that should be compacted next and its compaction score.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#75715e">// Score &lt; 1 means compaction is not strictly needed.  These fields
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#75715e">// are initialized by Finalize().
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#66d9ef">double</span> compaction_score_;  <span style="color:#75715e">// score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> compaction_level_;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionSet</span> {
-</span></span><span style="display:flex;"><span>    Env<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> env_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>string dbname_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> Options<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> options_;
-</span></span><span style="display:flex;"><span>    TableCache<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> table_cache_;  
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> InternalKeyComparator icmp_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> next_file_number_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> manifest_file_number_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> last_sequence_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> log_number_;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint64_t</span> prev_log_number_;  <span style="color:#75715e">// 0 or backing store for memtable being compacted
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Opened lazily
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    WritableFile<span style="color:#f92672">*</span> descriptor_file_; <span style="color:#75715e">// descriptor_ is for manifest file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    log<span style="color:#f92672">::</span>Writer<span style="color:#f92672">*</span> descriptor_log_; <span style="color:#75715e">// descriptor_ is for manifest file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    Version dummy_versions_;  <span style="color:#75715e">// Head of circular doubly-linked list of versions. 正在使用的version的链表
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    Version<span style="color:#f92672">*</span> current_;        <span style="color:#75715e">// == dummy_versions_.prev_
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Per-level key at which the next compaction at that level should start.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// Either an empty string, or a valid InternalKey.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    std<span style="color:#f92672">::</span>string compact_pointer_[config<span style="color:#f92672">::</span>kNumLevels];
-</span></span><span style="display:flex;"><span>}
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">VersionEdit</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="cm">/** other code */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span> <span class="kt">uint64_t</span><span class="o">&gt;&gt;</span> <span class="n">DeletedFileSet</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">comparator_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">log_number_</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">prev_log_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">next_file_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">SequenceNumber</span> <span class="n">last_sequence_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_comparator_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_log_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_prev_log_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_next_file_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">has_last_sequence_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span> <span class="n">InternalKey</span><span class="o">&gt;&gt;</span> <span class="n">compact_pointers_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">DeletedFileSet</span> <span class="n">deleted_files_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span> <span class="n">FileMetaData</span><span class="o">&gt;&gt;</span> <span class="n">new_files_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Version</span> <span class="p">{</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">VersionSet</span><span class="o">*</span> <span class="n">vset_</span><span class="p">;</span>  <span class="c1">// VersionSet to which this Version belongs
+</span></span></span><span class="line"><span class="cl">      <span class="n">Version</span><span class="o">*</span> <span class="n">next_</span><span class="p">;</span>     <span class="c1">// Next version in linked list
+</span></span></span><span class="line"><span class="cl">      <span class="n">Version</span><span class="o">*</span> <span class="n">prev_</span><span class="p">;</span>     <span class="c1">// Previous version in linked list
+</span></span></span><span class="line"><span class="cl">      <span class="kt">int</span> <span class="n">refs_</span><span class="p">;</span>          <span class="c1">// Number of live refs to this version
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// List of files and meta per level
+</span></span></span><span class="line"><span class="cl">      <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FileMetaData</span><span class="o">*&gt;</span> <span class="n">files_</span><span class="p">[</span><span class="n">config</span><span class="o">::</span><span class="n">kNumLevels</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Next file to compact based on seek stats. （allowed_seek耗尽导致的compact）
+</span></span></span><span class="line"><span class="cl">      <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">file_to_compact_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="kt">int</span> <span class="n">file_to_compact_level_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Level that should be compacted next and its compaction score.
+</span></span></span><span class="line"><span class="cl">      <span class="c1">// Score &lt; 1 means compaction is not strictly needed.  These fields
+</span></span></span><span class="line"><span class="cl">      <span class="c1">// are initialized by Finalize().
+</span></span></span><span class="line"><span class="cl">      <span class="kt">double</span> <span class="n">compaction_score_</span><span class="p">;</span>  <span class="c1">// score表示数据不均衡的程度，score越大表示该level数据越不均衡，需要有限compact
+</span></span></span><span class="line"><span class="cl">      <span class="kt">int</span> <span class="n">compaction_level_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">VersionSet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Env</span><span class="o">*</span> <span class="k">const</span> <span class="n">env_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">dbname_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">Options</span><span class="o">*</span> <span class="k">const</span> <span class="n">options_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">TableCache</span><span class="o">*</span> <span class="k">const</span> <span class="n">table_cache_</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">InternalKeyComparator</span> <span class="n">icmp_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">next_file_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">manifest_file_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">last_sequence_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">log_number_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">prev_log_number_</span><span class="p">;</span>  <span class="c1">// 0 or backing store for memtable being compacted
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Opened lazily
+</span></span></span><span class="line"><span class="cl">    <span class="n">WritableFile</span><span class="o">*</span> <span class="n">descriptor_file_</span><span class="p">;</span> <span class="c1">// descriptor_ is for manifest file
+</span></span></span><span class="line"><span class="cl">    <span class="n">log</span><span class="o">::</span><span class="n">Writer</span><span class="o">*</span> <span class="n">descriptor_log_</span><span class="p">;</span> <span class="c1">// descriptor_ is for manifest file
+</span></span></span><span class="line"><span class="cl">    <span class="n">Version</span> <span class="n">dummy_versions_</span><span class="p">;</span>  <span class="c1">// Head of circular doubly-linked list of versions. 正在使用的version的链表
+</span></span></span><span class="line"><span class="cl">    <span class="n">Version</span><span class="o">*</span> <span class="n">current_</span><span class="p">;</span>        <span class="c1">// == dummy_versions_.prev_
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Per-level key at which the next compaction at that level should start.
+</span></span></span><span class="line"><span class="cl">    <span class="c1">// Either an empty string, or a valid InternalKey.
+</span></span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">compact_pointer_</span><span class="p">[</span><span class="n">config</span><span class="o">::</span><span class="n">kNumLevels</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><h2 id="mvcc--snapshot-read">MVCC &amp; Snapshot Read</h2>
 <p>对于memtable的并发读写操作，依赖 skiplist，本身是有锁来处理读写冲突的。对于sstable的并发读写（compaction 和 read ）则依赖 Version 和 Sequence Number 解决。</p>
 <p>每次对 sstable 的写操作（minor/major compaction）必然产生新的 sstable 文件，带来 sstable 集合的变化，进而产生新的 Version。而每条KV记录也一定会携带 Sequence Number信息。</p>
@@ -375,6 +393,26 @@
       </svg>
     </a>
     
+  </div>
+  
+
+  
+  
+  <div class="related-resources">
+    <h3>相关系列文章推荐</h3>
+    <ul>
+    
+      <li><a href="/zh/blog/zh/leveldb-write/">LevelDB Write</a></li>
+    
+      <li><a href="/zh/blog/zh/leveldb-%E5%90%AF%E5%8A%A8/">LevelDB 启动</a></li>
+    
+      <li><a href="/zh/blog/zh/prometheus-tsdb/">Prometheus--TSDB</a></li>
+    
+      <li><a href="/zh/blog/zh/dynamo/">Dynamo: Amazon’s Highly Available Key-value Store</a></li>
+    
+      <li><a href="/zh/blog/zh/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/">Flink-Iceberg-Connector写入流程</a></li>
+    
+    </ul>
   </div>
   
 
@@ -412,12 +450,16 @@
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -438,45 +480,64 @@
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = '复制';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = '已复制';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = '复制';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

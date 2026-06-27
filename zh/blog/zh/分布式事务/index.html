@@ -3,7 +3,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>分布式事务</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@事务与分布式事务 事务 事务是数据库执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。数据库需要确保事务操作的原子性：当事务成功时，意味">
+    <meta name="description" content="Ladder@事务与分布式事务
+事务
+事务是数据库执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。数据库需要确保事务操作的原子性：当事务成功时，意味着事务的所有操作全部都执行完成；但事务失败时，数据库将所有执行过的SQL操作回滚。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/">
         <meta name="google-site-verification" content="xxx">
@@ -11,12 +13,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,31 +27,27 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="分布式事务">
-  <meta property="og:description" content="事务与分布式事务 事务 事务是数据库执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。数据库需要确保事务操作的原子性：当事务成功时，意味">
-  <meta property="og:locale" content="zh">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2021-05-20T23:55:11+08:00">
-    <meta property="article:modified_time" content="2021-05-20T23:55:11+08:00">
-    <meta property="article:tag" content="Architecture">
-    <meta property="article:tag" content="Microservice">
-    <meta property="article:tag" content="Transaction">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="分布式事务">
+	<meta property="og:description" content="事务与分布式事务 事务 事务是数据库执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。数据库需要确保事务操作的原子性：当事务成功时，意味着事务的所有操作全部都执行完成；但事务失败时，数据库将所有执行过的SQL操作回滚。">
+	<meta property="og:locale" content="zh">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2021-05-20T23:55:11+08:00">
+		<meta property="article:modified_time" content="2021-05-20T23:55:11+08:00">
+		<meta property="article:tag" content="Architecture">
+		<meta property="article:tag" content="Microservice">
+		<meta property="article:tag" content="Transaction">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="分布式事务">
-  <meta name="twitter:description" content="事务与分布式事务 事务 事务是数据库执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。数据库需要确保事务操作的原子性：当事务成功时，意味">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="分布式事务">
+	<meta name="twitter:description" content="事务与分布式事务 事务 事务是数据库执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。数据库需要确保事务操作的原子性：当事务成功时，意味着事务的所有操作全部都执行完成；但事务失败时，数据库将所有执行过的SQL操作回滚。">
 
 
 <script type="application/ld+json">
@@ -80,7 +76,7 @@
   "@type": "BlogPosting",
   "headline": "分布式事务",
   "name": "分布式事务",
-  "description": "事务与分布式事务 事务 事务是数据库执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。数据库需要确保事务操作的原子性：当事务成功时，意味",
+  "description": "事务与分布式事务 事务 事务是数据库执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。数据库需要确保事务操作的原子性：当事务成功时，意味着事务的所有操作全部都执行完成；但事务失败时，数据库将所有执行过的SQL操作回滚。\n",
   "keywords": [
     "Transaction", "microservice"
   ],
@@ -148,22 +144,30 @@
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -263,7 +267,12 @@
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>目录</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#事务">事务</a></li>
     <li><a href="#分布式事务">分布式事务</a></li>
@@ -293,6 +302,10 @@
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><h1 id="事务与分布式事务">事务与分布式事务</h1>
@@ -321,13 +334,13 @@
 <p>第三方支付</p>
 <p>微服务架构下，支付与订单都是独立的服务。订单的支付状态依赖于财经服务的通知。财经服务又依赖于第三方支付服务的通知。</p>
 <p>一个经典的场景如图：</p>
-<p><img alt="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png" src="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png"></p>
+<p><img src="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png" alt="https://xiaomi-info.github.io/2020/01/02/distributed-transaction/notify-message.png"></p>
 </li>
 </ul>
 <p>从图中可以看出有两次调用，第三方支付调用支付服务，以及支付服务调用订单服务，这两步调用都可能出现<strong>调用超时</strong>的情况，此处如果没有分布式事务的保证，就会出现用户订单实际支付情况与最终用户看到的订单支付情况<strong>不一致</strong>的情况。</p>
 <h1 id="实现方案">实现方案</h1>
 <h2 id="两阶段提交">两阶段提交</h2>
-<p><img alt="https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png" src="https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png"></p>
+<p><img src="https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png" alt="https://i.loli.net/2021/05/19/MfWzxseBFKaAnhk.png"></p>
 <p>一次事务的提交主要分为两个阶段：</p>
 <ol>
 <li>
@@ -460,6 +473,18 @@
   
 
   
+  
+  <div class="related-resources">
+    <h3>相关系列文章推荐</h3>
+    <ul>
+    
+      <li><a href="/zh/blog/zh/%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/">服务发现基本原理</a></li>
+    
+    </ul>
+  </div>
+  
+
+  
 
 
   
@@ -493,12 +518,16 @@
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -519,45 +548,64 @@
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = '复制';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = '已复制';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = '复制';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

@@ -11,12 +11,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,23 +25,19 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/tags/consensus/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="Consensus">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="website">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="Consensus">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="website">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Consensus">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Consensus">
 
     <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
 
@@ -51,22 +45,17 @@
 
 <link rel="manifest" href="/images/avatar.jpeg">
     
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -127,10 +116,8 @@
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
-                <a href="https://noneback.github.io/zh/">中</a>
+                <a href="https://noneback.github.io/zh/tags/consensus/">中</a>
             </li>
             
             
@@ -147,30 +134,30 @@
       
       <article>
         <div class="blog-card">
-          <h3><a href="/blog/mit6.824-raftkv/">MIT6.824-RaftKV</a></h3>
+          <h3><a href="/blog/mit6.824-raft/">MIT6.824-Raft</a></h3>
           <p>
   <small>
-    April 15, 2022&nbsp;· 1039 words&nbsp;· 5 min</small>
+    February 21, 2022&nbsp;· 953 words&nbsp;· 5 min</small>
 
   <small>
       
       ·
       
       
-      <a href="https://noneback.github.io/tags/raft/">Raft</a>
-      
-      <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
+      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
       
       <a href="https://noneback.github.io/tags/consensus/">Consensus</a>
+      
+      <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
       
       <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
       
     </small>
   
 <p>
-          Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.
-Lab Overview Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.
-The structure of RaftKV and the interaction between its modules are shown below:
+          <p>Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.</p>
+<h2 id="algorithm-overview">Algorithm Overview</h2>
+<p>The basis of consensus algorithms is the replicated state machine, which means that <strong>executing the same deterministic commands in the same order will eventually lead to a consistent state</strong>. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.</p>
         </div>
       </article>
       </div>
@@ -179,12 +166,14 @@ The structure of RaftKV and the interaction between its modules are shown below:
 </div>
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -205,45 +194,50 @@ The structure of RaftKV and the interaction between its modules are shown below:
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

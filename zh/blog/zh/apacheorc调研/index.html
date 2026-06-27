@@ -3,7 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apache-ORC调研</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后">
+    <meta name="description" content="Ladder@iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后续湖仓查询性能以及数据湖的ACID需求，现对ORC进行调研，以支持后续Flink&#43;iceberg&#43;orc的demo测试。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/apacheorc%E8%B0%83%E7%A0%94/">
         <meta name="google-site-verification" content="xxx">
@@ -11,12 +11,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,31 +25,27 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/apacheorc%E8%B0%83%E7%A0%94/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="Apache-ORC调研">
-  <meta property="og:description" content="iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后">
-  <meta property="og:locale" content="zh">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2022-10-05T19:56:01+08:00">
-    <meta property="article:modified_time" content="2022-06-05T19:56:01+08:00">
-    <meta property="article:tag" content="Column Store">
-    <meta property="article:tag" content="Big Data">
-    <meta property="article:tag" content="Storage">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="Apache-ORC调研">
+	<meta property="og:description" content="iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后续湖仓查询性能以及数据湖的ACID需求，现对ORC进行调研，以支持后续Flink&#43;iceberg&#43;orc的demo测试。">
+	<meta property="og:locale" content="zh">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2022-10-05T19:56:01+08:00">
+		<meta property="article:modified_time" content="2022-06-05T19:56:01+08:00">
+		<meta property="article:tag" content="Column Store">
+		<meta property="article:tag" content="Big Data">
+		<meta property="article:tag" content="Storage">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Apache-ORC调研">
-  <meta name="twitter:description" content="iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Apache-ORC调研">
+	<meta name="twitter:description" content="iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后续湖仓查询性能以及数据湖的ACID需求，现对ORC进行调研，以支持后续Flink&#43;iceberg&#43;orc的demo测试。">
 
 
 <script type="application/ld+json">
@@ -80,7 +74,7 @@
   "@type": "BlogPosting",
   "headline": "Apache-ORC调研",
   "name": "Apache-ORC调研",
-  "description": "iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后",
+  "description": "iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后续湖仓查询性能以及数据湖的ACID需求，现对ORC进行调研，以支持后续Flink+iceberg+orc的demo测试。\n",
   "keywords": [
     "data lake", "big data", "storage"
   ],
@@ -148,22 +142,30 @@
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -263,7 +265,12 @@
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>目录</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#file-layout">File Layout</a>
       <ul>
@@ -285,6 +292,10 @@
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><p>iceberg支持ORC和Parquat两种列存格式。相比于Parquat，ORC在查询性能以及ACID支持方面具有一定的优势。于是考虑到后续湖仓查询性能以及数据湖的ACID需求，现对ORC进行调研，以支持后续Flink+iceberg+orc的demo测试。</p>
@@ -299,7 +310,7 @@
 <blockquote>
 <p>ORC Specification v1</p>
 </blockquote>
-<p><img alt="image.png" src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1654164675197-b3513a38-dee1-4fea-a582-1e800542dc06.png#clientId=ubff13205-800f-4&crop=0&crop=0&crop=1&crop=1&from=paste&id=udfb74091&margin=%5Bobject%20Object%5D&name=image.png&originHeight=567&originWidth=580&originalType=binary&ratio=1&rotation=0&showTitle=false&size=134693&status=done&style=none&taskId=u3792c89f-94b1-497c-81db-a5f9ae97297&title="></p>
+<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1654164675197-b3513a38-dee1-4fea-a582-1e800542dc06.png#clientId=ubff13205-800f-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;id=udfb74091&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=567&amp;originWidth=580&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=134693&amp;status=done&amp;style=none&amp;taskId=u3792c89f-94b1-497c-81db-a5f9ae97297&amp;title=" alt="image.png"></p>
 <h3 id="file-tail">File Tail</h3>
 <p>由于现在的分布式存储一般只提供AppendOnly语义，ORC 文件在文件的尾部有一块区域，用于维护文件级别（Top Level）的信息。
 <a href="https://github.com/apache/hive/blob/trunk/ql/src/protobuf/org/apache/hadoop/hive/ql/io/orc/orc_proto.proto">source code</a></p>
@@ -315,186 +326,186 @@
 </blockquote>
 <h4 id="postscript">postscript</h4>
 <p>不允许被压缩，包含了解析文件尾部所需要的信息，比如：Footer和Metadata区域的长度，压缩方法等</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">PostScript</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the length of the footer section in bytes
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> footerLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the kind of generic compression used
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> CompressionKind compression <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the maximum size of each compression chunk
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> compressionBlockSize <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the version of the writer
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">uint32</span> version <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span> [<span style="color:#66d9ef">packed</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>];<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the length of the metadata section in bytes
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> metadataLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the fixed string &#34;ORC&#34;
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">string</span> magic <span style="color:#f92672">=</span> <span style="color:#ae81ff">8000</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#f92672">...</span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">enum</span> CompressionKind {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> NONE <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> ZLIB <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> SNAPPY <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> LZO <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> LZ4 <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> ZSTD <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">PostScript</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the length of the footer section in bytes
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">footerLength</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the kind of generic compression used
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">CompressionKind</span> <span class="n">compression</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the maximum size of each compression chunk
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">compressionBlockSize</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the version of the writer
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="kt">uint32</span> <span class="n">version</span> <span class="o">=</span> <span class="mi">4</span> <span class="p">[</span><span class="k">packed</span> <span class="o">=</span> <span class="kc">true</span><span class="p">];</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the length of the metadata section in bytes
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">metadataLength</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the fixed string &#34;ORC&#34;
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">string</span> <span class="n">magic</span> <span class="o">=</span> <span class="mi">8000</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="o">...</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="kd">enum</span> <span class="n">CompressionKind</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">NONE</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">ZLIB</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">SNAPPY</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">LZO</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">LZ4</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">ZSTD</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><h4 id="footer">Footer</h4>
 <p>Footer包含了文件的schema信息，文件的行数，列级别的统计信息</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">Footer</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the length of the file header in bytes (always 3)
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> headerLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the length of the file header and body in bytes
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> contentLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the information about the stripes
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> StripeInformation stripes <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the schema information
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> Type types <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the user metadata that was added
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> UserMetadataItem metadata <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the total number of rows in the file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> numberOfRows <span style="color:#f92672">=</span> <span style="color:#ae81ff">6</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the statistics of each column across the file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> ColumnStatistics statistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">7</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the maximum number of rows in each index entry
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> rowIndexStride <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// Each implementation that writes ORC files should register for a code
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// 0 = ORC Java
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// 1 = ORC C++
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// 2 = Presto
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// 3 = Scritchley Go from https://github.com/scritchley/orc
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// 4 = Trino
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> writer <span style="color:#f92672">=</span> <span style="color:#ae81ff">9</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// information about the encryption in this file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> Encryption encryption <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the number of bytes in the encrypted stripe statistics
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> stripeStatisticsLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">11</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">Footer</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the length of the file header in bytes (always 3)
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">headerLength</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the length of the file header and body in bytes
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">contentLength</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the information about the stripes
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">StripeInformation</span> <span class="n">stripes</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the schema information
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">Type</span> <span class="n">types</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the user metadata that was added
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">UserMetadataItem</span> <span class="n">metadata</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the total number of rows in the file
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">numberOfRows</span> <span class="o">=</span> <span class="mi">6</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the statistics of each column across the file
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">ColumnStatistics</span> <span class="n">statistics</span> <span class="o">=</span> <span class="mi">7</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the maximum number of rows in each index entry
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint32</span> <span class="n">rowIndexStride</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// Each implementation that writes ORC files should register for a code
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// 0 = ORC Java
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// 1 = ORC C++
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// 2 = Presto
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// 3 = Scritchley Go from https://github.com/scritchley/orc
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// 4 = Trino
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint32</span> <span class="n">writer</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// information about the encryption in this file
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">Encryption</span> <span class="n">encryption</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the number of bytes in the encrypted stripe statistics
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">stripeStatisticsLength</span> <span class="o">=</span> <span class="mi">11</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><ul>
 <li>Stripe Information
 Body中的数据会被分为多个<strong>Stripe</strong>，行数据不允许跨Stripe存储。Stripe包含：**indexes of rows、row data、stripe footer。**indexes和data在stripe中按列存储。</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">StripeInformation</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the start of the stripe within the file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> offset <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the length of the indexes in bytes
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> indexLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the length of the data in bytes
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> dataLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the length of the footer in bytes
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> footerLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the number of rows in the stripe
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> numberOfRows <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// If this is present, the reader should use this value for the encryption
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// stripe id for setting the encryption IV. Otherwise, the reader should
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// use one larger than the previous stripe&#39;s encryptStripeId.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// For unmerged ORC files, the first stripe will use 1 and the rest of the
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// stripes won&#39;t have it set. For merged files, the stripe information
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// will be copied from their original files and thus the first stripe of
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// each of the input files will reset it to 1.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// Note that 1 was choosen, because protobuf v3 doesn&#39;t serialize
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// primitive types that are the default (eg. 0).
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> encryptStripeId <span style="color:#f92672">=</span> <span style="color:#ae81ff">6</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// For each encryption variant, the new encrypted local key to use until we
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#75715e">// find a replacement.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">bytes</span> encryptedLocalKeys <span style="color:#f92672">=</span> <span style="color:#ae81ff">7</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">StripeInformation</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the start of the stripe within the file
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the length of the indexes in bytes
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">indexLength</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the length of the data in bytes
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">dataLength</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the length of the footer in bytes
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">footerLength</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the number of rows in the stripe
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">numberOfRows</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// If this is present, the reader should use this value for the encryption
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// stripe id for setting the encryption IV. Otherwise, the reader should
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// use one larger than the previous stripe&#39;s encryptStripeId.
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// For unmerged ORC files, the first stripe will use 1 and the rest of the
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// stripes won&#39;t have it set. For merged files, the stripe information
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// will be copied from their original files and thus the first stripe of
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// each of the input files will reset it to 1.
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// Note that 1 was choosen, because protobuf v3 doesn&#39;t serialize
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// primitive types that are the default (eg. 0).
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">encryptStripeId</span> <span class="o">=</span> <span class="mi">6</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// For each encryption variant, the new encrypted local key to use until we
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// find a replacement.
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="kt">bytes</span> <span class="n">encryptedLocalKeys</span> <span class="o">=</span> <span class="mi">7</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><ul>
 <li>Type Infomation</li>
 </ul>
 <p>ORC文件的type schema必须保持一致。嵌套数据类型使用树形结构组织。
 Case in Hive DDL：
-<img alt="image.png" src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1654169029454-2418ee95-7bc9-432c-af26-2e9eb4c476da.png#clientId=ubff13205-800f-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=451&id=ud890d55a&margin=%5Bobject%20Object%5D&name=image.png&originHeight=602&originWidth=591&originalType=binary&ratio=1&rotation=0&showTitle=false&size=119991&status=done&style=none&taskId=uaac52701-17db-4bc5-b653-c42106be9f8&title=&width=443"></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">table</span> Foobar (
-</span></span><span style="display:flex;"><span> myInt int,
-</span></span><span style="display:flex;"><span> myMap <span style="color:#66d9ef">map</span><span style="color:#f92672">&lt;</span>string,
-</span></span><span style="display:flex;"><span> struct<span style="color:#f92672">&lt;</span>myString : string,
-</span></span><span style="display:flex;"><span> myDouble: double<span style="color:#f92672">&gt;&gt;</span>,
-</span></span><span style="display:flex;"><span> myTime <span style="color:#66d9ef">timestamp</span>
-</span></span><span style="display:flex;"><span>);
-</span></span></code></pre></div><p>支持的类型：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">Type</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">enum</span> Kind {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> BOOLEAN <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> BYTE <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> SHORT <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> INT <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> LONG <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> FLOAT <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> DOUBLE <span style="color:#f92672">=</span> <span style="color:#ae81ff">6</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> STRING <span style="color:#f92672">=</span> <span style="color:#ae81ff">7</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> BINARY <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> TIMESTAMP <span style="color:#f92672">=</span> <span style="color:#ae81ff">9</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> LIST <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> MAP <span style="color:#f92672">=</span> <span style="color:#ae81ff">11</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> STRUCT <span style="color:#f92672">=</span> <span style="color:#ae81ff">12</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> UNION <span style="color:#f92672">=</span> <span style="color:#ae81ff">13</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> DECIMAL <span style="color:#f92672">=</span> <span style="color:#ae81ff">14</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> DATE <span style="color:#f92672">=</span> <span style="color:#ae81ff">15</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> VARCHAR <span style="color:#f92672">=</span> <span style="color:#ae81ff">16</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> CHAR <span style="color:#f92672">=</span> <span style="color:#ae81ff">17</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> TIMESTAMP_INSTANT <span style="color:#f92672">=</span> <span style="color:#ae81ff">18</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> }<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the kind of this type
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">required</span> Kind kind <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the type ids of any subcolumns for list, map, struct, or union
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">uint32</span> subtypes <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> [<span style="color:#66d9ef">packed</span><span style="color:#f92672">=</span><span style="color:#66d9ef">true</span>];<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the list of field names for struct
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">string</span> fieldNames <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the maximum length of the type for varchar or char in UTF-8 characters
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> maximumLength <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the precision and scale for decimal
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> precision <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> scale <span style="color:#f92672">=</span> <span style="color:#ae81ff">6</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1654169029454-2418ee95-7bc9-432c-af26-2e9eb4c476da.png#clientId=ubff13205-800f-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=451&amp;id=ud890d55a&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=602&amp;originWidth=591&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=119991&amp;status=done&amp;style=none&amp;taskId=uaac52701-17db-4bc5-b653-c42106be9f8&amp;title=&amp;width=443" alt="image.png"></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">Foobar</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">myInt</span><span class="w"> </span><span class="nb">int</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">myMap</span><span class="w"> </span><span class="k">map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">struct</span><span class="o">&lt;</span><span class="n">myString</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">string</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">myDouble</span><span class="p">:</span><span class="w"> </span><span class="n">double</span><span class="o">&gt;&gt;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="n">myTime</span><span class="w"> </span><span class="k">timestamp</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span></code></pre></div><p>支持的类型：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">Type</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="kd">enum</span> <span class="n">Kind</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">BOOLEAN</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">BYTE</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">SHORT</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">INT</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">LONG</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">FLOAT</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">DOUBLE</span> <span class="o">=</span> <span class="mi">6</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">STRING</span> <span class="o">=</span> <span class="mi">7</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">BINARY</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">TIMESTAMP</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">LIST</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">MAP</span> <span class="o">=</span> <span class="mi">11</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">STRUCT</span> <span class="o">=</span> <span class="mi">12</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">UNION</span> <span class="o">=</span> <span class="mi">13</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">DECIMAL</span> <span class="o">=</span> <span class="mi">14</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">DATE</span> <span class="o">=</span> <span class="mi">15</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">VARCHAR</span> <span class="o">=</span> <span class="mi">16</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">CHAR</span> <span class="o">=</span> <span class="mi">17</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="n">TIMESTAMP_INSTANT</span> <span class="o">=</span> <span class="mi">18</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the kind of this type
+</span></span></span><span class="line"><span class="cl"> <span class="k">required</span> <span class="n">Kind</span> <span class="n">kind</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the type ids of any subcolumns for list, map, struct, or union
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="kt">uint32</span> <span class="n">subtypes</span> <span class="o">=</span> <span class="mi">2</span> <span class="p">[</span><span class="k">packed</span><span class="o">=</span><span class="kc">true</span><span class="p">];</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the list of field names for struct
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="kt">string</span> <span class="n">fieldNames</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the maximum length of the type for varchar or char in UTF-8 characters
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint32</span> <span class="n">maximumLength</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the precision and scale for decimal
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint32</span> <span class="n">precision</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint32</span> <span class="n">scale</span> <span class="o">=</span> <span class="mi">6</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><ul>
 <li>Column Statistics</li>
 </ul>
 <p>有关列的一些简单的statistics，可用于粗粒度过滤以及cbo</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">ColumnStatistics</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the number of values
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> numberOfValues <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// At most one of these has a value for any column
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> IntegerStatistics intStatistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> DoubleStatistics doubleStatistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> StringStatistics stringStatistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> BucketStatistics bucketStatistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> DecimalStatistics decimalStatistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">6</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> DateStatistics dateStatistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">7</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> BinaryStatistics binaryStatistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> TimestampStatistics timestampStatistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">9</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">bool</span> hasNull <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#f92672">...</span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">IntegerStatistics</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">sint64</span> minimum <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">sint64</span> maximum <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">sint64</span> sum <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">ColumnStatistics</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the number of values
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">numberOfValues</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// At most one of these has a value for any column
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">IntegerStatistics</span> <span class="n">intStatistics</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">DoubleStatistics</span> <span class="n">doubleStatistics</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">StringStatistics</span> <span class="n">stringStatistics</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">BucketStatistics</span> <span class="n">bucketStatistics</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">DecimalStatistics</span> <span class="n">decimalStatistics</span> <span class="o">=</span> <span class="mi">6</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">DateStatistics</span> <span class="n">dateStatistics</span> <span class="o">=</span> <span class="mi">7</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">BinaryStatistics</span> <span class="n">binaryStatistics</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">TimestampStatistics</span> <span class="n">timestampStatistics</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">bool</span> <span class="n">hasNull</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="o">...</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">IntegerStatistics</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">sint64</span> <span class="n">minimum</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">sint64</span> <span class="n">maximum</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">sint64</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><ul>
 <li>User Metadata：用户自定的KV信息</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">UserMetadataItem</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the user defined key
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">required</span> <span style="color:#66d9ef">string</span> name <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the user defined binary value
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">required</span> <span style="color:#66d9ef">bytes</span> value <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">UserMetadataItem</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the user defined key
+</span></span></span><span class="line"><span class="cl"> <span class="k">required</span> <span class="kt">string</span> <span class="n">name</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the user defined binary value
+</span></span></span><span class="line"><span class="cl"> <span class="k">required</span> <span class="kt">bytes</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><ul>
 <li>File Metadata</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">Metadata</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">repeated</span> StripeStatistics stripeStats <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#f92672">...</span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">StripeStatistics</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">repeated</span> ColumnStatistics colStats <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">Metadata</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">StripeStatistics</span> <span class="n">stripeStats</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="o">...</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">StripeStatistics</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">ColumnStatistics</span> <span class="n">colStats</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><h2 id="stripe">Stripe</h2>
 <p>Body部分的数据可以被拆分成Stripes，Stripes are large (typically ~200MB)。包含三个部分：Index Data、Row Data、Stripe Footer</p>
 <p>在Stripe中，列数据分别以一组Stream的形式相邻于文件，如：</p>
@@ -504,98 +515,98 @@ Case in Hive DDL：
 </ul>
 <h3 id="stripe-footer">Stripe Footer</h3>
 <p>包含列的编码信息，以及流的相关信息</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">StripeFooter</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the location of each stream
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> Stream streams <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the encoding of each column
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> ColumnEncoding columns <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">string</span> writerTimezone <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// one for each column encryption variant
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">repeated</span> StripeEncryptionVariant encryption <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">StripeFooter</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the location of each stream
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">Stream</span> <span class="n">streams</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the encoding of each column
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">ColumnEncoding</span> <span class="n">columns</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">string</span> <span class="n">writerTimezone</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// one for each column encryption variant
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">StripeEncryptionVariant</span> <span class="n">encryption</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><h3 id="stream">stream</h3>
 <p>表示文件中的一段二进制流，每一个stream的数据会根据该列的类型使用特定的压缩算法保存。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">Stream</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">enum</span> Kind {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// boolean stream of whether the next value is non-null
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   PRESENT <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// the primary data stream
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   DATA <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// the length of each value for variable length data
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   LENGTH <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// the dictionary blob
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   DICTIONARY_DATA <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// deprecated prior to Hive 0.11
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   <span style="color:#75715e">// It was used to store the number of instances of each value in the
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   <span style="color:#75715e">// dictionary
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   DICTIONARY_COUNT <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// a secondary data stream
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   SECONDARY <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// the index for seeking to particular row groups
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   ROW_INDEX <span style="color:#f92672">=</span> <span style="color:#ae81ff">6</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// original bloom filters used before ORC-101
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   BLOOM_FILTER <span style="color:#f92672">=</span> <span style="color:#ae81ff">7</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// bloom filters that consistently use utf8
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   BLOOM_FILTER_UTF8 <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// Virtual stream kinds to allocate space for encrypted index and data.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   ENCRYPTED_INDEX <span style="color:#f92672">=</span> <span style="color:#ae81ff">9</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   ENCRYPTED_DATA <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// stripe statistics streams
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   STRIPE_STATISTICS <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>   <span style="color:#75715e">// A virtual stream kind that is used for setting the encryption IV.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>   FILE_STATISTICS <span style="color:#f92672">=</span> <span style="color:#ae81ff">101</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> }<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">required</span> Kind kind <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the column id
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> column <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the number of bytes in the file
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint64</span> length <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">ColumnEncoding</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">enum</span> Kind {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the encoding is mapped directly to the stream using RLE v1
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> DIRECT <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the encoding uses a dictionary of unique values using RLE v1
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> DICTIONARY <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the encoding is direct using RLE v2
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> DIRECT_V2 <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// the encoding is dictionary-based using RLE v2
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> DICTIONARY_V2 <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> }<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">required</span> Kind kind <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#75715e">// for dictionary encodings, record the size of the dictionary
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> dictionarySize <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">Stream</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="kd">enum</span> <span class="n">Kind</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// boolean stream of whether the next value is non-null
+</span></span></span><span class="line"><span class="cl">   <span class="n">PRESENT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// the primary data stream
+</span></span></span><span class="line"><span class="cl">   <span class="n">DATA</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// the length of each value for variable length data
+</span></span></span><span class="line"><span class="cl">   <span class="n">LENGTH</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// the dictionary blob
+</span></span></span><span class="line"><span class="cl">   <span class="n">DICTIONARY_DATA</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// deprecated prior to Hive 0.11
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// It was used to store the number of instances of each value in the
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// dictionary
+</span></span></span><span class="line"><span class="cl">   <span class="n">DICTIONARY_COUNT</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// a secondary data stream
+</span></span></span><span class="line"><span class="cl">   <span class="n">SECONDARY</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// the index for seeking to particular row groups
+</span></span></span><span class="line"><span class="cl">   <span class="n">ROW_INDEX</span> <span class="o">=</span> <span class="mi">6</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// original bloom filters used before ORC-101
+</span></span></span><span class="line"><span class="cl">   <span class="n">BLOOM_FILTER</span> <span class="o">=</span> <span class="mi">7</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// bloom filters that consistently use utf8
+</span></span></span><span class="line"><span class="cl">   <span class="n">BLOOM_FILTER_UTF8</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// Virtual stream kinds to allocate space for encrypted index and data.
+</span></span></span><span class="line"><span class="cl">   <span class="n">ENCRYPTED_INDEX</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="n">ENCRYPTED_DATA</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// stripe statistics streams
+</span></span></span><span class="line"><span class="cl">   <span class="n">STRIPE_STATISTICS</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl">   <span class="c1">// A virtual stream kind that is used for setting the encryption IV.
+</span></span></span><span class="line"><span class="cl">   <span class="n">FILE_STATISTICS</span> <span class="o">=</span> <span class="mi">101</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">required</span> <span class="n">Kind</span> <span class="n">kind</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the column id
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint32</span> <span class="n">column</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the number of bytes in the file
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint64</span> <span class="n">length</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">ColumnEncoding</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="kd">enum</span> <span class="n">Kind</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the encoding is mapped directly to the stream using RLE v1
+</span></span></span><span class="line"><span class="cl"> <span class="n">DIRECT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the encoding uses a dictionary of unique values using RLE v1
+</span></span></span><span class="line"><span class="cl"> <span class="n">DICTIONARY</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the encoding is direct using RLE v2
+</span></span></span><span class="line"><span class="cl"> <span class="n">DIRECT_V2</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// the encoding is dictionary-based using RLE v2
+</span></span></span><span class="line"><span class="cl"> <span class="n">DICTIONARY_V2</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">required</span> <span class="n">Kind</span> <span class="n">kind</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="c1">// for dictionary encodings, record the size of the dictionary
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint32</span> <span class="n">dictionarySize</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><h2 id="索引支持">索引支持</h2>
 <p>ORC支持三种级别的索引：</p>
 <table>
-<thead>
-<tr>
-<th>level</th>
-<th>位于ORC的哪块</th>
-<th>数据内容</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>file level</td>
-<td>file footer</td>
-<td>整个文件的列级别的统计</td>
-</tr>
-<tr>
-<td>stripe level</td>
-<td>file footer</td>
-<td>每个stripe的列级别的统计</td>
-</tr>
-<tr>
-<td>row level</td>
-<td>stripe的最开始部分</td>
-<td>每个RowGroup的列级别的统计和每个RowGroup的起始位置</td>
-</tr>
-</tbody>
+	<thead>
+			<tr>
+					<th>level</th>
+					<th>位于ORC的哪块</th>
+					<th>数据内容</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>file level</td>
+					<td>file footer</td>
+					<td>整个文件的列级别的统计</td>
+			</tr>
+			<tr>
+					<td>stripe level</td>
+					<td>file footer</td>
+					<td>每个stripe的列级别的统计</td>
+			</tr>
+			<tr>
+					<td>row level</td>
+					<td>stripe的最开始部分</td>
+					<td>每个RowGroup的列级别的统计和每个RowGroup的起始位置</td>
+			</tr>
+	</tbody>
 </table>
 <h4 id="row-level">Row Level</h4>
 <p>行级的索引主要有Row Group Index 和 Bloom Fliter Index</p>
@@ -604,28 +615,28 @@ Case in Hive DDL：
 <blockquote>
 <p>默认10000行的数据组成一个<strong>RowGroup</strong></p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">RowIndex</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">repeated</span> RowIndexEntry entry <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">RowIndexEntry</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">uint64</span> positions <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> [<span style="color:#66d9ef">packed</span><span style="color:#f92672">=</span><span style="color:#66d9ef">true</span>];<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> ColumnStatistics statistics <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">RowIndex</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">RowIndexEntry</span> <span class="n">entry</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">RowIndexEntry</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="kt">uint64</span> <span class="n">positions</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">[</span><span class="k">packed</span><span class="o">=</span><span class="kc">true</span><span class="p">];</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="n">ColumnStatistics</span> <span class="n">statistics</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><h5 id="bloom-fliter-index">Bloom Fliter Index</h5>
 <p>由多个列的BLOOM_FILTER stream组成。每个列拥有一个BloomFilter</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-protobuf" data-lang="protobuf"><span style="display:flex;"><span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">BloomFilter</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">uint32</span> numHashFunctions <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">repeated</span> <span style="color:#66d9ef">fixed64</span> bitset <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">optional</span> <span style="color:#66d9ef">bytes</span> utf8bitset <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">BloomFilterIndex</span> {<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#66d9ef">repeated</span> BloomFilter bloomFilter <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">BloomFilter</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">uint32</span> <span class="n">numHashFunctions</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="kt">fixed64</span> <span class="n">bitset</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">optional</span> <span class="kt">bytes</span> <span class="n">utf8bitset</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="kd">message</span> <span class="nc">BloomFilterIndex</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"> <span class="k">repeated</span> <span class="n">BloomFilter</span> <span class="n">bloomFilter</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="err">
 </span></span></span></code></pre></div><blockquote>
 <p>Bloom filter streams are interlaced with row group indexes.
-<img alt="image.png" src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1654176806060-c96fc0a5-90bf-487c-8410-7765557dc314.png#clientId=ubff13205-800f-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=268&id=u8120b210&margin=%5Bobject%20Object%5D&name=image.png&originHeight=356&originWidth=150&originalType=binary&ratio=1&rotation=0&showTitle=false&size=63749&status=done&style=none&taskId=u991e969b-867b-4e97-8290-539df334c8f&title=&width=113"></p>
+<img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1654176806060-c96fc0a5-90bf-487c-8410-7765557dc314.png#clientId=ubff13205-800f-4&amp;crop=0&amp;crop=0&amp;crop=1&amp;crop=1&amp;from=paste&amp;height=268&amp;id=u8120b210&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=356&amp;originWidth=150&amp;originalType=binary&amp;ratio=1&amp;rotation=0&amp;showTitle=false&amp;size=63749&amp;status=done&amp;style=none&amp;taskId=u991e969b-867b-4e97-8290-539df334c8f&amp;title=&amp;width=113" alt="image.png"></p>
 </blockquote>
 <h2 id="数据访问路径">数据访问路径</h2>
 <p>Postscript -&gt; Footer -&gt; 获取对于的StripeInfomation -&gt; Stripe Footer -&gt; Stripe Index -&gt; Stripe Row Group -&gt; Column</p>
@@ -655,6 +666,22 @@ Case in Hive DDL：
       </svg>
     </a>
     
+  </div>
+  
+
+  
+  
+  <div class="related-resources">
+    <h3>相关系列文章推荐</h3>
+    <ul>
+    
+      <li><a href="/zh/blog/zh/apacheiceberg%E8%B0%83%E7%A0%94/">Apache-Iceberg调研</a></li>
+    
+      <li><a href="/zh/blog/zh/leveldb-write/">LevelDB Write</a></li>
+    
+      <li><a href="/zh/blog/zh/leveldb-%E5%90%AF%E5%8A%A8/">LevelDB 启动</a></li>
+    
+    </ul>
   </div>
   
 
@@ -692,12 +719,16 @@ Case in Hive DDL：
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -718,45 +749,64 @@ Case in Hive DDL：
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = '复制';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = '已复制';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = '复制';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

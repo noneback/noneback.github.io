@@ -11,12 +11,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,23 +25,19 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/tags/network/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="Network">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="website">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="Network">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="website">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Network">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Network">
 
     <link rel="icon" href="/images/avatar.jpeg" sizes="16x16">
 
@@ -51,22 +45,17 @@
 
 <link rel="manifest" href="/images/avatar.jpeg">
     
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -166,10 +155,48 @@
     </small>
   
 <p>
-          Let&rsquo;s start with epoll.
-epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.
-Usage API epoll has three primary system calls:
-/** epoll_create * Creates an epoll instance and returns a file descriptor for it. * Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
+          <p>Let&rsquo;s start with epoll.</p>
+<p>epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.</p>
+<h2 id="usage">Usage</h2>
+<h3 id="api">API</h3>
+<p>epoll has three primary system calls:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cm">/** epoll_create
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Creates an epoll instance and returns a file descriptor for it.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  size: Indicates the number of file descriptors to be monitored by epfd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_create</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/** epoll_ctl
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Adds or modifies a file descriptor to be monitored by epoll.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  epfd: The epoll file descriptor.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  op: Operation type.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_ADD: Add a new fd to epfd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_MOD: Modify an already registered fd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_DEL: Remove an fd from epfd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  fd: The file descriptor to be monitored.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  event: Specifies the type of event to be monitored.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed).
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLOUT: Indicates the fd is ready for writing.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLPRI: Indicates urgent data can be read.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLERR: Indicates an error occurred on the fd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLHUP: Indicates the fd has been hung up.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT).
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_ctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">op</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="o">*</span><span class="n">event</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/** epoll_wait
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Collects events that have been triggered and returns the number of triggered events.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  epfd: The epoll file descriptor.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  events: Array of epoll events that will be populated with triggered events.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  maxevents: Indicates the size of the events array.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, &gt;0 waits for the specified duration.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_wait</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="o">*</span><span class="n">events</span><span class="p">,</span> <span class="kt">int</span> <span class="n">maxevents</span><span class="p">,</span> <span class="kt">int</span> <span class="n">timeout</span><span class="p">);</span>
+</span></span></code></pre></div><h3 id="processing-flow">Processing Flow</h3>
+<h4 id="epoll_create">epoll_create</h4>
+<p>When a process calls <code>epoll_create</code>, the Linux kernel creates an <code>eventpoll</code> structure:</p>
         </div>
       </article>
       
@@ -194,8 +221,14 @@ Usage API epoll has three primary system calls:
     </small>
   
 <p>
-          HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.
-Problems with HTTP Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e.
+          <p>HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses <a href="https://developer.mozilla.org/en-US/docs/Glossary/SSL">SSL</a> or <a href="https://developer.mozilla.org/en-US/docs/Glossary/TLS">TLS</a> to encrypt communication between the client and the server.</p>
+<h2 id="problems-with-http">Problems with HTTP</h2>
+<ul>
+<li>Communication uses plain text, making it susceptible to eavesdropping.</li>
+<li>Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks).</li>
+<li>Cannot guarantee message integrity, making it possible for messages to be altered (e.g., Man-in-the-Middle attacks).</li>
+</ul>
+<p>To address these issues, we need:</p>
         </div>
       </article>
       </div>
@@ -204,12 +237,14 @@ Problems with HTTP Communication uses plain text, making it susceptible to eaves
 </div>
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -230,45 +265,50 @@ Problems with HTTP Communication uses plain text, making it susceptible to eaves
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

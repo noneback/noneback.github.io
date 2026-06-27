@@ -3,7 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIT6.824-MapReduce</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一">
+    <meta name="description" content="Ladder@大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一个论文或者实验都会记录在文章中。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mit6.824-mapreduce/">
         <meta name="google-site-verification" content="xxx">
@@ -11,12 +11,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,31 +25,27 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/mit6.824-mapreduce/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="MIT6.824-MapReduce">
-  <meta property="og:description" content="大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一">
-  <meta property="og:locale" content="zh">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2021-01-22T17:02:44+08:00">
-    <meta property="article:modified_time" content="2021-01-22T17:02:44+08:00">
-    <meta property="article:tag" content="MIT6.824">
-    <meta property="article:tag" content="Distributed System">
-    <meta property="article:tag" content="Paper Reading">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="MIT6.824-MapReduce">
+	<meta property="og:description" content="大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一个论文或者实验都会记录在文章中。">
+	<meta property="og:locale" content="zh">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2021-01-22T17:02:44+08:00">
+		<meta property="article:modified_time" content="2021-01-22T17:02:44+08:00">
+		<meta property="article:tag" content="MIT6.824">
+		<meta property="article:tag" content="Distributed System">
+		<meta property="article:tag" content="Paper Reading">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="MIT6.824-MapReduce">
-  <meta name="twitter:description" content="大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="MIT6.824-MapReduce">
+	<meta name="twitter:description" content="大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一个论文或者实验都会记录在文章中。">
 
 
 <script type="application/ld+json">
@@ -80,7 +74,7 @@
   "@type": "BlogPosting",
   "headline": "MIT6.824-MapReduce",
   "name": "MIT6.824-MapReduce",
-  "description": "大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一",
+  "description": "大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一个论文或者实验都会记录在文章中。\n",
   "keywords": [
     "MIT6.824", "Distributed System", "Lab", "MapReduce"
   ],
@@ -148,22 +142,30 @@
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -263,7 +265,12 @@
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>目录</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#论文相关">论文相关</a>
       <ul>
@@ -290,6 +297,10 @@
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><p>大三上学期课程有点硬核，一直没时间去继续6.824的学习，于是学习进度一直停在了Lab 1。寒假时间稍微充裕了点，于是打算继续推进。之后的每一个论文或者实验都会记录在文章中。</p>
@@ -303,27 +314,27 @@
 <li>Map：接受输入数据，生成一组中间键值对</li>
 <li>Reduce：接受中间键值对作为输入，将所有相同key的数据合并并作为结果输出。</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>map(String key, String value)<span style="color:#f92672">:</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// key: document name
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// value: document contents
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">for</span> each word w in value:
-</span></span><span style="display:flex;"><span>    EmitIntermediate(w, <span style="color:#960050;background-color:#1e0010">“</span><span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">”</span>);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>reduce(String key, Iterator values)<span style="color:#f92672">:</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// key: a word
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// values: a list of counts
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> result <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">for</span> each v in values:
-</span></span><span style="display:flex;"><span>    result <span style="color:#f92672">+=</span> ParseInt(v);
-</span></span><span style="display:flex;"><span>  Emit(AsString(result));
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">map</span><span class="p">(</span><span class="n">String</span> <span class="n">key</span><span class="p">,</span> <span class="n">String</span> <span class="n">value</span><span class="p">)</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// key: document name
+</span></span></span><span class="line"><span class="cl">  <span class="c1">// value: document contents
+</span></span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="n">each</span> <span class="n">word</span> <span class="n">w</span> <span class="n">in</span> <span class="nl">value</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">EmitIntermediate</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="err">“</span><span class="mi">1</span><span class="err">”</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">reduce</span><span class="p">(</span><span class="n">String</span> <span class="n">key</span><span class="p">,</span> <span class="n">Iterator</span> <span class="n">values</span><span class="p">)</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// key: a word
+</span></span></span><span class="line"><span class="cl">  <span class="c1">// values: a list of counts
+</span></span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="n">each</span> <span class="n">v</span> <span class="n">in</span> <span class="nl">values</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">+=</span> <span class="n">ParseInt</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">Emit</span><span class="p">(</span><span class="n">AsString</span><span class="p">(</span><span class="n">result</span><span class="p">));</span>
 </span></span></code></pre></div><h3 id="mapreduce执行过程">MapReduce执行过程</h3>
 <p>Distrubuted MapReduce System采用主从的设计，在MapReduce计算过程中，一般有一个Master，以及若干个Worker。</p>
 <ul>
 <li>Master：负责Map以及Reduce任务的创建、分配、调度等</li>
 <li>Worker：负责执行Map以及Reduce任务</li>
 </ul>
-<p><img alt="Screenshot_20210112_125637" src="https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png"></p>
+<p><img src="https://i.loli.net/2021/01/12/UK8yJRHc5DzMg3u.png" alt="Screenshot_20210112_125637"></p>
 <p>更详细的描述为:</p>
 <p>1.MapReduce的整个执行过程包含M个Map Task 和R个Reduce Task，分为两个执行阶段Map Phase 和Reduce Phase。</p>
 <p>2.输入的文件被拆分为M个split，计算进入Map Phase阶段，Master分配Map Task给空闲Worker。分配了Task的Worker读取对应的split data，执行Task。直到所有的Map Task都完成，Map Phase结束。利用Partition函数（一般为<code>hash(key) mod R</code>)得到R组中间键值对，保存在文件中，并将文件路径告知Master，以便Reduce Task的操作。</p>
@@ -367,98 +378,98 @@
 <h3 id="主要数据结构">主要数据结构</h3>
 <p>数据结构的设计是主要的工作，良好的设计结构有助于功能的实现。此处之展示数据结构相关代码，具体的功能实现见<a href="https://github.com/noneback/Toys/tree/master/6.824-Lab1-MapReduce">GitHub</a></p>
 <h4 id="master-1">Master</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Master</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span> <span style="color:#75715e">// Your definitions here.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#a6e22e">nReduce</span>      <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">taskQueue</span>    <span style="color:#66d9ef">chan</span> <span style="color:#a6e22e">Task</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">tasksContext</span> []<span style="color:#a6e22e">TaskContext</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">lock</span>         <span style="color:#a6e22e">sync</span>.<span style="color:#a6e22e">Mutex</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">files</span>        []<span style="color:#66d9ef">string</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">phase</span>        <span style="color:#a6e22e">PhaseKind</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">done</span>         <span style="color:#66d9ef">bool</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">workerID</span>     <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><h4 id="worker-1">Worker</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">worker</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">ID</span>      <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">mapf</span>    <span style="color:#66d9ef">func</span>(<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>) []<span style="color:#a6e22e">KeyValue</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">reducef</span> <span style="color:#66d9ef">func</span>(<span style="color:#66d9ef">string</span>, []<span style="color:#66d9ef">string</span>) <span style="color:#66d9ef">string</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">nReduce</span> <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">nMap</span>    <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><h4 id="task--taskcontext">Task &amp; TaskContext</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Task</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">ID</span>       <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">Filename</span> <span style="color:#66d9ef">string</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">Phase</span>    <span style="color:#a6e22e">PhaseKind</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">TaskContext</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">t</span>         <span style="color:#f92672">*</span><span style="color:#a6e22e">Task</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">state</span>     <span style="color:#a6e22e">ContextState</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">workerID</span>  <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">startTime</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Time</span>
-</span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><h4 id="rpc-args--reply">Rpc Args &amp; Reply</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegTaskArgs</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">WorkerID</span> <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegTaskReply</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">T</span>    <span style="color:#a6e22e">Task</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">HasT</span> <span style="color:#66d9ef">bool</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ReportTaskArgs</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">WorkerID</span> <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">TaskID</span>   <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">State</span>    <span style="color:#a6e22e">ContextState</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ReportTaskReply</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegWorkerArgs</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">RegWorkerReply</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">ID</span>      <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">NReduce</span> <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">NMap</span>    <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><h4 id="constant--type">Constant &amp; Type</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">RUNNING</span> <span style="color:#a6e22e">ContextState</span> = <span style="color:#66d9ef">iota</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">FAILED</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">READY</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">IDEL</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">COMPLETE</span>
-</span></span><span style="display:flex;"><span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">MAX_PROCESSING_TIME</span> = <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">SCHEDULE_INTERVAL</span>   = <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span>
-</span></span><span style="display:flex;"><span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">MAP</span> <span style="color:#a6e22e">PhaseKind</span> = <span style="color:#66d9ef">iota</span>
-</span></span><span style="display:flex;"><span> <span style="color:#a6e22e">REDUCE</span>
-</span></span><span style="display:flex;"><span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ContextState</span> <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">PhaseKind</span> <span style="color:#66d9ef">int</span>
-</span></span></code></pre></div><h3 id="运行与测试">运行与测试</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">Master</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="c1">// Your definitions here.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">nReduce</span><span class="w">      </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">taskQueue</span><span class="w">    </span><span class="kd">chan</span><span class="w"> </span><span class="nx">Task</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">tasksContext</span><span class="w"> </span><span class="p">[]</span><span class="nx">TaskContext</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">lock</span><span class="w">         </span><span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">files</span><span class="w">        </span><span class="p">[]</span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">phase</span><span class="w">        </span><span class="nx">PhaseKind</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">done</span><span class="w">         </span><span class="kt">bool</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">workerID</span><span class="w">     </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h4 id="worker-1">Worker</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">worker</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">ID</span><span class="w">      </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">mapf</span><span class="w">    </span><span class="kd">func</span><span class="p">(</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">[]</span><span class="nx">KeyValue</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">reducef</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">nReduce</span><span class="w"> </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">nMap</span><span class="w">    </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h4 id="task--taskcontext">Task &amp; TaskContext</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">Task</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">ID</span><span class="w">       </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">Filename</span><span class="w"> </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">Phase</span><span class="w">    </span><span class="nx">PhaseKind</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">TaskContext</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">t</span><span class="w">         </span><span class="o">*</span><span class="nx">Task</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">state</span><span class="w">     </span><span class="nx">ContextState</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">workerID</span><span class="w">  </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">startTime</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h4 id="rpc-args--reply">Rpc Args &amp; Reply</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">RegTaskArgs</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">WorkerID</span><span class="w"> </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">RegTaskReply</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">T</span><span class="w">    </span><span class="nx">Task</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">HasT</span><span class="w"> </span><span class="kt">bool</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">ReportTaskArgs</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">WorkerID</span><span class="w"> </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">TaskID</span><span class="w">   </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">State</span><span class="w">    </span><span class="nx">ContextState</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">ReportTaskReply</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">RegWorkerArgs</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">RegWorkerReply</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">ID</span><span class="w">      </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">NReduce</span><span class="w"> </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">NMap</span><span class="w">    </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h4 id="constant--type">Constant &amp; Type</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">const</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">RUNNING</span><span class="w"> </span><span class="nx">ContextState</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">iota</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">FAILED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">READY</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">IDEL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">COMPLETE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">const</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">MAX_PROCESSING_TIME</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">SCHEDULE_INTERVAL</span><span class="w">   </span><span class="p">=</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">const</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">MAP</span><span class="w"> </span><span class="nx">PhaseKind</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">iota</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nx">REDUCE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">ContextState</span><span class="w"> </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">PhaseKind</span><span class="w"> </span><span class="kt">int</span><span class="w">
+</span></span></span></code></pre></div><h3 id="运行与测试">运行与测试</h3>
 <h4 id="运行">运行</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># In main directory</span>
-</span></span><span style="display:flex;"><span>cd ./src/main
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># Master</span>
-</span></span><span style="display:flex;"><span>go run ./mrmaster.go pg*.txt                                              
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># Worker</span>
-</span></span><span style="display:flex;"><span>go build -buildmode<span style="color:#f92672">=</span>plugin ../mrapps/wc.go <span style="color:#f92672">&amp;&amp;</span> go run ./mrworker.go ./wc.so 
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># In main directory</span>
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> ./src/main
+</span></span><span class="line"><span class="cl"><span class="c1"># Master</span>
+</span></span><span class="line"><span class="cl">go run ./mrmaster.go pg*.txt                                              
+</span></span><span class="line"><span class="cl"><span class="c1"># Worker</span>
+</span></span><span class="line"><span class="cl">go build -buildmode<span class="o">=</span>plugin ../mrapps/wc.go <span class="o">&amp;&amp;</span> go run ./mrworker.go ./wc.so 
 </span></span></code></pre></div><h4 id="测试">测试</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cd ./src/main
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>sh  ./test-mr.sh
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">cd</span> ./src/main
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">sh  ./test-mr.sh
 </span></span></code></pre></div><h2 id="优化">优化</h2>
 <p>这些优化是在我完成实验之后，回顾自己代码时想到的可以优化的一些设计。</p>
 <h3 id="热点问题">热点问题</h3>
@@ -505,6 +516,9 @@
   
 
   
+  
+
+  
 
 
   
@@ -538,12 +552,16 @@
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -564,45 +582,64 @@
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = '复制';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = '已复制';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = '复制';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-	<meta name="generator" content="Hugo 0.127.0">
+	<meta name="generator" content="Hugo 0.163.3">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NoneBack</title>
     <meta charset="utf-8">
@@ -12,12 +12,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -28,23 +26,19 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="NoneBack">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="website">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="NoneBack">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="website">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="NoneBack">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="NoneBack">
 
 <script type="application/ld+json">
 {
@@ -65,22 +59,17 @@
 
 <link rel="manifest" href="/images/avatar.jpeg">
     
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -153,11 +142,11 @@
     </section>
 </nav>
 <div id="content">
-    <div class="home">
+  <div class="home">
     <div class="info">
         <div class="intro">
             <h1>NoneBack</h1>
-            <small>I want to play guitar, actually.</small>
+            <small>Former intern at Alibaba Cloud, ByteDance, and GSoC 2022 contributor. Currently focusing on MaaS and LLM at Bailian.</small>
             <p></p>
         </div>
 
@@ -186,13 +175,17 @@
       ·
       
       
-      <a href="https://noneback.github.io/tags/performance-analysis/">Performance Analysis</a>
+      <a href="https://noneback.github.io/tags/performance/">Performance</a>
+      
+      <a href="https://noneback.github.io/tags/profiling/">Profiling</a>
       
     </small>
   
 <p>
-        What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
-How: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.
+        <h2 id="what-what-is-cpu-profiling">What: What is CPU Profiling</h2>
+<p>A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.</p>
+<h2 id="how-how-profiling-data-is-collected">How: How Profiling Data is Collected</h2>
+<p>Common tools like <code>perf</code> are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.</p>
     </article>
   
     <article class="featured-single">
@@ -210,12 +203,17 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
       
       <a href="https://noneback.github.io/tags/mvcc/">MVCC</a>
       
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
+      
     </small>
   
 <p>
-        LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.
-Sequence Number LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.
-Versioning Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information.
+        <p>LevelDB implements concurrent sstable read/write operations and snapshot reads through MVCC. Let&rsquo;s examine its implementation.</p>
+<p>Sequence Number
+LevelDB uses Sequence Numbers as logical clocks to maintain a total order of KV write operations. The Sequence Number is encoded in the last few bytes of the InternalKey. This encoding ensures data ordering during memory writes.</p>
+<p><img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt=""></p>
+<p>Versioning
+Every change to the sstable file collection triggers a version upgrade in LevelDB. Each Version represents the database state at a specific moment, containing sstable metadata and compaction-related information. VersionEdit records version changes.</p>
     </article>
   
     <article class="featured-single">
@@ -233,10 +231,14 @@ Versioning Every change to the sstable file collection triggers a version upgrad
       
       <a href="https://noneback.github.io/tags/tsdb/">TSDB</a>
       
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
+      
     </small>
   
 <p>
-        Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the
+        <p>Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system.</p>
+<p>This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.</p>
+<p>Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.</p>
     </article>
   
     <article class="featured-single">
@@ -252,15 +254,22 @@ Versioning Every change to the sstable file collection triggers a version upgrad
       
       <a href="https://noneback.github.io/tags/borg/">Borg</a>
       
-      <a href="https://noneback.github.io/tags/k8s/">K8s</a>
+      <a href="https://noneback.github.io/tags/kubernetes/">Kubernetes</a>
       
       <a href="https://noneback.github.io/tags/cluster-management/">Cluster Management</a>
+      
+      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
       
     </small>
   
 <p>
-        Borg is a cluster management system, similar to the closed-source version of Kubernetes (k8s).
-It achieves high utilization through admission control, efficient task packing, overcommitment, machine sharing, and process-level performance isolation. It provides runtime features to reduce failure recovery time for high-availability applications and scheduling policies that reduce the probability of correlated failures. It offers a declarative job description language, DNS integration, real-time job monitoring, and tools for analyzing and simulating system behavior, simplifying usage for end-users.
+        <p>Borg is a cluster management system, similar to the closed-source version of Kubernetes (k8s).</p>
+<ul>
+<li>It achieves high utilization through admission control, efficient task packing, overcommitment, machine sharing, and process-level performance isolation.</li>
+<li>It provides runtime features to reduce failure recovery time for high-availability applications and scheduling policies that reduce the probability of correlated failures.</li>
+<li>It offers a declarative job description language, DNS integration, real-time job monitoring, and tools for analyzing and simulating system behavior, simplifying usage for end-users.</li>
+</ul>
+<p>The paper aims to introduce the system design and share the experiences Google has gained behind it. This blog mainly focuses on system design, specifically the services Borg offers in terms of SLA, its abstraction of workloads, resources, and scheduling.</p>
     </article>
   
     <article class="featured-single">
@@ -278,10 +287,15 @@ It achieves high utilization through admission control, efficient task packing, 
       
       <a href="https://noneback.github.io/tags/transaction/">Transaction</a>
       
+      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
+      
     </small>
   
 <p>
-        It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding. Percolator and 2PC 2PC The Two-Phase Commit (2PC) protocol involves two types of roles: Coordinator and Participant. The coordinator manages the entire process to ensure multiple participants reach a
+        <p>It has been a while since I last studied, and I wanted to learn something interesting. This time, I&rsquo;ll be covering Percolator, a distributed transaction system. I won&rsquo;t translate the paper or delve into detailed algorithms; I&rsquo;ll just document my understanding.</p>
+<h2 id="percolator-and-2pc">Percolator and 2PC</h2>
+<h3 id="2pc">2PC</h3>
+<p>The Two-Phase Commit (2PC) protocol involves two types of roles: <strong>Coordinator and Participant</strong>. The coordinator manages the entire process to ensure multiple participants reach a unanimous decision. Participants respond to the coordinator&rsquo;s requests, completing prepare operations and commit/abort operations based on those requests.</p>
     </article>
   
     <article class="featured-single">
@@ -302,8 +316,9 @@ It achieves high utilization through admission control, efficient task packing, 
     </small>
   
 <p>
-        An old paper by AWS, Dynamo has been in the market for a long time, and the architecture has likely evolved since the paper&rsquo;s publication. Despite this, the paper was selected as one of the SIGMOD best papers of the year, and there are still many valuable lessons to learn.
-Design Dynamo is a NoSQL product that provides a key-value storage interface. It emphasizes high availability rather than consistency, which leads to differences in architectural design and technical choices compared to other systems.
+        <p>An old paper by AWS, Dynamo has been in the market for a long time, and the architecture has likely evolved since the paper&rsquo;s publication. Despite this, the paper was selected as one of the SIGMOD best papers of the year, and there are still many valuable lessons to learn.</p>
+<h2 id="design">Design</h2>
+<p>Dynamo is a NoSQL product that provides a key-value storage interface. It emphasizes high availability rather than consistency, which leads to differences in architectural design and technical choices compared to other systems.</p>
     </article>
   
     <article class="featured-single">
@@ -328,7 +343,19 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
     </small>
   
 <p>
-        This article introduces the design considerations of AWS&rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead. Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios. In terms of design, there are several aspects worth noting: The design premise of
+        <p>This article introduces the design considerations of AWS&rsquo;s database product, Aurora, including storage-compute separation, single-writer multi-reader architecture, and quorum-based NRW consistency protocol. The article also mentions how PolarDB was inspired by Aurora, with differences in addressing network bottlenecks and system call overhead.</p>
+<hr>
+<p>Aurora is a database product provided by AWS, primarily aimed at OLTP business scenarios.</p>
+<p>In terms of design, there are several aspects worth noting:</p>
+<ul>
+<li>The design premise of Aurora is that with databases moving to the cloud, thanks to advancements in cloud infrastructure, the biggest bottleneck for databases has shifted from compute and storage to the network. This was an important premise for AWS when designing Aurora. Based on this premise, Aurora revisits the concept of &ldquo;Log is Database&rdquo;, pushing only the RedoLog down to the storage layer.</li>
+<li><strong>Storage-compute separation</strong>: The database storage layer interfaces with a distributed storage system, which provides reliability and security guarantees. The compute and storage layers can scale independently. The storage system provides a unified data view to the upper layers, significantly improving the efficiency of core functions and operations (such as backup, data recovery, and high availability).</li>
+<li><strong>Interesting reliability guarantees</strong>: For example, quorum-based NRW consistency protocol, where read and write operations on storage nodes require majority voting, ensures dual-AZ level fault tolerance. Sharding is used to reduce failure handling time, improving the SLA. Most reads occur during database recovery when the current state needs to be restored.</li>
+<li><strong>Single-writer multi-reader</strong>: Unlike NewSQL products with a shared-nothing architecture, Aurora provides only a single write node. This simplifies data consistency guarantees since the single write node can use the RedoLog LSN as a logical clock to maintain the partial order of data updates. By pushing the RedoLog to all nodes and applying these operations in order, consistency can be achieved.</li>
+<li><strong>Transaction implementation</strong>: Since the storage system provides a unified file view to the upper layer, Aurora&rsquo;s transaction implementation is almost the same as that of a single-node transaction algorithm and can provide similar transaction semantics. NewSQL transactions are generally implemented via distributed transactions based on 2PC.</li>
+<li><strong>Background acceleration for foreground processing</strong>: Similar to the approach in LevelDB, storage nodes try to make some operations asynchronous (such as log apply) to improve user-perceived performance. These asynchronous operations maintain progress using various LSNs, such as VLSN, commit-LSN, etc.</li>
+</ul>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20230412094745.png" alt="Aurora Architecture Overview"></p>
     </article>
   
     <article class="featured-single">
@@ -346,20 +373,21 @@ Design Dynamo is a NoSQL product that provides a key-value storage interface. It
       
       <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
       
-      <a href="https://noneback.github.io/tags/chainreplication/">ChainReplication</a>
+      <a href="https://noneback.github.io/tags/chain-replication/">Chain Replication</a>
       
     </small>
   
 <p>
-        This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&rsquo;s best to refer directly to the original paper.
-Introduction In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.
+        <p>This post provides a brief overview of the Chain Replication (CR) paper, which introduces a simple but effective algorithm for providing linearizable consistency in storage services. For those interested in the detailed design, it&rsquo;s best to refer directly to the original paper.</p>
+<h2 id="introduction">Introduction</h2>
+<p>In short, the Chain Replication (CR) paper presents a replicated state machine algorithm designed for storage services that require linearizable consistency. It uses a chain replication method to improve throughput and relies on multiple replicas to ensure service availability.</p>
     </article>
   
     <article class="featured-single">
         <h4><a href="/blog/mit6.824-zookeeper/">MIT6.824-ZooKeeper</a></h4>
         <p>
   <small>
-    January 3, 2023&nbsp;· 399 words&nbsp;· 2 min</small>
+    January 3, 2023&nbsp;· 638 words&nbsp;· 3 min</small>
 
   <small>
       
@@ -375,9 +403,12 @@ Introduction In short, the Chain Replication (CR) paper presents a replicated st
     </small>
   
 <p>
-        This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic decisions. These trade-offs are the most insightful aspects of this article.
-Positioning ZooKeeper is a wait-free, high-performance coordination service for distributed applications. It supports the coordination needs of distributed applications by providing coordination primitives (specific APIs and data models).
-Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high performance and distributed application coordination service.
+        <p>This article mainly discusses the design and practical considerations of the ZooKeeper system, such as wait-free and lock mechanisms, consistency choices, system-provided APIs, and specific semantic decisions. These trade-offs are the most insightful aspects of this article.</p>
+<h2 id="positioning">Positioning</h2>
+<p>ZooKeeper is a wait-free, high-performance coordination service for distributed applications. It supports the coordination needs of distributed applications by providing coordination primitives (specific APIs and data models).</p>
+<h2 id="design">Design</h2>
+<h3 id="keywords">Keywords</h3>
+<p>There are two key phrases in ZooKeeper&rsquo;s positioning: <strong>high performance</strong> and <strong>distributed application coordination service</strong>.</p>
     </article>
   
     <article class="featured-single">
@@ -393,7 +424,7 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
       
       <a href="https://noneback.github.io/tags/big-data/">Big Data</a>
       
-      <a href="https://noneback.github.io/tags/lake-house/">Lake House</a>
+      <a href="https://noneback.github.io/tags/lakehouse/">Lakehouse</a>
       
       <a href="https://noneback.github.io/tags/stream-compute/">Stream Compute</a>
       
@@ -402,9 +433,73 @@ Design Keywords There are two key phrases in ZooKeeper&rsquo;s positioning: high
     </small>
   
 <p>
-        The Iceberg community provides an official Flink Connector, and this chapter&rsquo;s source code analysis is based on that.
-Overview of the Write Submission Process Flink writes data through RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).
-private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Preconditions.checkArgument(inputCreator != null, &#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.
+        <p>The Iceberg community provides an official Flink Connector, and this chapter&rsquo;s source code analysis is based on that.</p>
+<h2 id="overview-of-the-write-submission-process">Overview of the Write Submission Process</h2>
+<p>Flink writes data through <code>RowData -&gt; distributeStream -&gt; WriterStream -&gt; CommitterStream</code>. Before data is committed, it is stored as intermediate files, which become visible to the system after being committed (through writing manifest, snapshot, and metadata files).</p>
+<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/59256351/1655962006990-826460c7-b6fc-4efe-a8e0-65cc080ffea9.png" alt="Flink-Iceberg Write Flow"></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">DataStreamSink</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">chainIcebergOperators</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkArgument</span><span class="p">(</span><span class="n">inputCreator</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s">&#34;Please use forRowData() or forMapperOutputType() to initialize the input DataStream.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkNotNull</span><span class="p">(</span><span class="n">tableLoader</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;Table loader shouldn&#39;t be null&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rowDataInput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inputCreator</span><span class="p">.</span><span class="na">apply</span><span class="p">(</span><span class="n">uidPrefix</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">table</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">tableLoader</span><span class="p">.</span><span class="na">open</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">TableLoader</span><span class="w"> </span><span class="n">loader</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tableLoader</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">loader</span><span class="p">.</span><span class="na">loadTable</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">IOException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UncheckedIOException</span><span class="p">(</span><span class="s">&#34;Failed to load iceberg table from table loader: &#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tableLoader</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">checkAndGetEqualityFieldIds</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">RowType</span><span class="w"> </span><span class="n">flinkRowType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toFlinkRowType</span><span class="p">(</span><span class="n">table</span><span class="p">.</span><span class="na">schema</span><span class="p">(),</span><span class="w"> </span><span class="n">tableSchema</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">distributeStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">distributeDataStream</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">rowDataInput</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">properties</span><span class="p">(),</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">spec</span><span class="p">(),</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">schema</span><span class="p">(),</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span><span class="w"> </span><span class="n">writerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">appendWriter</span><span class="p">(</span><span class="n">distributeStream</span><span class="p">,</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">equalityFieldIds</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span><span class="w"> </span><span class="n">committerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">appendCommitter</span><span class="p">(</span><span class="n">writerStream</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">appendDummySink</span><span class="p">(</span><span class="n">committerStream</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h2 id="write-process-source-code-analysis">Write Process Source Code Analysis</h2>
+<h3 id="writestream">WriteStream</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">appendWriter</span><span class="p">(</span><span class="n">DataStream</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">RowType</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                                             </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">boolean</span><span class="w"> </span><span class="n">upsertMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upsert</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">PropertyUtil</span><span class="p">.</span><span class="na">propertyAsBoolean</span><span class="p">(</span><span class="n">table</span><span class="p">.</span><span class="na">properties</span><span class="p">(),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">UPSERT_ENABLED</span><span class="p">,</span><span class="w"> </span><span class="n">UPSERT_ENABLED_DEFAULT</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">upsertMode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkState</span><span class="p">(</span><span class="o">!</span><span class="n">overwrite</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="s">&#34;OVERWRITE mode shouldn&#39;t be enabled when configuring to use UPSERT data stream.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkState</span><span class="p">(</span><span class="o">!</span><span class="n">equalityFieldIds</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">(),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="s">&#34;Equality field columns shouldn&#39;t be empty when configuring to use UPSERT data stream.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">table</span><span class="p">.</span><span class="na">spec</span><span class="p">().</span><span class="na">isUnpartitioned</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">PartitionField</span><span class="w"> </span><span class="n">partitionField</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">spec</span><span class="p">().</span><span class="na">fields</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">Preconditions</span><span class="p">.</span><span class="na">checkState</span><span class="p">(</span><span class="n">equalityFieldIds</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="n">partitionField</span><span class="p">.</span><span class="na">sourceId</span><span class="p">()),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;In UPSERT mode, partition field &#39;%s&#39; should be included in equality fields: &#39;%s&#39;&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="n">partitionField</span><span class="p">,</span><span class="w"> </span><span class="n">equalityFieldColumns</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">IcebergStreamWriter</span><span class="o">&lt;</span><span class="n">RowData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">streamWriter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createStreamWriter</span><span class="p">(</span><span class="n">table</span><span class="p">,</span><span class="w"> </span><span class="n">flinkRowType</span><span class="p">,</span><span class="w"> </span><span class="n">equalityFieldIds</span><span class="p">,</span><span class="w"> </span><span class="n">upsertMode</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">parallelism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">writeParallelism</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="na">getParallelism</span><span class="p">()</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">writeParallelism</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SingleOutputStreamOperator</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span><span class="w"> </span><span class="n">writerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">transform</span><span class="p">(</span><span class="n">operatorName</span><span class="p">(</span><span class="n">ICEBERG_STREAM_WRITER_NAME</span><span class="p">),</span><span class="w"> </span><span class="n">TypeInformation</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">WriteResult</span><span class="p">.</span><span class="na">class</span><span class="p">),</span><span class="w"> </span><span class="n">streamWriter</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="na">setParallelism</span><span class="p">(</span><span class="n">parallelism</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uidPrefix</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">writerStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">writerStream</span><span class="p">.</span><span class="na">uid</span><span class="p">(</span><span class="n">uidPrefix</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34;-writer&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">writerStream</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>The <code>WriterStream</code> operator is transformed from the <code>distributeStream</code>, with <code>RowData</code> as input and <code>WriteResult</code> as output. The transformation logic is encapsulated in the <code>IcebergStreamWriter</code>, which processes each element using <code>processElement</code>:</p>
     </article>
   
     <article class="featured-single">
@@ -418,16 +513,25 @@ private &lt;T&gt; DataStreamSink&lt;T&gt; chainIcebergOperators() { Precondition
       ·
       
       
+      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      
       <a href="https://noneback.github.io/tags/lsm/">LSM</a>
       
-      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
     </small>
   
 <p>
-        This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.
-Main Process The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a WriteBatch, and then it is executed.
-Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&amp; value) { WriteBatch batch; batch.
+        <p>This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.</p>
+<h2 id="main-process">Main Process</h2>
+<p>The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a <code>WriteBatch</code>, and then it is executed.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">batch</span><span class="p">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="nf">Write</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">batch</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="writebatch">WriteBatch</h3>
+<p><code>WriteBatch</code> is an encapsulation of a group of update operations, which are applied <strong>atomically</strong> to the state machine. A block of memory is used to save the user&rsquo;s update operations.</p>
     </article>
   
     <article class="featured-single">
@@ -445,16 +549,15 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
       
       <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
       
-      <a href="https://noneback.github.io/tags/consensus/">Consensus</a>
-      
       <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
       
     </small>
   
 <p>
-        Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.
-Lab Overview Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.
-The structure of RaftKV and the interaction between its modules are shown below:
+        <p>Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.</p>
+<h2 id="lab-overview">Lab Overview</h2>
+<p>Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.</p>
+<p>The structure of RaftKV and the interaction between its modules are shown below:</p>
     </article>
   
     <article class="featured-single">
@@ -468,16 +571,20 @@ The structure of RaftKV and the interaction between its modules are shown below:
       ·
       
       
+      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      
       <a href="https://noneback.github.io/tags/lsm/">LSM</a>
       
-      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
     </small>
   
 <p>
-        This is the first chapter of my notes on reading the LevelDB source code, focusing on the startup process of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.
-A code repository with annotations will be shared on GitHub later for those interested in studying it.
-Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and naming details of these files (as I haven&rsquo;t reached that part yet).
+        <p>This is the first chapter of my notes on reading the LevelDB source code, focusing on the startup process of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.</p>
+<p>A code repository with annotations will be shared on GitHub later for those interested in studying it.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<h3 id="database-files">Database Files</h3>
+<p>For now, I won&rsquo;t delve into the encoding and naming details of these files (as I haven&rsquo;t reached that part yet). I&rsquo;ll focus on the meaning and role of each file.</p>
     </article>
   
     <article class="featured-single">
@@ -493,7 +600,7 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
       
       <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
       
-      <a href="https://noneback.github.io/tags/consensu/">Consensu</a>
+      <a href="https://noneback.github.io/tags/consensus/">Consensus</a>
       
       <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
       
@@ -502,8 +609,9 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
     </small>
   
 <p>
-        Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.
-Algorithm Overview The basis of consensus algorithms is the replicated state machine, which means that executing the same deterministic commands in the same order will eventually lead to a consistent state.
+        <p>Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.</p>
+<h2 id="algorithm-overview">Algorithm Overview</h2>
+<p>The basis of consensus algorithms is the replicated state machine, which means that <strong>executing the same deterministic commands in the same order will eventually lead to a consistent state</strong>. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.</p>
     </article>
   
     <article class="featured-single">
@@ -517,15 +625,16 @@ Algorithm Overview The basis of consensus algorithms is the replicated state mac
       ·
       
       
-      <a href="https://noneback.github.io/tags/datastructure/">DataStructure</a>
+      <a href="https://noneback.github.io/tags/data-structure/">Data Structure</a>
       
       <a href="https://noneback.github.io/tags/skiplist/">SkipList</a>
       
     </small>
   
 <p>
-        Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I&rsquo;m thinking about it again, I realize I&rsquo;ve forgotten some of the details, so I&rsquo;m writing it down for future reference.
-What is SkipList? SkipList is an ordered data structure that can be seen as an alternative to balanced trees.
+        <p>Some time ago, I decided to implement a simple LSM storage engine model. As part of that, I implemented a basic SkipList and BloomFilter with BitSet. However, due to work demands and after-hours laziness, the project was put on hold. Now that I&rsquo;m thinking about it again, I realize I&rsquo;ve forgotten some of the details, so I&rsquo;m writing it down for future reference.</p>
+<h2 id="what-is-skiplist">What is SkipList?</h2>
+<p><strong>SkipList</strong> is an ordered data structure that can be seen as an alternative to balanced trees. It essentially uses <strong>sparse indexing</strong> to accelerate searches in a linked list structure. It combines both <strong>data and index</strong> into a single structure, allowing efficient insertions and deletions.</p>
     </article>
   
     <article class="featured-single">
@@ -548,8 +657,8 @@ What is SkipList? SkipList is an ordered data structure that can be seen as an a
     </small>
   
 <p>
-        The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle &ldquo;lots of small files&rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.
-These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.
+        <p>The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle &ldquo;lots of small files&rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.</p>
+<p>These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.</p>
     </article>
   
     <article class="featured-single">
@@ -574,8 +683,8 @@ These notes are not an in-depth analysis of specific details but rather a record
     </small>
   
 <p>
-        I recently found a translated version of the Bigtable paper online and saved it, but hadn&rsquo;t gotten around to reading it. Lately, I&rsquo;ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.
-This is the last of Google&rsquo;s three foundational distributed system papers, and although it wasn&rsquo;t originally part of the MIT6.824 reading list, I&rsquo;ve categorized it here for consistency.
+        <p>I recently found a translated version of the Bigtable paper online and saved it, but hadn&rsquo;t gotten around to reading it. Lately, I&rsquo;ve noticed that Bigtable shares many design similarities with a current project in our group, so I took some time over the weekend to read through it.</p>
+<p>This is the last of Google&rsquo;s three foundational distributed system papers, and although it wasn&rsquo;t originally part of the MIT6.824 reading list, I&rsquo;ve categorized it here for consistency.</p>
     </article>
   
     <article class="featured-single">
@@ -598,8 +707,9 @@ This is the last of Google&rsquo;s three foundational distributed system papers,
     </small>
   
 <p>
-        This article introduces the Google File System (GFS) paper published in 2003, which proposed a distributed file system designed to store large volumes of data reliably, meeting Google&rsquo;s data storage needs. This write-up reflects on the design goals, trade-offs, and architectural choices of GFS.
-Introduction GFS is a distributed file system developed by Google to meet the needs of data-intensive applications, using commodity hardware to provide a scalable and fault-tolerant solution.
+        <p>This article introduces the Google File System (GFS) paper published in 2003, which proposed a distributed file system designed to store large volumes of data reliably, meeting Google&rsquo;s data storage needs. This write-up reflects on the design goals, trade-offs, and architectural choices of GFS.</p>
+<h2 id="introduction">Introduction</h2>
+<p>GFS is a distributed file system developed by Google to meet the needs of data-intensive applications, using commodity hardware to provide a scalable and fault-tolerant solution.</p>
     </article>
   
     <article class="featured-single">
@@ -624,10 +734,48 @@ Introduction GFS is a distributed file system developed by Google to meet the ne
     </small>
   
 <p>
-        Let&rsquo;s start with epoll.
-epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.
-Usage API epoll has three primary system calls:
-/** epoll_create * Creates an epoll instance and returns a file descriptor for it. * Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
+        <p>Let&rsquo;s start with epoll.</p>
+<p>epoll is an I/O event notification mechanism in the Linux kernel, designed to replace select and poll. It aims to efficiently handle large numbers of file descriptors and supports the system&rsquo;s maximum file open limit, providing excellent performance.</p>
+<h2 id="usage">Usage</h2>
+<h3 id="api">API</h3>
+<p>epoll has three primary system calls:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cm">/** epoll_create
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Creates an epoll instance and returns a file descriptor for it.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Needs to be closed afterward, as epfd also consumes the system&#39;s fd resources.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  size: Indicates the number of file descriptors to be monitored by epfd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_create</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/** epoll_ctl
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Adds or modifies a file descriptor to be monitored by epoll.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  epfd: The epoll file descriptor.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  op: Operation type.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_ADD: Add a new fd to epfd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_MOD: Modify an already registered fd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *       EPOLL_CTL_DEL: Remove an fd from epfd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  fd: The file descriptor to be monitored.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  event: Specifies the type of event to be monitored.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLIN: Indicates the fd is ready for reading (including when the peer socket is closed).
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLOUT: Indicates the fd is ready for writing.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLPRI: Indicates urgent data can be read.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLERR: Indicates an error occurred on the fd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLHUP: Indicates the fd has been hung up.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLET: Sets epoll to Edge Triggered (ET) mode, as opposed to Level Triggered (LT).
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *         EPOLLONESHOT: Only listen for the event once. If continued monitoring is required, the socket must be re-added to epfd.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_ctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">op</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="o">*</span><span class="n">event</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/** epoll_wait
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  Collects events that have been triggered and returns the number of triggered events.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  epfd: The epoll file descriptor.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  events: Array of epoll events that will be populated with triggered events.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  maxevents: Indicates the size of the events array.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *  timeout: Timeout duration; 0 returns immediately, -1 blocks indefinitely, &gt;0 waits for the specified duration.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">epoll_wait</span><span class="p">(</span><span class="kt">int</span> <span class="n">epfd</span><span class="p">,</span> <span class="k">struct</span> <span class="nc">epoll_event</span> <span class="o">*</span><span class="n">events</span><span class="p">,</span> <span class="kt">int</span> <span class="n">maxevents</span><span class="p">,</span> <span class="kt">int</span> <span class="n">timeout</span><span class="p">);</span>
+</span></span></code></pre></div><h3 id="processing-flow">Processing Flow</h3>
+<h4 id="epoll_create">epoll_create</h4>
+<p>When a process calls <code>epoll_create</code>, the Linux kernel creates an <code>eventpoll</code> structure:</p>
     </article>
   
     <article class="featured-single">
@@ -645,12 +793,15 @@ Usage API epoll has three primary system calls:
       
       <a href="https://noneback.github.io/tags/cache/">Cache</a>
       
+      <a href="https://noneback.github.io/tags/performance/">Performance</a>
+      
     </small>
   
 <p>
-        The motivation for this post comes from an interview question I was asked: What is CPU false sharing?
-CPU Cache Let&rsquo;s start by discussing CPU cache.
-CPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor&rsquo;s frequency.
+        <p>The motivation for this post comes from an interview question I was asked: What is CPU false sharing?</p>
+<h2 id="cpu-cache">CPU Cache</h2>
+<p>Let&rsquo;s start by discussing CPU cache.</p>
+<p>CPU cache is a type of storage medium introduced to bridge the speed gap between the CPU and main memory. In the pyramid-shaped storage hierarchy, it is located just below CPU registers. Its capacity is much smaller than that of main memory, but its speed can be close to the processor&rsquo;s frequency.</p>
     </article>
   
     <article class="featured-single">
@@ -673,8 +824,14 @@ CPU cache is a type of storage medium introduced to bridge the speed gap between
     </small>
   
 <p>
-        HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses SSL or TLS to encrypt communication between the client and the server.
-Problems with HTTP Communication uses plain text, making it susceptible to eavesdropping. Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks). Cannot guarantee message integrity, making it possible for messages to be altered (e.
+        <p>HTTPS (HTTP over SSL) was introduced to address the security vulnerabilities of HTTP, such as eavesdropping and identity spoofing. It uses <a href="https://developer.mozilla.org/en-US/docs/Glossary/SSL">SSL</a> or <a href="https://developer.mozilla.org/en-US/docs/Glossary/TLS">TLS</a> to encrypt communication between the client and the server.</p>
+<h2 id="problems-with-http">Problems with HTTP</h2>
+<ul>
+<li>Communication uses plain text, making it susceptible to eavesdropping.</li>
+<li>Unable to verify the identity of the communication party, making it vulnerable to spoofing (e.g., Denial of Service attacks).</li>
+<li>Cannot guarantee message integrity, making it possible for messages to be altered (e.g., Man-in-the-Middle attacks).</li>
+</ul>
+<p>To address these issues, we need:</p>
     </article>
   
     <article class="featured-single">
@@ -697,9 +854,11 @@ Problems with HTTP Communication uses plain text, making it susceptible to eaves
     </small>
   
 <p>
-        The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.
-This is the first chapter of my Distributed System study notes.
-About the Paper The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the Distributed MapReduce System, including the Master data structure, fault tolerance, and some refinements.
+        <p>The third year of university has been quite intense, leaving me with little time to continue my studies on 6.824, so my progress stalled at Lab 1. With a bit more free time during the winter break, I decided to continue. Each paper or experiment will be recorded in this article.</p>
+<p>This is the first chapter of my Distributed System study notes.</p>
+<hr>
+<h2 id="about-the-paper">About the Paper</h2>
+<p>The core content of the paper is the proposed MapReduce distributed computing model and the approach to implementing the <strong>Distributed</strong> MapReduce System, including the Master data structure, fault tolerance, and some refinements.</p>
     </article>
   </div>
     </div>
@@ -709,12 +868,14 @@ About the Paper The core content of the paper is the proposed MapReduce distribu
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -735,45 +896,50 @@ About the Paper The core content of the paper is the proposed MapReduce distribu
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

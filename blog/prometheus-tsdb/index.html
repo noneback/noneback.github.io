@@ -3,7 +3,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prometheus--TSDB</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the">
+    <meta name="description" content="Ladder@Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system.
+This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.
+Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/prometheus-tsdb/">
         <meta name="google-site-verification" content="xxx">
@@ -11,12 +13,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,30 +27,31 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/blog/prometheus-tsdb/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="Prometheus--TSDB">
-  <meta property="og:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2024-12-31T01:10:28+08:00">
-    <meta property="article:modified_time" content="2024-12-31T01:10:28+08:00">
-    <meta property="article:tag" content="Prometheus">
-    <meta property="article:tag" content="TSDB">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="Prometheus--TSDB">
+	<meta property="og:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system.
+This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.
+Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2024-12-31T01:10:28+08:00">
+		<meta property="article:modified_time" content="2024-12-31T01:10:28+08:00">
+		<meta property="article:tag" content="Prometheus">
+		<meta property="article:tag" content="TSDB">
+		<meta property="article:tag" content="Storage">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Prometheus--TSDB">
-  <meta name="twitter:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Prometheus--TSDB">
+	<meta name="twitter:description" content="Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I’m diving into the standard open-source monitoring system.
+This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.
+Analyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.">
 
 
 <script type="application/ld+json">
@@ -79,7 +80,7 @@
   "@type": "BlogPosting",
   "headline": "Prometheus--TSDB",
   "name": "Prometheus--TSDB",
-  "description": "Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I\u0026rsquo;m diving into the standard open-source monitoring system. This article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis. Analyzing the",
+  "description": "Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I\u0026rsquo;m diving into the standard open-source monitoring system.\nThis article mainly discusses the built-in single-node time series database (TSDB) of Prometheus, outlining its TSDB design without delving into source code analysis.\nAnalyzing the source code of such projects can often be of low value unless I specialize in TSDBs, as the analysis can be easily forgotten, and the code may not be exceptional.\n",
   "keywords": [
     "Prometheus", "TSDB", "Observability"
   ],
@@ -147,22 +148,30 @@
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -223,11 +232,11 @@
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -255,12 +264,19 @@
       
       <a href="https://noneback.github.io/tags/tsdb/">TSDB</a>
       
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
+      
     </small>
   
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>Table of Contents</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#data--query-model">Data + Query Model</a></li>
     <li><a href="#data-organization">Data Organization</a>
@@ -279,6 +295,10 @@
     <li><a href="#references">References</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><p>Recently got promoted, I took a moment to summarize some of my previous work. A significant part of my job was building large-scale database observability systems, which are quite different from cloud-native monitoring solutions like Prometheus. Now, I&rsquo;m diving into the standard open-source monitoring system.</p>
@@ -322,12 +342,12 @@ series</p>
 </li>
 <li>
 <p>Vertical writing with horizontal querying.</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010014.png"></p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010014.png" alt=""></p>
 </li>
 </ol>
 <p>With these issues in mind, let&rsquo;s look at how the data files are organized to address or sidestep these problems.</p>
 <p>First, examine the logical structure:</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010031.png"></p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010031.png" alt=""></p>
 <p>The entire database consists of blocks and a HEAD. Each block can further be broken down into chunks, while the HEAD serves as a read-write buffer area composed of in-memory data and write-ahead logs (WAL). Chunks contain multiple timeseries.</p>
 <p>The disk directory structure for a single block is as follows:</p>
 <pre tabindex="0"><code>├── 01BKGV7JC0RY8A6MACW02A2PJD  // block 的 ULID
@@ -371,24 +391,24 @@ series</p>
 <p>This file contains information about the block, particularly valuable for compaction and the minT, maxT timestamps.</p>
 <p><code>minT</code> and <code>maxT</code> record the block&rsquo;s time access period, which can skip data during queries.</p>
 <p>Compaction records the block&rsquo;s historical information, such as the number of compaction iterations (level) and its source blocks. The precise utility of this is uncertain but may help during compaction or retention tasks to manage potential duplicates.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ulid&#34;</span>: <span style="color:#e6db74">&#34;01EM6Q6A1YPX4G9TEB20J22B2R&#34;</span>, 
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;minTime&#34;</span>: <span style="color:#ae81ff">1602237600000</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;maxTime&#34;</span>: <span style="color:#ae81ff">1602244800000</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;stats&#34;</span>: {
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;numSamples&#34;</span>: <span style="color:#ae81ff">553673232</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;numSeries&#34;</span>: <span style="color:#ae81ff">1346066</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;numChunks&#34;</span>: <span style="color:#ae81ff">4440437</span>
-</span></span><span style="display:flex;"><span>    },
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;compaction&#34;</span>: {
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;level&#34;</span>: <span style="color:#ae81ff">1</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;sources&#34;</span>: [
-</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;01EM65SHSX4VARXBBHBF0M0FDS&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;01EM6GAJSYWSQQRDY782EA5ZPN&#34;</span>
-</span></span><span style="display:flex;"><span>        ]
-</span></span><span style="display:flex;"><span>    },
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>}
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;ulid&#34;</span><span class="p">:</span> <span class="s2">&#34;01EM6Q6A1YPX4G9TEB20J22B2R&#34;</span><span class="p">,</span> 
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;minTime&#34;</span><span class="p">:</span> <span class="mi">1602237600000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;maxTime&#34;</span><span class="p">:</span> <span class="mi">1602244800000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;stats&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;numSamples&#34;</span><span class="p">:</span> <span class="mi">553673232</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;numSeries&#34;</span><span class="p">:</span> <span class="mi">1346066</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;numChunks&#34;</span><span class="p">:</span> <span class="mi">4440437</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;compaction&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;level&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;sources&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;01EM65SHSX4VARXBBHBF0M0FDS&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;01EM6GAJSYWSQQRDY782EA5ZPN&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;version&#34;</span><span class="p">:</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><h4 id="chunks">chunks</h4>
 <p>These are standard data files, with their indexes stored in the index file. Note that a chunk can only belong to one timeseries, and a timeseries consists of multiple chunks.</p>
 <pre tabindex="0"><code>┌──────────────────────────────┐
@@ -525,8 +545,8 @@ A Postings:
 <li>Based on the information from the Postings, it identifies the chunk locations via the series reference.</li>
 <li>Finally, it locates the corresponding chunks for the timeseries.</li>
 </ul>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png">
-<img alt="!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg" src="https://github.com/noneback/images/blob/picgo/image.png?raw=true"></p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png" alt="">
+<img src="https://github.com/noneback/images/blob/picgo/image.png?raw=true" alt="!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg"></p>
 <h2 id="compaction">Compaction</h2>
 <p>Similar to LevelDB, Prometheus utilizes both major and minor compaction processes, termed Compaction and Head Compaction.</p>
 <p>Head Compaction is akin to the process of persisting the Head portion into Chunks, during which tombstones are actually deleted from memory.</p>
@@ -573,6 +593,26 @@ A Postings:
   
 
   
+  
+  <div class="related-resources">
+    <h3>Related Resources</h3>
+    <ul>
+    
+      <li><a href="/blog/dynamo/">Dynamo: Amazon’s Highly Available Key-value Store</a></li>
+    
+      <li><a href="/blog/flinkicebergconnector%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/">Flink-Iceberg-Connector Write Process</a></li>
+    
+      <li><a href="/blog/apacheorc%E8%B0%83%E7%A0%94/">Apache-ORC Quick Investigation</a></li>
+    
+      <li><a href="/blog/apacheiceberg%E8%B0%83%E7%A0%94/">Apache-Iceberg Quick Investigation</a></li>
+    
+      <li><a href="/blog/leveldb-write/">LevelDB Write</a></li>
+    
+    </ul>
+  </div>
+  
+
+  
 
 
   
@@ -606,12 +646,16 @@ A Postings:
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -632,45 +676,64 @@ A Postings:
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

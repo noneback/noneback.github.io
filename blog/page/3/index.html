@@ -11,12 +11,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,23 +25,19 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/blog/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="Blogs">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="website">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="Blogs">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="website">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Blogs">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Blogs">
 
 
 <script type="application/ld+json">
@@ -66,22 +60,17 @@
 
 <link rel="manifest" href="/images/avatar.jpeg">
     
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -179,10 +168,17 @@
     </small>
   
 <p>
-              Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.
-Research Focus: ORC file encoding, file organization, and indexing support.
-File Layout An ORC file can be divided into three main sections:
-Header: Identifies the file type.
+              <p>Iceberg supports both ORC and Parquet columnar formats. Compared to Parquet, ORC offers advantages in query performance and ACID support. Considering the future data lakehouse requirements for query performance and ACID compliance, we are researching ORC to support a future demo involving Flink, Iceberg, and ORC.</p>
+<p>Research Focus: ORC file encoding, file organization, and indexing support.</p>
+<h2 id="file-layout">File Layout</h2>
+<p>An ORC file can be divided into three main sections:</p>
+<ul>
+<li><strong>Header</strong>: Identifies the file type.</li>
+<li><strong>Body</strong>: Contains row data and indexes, as shown below.</li>
+<li><strong>Tail</strong>: Contains top-level file information.</li>
+</ul>
+<blockquote>
+<p>ORC Specification v1</p>
           </div>
         </article>
       
@@ -198,7 +194,7 @@ Header: Identifies the file type.
       ·
       
       
-      <a href="https://noneback.github.io/tags/lake-house/">Lake House</a>
+      <a href="https://noneback.github.io/tags/lakehouse/">Lakehouse</a>
       
       <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
@@ -207,8 +203,65 @@ Header: Identifies the file type.
     </small>
   
 <p>
-              A table format for large-scale analysis of datasets. A specification for organizing data files and metadata files. A schema semantic abstraction between storage and computation. Developed and open-sourced by Netflix to enhance scalability, reliability, and usability. Background Issues encountered when migrating HIVE to the cloud:
-Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS. Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.
+              <ul>
+<li>A table format for large-scale analysis of datasets.</li>
+<li>A specification for organizing data files and metadata files.</li>
+<li>A schema semantic abstraction between storage and computation.</li>
+<li>Developed and open-sourced by Netflix to enhance scalability, reliability, and usability.</li>
+</ul>
+<h2 id="background">Background</h2>
+<p>Issues encountered when migrating HIVE to the cloud:</p>
+<ul>
+<li>Dependency on List and Rename semantics makes it impossible to replace HDFS with cheaper OSS.</li>
+<li>Scalability issues: Schema information in Hive is centrally stored in metastore, which can become a performance bottleneck.</li>
+<li>Unsafe operations, CBO unfriendly, etc.</li>
+</ul>
+<h2 id="features">Features</h2>
+<ul>
+<li>Supports secure and efficient schema, partition changes, and evolution, self-defined schema, hidden partition.
+<ul>
+<li>Abstracts its own schema, not tied to any computation engine schema; partition is maintained at the schema level. Partition and sort order provide transformer functions, such as date(timestamp).</li>
+</ul>
+</li>
+<li>Supports object storage with minimal dependency on FS semantics.</li>
+<li>ACID semantics support, parallel reads, serialized write operations:
+<ul>
+<li>Separation of read and write snapshots.</li>
+<li>Optimistic handling of write parallel conflicts, retry to ensure writes.</li>
+</ul>
+</li>
+<li>Snapshot support:
+<ul>
+<li>Data rollback and time travel.</li>
+<li>Supports snapshot expiration (by default, data files are not deleted, but customizable deletion behavior is available) (<a href="https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html">related API doc</a>).</li>
+<li>Incremental reading can be achieved by comparing snapshot differences.</li>
+</ul>
+</li>
+<li>Query optimization-friendly: predicate pushdown, data file statistics. Currently, compaction is not supported, but invalid files can be deleted during snapshot expiration (<a href="https://iceberg.apache.org/javadoc/0.13.1/org/apache/iceberg/ExpireSnapshots.html#deleteWith-java.util.function.Consumer-">deleteWith</a>).</li>
+<li>High abstraction level, easy for modification, optimization, and extension. Catalog, read/write paths, file formats, storage dependencies are all pluggable. Iceberg&rsquo;s design goal is to define a standard, open, and general data organization format while hiding differences in underlying data storage formats, providing a unified operational API for different engines to connect through its API.</li>
+<li>Others: file-level encryption and decryption.</li>
+</ul>
+<h2 id="ecosystem">Ecosystem</h2>
+<ul>
+<li>Community support for OSS, Flink, Spark, and Presto:
+<ul>
+<li>Flink (<a href="https://iceberg.apache.org/docs/latest/flink/">detail</a>): Supports streaming reads and writes, incremental reads (based on snapshot), upsert write (<a href="https://iceberg.apache.org/releases/#0130-release-notes">0.13.0-release-notes</a>).</li>
+<li>Presto: <a href="https://prestodb.io/docs/current/connector/iceberg.html">Iceberg connector</a>.</li>
+<li>Aliyun OSS: <a href="https://github.com/apache/iceberg/pull/3686/files"># pr 3689</a>.</li>
+</ul>
+</li>
+<li>Integration with other components:
+<ul>
+<li>Integration with lower storage layers: Only relies on three semantics: In-place write, Seekable reads, Deletes, supports AliOSS (<a href="https://github.com/apache/iceberg/pull/3686/files"># pr 3689</a>).</li>
+<li>Integration with other file formats: High abstraction level, currently supports Avro, Parquet, ORC.</li>
+<li>Catalog: Customizable (<a href="https://iceberg.apache.org/docs/latest/custom-catalog/">Doc: Custom Catalog Implementation</a>), currently supports JDBC, Hive Metastore, Hadoop, etc.</li>
+<li>Integration with computation layer: Provides native JAVA &amp; Python APIs, with a high level of abstraction, supporting most computation engines.</li>
+</ul>
+</li>
+<li>Open and neutral community, allowing contributions to improve influence.</li>
+</ul>
+<h2 id="table-specification">Table Specification</h2>
+<p>Specification for organizing data files and metadata files.</p>
           </div>
         </article>
       
@@ -224,16 +277,25 @@ Dependency on List and Rename semantics makes it impossible to replace HDFS with
       ·
       
       
+      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      
       <a href="https://noneback.github.io/tags/lsm/">LSM</a>
       
-      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
     </small>
   
 <p>
-              This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.
-Main Process The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a WriteBatch, and then it is executed.
-Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&amp; value) { WriteBatch batch; batch.
+              <p>This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.</p>
+<h2 id="main-process">Main Process</h2>
+<p>The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a <code>WriteBatch</code>, and then it is executed.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">batch</span><span class="p">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="nf">Write</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">batch</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="writebatch">WriteBatch</h3>
+<p><code>WriteBatch</code> is an encapsulation of a group of update operations, which are applied <strong>atomically</strong> to the state machine. A block of memory is used to save the user&rsquo;s update operations.</p>
           </div>
         </article>
       
@@ -253,41 +315,81 @@ Status DB::Put(const WriteOptions&amp; opt, const Slice&amp; key, const Slice&am
       
       <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
       
-      <a href="https://noneback.github.io/tags/consensus/">Consensus</a>
-      
       <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
       
     </small>
   
 <p>
-              Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.
-Lab Overview Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.
-The structure of RaftKV and the interaction between its modules are shown below:
+              <p>Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.</p>
+<h2 id="lab-overview">Lab Overview</h2>
+<p>Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.</p>
+<p>The structure of RaftKV and the interaction between its modules are shown below:</p>
           </div>
         </article>
       
         <article>
           <div class="blog-card">
-              <h3><a href="/blog/leveldb-%E5%90%AF%E5%8A%A8/">LevelDB Startup</a></h3>
+              <h3><a href="/blog/gsoc/">GSOC 2022 Proposal: Tuple-Storage Engine for Casbin Mesh</a></h3>
               <p>
   <small>
-    April 9, 2022&nbsp;· 1312 words&nbsp;· 7 min</small>
+    April 15, 2022&nbsp;· 768 words&nbsp;· 4 min</small>
 
   <small>
       
       ·
       
       
-      <a href="https://noneback.github.io/tags/lsm/">LSM</a>
+      <a href="https://noneback.github.io/tags/gsoc/">GSOC</a>
       
-      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      <a href="https://noneback.github.io/tags/casbin/">Casbin</a>
+      
+      <a href="https://noneback.github.io/tags/storage-engine/">Storage Engine</a>
+      
+      <a href="https://noneback.github.io/tags/database/">Database</a>
       
     </small>
   
 <p>
-              This is the first chapter of my notes on reading the LevelDB source code, focusing on the startup process of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.
-A code repository with annotations will be shared on GitHub later for those interested in studying it.
-Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and naming details of these files (as I haven&rsquo;t reached that part yet).
+              <h1 id="an-alternative-tuple-storage-engine-for-casbin-mesh--casbin--gsoc-2022-proposal">An alternative tuple-storage engine for Casbin Mesh / Casbin — GSOC 2022 Proposal</h1>
+<h2 id="about-me">About me</h2>
+<h3 id="basic-infomation">Basic Infomation</h3>
+<ul>
+<li>
+<p>First / Last Name: Xie Kai</p>
+</li>
+<li>
+<p>Email: <a href="mailto:chenlan2333@gmail.com">chenlan2333@gmail.com</a></p>
+</li>
+<li>
+<p>QQ : 1633849228</p>
+</li>
+<li>
+<p>School/University: <a href="https://en.wikipedia.org/wiki/Beijing_University_of_Posts_and_Telecommunications">Beijing University of Posts and Telecommunications</a></p>
+</li>
+<li>
+<p>Graduation Date: July, 2022</p>
+</li>
+<li>
+<p>Major/Focus: Software Engineering</p>
+</li>
+<li>
+<p>Location: Beijing, China</p>
+</li>
+<li>
+<p>Timezone: China Standard Time (CST), UTC +8</p>
+</li>
+<li>
+<p>Github Profile: <a href="https://github.com/noneback">https://github.com/noneback</a></p>
+</li>
+<li>
+<p>Personal Blog: <a href="http://noneback.github.io">http://noneback.github.io</a></p>
+</li>
+</ul>
+<h3 id="open-source-experience">Open Source Experience</h3>
+<p>I used to make contribution on those open source projects:</p>
+<ul>
+<li>
+<p><a href="https://github.com/matrixorigin/matrixone">MaxtrixOne</a> : Hyperconverged cloud-edge native database</p>
           </div>
         </article>
       </div>
@@ -305,12 +407,14 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
 </div>
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -331,45 +435,50 @@ Prerequisites Database Files For now, I won&rsquo;t delve into the encoding and 
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

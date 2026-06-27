@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Dwm on NoneBack</title>
+    <title>DWM on NoneBack</title>
     <link>https://noneback.github.io/tags/dwm/</link>
-    <description>Recent content in Dwm on NoneBack created by </description>
+    <description>Recent content in DWM on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
@@ -33,41 +33,41 @@
 &lt;h4 id=&#34;disk-partitioning&#34;&gt;Disk Partitioning&lt;/h4&gt;
 &lt;p&gt;The disk should be divided into three main parts: Boot, Swap, and Root partitions.&lt;/p&gt;
 &lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;Mount Point&lt;/th&gt;
-&lt;th&gt;Partition&lt;/th&gt;
-&lt;th&gt;&lt;a href=&#34;https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs&#34;&gt;Partition Type&lt;/a&gt;&lt;/th&gt;
-&lt;th&gt;Suggested Size&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;/mnt/boot&lt;/code&gt; or &lt;code&gt;/mnt/efi&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;&lt;code&gt;/dev/*efi_system_partition*&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/EFI_system_partition_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29&#34;&gt;EFI System Partition&lt;/a&gt;&lt;/td&gt;
-&lt;td&gt;At least 260 MiB&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;[SWAP]&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;&lt;code&gt;/dev/*swap_partition*&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Linux swap&lt;/td&gt;
-&lt;td&gt;More than 512 MiB&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;code&gt;/mnt&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;&lt;code&gt;/dev/*root_partition*&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Linux x86-64 Root (/)&lt;/td&gt;
-&lt;td&gt;Remaining Space&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
+	&lt;thead&gt;
+			&lt;tr&gt;
+					&lt;th&gt;Mount Point&lt;/th&gt;
+					&lt;th&gt;Partition&lt;/th&gt;
+					&lt;th&gt;&lt;a href=&#34;https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs&#34;&gt;Partition Type&lt;/a&gt;&lt;/th&gt;
+					&lt;th&gt;Suggested Size&lt;/th&gt;
+			&lt;/tr&gt;
+	&lt;/thead&gt;
+	&lt;tbody&gt;
+			&lt;tr&gt;
+					&lt;td&gt;&lt;code&gt;/mnt/boot&lt;/code&gt; or &lt;code&gt;/mnt/efi&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;&lt;code&gt;/dev/*efi_system_partition*&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/EFI_system_partition_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29&#34;&gt;EFI System Partition&lt;/a&gt;&lt;/td&gt;
+					&lt;td&gt;At least 260 MiB&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;&lt;code&gt;[SWAP]&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;&lt;code&gt;/dev/*swap_partition*&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;Linux swap&lt;/td&gt;
+					&lt;td&gt;More than 512 MiB&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;&lt;code&gt;/mnt&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;&lt;code&gt;/dev/*root_partition*&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;Linux x86-64 Root (/)&lt;/td&gt;
+					&lt;td&gt;Remaining Space&lt;/td&gt;
+			&lt;/tr&gt;
+	&lt;/tbody&gt;
 &lt;/table&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;fdisk -l &lt;span style=&#34;color:#75715e&#34;&gt;# View disk information&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cfdisk /dev/nvme &lt;span style=&#34;color:#75715e&#34;&gt;# Partition the disk&lt;/span&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;fdisk -l &lt;span class=&#34;c1&#34;&gt;# View disk information&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cfdisk /dev/nvme &lt;span class=&#34;c1&#34;&gt;# Partition the disk&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;formatting-partitions&#34;&gt;Formatting Partitions&lt;/h4&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;mkfs.ext4 &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;mkswap &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;swap&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;mkfs.fat -F &lt;span style=&#34;color:#ae81ff&#34;&gt;32&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;efi&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;mkfs.ext4 &lt;span class=&#34;si&#34;&gt;${&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;root&lt;/span&gt;&lt;span class=&#34;si&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;mkswap &lt;span class=&#34;si&#34;&gt;${&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;swap&lt;/span&gt;&lt;span class=&#34;si&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;mkfs.fat -F &lt;span class=&#34;m&#34;&gt;32&lt;/span&gt; &lt;span class=&#34;si&#34;&gt;${&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;efi&lt;/span&gt;&lt;span class=&#34;si&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;configuring-partitions-and-installing-the-system&#34;&gt;Configuring Partitions and Installing the System&lt;/h4&gt;
 &lt;ul&gt;
 &lt;li&gt;Mount Root: &lt;code&gt;mount /dev/${root_partition} /mnt&lt;/code&gt;&lt;/li&gt;
@@ -81,8 +81,8 @@
 &lt;ul&gt;
 &lt;li&gt;Change root to the new system:&lt;/li&gt;
 &lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;mount /dev/&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;root_partition&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt; /mnt
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;arch-chroot /mnt
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;mount /dev/&lt;span class=&#34;si&#34;&gt;${&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;root_partition&lt;/span&gt;&lt;span class=&#34;si&#34;&gt;}&lt;/span&gt; /mnt
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;arch-chroot /mnt
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;Set timezone and sync time.&lt;/p&gt;
@@ -109,38 +109,38 @@
 &lt;h3 id=&#34;post-boot-configuration&#34;&gt;Post-Boot Configuration&lt;/h3&gt;
 &lt;h4 id=&#34;install-essential-software&#34;&gt;Install Essential Software&lt;/h4&gt;
 &lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;Purpose&lt;/th&gt;
-&lt;th&gt;Software&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;Bluetooth&lt;/td&gt;
-&lt;td&gt;bluetoothctl&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Network&lt;/td&gt;
-&lt;td&gt;iwd&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Daily Use&lt;/td&gt;
-&lt;td&gt;nvim, ranger, zsh&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Sound&lt;/td&gt;
-&lt;td&gt;alsamixer&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Input Method&lt;/td&gt;
-&lt;td&gt;fcitx5-im, fcitx5-chinese-addons&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Proxy&lt;/td&gt;
-&lt;td&gt;clash&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
+	&lt;thead&gt;
+			&lt;tr&gt;
+					&lt;th&gt;Purpose&lt;/th&gt;
+					&lt;th&gt;Software&lt;/th&gt;
+			&lt;/tr&gt;
+	&lt;/thead&gt;
+	&lt;tbody&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Bluetooth&lt;/td&gt;
+					&lt;td&gt;bluetoothctl&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Network&lt;/td&gt;
+					&lt;td&gt;iwd&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Daily Use&lt;/td&gt;
+					&lt;td&gt;nvim, ranger, zsh&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Sound&lt;/td&gt;
+					&lt;td&gt;alsamixer&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Input Method&lt;/td&gt;
+					&lt;td&gt;fcitx5-im, fcitx5-chinese-addons&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Proxy&lt;/td&gt;
+					&lt;td&gt;clash&lt;/td&gt;
+			&lt;/tr&gt;
+	&lt;/tbody&gt;
 &lt;/table&gt;
 &lt;h3 id=&#34;installing-the-desktop-environment&#34;&gt;Installing the Desktop Environment&lt;/h3&gt;
 &lt;h4 id=&#34;install-xorg&#34;&gt;Install Xorg&lt;/h4&gt;
@@ -150,58 +150,58 @@
 &lt;p&gt;I used the Suckless tiling window management suite: &lt;strong&gt;dwm&lt;/strong&gt;, &lt;strong&gt;slock&lt;/strong&gt;, &lt;strong&gt;st&lt;/strong&gt;, &lt;strong&gt;dmenu&lt;/strong&gt;, &lt;strong&gt;slim&lt;/strong&gt;, &lt;strong&gt;slstatus&lt;/strong&gt;.&lt;/p&gt;
 &lt;h4 id=&#34;configure-xinitc-and-xprofile&#34;&gt;Configure &lt;code&gt;.xinitc&lt;/code&gt; and &lt;code&gt;.xprofile&lt;/code&gt;&lt;/h4&gt;
 &lt;p&gt;Add to &lt;code&gt;.xinitc&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# .xinitc&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;fcitx5 &amp;amp;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;xautolock -time &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt; -locker slock &amp;amp;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;autorandr -l home
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;picom -b
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;exec slstatus &amp;amp;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;exec dwm
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# .xprofile&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export INPUT_METHOD&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export GTK_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export QT_IM_MODULE&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
-&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;export XMODIFIERS&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;@im&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# .xinitc&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;fcitx5 &lt;span class=&#34;p&#34;&gt;&amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;xautolock -time &lt;span class=&#34;m&#34;&gt;10&lt;/span&gt; -locker slock &lt;span class=&#34;p&#34;&gt;&amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;autorandr -l home
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;picom -b
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;feh --bg-fill --randomize /home/noneback/Picture/wallpaper/*.jpg
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;exec&lt;/span&gt; slstatus &lt;span class=&#34;p&#34;&gt;&amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;exec&lt;/span&gt; dwm
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# .xprofile&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;INPUT_METHOD&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;GTK_IM_MODULE&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;QT_IM_MODULE&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;fcitx5
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;XMODIFIERS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;@im&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;fcitx5
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;customization-and-usability&#34;&gt;Customization and Usability&lt;/h4&gt;
 &lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;Purpose&lt;/th&gt;
-&lt;th&gt;Software&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;Wallpaper&lt;/td&gt;
-&lt;td&gt;feh&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Window Effects&lt;/td&gt;
-&lt;td&gt;picom&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Screen Lock&lt;/td&gt;
-&lt;td&gt;xautolock&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Multi-Screen&lt;/td&gt;
-&lt;td&gt;autorandr&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Power Saving&lt;/td&gt;
-&lt;td&gt;tlp&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
+	&lt;thead&gt;
+			&lt;tr&gt;
+					&lt;th&gt;Purpose&lt;/th&gt;
+					&lt;th&gt;Software&lt;/th&gt;
+			&lt;/tr&gt;
+	&lt;/thead&gt;
+	&lt;tbody&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Wallpaper&lt;/td&gt;
+					&lt;td&gt;feh&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Window Effects&lt;/td&gt;
+					&lt;td&gt;picom&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Screen Lock&lt;/td&gt;
+					&lt;td&gt;xautolock&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Multi-Screen&lt;/td&gt;
+					&lt;td&gt;autorandr&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;Power Saving&lt;/td&gt;
+					&lt;td&gt;tlp&lt;/td&gt;
+			&lt;/tr&gt;
+	&lt;/tbody&gt;
 &lt;/table&gt;
 &lt;h2 id=&#34;additional-notes&#34;&gt;Additional Notes&lt;/h2&gt;
 &lt;p&gt;For more detailed instructions, please refer to the official installation documentation.&lt;/p&gt;
 &lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Installation_guide_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)#%E5%BB%BA%E7%AB%8B%E7%A1%AC%E7%9B%98%E5%88%86%E5%8C%BA&#34;&gt;Arch Linux Install Wiki&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Category:X_server_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)&#34;&gt;X Server Wiki&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Installation_guide_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29#%E5%BB%BA%E7%AB%8B%E7%A1%AC%E7%9B%98%E5%88%86%E5%8C%BA&#34;&gt;Arch Linux Install Wiki&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://wiki.archlinux.org/title/Category:X_server_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29&#34;&gt;X Server Wiki&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://github.com/noneback/dwm-releated&#34;&gt;Personal DWM Desktop&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>

@@ -3,8 +3,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CPU Profiling: What, How, and When</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
-How: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.">
+    <meta name="description" content="Ladder@What: What is CPU Profiling
+A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
+How: How Profiling Data is Collected
+Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/blog/cpu-profiling-what-how-and-when/">
         <meta name="google-site-verification" content="xxx">
@@ -12,12 +14,10 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -28,30 +28,27 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/blog/cpu-profiling-what-how-and-when/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="CPU Profiling: What, How, and When">
-  <meta property="og:description" content="What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="CPU Profiling: What, How, and When">
+	<meta property="og:description" content="What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
 How: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2025-03-10T14:46:54+08:00">
-    <meta property="article:modified_time" content="2025-03-10T14:46:54+08:00">
-    <meta property="article:tag" content="Performance Analysis">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2025-03-10T14:46:54+08:00">
+		<meta property="article:modified_time" content="2025-03-10T14:46:54+08:00">
+		<meta property="article:tag" content="Performance">
+		<meta property="article:tag" content="Profiling">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="CPU Profiling: What, How, and When">
-  <meta name="twitter:description" content="What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="CPU Profiling: What, How, and When">
+	<meta name="twitter:description" content="What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.
 How: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.">
 
 
@@ -81,7 +78,7 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
   "@type": "BlogPosting",
   "headline": "CPU Profiling: What, How, and When",
   "name": "CPU Profiling: What, How, and When",
-  "description": "What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.\nHow: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.",
+  "description": "What: What is CPU Profiling A technique for analyzing program CPU performance. By collecting detailed data during program execution (such as function call frequency, time consumption, call stacks, etc.), it helps developers identify performance bottlenecks and optimize code efficiency. Typically used in performance analysis and root cause diagnosis scenarios.\nHow: How Profiling Data is Collected Common tools like perf are used to collect process stack information. These tools use sampling statistics to capture stack samples executing on the CPU for performance analysis.\n",
   "keywords": [
     "CPU Profiler", "Trouble-shooting"
   ],
@@ -149,22 +146,209 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
         });
     });
 </script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+    function initMermaid() {
+        
+        var isDark = document.documentElement.hasAttribute('data-dark-mode') ||
+                     document.documentElement.hasAttribute('icy-dark-mode');
+
+        
+        var lightTheme = {
+            fontFamily: '"LXGW WenKai", sans-serif',
+            fontSize: '14px',
+            primaryColor: '#e3f2fd',
+            primaryTextColor: '#1a1a2e',
+            primaryBorderColor: '#90caf9',
+            secondaryColor: '#e8f5e9',
+            secondaryTextColor: '#1a1a2e',
+            secondaryBorderColor: '#a5d6a7',
+            tertiaryColor: '#fff3e0',
+            tertiaryTextColor: '#1a1a2e',
+            tertiaryBorderColor: '#ffcc80',
+            lineColor: '#546e7a',
+            arrowheadColor: '#546e7a',
+            background: '#ffffff',
+            mainBkg: '#e3f2fd',
+            secondBkg: '#e8f5e9',
+            thirdBkg: '#fff3e0',
+            nodeBorder: '#90caf9',
+            clusterBkg: '#f5f5f5',
+            clusterBorder: '#bdbdbd',
+            defaultRenderer: 'elk',
+            textColor: '#212121',
+            edgeLabelBackground: '#ffffff',
+            classText: '#212121',
+            fillType0: '#e3f2fd',
+            fillType1: '#e8f5e9',
+            fillType2: '#fff3e0',
+            strokeColor0: '#90caf9',
+            strokeColor1: '#a5d6a7',
+            strokeColor2: '#ffcc80'
+        };
+
+        
+        var darkTheme = {
+            fontFamily: '"LXGW WenKai", sans-serif',
+            fontSize: '14px',
+            primaryColor: '#1a3a40',
+            primaryTextColor: '#e0f0ed',
+            primaryBorderColor: '#4db6ac',
+            secondaryColor: '#1e3328',
+            secondaryTextColor: '#d0ecd8',
+            secondaryBorderColor: '#66bb6a',
+            tertiaryColor: '#2e2a1a',
+            tertiaryTextColor: '#f0e8c8',
+            tertiaryBorderColor: '#c8a84e',
+            lineColor: '#84ebd9',
+            arrowheadColor: '#84ebd9',
+            background: '#181a1b',
+            mainBkg: '#1a3a40',
+            secondBkg: '#1e3328',
+            thirdBkg: '#2e2a1a',
+            nodeBorder: '#4db6ac',
+            clusterBkg: '#1c2c2e',
+            clusterBorder: '#2e5c56',
+            defaultRenderer: 'elk',
+            textColor: '#dadada',
+            edgeLabelBackground: '#181a1b',
+            classText: '#dadada',
+            fillType0: '#1a3a40',
+            fillType1: '#1e3328',
+            fillType2: '#2e2a1a',
+            strokeColor0: '#4db6ac',
+            strokeColor1: '#66bb6a',
+            strokeColor2: '#c8a84e'
+        };
+
+        var themeVars = isDark ? darkTheme : lightTheme;
+
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: isDark ? 'dark' : 'base',
+            securityLevel: 'loose',
+            logLevel: 'fatal',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                padding: 20,
+                nodeSpacing: 50,
+                rankSpacing: 50,
+                diagramPaddingX: 20,
+                diagramPaddingY: 20
+            },
+            sequence: {
+                useMaxWidth: true,
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                actorBorder: themeVars.primaryBorderColor,
+                actorBkg: themeVars.primaryColor,
+                actorTextColor: themeVars.primaryTextColor,
+                actorLineColor: themeVars.lineColor,
+                signalColor: themeVars.lineColor,
+                signalTextColor: themeVars.textColor,
+                labelBoxBkgColor: themeVars.secondaryColor,
+                labelBoxBorderColor: themeVars.secondaryBorderColor,
+                labelTextColor: themeVars.textColor,
+                noteBkgColor: themeVars.tertiaryColor,
+                noteBorderColor: themeVars.tertiaryBorderColor,
+                noteTextColor: themeVars.tertiaryTextColor
+            },
+            themeVariables: themeVars
+        });
+
+        
+        document.querySelectorAll('.mermaid').forEach(function(el) {
+            el.removeAttribute('data-processed');
+        });
+        mermaid.run({
+            querySelector: '.mermaid'
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        
+        document.querySelectorAll('code.language-mermaid').forEach(function(el) {
+            var pre = el.parentElement;
+            var container = pre.parentElement;
+            var div = document.createElement('div');
+            div.className = 'mermaid';
+            var text = el.textContent;
+            div.textContent = text;
+            div.dataset.mermaidSource = text;
+            if (container && container.classList.contains('highlight')) {
+                container.parentNode.replaceChild(div, container);
+            } else {
+                pre.parentNode.replaceChild(div, pre);
+            }
+        });
+
+        initMermaid();
+
+        
+        var observer = new MutationObserver(function() {
+            
+            document.querySelectorAll('.mermaid').forEach(function(el) {
+                if (el.dataset.mermaidSource) {
+                    el.textContent = el.dataset.mermaidSource;
+                    el.removeAttribute('data-processed');
+                }
+            });
+            initMermaid();
+        });
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-dark-mode', 'icy-dark-mode']
+        });
+    });
+</script>
+<style>
+    .mermaid {
+        text-align: center;
+        margin: 2rem 0;
+        padding: 1.5rem;
+        background: transparent;
+        border-radius: 0.75rem;
+    }
+    .mermaid svg {
+        max-width: 100%;
+        height: auto;
+    }
+    [data-dark-mode] .mermaid,
+    [icy-dark-mode] .mermaid {
+        background: rgba(255, 255, 255, 0.015);
+        border: 1px solid rgba(132, 235, 217, 0.1);
+    }
+</style>
+
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -225,11 +409,11 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -253,14 +437,21 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
       ·
       
       
-      <a href="https://noneback.github.io/tags/performance-analysis/">Performance Analysis</a>
+      <a href="https://noneback.github.io/tags/performance/">Performance</a>
+      
+      <a href="https://noneback.github.io/tags/profiling/">Profiling</a>
       
     </small>
   
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>Table of Contents</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#what-what-is-cpu-profiling">What: What is CPU Profiling</a></li>
     <li><a href="#how-how-profiling-data-is-collected">How: How Profiling Data is Collected</a>
@@ -281,6 +472,10 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
     <li><a href="#references">References</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><h2 id="what-what-is-cpu-profiling">What: What is CPU Profiling</h2>
@@ -307,33 +502,33 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
 <h4 id="perf_event-approach">perf_event Approach</h4>
 <p>The perf_event_open interface (e.g., perf record command) captures the instruction pointer (RIP). However, it only records the currently executing function address, not the full call stack. This means only the function name triggered by the sample can be resolved.</p>
 <p>Example perf record output:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>node <span style="color:#ae81ff">3236535</span> 34397396.208842:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:           110c800 v8::internal::Heap_CombinedGenerationalAndSharedBarrierSlow+0x0 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>node <span style="color:#ae81ff">3236535</span> 34397396.354632:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH:      7f7d63e87ef4 Builtins_LoadIC+0x574 <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">node <span class="m">3236535</span> 34397396.208842:     <span class="m">250000</span> cpu-clock:pppH:           110c800 v8::internal::Heap_CombinedGenerationalAndSharedBarrierSlow+0x0 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">node <span class="m">3236535</span> 34397396.354632:     <span class="m">250000</span> cpu-clock:pppH:      7f7d63e87ef4 Builtins_LoadIC+0x574 <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
 </span></span></code></pre></div><p>To obtain a full call stack, tools like libunwind perform stack unwinding. For example, <code>perf record -g</code> generates a full stack trace by unwinding the stack frames.</p>
 <p>Example perf record -g output:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>node <span style="color:#ae81ff">3236535</span> 34397238.259753:     <span style="color:#ae81ff">250000</span> cpu-clock:pppH: 
-</span></span><span style="display:flex;"><span>            7f7d44339100 <span style="color:#f92672">[</span>unknown<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>/tmp/perf-3236535.map<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                 18ea0dc Builtins_JSEntryTrampoline+0x5c <span style="color:#f92672">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>                 18e9e03 Builtins_JSEntry+0x83 <span style="color:#f92672">(</span>...<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>...
-</span></span><span style="display:flex;"><span>                  c7d43f node::Start+0x58f <span style="color:#f92672">(</span>...<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>            7f7d6ba14d90 __libc_start_call_main+0x80 <span style="color:#f92672">(</span>/usr/lib/x86_64-linux-gnu/libc.so.6<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">node <span class="m">3236535</span> 34397238.259753:     <span class="m">250000</span> cpu-clock:pppH: 
+</span></span><span class="line"><span class="cl">            7f7d44339100 <span class="o">[</span>unknown<span class="o">]</span> <span class="o">(</span>/tmp/perf-3236535.map<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                 18ea0dc Builtins_JSEntryTrampoline+0x5c <span class="o">(</span>/root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node<span class="o">)</span>
+</span></span><span class="line"><span class="cl">                 18e9e03 Builtins_JSEntry+0x83 <span class="o">(</span>...<span class="o">)</span>
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">                  c7d43f node::Start+0x58f <span class="o">(</span>...<span class="o">)</span>
+</span></span><span class="line"><span class="cl">            7f7d6ba14d90 __libc_start_call_main+0x80 <span class="o">(</span>/usr/lib/x86_64-linux-gnu/libc.so.6<span class="o">)</span>
 </span></span></code></pre></div><h3 id="address-translation">Address Translation</h3>
 <p>The sampled address information corresponds to the process&rsquo;s virtual addresses, such as:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>7f7d44339100  
-</span></span><span style="display:flex;"><span>18ea0dc  
-</span></span><span style="display:flex;"><span>18e9e03  
-</span></span><span style="display:flex;"><span>106692b  
-</span></span><span style="display:flex;"><span>10679c4  
-</span></span><span style="display:flex;"><span>f2a090d  
-</span></span><span style="display:flex;"><span>c1c738  
-</span></span><span style="display:flex;"><span>...
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">7f7d44339100  
+</span></span><span class="line"><span class="cl">18ea0dc  
+</span></span><span class="line"><span class="cl">18e9e03  
+</span></span><span class="line"><span class="cl">106692b  
+</span></span><span class="line"><span class="cl">10679c4  
+</span></span><span class="line"><span class="cl">f2a090d  
+</span></span><span class="line"><span class="cl">c1c738  
+</span></span><span class="line"><span class="cl">...
 </span></span></code></pre></div><p>To resolve these addresses into ELF + OFFSET for symbol translation, we use the memory mapping information from <code>/proc/[pid]/maps</code>. The key fields in the maps file include:</p>
-<!-- raw HTML omitted -->
+<address range> <permissions> <file offset> <inode> <file path>
 <p>Example /proc/[pid]/maps entries:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>00400000-00b81000 r--p <span style="color:#ae81ff">00000000</span> fc:03 <span style="color:#ae81ff">550055</span>  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node  
-</span></span><span style="display:flex;"><span>7f7d6bf3c000-7f7d6bf3d000 ---p 0021a000 fc:03 <span style="color:#ae81ff">67</span>  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30  
-</span></span><span style="display:flex;"><span>7f7d6bf61000-7f7d6bf63000 r--p <span style="color:#ae81ff">00000000</span> fc:03 <span style="color:#ae81ff">2928</span>  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2  
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">00400000-00b81000 r--p <span class="m">00000000</span> fc:03 <span class="m">550055</span>  /root/.vscode-server/cli/servers/Stable-e54c774e0add60467559eb0d1e229c6452cf8447/server/node  
+</span></span><span class="line"><span class="cl">7f7d6bf3c000-7f7d6bf3d000 ---p 0021a000 fc:03 <span class="m">67</span>  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30  
+</span></span><span class="line"><span class="cl">7f7d6bf61000-7f7d6bf63000 r--p <span class="m">00000000</span> fc:03 <span class="m">2928</span>  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2  
 </span></span></code></pre></div><h4 id="translation-process">Translation Process</h4>
 <ol>
 <li>Match the virtual address to the appropriate memory segment in <code>/proc/[pid]/maps</code>.</li>
@@ -348,33 +543,33 @@ How: How Profiling Data is Collected Common tools like perf are used to collect 
 Tools like nm can extract symbol information from the .dynsym (dynamic symbol table) or .symtab (static symbol table) sections of an ELF file.</li>
 </ol>
 <p>Example:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Extract malloc-related symbols from a Node.js binary</span>
-</span></span><span style="display:flex;"><span>nm -D /path/to/node | grep malloc
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># Output:</span>
-</span></span><span style="display:flex;"><span>00000000055f9d18 D ares_malloc
-</span></span><span style="display:flex;"><span>0000000001f1a2a0 T ares_malloc_data
-</span></span><span style="display:flex;"><span>...
-</span></span><span style="display:flex;"><span>                 U malloc@GLIBC_2.2.5
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Extract malloc-related symbols from a Node.js binary</span>
+</span></span><span class="line"><span class="cl">nm -D /path/to/node <span class="p">|</span> grep malloc
+</span></span><span class="line"><span class="cl"><span class="c1"># Output:</span>
+</span></span><span class="line"><span class="cl">00000000055f9d18 D ares_malloc
+</span></span><span class="line"><span class="cl">0000000001f1a2a0 T ares_malloc_data
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">                 U malloc@GLIBC_2.2.5
 </span></span></code></pre></div><ol start="2">
 <li>Using DWARF Debugging Information
 DWARF debug data provides richer details, including source file locations and variable scopes. Tools like readelf or addr2line can parse this information.</li>
 </ol>
 <p>Example:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Extract function names and source locations from DWARF info</span>
-</span></span><span style="display:flex;"><span>readelf --debug-dump<span style="color:#f92672">=</span>info /path/to/node | grep <span style="color:#e6db74">&#34;DW_AT_name&#34;</span> -A3
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># Output:</span>
-</span></span><span style="display:flex;"><span>&lt;1&gt;&lt;1980&gt;: DW_AT_name: uv__make_close_pending
-</span></span><span style="display:flex;"><span>    DW_AT_decl_file: <span style="color:#ae81ff">19</span>
-</span></span><span style="display:flex;"><span>    DW_AT_decl_line: <span style="color:#ae81ff">247</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Extract function names and source locations from DWARF info</span>
+</span></span><span class="line"><span class="cl">readelf --debug-dump<span class="o">=</span>info /path/to/node <span class="p">|</span> grep <span class="s2">&#34;DW_AT_name&#34;</span> -A3
+</span></span><span class="line"><span class="cl"><span class="c1"># Output:</span>
+</span></span><span class="line"><span class="cl">&lt;1&gt;&lt;1980&gt;: DW_AT_name: uv__make_close_pending
+</span></span><span class="line"><span class="cl">    DW_AT_decl_file: <span class="m">19</span>
+</span></span><span class="line"><span class="cl">    DW_AT_decl_line: <span class="m">247</span>
 </span></span></code></pre></div><ol start="3">
 <li>Demangling C++ Symbols
 C++ symbols are often mangled (encoded) for uniqueness. Tools like c++filt restore human-readable names.</li>
 </ol>
 <p>Example:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Demangle a mangled symbol</span>
-</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;_ZN4node14ThreadPoolWork12ScheduleWorkEv&#34;</span> | c++filt
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># Output:</span>
-</span></span><span style="display:flex;"><span>node::ThreadPoolWork::ScheduleWork<span style="color:#f92672">()</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Demangle a mangled symbol</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;_ZN4node14ThreadPoolWork12ScheduleWorkEv&#34;</span> <span class="p">|</span> c++filt
+</span></span><span class="line"><span class="cl"><span class="c1"># Output:</span>
+</span></span><span class="line"><span class="cl">node::ThreadPoolWork::ScheduleWork<span class="o">()</span>
 </span></span></code></pre></div><h3 id="stack-output-formatting">Stack Output Formatting</h3>
 <p>Resolved stack traces are formatted for analysis tools like pprof or perf script. Additional metadata (e.g., container ID, service type) may be included for aggregation.</p>
 <h3 id="data-visualization">Data Visualization</h3>
@@ -390,34 +585,34 @@ C++ symbols are often mangled (encoded) for uniqueness. Tools like c++filt resto
   E --&gt; G[Analyze flame graphs/call chains]
   G --&gt; H[Root cause identified]
 </code></pre><table>
-<thead>
-<tr>
-<th>Scenario Category</th>
-<th>Typical Symptoms</th>
-<th>Tool Choices</th>
-<th>Data Collection Strategy</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Sudden CPU Spikes</strong></td>
-<td>Sawtooth-shaped CPU peaks in monitoring charts.</td>
-<td>Continuous Profiling Systems</td>
-<td>Capture 5-minute context before/after spikes + regular sampling.</td>
-</tr>
-<tr>
-<td><strong>Version Performance Regression</strong></td>
-<td>QPS/TPS drops post-deployment.</td>
-<td>Differential FlameGraph</td>
-<td>A/B version comparison sampling under identical loads.</td>
-</tr>
-<tr>
-<td><strong>High CpuSys</strong></td>
-<td>Elevated OS kernel CPU usage causing host instability.</td>
-<td>FlameGraph/Call-Chain Graph</td>
-<td>Regular sampling with kernel stack analysis.</td>
-</tr>
-</tbody>
+	<thead>
+			<tr>
+					<th>Scenario Category</th>
+					<th>Typical Symptoms</th>
+					<th>Tool Choices</th>
+					<th>Data Collection Strategy</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>Sudden CPU Spikes</strong></td>
+					<td>Sawtooth-shaped CPU peaks in monitoring charts.</td>
+					<td>Continuous Profiling Systems</td>
+					<td>Capture 5-minute context before/after spikes + regular sampling.</td>
+			</tr>
+			<tr>
+					<td><strong>Version Performance Regression</strong></td>
+					<td>QPS/TPS drops post-deployment.</td>
+					<td>Differential FlameGraph</td>
+					<td>A/B version comparison sampling under identical loads.</td>
+			</tr>
+			<tr>
+					<td><strong>High CpuSys</strong></td>
+					<td>Elevated OS kernel CPU usage causing host instability.</td>
+					<td>FlameGraph/Call-Chain Graph</td>
+					<td>Regular sampling with kernel stack analysis.</td>
+			</tr>
+	</tbody>
 </table>
 <h3 id="when-cpu-profiling-is-not-suitable">When CPU Profiling Is NOT Suitable</h3>
 <p>For non-CPU-bound issues, profiling data may have limited value. Alternative tools are recommended:</p>
@@ -473,6 +668,18 @@ C++ symbols are often mangled (encoded) for uniqueness. Tools like c++filt resto
   
 
   
+  
+  <div class="related-resources">
+    <h3>Related Resources</h3>
+    <ul>
+    
+      <li><a href="/blog/cpu%E4%BC%AA%E5%85%B1%E4%BA%AB/">CPU False Sharing</a></li>
+    
+    </ul>
+  </div>
+  
+
+  
 
 
   
@@ -506,12 +713,16 @@ C++ symbols are often mangled (encoded) for uniqueness. Tools like c++filt resto
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -532,45 +743,64 @@ C++ symbols are often mangled (encoded) for uniqueness. Tools like c++filt resto
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

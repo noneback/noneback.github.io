@@ -50,10 +50,10 @@ $$&lt;/p&gt;
 &lt;li&gt;数据的生命周期短。因为单个容器本身的生命周期就很短（比如扩缩容场景，大量临时任务等场景），timeseries 很容易在一定时间维度上膨胀。&lt;/li&gt;
 &lt;li&gt;垂直写入，水平查询&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231010014.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231010014.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;p&gt;带着这些问题看看 数据文件的组织方法，如何解决或者避免这些问题。&lt;/p&gt;
 &lt;p&gt;那么首先看看逻辑的结构&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231010031.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231010031.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;p&gt;整个 db 由 blocks + HEAD 组成，block 又可以进一步被拆分成 chunks，HEAD 基本上就是内存数据+wal 保障的读写 buffer 区域。chunks 包含多种 timeseries。&lt;/p&gt;
 &lt;p&gt;对于单个 Block 的磁盘目录结构如下：&lt;/p&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;├── 01BKGV7JC0RY8A6MACW02A2PJD  // block 的 ULID
@@ -253,8 +253,8 @@ A Postings:
 &lt;li&gt;根据 Postings 中的 series 信息，找到对应的 chunk 位置，即上文中的 series ref&lt;/li&gt;
 &lt;li&gt;根据timeseries 找到对应的 chunks&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png&#34;&gt;
-&lt;img alt=&#34;!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg&#34; src=&#34;https://github.com/noneback/images/blob/picgo/image.png?raw=true&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png&#34; alt=&#34;&#34;&gt;
+&lt;img src=&#34;https://github.com/noneback/images/blob/picgo/image.png?raw=true&#34; alt=&#34;!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;compaction&#34;&gt;Compaction&lt;/h2&gt;
 &lt;p&gt;类似 leveldb，也有 major compaction和 minor compaction。在这里叫 Compaction 和 Head Compaction。&lt;/p&gt;
 &lt;p&gt;Head Compaction类似把 Head部分持久化成 Chunk 的过程，在这个过程中，mark delete 的tombstone 会被真的删除（毕竟要读到内存里，顺手删了）。&lt;/p&gt;

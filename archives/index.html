@@ -11,12 +11,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,23 +25,19 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/archives/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="Archives">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="Archives">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Archives">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Archives">
 
 
 <script type="application/ld+json">
@@ -99,22 +93,30 @@
 
 <link rel="manifest" href="/images/avatar.jpeg">
     
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -210,7 +212,9 @@
       ·
       
       
-      <a href="https://noneback.github.io/tags/performance-analysis/">Performance Analysis</a>
+      <a href="https://noneback.github.io/tags/performance/">Performance</a>
+      
+      <a href="https://noneback.github.io/tags/profiling/">Profiling</a>
       
     </small>
   
@@ -239,6 +243,8 @@
       <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
       
       <a href="https://noneback.github.io/tags/mvcc/">MVCC</a>
+      
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
     </small>
   
@@ -272,6 +278,8 @@
       
       <a href="https://noneback.github.io/tags/tsdb/">TSDB</a>
       
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
+      
     </small>
   
 <p>
@@ -298,9 +306,11 @@
       
       <a href="https://noneback.github.io/tags/borg/">Borg</a>
       
-      <a href="https://noneback.github.io/tags/k8s/">K8s</a>
+      <a href="https://noneback.github.io/tags/kubernetes/">Kubernetes</a>
       
       <a href="https://noneback.github.io/tags/cluster-management/">Cluster Management</a>
+      
+      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
       
     </small>
   
@@ -333,6 +343,8 @@
       <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
       
       <a href="https://noneback.github.io/tags/transaction/">Transaction</a>
+      
+      <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
       
     </small>
   
@@ -417,7 +429,7 @@
       
       <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
       
-      <a href="https://noneback.github.io/tags/chainreplication/">ChainReplication</a>
+      <a href="https://noneback.github.io/tags/chain-replication/">Chain Replication</a>
       
     </small>
   
@@ -436,7 +448,7 @@
         <div class="archive-meta">
           <p>
   <small>
-    January 3, 2023&nbsp;· 399 words&nbsp;· 2 min</small>
+    January 3, 2023&nbsp;· 638 words&nbsp;· 3 min</small>
 
   <small>
       
@@ -459,7 +471,7 @@
   </div>
 </div>
 <div class="archive-year">
-  <h2 class="archive-year-header">2022<sup class="archive-count">&nbsp;&nbsp;8</sup>
+  <h2 class="archive-year-header">2022<sup class="archive-count">&nbsp;&nbsp;9</sup>
   </h2>
   <div class="archive-month">
     <h3 class="archive-month-header">October<sup class="archive-count">&nbsp;&nbsp;3</sup></h3>
@@ -479,7 +491,7 @@
       
       <a href="https://noneback.github.io/tags/big-data/">Big Data</a>
       
-      <a href="https://noneback.github.io/tags/lake-house/">Lake House</a>
+      <a href="https://noneback.github.io/tags/lakehouse/">Lakehouse</a>
       
       <a href="https://noneback.github.io/tags/stream-compute/">Stream Compute</a>
       
@@ -529,7 +541,7 @@
       ·
       
       
-      <a href="https://noneback.github.io/tags/lake-house/">Lake House</a>
+      <a href="https://noneback.github.io/tags/lakehouse/">Lakehouse</a>
       
       <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
@@ -559,9 +571,11 @@
       ·
       
       
+      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      
       <a href="https://noneback.github.io/tags/lsm/">LSM</a>
       
-      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
     </small>
   
@@ -572,7 +586,7 @@
     </div>
   </div>
   <div class="archive-month">
-    <h3 class="archive-month-header">April<sup class="archive-count">&nbsp;&nbsp;2</sup></h3>
+    <h3 class="archive-month-header">April<sup class="archive-count">&nbsp;&nbsp;3</sup></h3>
     <div class="archive-posts">
       <div class="archive-entry">
         <h3 class="archive-entry-title">MIT6.824-RaftKV
@@ -591,8 +605,6 @@
       
       <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
       
-      <a href="https://noneback.github.io/tags/consensus/">Consensus</a>
-      
       <a href="https://noneback.github.io/tags/mit6.824/">MIT6.824</a>
       
     </small>
@@ -600,6 +612,33 @@
 <p>
         </div>
         <a class="archive-link" aria-label="post link to MIT6.824-RaftKV" href="https://noneback.github.io/blog/mit6.824-raftkv/"></a>
+      </div>
+      <div class="archive-entry">
+        <h3 class="archive-entry-title">GSOC 2022 Proposal: Tuple-Storage Engine for Casbin Mesh
+        </h3>
+        <div class="archive-meta">
+          <p>
+  <small>
+    April 15, 2022&nbsp;· 768 words&nbsp;· 4 min</small>
+
+  <small>
+      
+      ·
+      
+      
+      <a href="https://noneback.github.io/tags/gsoc/">GSOC</a>
+      
+      <a href="https://noneback.github.io/tags/casbin/">Casbin</a>
+      
+      <a href="https://noneback.github.io/tags/storage-engine/">Storage Engine</a>
+      
+      <a href="https://noneback.github.io/tags/database/">Database</a>
+      
+    </small>
+  
+<p>
+        </div>
+        <a class="archive-link" aria-label="post link to GSOC 2022 Proposal: Tuple-Storage Engine for Casbin Mesh" href="https://noneback.github.io/blog/gsoc/"></a>
       </div>
       <div class="archive-entry">
         <h3 class="archive-entry-title">LevelDB Startup
@@ -614,9 +653,11 @@
       ·
       
       
+      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      
       <a href="https://noneback.github.io/tags/lsm/">LSM</a>
       
-      <a href="https://noneback.github.io/tags/leveldb/">LevelDB</a>
+      <a href="https://noneback.github.io/tags/storage/">Storage</a>
       
     </small>
   
@@ -644,7 +685,7 @@
       
       <a href="https://noneback.github.io/tags/paper-reading/">Paper Reading</a>
       
-      <a href="https://noneback.github.io/tags/consensu/">Consensu</a>
+      <a href="https://noneback.github.io/tags/consensus/">Consensus</a>
       
       <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
       
@@ -676,7 +717,9 @@
       
       <a href="https://noneback.github.io/tags/arch/">Arch</a>
       
-      <a href="https://noneback.github.io/tags/dwm/">Dwm</a>
+      <a href="https://noneback.github.io/tags/dwm/">DWM</a>
+      
+      <a href="https://noneback.github.io/tags/linux/">Linux</a>
       
     </small>
   
@@ -706,7 +749,7 @@
       ·
       
       
-      <a href="https://noneback.github.io/tags/datastructure/">DataStructure</a>
+      <a href="https://noneback.github.io/tags/data-structure/">Data Structure</a>
       
       <a href="https://noneback.github.io/tags/skiplist/">SkipList</a>
       
@@ -729,15 +772,11 @@
       ·
       
       
-      <a href="https://noneback.github.io/tags/thesis/">Thesis</a>
-      
       <a href="https://noneback.github.io/tags/olap/">OLAP</a>
       
-      <a href="https://noneback.github.io/tags/db/">DB</a>
+      <a href="https://noneback.github.io/tags/database/">Database</a>
       
       <a href="https://noneback.github.io/tags/distributed-system/">Distributed System</a>
-      
-      <a href="https://noneback.github.io/tags/differential-privacy/">Differential Privacy</a>
       
       <a href="https://noneback.github.io/tags/kylin/">Kylin</a>
       
@@ -943,6 +982,8 @@
       
       <a href="https://noneback.github.io/tags/cache/">Cache</a>
       
+      <a href="https://noneback.github.io/tags/performance/">Performance</a>
+      
     </small>
   
 <p>
@@ -967,9 +1008,11 @@
       ·
       
       
-      <a href="https://noneback.github.io/tags/db/">DB</a>
+      <a href="https://noneback.github.io/tags/database/">Database</a>
       
       <a href="https://noneback.github.io/tags/mysql/">MySQL</a>
+      
+      <a href="https://noneback.github.io/tags/index/">Index</a>
       
     </small>
   
@@ -1059,7 +1102,9 @@
       ·
       
       
-      <a href="https://noneback.github.io/tags/ml/">ML</a>
+      <a href="https://noneback.github.io/tags/machine-learning/">Machine Learning</a>
+      
+      <a href="https://noneback.github.io/tags/nlp/">NLP</a>
       
     </small>
   
@@ -1089,7 +1134,9 @@
       ·
       
       
-      <a href="https://noneback.github.io/tags/java/">JAVA</a>
+      <a href="https://noneback.github.io/tags/java/">Java</a>
+      
+      <a href="https://noneback.github.io/tags/concurrency/">Concurrency</a>
       
     </small>
   
@@ -1103,12 +1150,16 @@
 </div>
 </div>
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1129,45 +1180,64 @@
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

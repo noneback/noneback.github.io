@@ -7,82 +7,68 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>@NoneBack All rights reserved</copyright>
-    <lastBuildDate>Fri, 15 Apr 2022 10:49:57 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/consensus/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 21 Feb 2022 01:26:46 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/consensus/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>MIT6.824-RaftKV</title>
-      <link>https://noneback.github.io/blog/mit6.824-raftkv/</link>
-      <pubDate>Fri, 15 Apr 2022 10:49:57 +0800</pubDate>
+      <title>MIT6.824-Raft</title>
+      <link>https://noneback.github.io/blog/mit6.824-raft/</link>
+      <pubDate>Mon, 21 Feb 2022 01:26:46 +0800</pubDate>
       
-      <guid>https://noneback.github.io/blog/mit6.824-raftkv/</guid>
-      <description>&lt;p&gt;Earlier, I looked at the code of Casbin-Mesh because I wanted to try GSOC. Casbin-Mesh is a distributed Casbin application based on Raft. This RaftKV in MIT6.824 is quite similar, so I took the opportunity to write this blog.&lt;/p&gt;
-&lt;h2 id=&#34;lab-overview&#34;&gt;Lab Overview&lt;/h2&gt;
-&lt;p&gt;Lab 03 involves building a distributed KV service based on Raft. We need to implement the server and client for this service.&lt;/p&gt;
-&lt;p&gt;The structure of RaftKV and the interaction between its modules are shown below:&lt;/p&gt;
-&lt;p&gt;&lt;img alt=&#34;image-20220429211429808&#34; src=&#34;https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png&#34;&gt;&lt;/p&gt;
-&lt;p&gt;Compared to the previous lab, the difficulty is significantly lower. For implementation, you can refer to this excellent &lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;implementation&lt;/a&gt;, so I won&amp;rsquo;t elaborate too much.&lt;/p&gt;
-&lt;h2 id=&#34;raft-related-topics&#34;&gt;Raft-Related Topics&lt;/h2&gt;
-&lt;p&gt;Let&amp;rsquo;s talk about Raft and its interactions with clients.&lt;/p&gt;
-&lt;h3 id=&#34;routing-and-linearizability&#34;&gt;Routing and Linearizability&lt;/h3&gt;
-&lt;p&gt;To build a service that allows client access on top of Raft, the issues of &lt;strong&gt;routing&lt;/strong&gt; and &lt;strong&gt;linearizability&lt;/strong&gt; must first be addressed.&lt;/p&gt;
-&lt;h4 id=&#34;routing&#34;&gt;Routing&lt;/h4&gt;
-&lt;p&gt;Raft is a &lt;strong&gt;Strong Leader&lt;/strong&gt; consensus algorithm, and read and write requests usually need to be executed by the Leader. When a client queries the Raft cluster, it typically randomly selects a node. If that node is not the Leader, it returns the Leader information to the client, and the client redirects the request to the Leader.&lt;/p&gt;
-&lt;h4 id=&#34;linearizability&#34;&gt;Linearizability&lt;/h4&gt;
-&lt;p&gt;Currently, Raft only supports &lt;strong&gt;At Least Once&lt;/strong&gt; semantics. For a single client request, the Raft state machine may apply the command multiple times, which is particularly unsuitable for consensus-based systems.&lt;/p&gt;
-&lt;p&gt;To achieve linearizability, it is clear that requests need to be made idempotent.&lt;/p&gt;
-&lt;p&gt;A basic approach is for the client to assign a unique UID to each request, and the server maintains a session using this &lt;code&gt;UID&lt;/code&gt; to cache the response of successful requests. When a duplicate request arrives at the server, it can respond directly using the cached response, thus achieving idempotency.&lt;/p&gt;
-&lt;p&gt;Of course, this introduces the issue of session management, but that is not the focus of this article.&lt;/p&gt;
-&lt;h3 id=&#34;read-only-optimization&#34;&gt;Read-Only Optimization&lt;/h3&gt;
-&lt;p&gt;After solving the above two problems, we have a usable Raft-based service.&lt;/p&gt;
-&lt;p&gt;However, we notice that whether it&amp;rsquo;s a read or write request, our application needs to go through a round of &lt;code&gt;AppendEntries&lt;/code&gt; communication initiated by the Leader. It also requires successful quorum ACKs and additional disk write operations before the log is committed, after which the result can be returned to the client.&lt;/p&gt;
-&lt;p&gt;Write operations change the state machine, so these are necessary steps for write requests. However, read operations do not change the state machine, and we can optimize read requests to bypass the Raft log, reducing the overhead of synchronous write operations on disk IO.&lt;/p&gt;
-&lt;p&gt;The problem is that without additional measures, read-only query results that bypass the Raft log may become stale.&lt;/p&gt;
+      <guid>https://noneback.github.io/blog/mit6.824-raft/</guid>
+      <description>&lt;p&gt;Finally, I managed to complete Lab 02 during this winter break, which had been on hold for quite some time. I was stuck on one of the cases in Test 2B for a while. During the winter break, I revisited the implementations from experts, and finally completed all the tasks, so I decided to document them briefly.&lt;/p&gt;
+&lt;h2 id=&#34;algorithm-overview&#34;&gt;Algorithm Overview&lt;/h2&gt;
+&lt;p&gt;The basis of consensus algorithms is the replicated state machine, which means that &lt;strong&gt;executing the same deterministic commands in the same order will eventually lead to a consistent state&lt;/strong&gt;. Raft is a distributed consensus algorithm that serves as an alternative to Paxos, making it easier to learn and understand compared to Paxos.&lt;/p&gt;
+&lt;p&gt;The core content of the Raft algorithm can be divided into three parts: $Leader Election + Log Replication + Safety$.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Initially, all nodes in the cluster start as Followers. If a Follower does not receive a heartbeat from the Leader within a certain period, it becomes a Candidate and triggers an election, requesting votes from the other Followers. The Candidate that receives a majority of votes becomes the Leader.&lt;/p&gt;
+&lt;p&gt;Raft is a &lt;strong&gt;strong leader&lt;/strong&gt; and strongly consistent distributed consensus algorithm. It uses Terms as a logical clock, and only one Leader can exist in each term. The Leader needs to send heartbeats periodically to maintain its status and to handle &lt;strong&gt;log replication&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;When replicating logs, the Leader first replicates the log to other Followers. Once a majority of the Followers successfully replicate the log, the Leader commits the log.&lt;/p&gt;
+&lt;p&gt;Safety mainly consists of five parts, with two core elements relevant to the implementation. One is the leader&amp;rsquo;s append-only rule, which means it cannot modify committed logs. The other is election safety, preventing split-brain scenarios and ensuring that the new Leader has the most up-to-date log.&lt;/p&gt;
+&lt;p&gt;For more details, please refer to the original paper.&lt;/p&gt;
+&lt;h2 id=&#34;implementation-ideas&#34;&gt;Implementation Ideas&lt;/h2&gt;
+&lt;p&gt;The implementation largely follows an excellent blog post (see references), and many algorithm details are also provided in Figure 2 of the original paper, so I will only focus on aspects that need attention when implementing each function.&lt;/p&gt;
+&lt;h3 id=&#34;leader-election&#34;&gt;Leader Election&lt;/h3&gt;
+&lt;h4 id=&#34;triggering-election--handling-election-results&#34;&gt;Triggering Election + Handling Election Results&lt;/h4&gt;
+&lt;p&gt;The election is initiated by launching multiple goroutines to send RPC requests to other nodes in the background. Therefore, when handling RPC responses, it is necessary to confirm that the current node is a Candidate and that the request is not outdated, i.e., &lt;code&gt;rf.state == Candidate &amp;amp;&amp;amp; req.Term == rf.currentTerm&lt;/code&gt;. If the election is successful, the node should immediately send heartbeats to notify other nodes of the election result.&lt;/p&gt;
+&lt;p&gt;If a failed response is received with &lt;code&gt;resp.Term &amp;gt; rf.currentTerm&lt;/code&gt;, the node should switch to the Follower state, update the term, and &lt;strong&gt;reset voting information&lt;/strong&gt;.&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;For example, if the old cluster Leader and a new Leader&amp;rsquo;s cluster are partitioned, queries made to the old Leader could be outdated.&lt;/p&gt;
+&lt;p&gt;In fact, whenever the term is updated, the voting information needs to be reset. If the &lt;code&gt;votedFor&lt;/code&gt; information is not reset, some tests will fail.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;The Raft paper mentions two methods to bypass the Raft log and optimize read-only requests: &lt;strong&gt;Read Index&lt;/strong&gt; and &lt;strong&gt;Lease Read&lt;/strong&gt;.&lt;/p&gt;
-&lt;h4 id=&#34;read-index&#34;&gt;Read Index&lt;/h4&gt;
-&lt;p&gt;The &lt;strong&gt;Read Index&lt;/strong&gt; approach needs to address several issues:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;Committed logs from the old term&lt;/li&gt;
-&lt;/ul&gt;
+&lt;h4 id=&#34;request-vote-rpc&#34;&gt;Request Vote RPC&lt;/h4&gt;
+&lt;p&gt;First, filter outdated requests with &lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt; and ignore duplicate voting requests for the current term. Then, follow the algorithm&amp;rsquo;s logic to process the request. Note that if the node successfully grants the vote, it should reset the election timer.&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;For example, if the old Leader commits a log but crashes before sending heartbeats, other nodes will elect a new Leader. According to the Raft paper, the new Leader does not proactively commit logs from the old Leader.&lt;/p&gt;
-&lt;p&gt;To solve this, a no-op log is committed after a new Leader is elected to commit the old log.&lt;/p&gt;
+&lt;p&gt;Resetting the election timeout only when granting a vote helps with liveness in leader elections under unstable network conditions.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;ul&gt;
-&lt;li&gt;Gap between &lt;code&gt;commitIndex&lt;/code&gt; and &lt;code&gt;appliedIndex&lt;/code&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;Introduce a &lt;code&gt;readIndex&lt;/code&gt; variable, where the Leader saves the current &lt;code&gt;commitIndex&lt;/code&gt; in a local variable called &lt;code&gt;readIndex&lt;/code&gt;. This acts as a boundary for applying the log, and when a read-only request arrives, the log must be applied up to the position recorded by &lt;code&gt;readIndex&lt;/code&gt; before the Leader can query the state machine to provide read services.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;ul&gt;
-&lt;li&gt;Ensure no Leader change when providing read-only services&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;To achieve this, after receiving a read request, the Leader first sends a heartbeat and needs to receive quorum ACKs to ensure there is no other Leader with a higher term, thus ensuring that &lt;code&gt;readIndex&lt;/code&gt; is the highest committed index in the cluster.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;For the specific process and optimizations like Batch and Follower Read, refer to the author&amp;rsquo;s PhD dissertation on Raft.&lt;/p&gt;
-&lt;h4 id=&#34;lease-read&#34;&gt;Lease Read&lt;/h4&gt;
-&lt;p&gt;The &lt;strong&gt;Read Index&lt;/strong&gt; approach only optimizes the overhead of disk IO, but still requires a round of network communication. However, this overhead can also be optimized, leading to the &lt;strong&gt;Lease Read&lt;/strong&gt; approach.&lt;/p&gt;
-&lt;p&gt;The &lt;strong&gt;core idea&lt;/strong&gt; of &lt;strong&gt;Lease Read&lt;/strong&gt; is to use the fact that a Leader Election requires at least one &lt;code&gt;ElectionTimeout&lt;/code&gt; time period. During this period, the system will not conduct a new election, thereby avoiding Leader changes when providing read-only services. We can use clocks to optimize network IO.&lt;/p&gt;
-&lt;h5 id=&#34;implementation&#34;&gt;Implementation&lt;/h5&gt;
-&lt;p&gt;To let the clock replace network communication, we need an additional lease mechanism. Once the Leader&amp;rsquo;s &lt;code&gt;Heartbeat&lt;/code&gt; is approved by a quorum, the Leader can assume that no other node can become Leader during the &lt;code&gt;ElectionTimeout&lt;/code&gt; period, and it can extend its lease accordingly. While holding the lease, the Leader can directly serve read-only queries without extra network communication.&lt;/p&gt;
-&lt;p&gt;However, there may be &lt;strong&gt;clock drift&lt;/strong&gt; among servers, which means Followers cannot ensure that the Leader will not time out during the lease. This introduces the critical design for &lt;code&gt;Lease Read&lt;/code&gt;: &lt;strong&gt;what strategy should be used to extend the lease?&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;The paper assumes that $ClockDrift$ is bounded, and when a heartbeat successfully updates the lease, the lease is extended to $start + rac{ElectionTimeout}{ClockDriftBound}$.&lt;/p&gt;
-&lt;p&gt;$ClockDriftBound$ represents the limit of clock drift in the cluster, but discovering and maintaining this limit is challenging due to many real-time factors that cause clock drift.&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;For instance, garbage collection (GC), virtual machine scheduling, cloud machine scaling, etc.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;In practice, some safety is usually sacrificed for &lt;code&gt;Lease Read&lt;/code&gt; performance. Generally, the lease is extended to $StartTime + ElectionTimeout - \Delta{t}$, where $\Delta{t}$ is a positive value. This reduces the lease extension time compared to &lt;code&gt;ElectionTimeout&lt;/code&gt;, trading off between network IO overhead and safety.&lt;/p&gt;
-&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;
-&lt;p&gt;When building a Raft-based service, it is crucial to design routing and idempotency mechanisms for accessing the service.&lt;/p&gt;
-&lt;p&gt;For read-only operations, there are two main optimization methods: &lt;strong&gt;Read Index&lt;/strong&gt; and &lt;strong&gt;Lease Read&lt;/strong&gt;. The former optimizes disk IO during read operations, while the latter uses clocks to optimize network IO.&lt;/p&gt;
+&lt;h4 id=&#34;state-transition&#34;&gt;State Transition&lt;/h4&gt;
+&lt;p&gt;When switching roles, be mindful of handling the state of different timers (stop or reset). When switching to Leader, reset the values of &lt;code&gt;matchIndex&lt;/code&gt; and &lt;code&gt;nextIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;log-replication&#34;&gt;Log Replication&lt;/h3&gt;
+&lt;p&gt;Log replication is the core of the Raft algorithm, and it requires careful attention.&lt;/p&gt;
+&lt;p&gt;My implementation uses multiple replicator and applier threads for asynchronous replication and application.&lt;/p&gt;
+&lt;h4 id=&#34;log-replication-rpc&#34;&gt;Log Replication RPC&lt;/h4&gt;
+&lt;p&gt;First, filter outdated requests with &lt;code&gt;req.Term &amp;lt; rf.currentTerm&lt;/code&gt;. Then, handle log inconsistencies, log truncation, and duplicate log entries before replicating logs and processing &lt;code&gt;commitIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;trigger-log-replication--handle-request-results&#34;&gt;Trigger Log Replication + Handle Request Results&lt;/h4&gt;
+&lt;p&gt;Determine whether to replicate logs directly or send a snapshot before initiating replication.&lt;/p&gt;
+&lt;p&gt;The key point in handling request results is how to update &lt;code&gt;matchIndex&lt;/code&gt;, &lt;code&gt;nextIndex&lt;/code&gt;, and &lt;code&gt;commitIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;matchIndex&lt;/code&gt; is used to record the latest log successfully replicated on other nodes, while &lt;code&gt;nextIndex&lt;/code&gt; records the next log to be sent to other nodes. &lt;code&gt;commitIndex&lt;/code&gt; is updated by sorting &lt;code&gt;matchIndex&lt;/code&gt; and determining whether to trigger the applier to update &lt;code&gt;appliedIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;If the request fails, &lt;code&gt;nextIndex&lt;/code&gt; should be decremented, or the node should switch to the Follower state.&lt;/p&gt;
+&lt;h4 id=&#34;asynchronous-apply&#34;&gt;Asynchronous Apply&lt;/h4&gt;
+&lt;p&gt;This is essentially a background goroutine controlled by condition variables and uses channels for communication. Each time it is triggered, it sends &lt;code&gt;log[lastApplied:commitIndex]&lt;/code&gt; to the upper layer and updates &lt;code&gt;appliedIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;persistence&#34;&gt;Persistence&lt;/h3&gt;
+&lt;p&gt;Persist the updated attributes that need to be saved to disk in a timely manner.&lt;/p&gt;
+&lt;h3 id=&#34;install-snapshot&#34;&gt;Install Snapshot&lt;/h3&gt;
+&lt;p&gt;The main components are the Snapshot triggered by the Leader and the corresponding RPC. When applying a Snapshot, determine its freshness and update &lt;code&gt;log[0]&lt;/code&gt;, &lt;code&gt;appliedIndex&lt;/code&gt;, and &lt;code&gt;commitIndex&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;pitfalls&#34;&gt;Pitfalls&lt;/h2&gt;
+&lt;h3 id=&#34;defer&#34;&gt;Defer&lt;/h3&gt;
+&lt;p&gt;The first pitfall is related to the &lt;strong&gt;defer&lt;/strong&gt; keyword in Go. I like to use the &lt;code&gt;defer&lt;/code&gt; keyword at the beginning of an RPC to directly print some data from the node: &lt;code&gt;defer Dprintf(&amp;quot;%+v&amp;quot;, raft.currentTerm)&lt;/code&gt;. This way, the log can be printed at the end of the call. However, the content to be printed is fixed at the time the defer statement is executed. The correct usage should be &lt;code&gt;defer func(ID int) { Dprintf(&amp;quot;%+v&amp;quot;, id) }()&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;log-dummy-header&#34;&gt;Log Dummy Header&lt;/h3&gt;
+&lt;p&gt;It is best to reserve a spot in the log for storing the index and term of the snapshot to avoid a painful refactor of the Snapshot section later.&lt;/p&gt;
+&lt;h3 id=&#34;lock&#34;&gt;Lock&lt;/h3&gt;
+&lt;p&gt;Refer to the guidance on locking suggestions. Use a single coarse-grained lock rather than multiple locks. Correctness of the algorithm is more important than performance. Avoid holding locks while sending RPCs or using channels, as it may lead to timeouts.&lt;/p&gt;
 &lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md&#34;&gt;Implementation Doc&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://zh.wikipedia.org/wiki/Raft&#34;&gt;Raft Wikipedia&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://raft.github.io/&#34;&gt;Raft Official Website&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf&#34;&gt;Raft Paper&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;https://pdos.csail.mit.edu/6.824/index.html&#34;&gt;MIT6.824 Official&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/raft-thesis-zh_cn&#34;&gt;Consensus: Bridging Theory and Practice - zh&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://pingcap.com/zh/blog/lease-read&#34;&gt;Tikv Lease-Read&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab2.md&#34;&gt;Potato’s Implementation Doc&lt;/a&gt;&lt;/p&gt;
 </description>
     </item>
     

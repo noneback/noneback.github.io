@@ -3,7 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>How to Implement SkipList</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工">
+    <meta name="description" content="Ladder@之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工作上紧急的需求以及下班后只想躺平摸鱼之类的原因，暂时搁置了下来。如今想起已经有些忘记了，于是姑且记录一下。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/how-to-implement-skiplist/">
         <meta name="google-site-verification" content="xxx">
@@ -11,12 +11,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,30 +25,26 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/how-to-implement-skiplist/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="How to Implement SkipList">
-  <meta property="og:description" content="之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工">
-  <meta property="og:locale" content="zh">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2021-11-21T15:28:42+08:00">
-    <meta property="article:modified_time" content="2021-11-21T15:28:42+08:00">
-    <meta property="article:tag" content="DataStructure">
-    <meta property="article:tag" content="SkipList">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="How to Implement SkipList">
+	<meta property="og:description" content="之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工作上紧急的需求以及下班后只想躺平摸鱼之类的原因，暂时搁置了下来。如今想起已经有些忘记了，于是姑且记录一下。">
+	<meta property="og:locale" content="zh">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2021-11-21T15:28:42+08:00">
+		<meta property="article:modified_time" content="2021-11-21T15:28:42+08:00">
+		<meta property="article:tag" content="Data Structure">
+		<meta property="article:tag" content="SkipList">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="How to Implement SkipList">
-  <meta name="twitter:description" content="之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="How to Implement SkipList">
+	<meta name="twitter:description" content="之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工作上紧急的需求以及下班后只想躺平摸鱼之类的原因，暂时搁置了下来。如今想起已经有些忘记了，于是姑且记录一下。">
 
 
 <script type="application/ld+json">
@@ -79,7 +73,7 @@
   "@type": "BlogPosting",
   "headline": "How to Implement SkipList",
   "name": "How to Implement SkipList",
-  "description": "之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工",
+  "description": "之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工作上紧急的需求以及下班后只想躺平摸鱼之类的原因，暂时搁置了下来。如今想起已经有些忘记了，于是姑且记录一下。\n",
   "keywords": [
     "DataStructure", "SkipList", "Implemetation"
   ],
@@ -147,22 +141,30 @@
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -251,7 +253,7 @@
       ·
       
       
-      <a href="https://noneback.github.io/zh/tags/datastructure/">DataStructure</a>
+      <a href="https://noneback.github.io/zh/tags/data-structure/">Data Structure</a>
       
       <a href="https://noneback.github.io/zh/tags/skiplist/">SkipList</a>
       
@@ -260,7 +262,12 @@
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>目录</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#什么是skiplist">什么是SkipList</a></li>
     <li><a href="#实现">实现</a>
@@ -272,6 +279,10 @@
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><p>之前闲来无事，打算尝试写一个简单的LSM存储引擎的模型。简单实现了一下SkipList和BloomFilter，BitSet之后，因为一些工作上紧急的需求以及下班后只想躺平摸鱼之类的原因，暂时搁置了下来。如今想起已经有些忘记了，于是姑且记录一下。</p>
@@ -280,14 +291,14 @@
 <blockquote>
 <p>平衡树一般指BST和红黑树等数据结构，这种数据结构解决了排序树的不平衡问题，但带来了旋转，变色等问题，在并发场景下锁的粒度很大，会一定程度上影响性能，并且实现比较复杂。相对而言，SkipList避免了这些问题。</p>
 </blockquote>
-<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Skip_list.svg/600px-Skip_list.svg.png"></p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Skip_list.svg/600px-Skip_list.svg.png" alt=""></p>
 <h2 id="实现">实现</h2>
 <p>跳表一般基于有序链表实现。首先是链表的排序问题，对于链表的来说，排序的问题其实等价于<strong>怎么找到新增节点的在有序链表中插入位置</strong>。</p>
 <p>对于数组而言，只需要利用二分法查找到对应的位置，然后插入，并移动之后的元素，主要的开销在于拓展内存以及移动元素。</p>
 <p>链表没法这么处理。链表的优势在于插入后无需移动后续元素，但无法跳跃查询，主要开销在于定位插入位置。</p>
 <p>结合两者实际上就是跳表的基本思想：底层数据用有序链表维护，方便数据插入；在底层数据节点之上构建多层不同的稀疏索引（比如从上往下不断变密集），加速节点的查询，快速定位。</p>
 <blockquote>
-<p><img alt="image-20200804113631837" src="https://i.loli.net/2021/11/21/JZE5mrOcodHR4gf.png"></p>
+<p><img src="https://i.loli.net/2021/11/21/JZE5mrOcodHR4gf.png" alt="image-20200804113631837"></p>
 <p>比如底层索引6节点，第一层索引在中点处[ (0 + 6) / 2]添加索引，第一层索引将底层分成两个分区，第二层索引再在两个分区的中点添加索引，以此类推。</p>
 </blockquote>
 <p><strong>索引节点+数据节点</strong>就是跳表的核心，但这又有了另一个问题：<strong>怎么样便利的维护索引节点？</strong></p>
@@ -298,82 +309,82 @@
 <p>对于第$K$层，将有$N / 2^k$个节点，与取分区中点作为索引节点等价。</p>
 </blockquote>
 <h3 id="数据结构">数据结构</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SkipListNode</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">data</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">codec</span>.<span style="color:#a6e22e">Entry</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">nextPtrs</span> []<span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SkipList</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">header</span>, <span style="color:#a6e22e">tail</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">level</span>        <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">size</span>         <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">rwmtx</span>        <span style="color:#f92672">*</span><span style="color:#a6e22e">sync</span>.<span style="color:#a6e22e">RWMutex</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">maxSize</span>      <span style="color:#66d9ef">int</span>
-</span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><h3 id="操作">操作</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">SkipListNode</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">data</span><span class="w"> </span><span class="o">*</span><span class="nx">codec</span><span class="p">.</span><span class="nx">Entry</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">nextPtrs</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">SkipListNode</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">SkipList</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">header</span><span class="p">,</span><span class="w"> </span><span class="nx">tail</span><span class="w"> </span><span class="o">*</span><span class="nx">SkipListNode</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">level</span><span class="w">        </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">size</span><span class="w">         </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">rwmtx</span><span class="w">        </span><span class="o">*</span><span class="nx">sync</span><span class="p">.</span><span class="nx">RWMutex</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">maxSize</span><span class="w">      </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h3 id="操作">操作</h3>
 <p>值得关注的只有查询和插入节点两个操作。</p>
 <h4 id="查询">查询</h4>
 <p>最核心的步骤是由上至下，利用每层的稀疏索引二分查找定位到需要的节点，或者位置。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#75715e">// findPreNode find the node before node.key
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">sl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipList</span>) <span style="color:#a6e22e">findPreNode</span>(<span style="color:#a6e22e">key</span> []<span style="color:#66d9ef">byte</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span>, <span style="color:#66d9ef">bool</span>) {
-</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// from top to bottom
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">h</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">header</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>; <span style="color:#a6e22e">i</span> <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">--</span> {
-</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>] <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Compare</span>(<span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">data</span>.<span style="color:#a6e22e">Key</span>, <span style="color:#a6e22e">key</span>) <span style="color:#f92672">!=</span> <span style="color:#ae81ff">1</span> {
-</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Equal</span>(<span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">data</span>.<span style="color:#a6e22e">Key</span>, <span style="color:#a6e22e">key</span>) {
-</span></span><span style="display:flex;"><span>                                <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">h</span>, <span style="color:#66d9ef">true</span>
-</span></span><span style="display:flex;"><span>                        }
-</span></span><span style="display:flex;"><span>                        <span style="color:#a6e22e">h</span> = <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>]
-</span></span><span style="display:flex;"><span>                }
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>, <span style="color:#66d9ef">false</span>
-</span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><h4 id="插入">插入</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// findPreNode find the node before node.key</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sl</span><span class="w"> </span><span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span><span class="w"> </span><span class="nf">findPreNode</span><span class="p">(</span><span class="nx">key</span><span class="w"> </span><span class="p">[]</span><span class="kt">byte</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="nx">SkipListNode</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// from top to bottom</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">h</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sl</span><span class="p">.</span><span class="nx">header</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sl</span><span class="p">.</span><span class="nx">level</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="o">--</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">bytes</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">data</span><span class="p">.</span><span class="nx">Key</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="nx">bytes</span><span class="p">.</span><span class="nf">Equal</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">data</span><span class="p">.</span><span class="nx">Key</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                </span><span class="k">return</span><span class="w"> </span><span class="nx">h</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="nx">h</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h4 id="插入">插入</h4>
 <p>首先要定位到插入的位置，插入，再随机化创建索引。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">sl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipList</span>) <span style="color:#a6e22e">randomLevel</span>() <span style="color:#66d9ef">int</span> {
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">ans</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Seed</span>(<span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Now</span>().<span style="color:#a6e22e">Unix</span>())
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Intn</span>(<span style="color:#ae81ff">2</span>) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">ans</span> <span style="color:#f92672">&lt;=</span> <span style="color:#a6e22e">defaultMaxLevel</span> {
-</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">ans</span><span style="color:#f92672">++</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ans</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">sl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipList</span>) <span style="color:#a6e22e">Insert</span>(<span style="color:#a6e22e">data</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">codec</span>.<span style="color:#a6e22e">Entry</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span> {
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">rwmtx</span>.<span style="color:#a6e22e">Lock</span>()
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">rwmtx</span>.<span style="color:#a6e22e">Unlock</span>()
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">h</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">header</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">updateNode</span> <span style="color:#f92672">:=</span> make([]<span style="color:#f92672">*</span><span style="color:#a6e22e">SkipListNode</span>, <span style="color:#a6e22e">defaultMaxLevel</span>) <span style="color:#75715e">// stores the node before newNode
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">// search form the top level
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>; <span style="color:#a6e22e">i</span> <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">--</span> {
-</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// loop: 1. current nextPtrs is not empty &amp;&amp; data is small than inserted one, curData &lt; insertedData
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>] <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">data</span>.<span style="color:#a6e22e">Less</span>(<span style="color:#a6e22e">data</span>) {
-</span></span><span style="display:flex;"><span>                        <span style="color:#a6e22e">h</span> = <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>]
-</span></span><span style="display:flex;"><span>                }
-</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">updateNode</span>[<span style="color:#a6e22e">i</span>] = <span style="color:#a6e22e">h</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// choose level to insert
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">lvl</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">randomLevel</span>()
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">lvl</span> &gt; <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span> {
-</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// Insert into higher level, we need to create header -&gt; tail
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#a6e22e">lvl</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
-</span></span><span style="display:flex;"><span>                        <span style="color:#a6e22e">updateNode</span>[<span style="color:#a6e22e">i</span>] = <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">header</span>
-</span></span><span style="display:flex;"><span>                }
-</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">level</span> = <span style="color:#a6e22e">lvl</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// insert after updatedNote
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">n</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">NewSkipListNode</span>(<span style="color:#a6e22e">lvl</span>, <span style="color:#a6e22e">data</span>)
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#a6e22e">lvl</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
-</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">n</span>.<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>] = <span style="color:#a6e22e">updateNode</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>]
-</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">updateNode</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">nextPtrs</span>[<span style="color:#a6e22e">i</span>] = <span style="color:#a6e22e">n</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">size</span><span style="color:#f92672">++</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">n</span>
-</span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><h2 id="参考">参考</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sl</span><span class="w"> </span><span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span><span class="w"> </span><span class="nf">randomLevel</span><span class="p">()</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">ans</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">rand</span><span class="p">.</span><span class="nf">Seed</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="nx">rand</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">ans</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">defaultMaxLevel</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">ans</span><span class="o">++</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">ans</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sl</span><span class="w"> </span><span class="o">*</span><span class="nx">SkipList</span><span class="p">)</span><span class="w"> </span><span class="nf">Insert</span><span class="p">(</span><span class="nx">data</span><span class="w"> </span><span class="o">*</span><span class="nx">codec</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="nx">SkipListNode</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">sl</span><span class="p">.</span><span class="nx">rwmtx</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">defer</span><span class="w"> </span><span class="nx">sl</span><span class="p">.</span><span class="nx">rwmtx</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">h</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sl</span><span class="p">.</span><span class="nx">header</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">updateNode</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">make</span><span class="p">([]</span><span class="o">*</span><span class="nx">SkipListNode</span><span class="p">,</span><span class="w"> </span><span class="nx">defaultMaxLevel</span><span class="p">)</span><span class="w"> </span><span class="c1">// stores the node before newNode</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// search form the top level</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sl</span><span class="p">.</span><span class="nx">level</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="o">--</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// loop: 1. current nextPtrs is not empty &amp;&amp; data is small than inserted one, curData &lt; insertedData</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">data</span><span class="p">.</span><span class="nf">Less</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="nx">h</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">h</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">h</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// choose level to insert</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">lvl</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sl</span><span class="p">.</span><span class="nf">randomLevel</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">lvl</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="nx">sl</span><span class="p">.</span><span class="nx">level</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// Insert into higher level, we need to create header -&gt; tail</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sl</span><span class="p">.</span><span class="nx">level</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">lvl</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="o">++</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">sl</span><span class="p">.</span><span class="nx">header</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">sl</span><span class="p">.</span><span class="nx">level</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">lvl</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// insert after updatedNote</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">n</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">NewSkipListNode</span><span class="p">(</span><span class="nx">lvl</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">lvl</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="o">++</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">n</span><span class="p">.</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">updateNode</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">nextPtrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">n</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">sl</span><span class="p">.</span><span class="nx">size</span><span class="o">++</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">n</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h2 id="参考">参考</h2>
 <p><a href="https://www.jianshu.com/p/09c3b0835ba6#%E4%BB%8Ezset%E5%88%B0zskiplist">跳跃列表（Skip List）与其在Redis中的实现详</a></p>
 <p><a href="https://github.com/redis/redis/blob/91e77a0cfb5c7e4bc6473ae04353e48ad9e8697b/src/t_zset.c">Redis: zskiplist</a></p>
 <p><a href="https://zh.wikipedia.org/wiki/%E8%B7%B3%E8%B7%83%E5%88%97%E8%A1%A8">wikipedia</a></p>
@@ -398,6 +409,9 @@
     </a>
     
   </div>
+  
+
+  
   
 
   
@@ -434,12 +448,16 @@
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -460,45 +478,64 @@
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = '复制';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = '已复制';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = '复制';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

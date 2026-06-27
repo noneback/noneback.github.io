@@ -12,12 +12,10 @@ These notes are not an in-depth analysis of specific details but rather a record
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -28,32 +26,28 @@ These notes are not an in-depth analysis of specific details but rather a record
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/blog/dfs-haystack/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="DFS-Haystack">
-  <meta property="og:description" content="The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle “lots of small files” (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="DFS-Haystack">
+	<meta property="og:description" content="The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle “lots of small files” (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.
 These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2021-10-06T22:44:01+08:00">
-    <meta property="article:modified_time" content="2021-10-06T22:44:01+08:00">
-    <meta property="article:tag" content="DFS">
-    <meta property="article:tag" content="Paper Reading">
-    <meta property="article:tag" content="Distributed System">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2021-10-06T22:44:01+08:00">
+		<meta property="article:modified_time" content="2021-10-06T22:44:01+08:00">
+		<meta property="article:tag" content="DFS">
+		<meta property="article:tag" content="Paper Reading">
+		<meta property="article:tag" content="Distributed System">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="DFS-Haystack">
-  <meta name="twitter:description" content="The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle “lots of small files” (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="DFS-Haystack">
+	<meta name="twitter:description" content="The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle “lots of small files” (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.
 These notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.">
 
 
@@ -83,7 +77,7 @@ These notes are not an in-depth analysis of specific details but rather a record
   "@type": "BlogPosting",
   "headline": "DFS-Haystack",
   "name": "DFS-Haystack",
-  "description": "The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle \u0026ldquo;lots of small files\u0026rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.\nThese notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.",
+  "description": "The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle \u0026ldquo;lots of small files\u0026rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.\nThese notes are not an in-depth analysis of specific details but rather a record of my thoughts on the problem and design approach.\n",
   "keywords": [
     "DFS", "Distributed System", "Paper Reading"
   ],
@@ -151,22 +145,30 @@ These notes are not an in-depth analysis of specific details but rather a record
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -227,11 +229,11 @@ These notes are not an in-depth analysis of specific details but rather a record
             
             
             
-            
-            
             <li class="navigation-item navigation-language">
                 <a href="https://noneback.github.io/zh/">中</a>
             </li>
+            
+            
             
             
             
@@ -266,7 +268,12 @@ These notes are not an in-depth analysis of specific details but rather a record
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>Table of Contents</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#introduction">Introduction</a></li>
     <li><a href="#background">Background</a></li>
@@ -289,6 +296,10 @@ These notes are not an in-depth analysis of specific details but rather a record
     <li><a href="#references">References</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><p>The primary project in my group is a distributed file system (DFS) that provides POSIX file system semantics. The approach to handle &ldquo;lots of small files&rdquo; (LOSF) is inspired by Haystack, which is specifically designed for small files. I decided to read through the Haystack paper and take some notes as a learning exercise.</p>
@@ -306,7 +317,7 @@ These notes are not an in-depth analysis of specific details but rather a record
 <h4 id="cdn-based-solution">CDN-based Solution</h4>
 <p>The core of this solution is to use CDN (Content Delivery Network) to cache hot image data, reducing network transmission.</p>
 <p>This approach optimizes access to hot images but also has some issues. Firstly, CDN is expensive and has limited capacity. Secondly, image sharing includes many <code>less popular</code> images, which leads to the long tail effect, slowing down access.</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202411011455343.png"></p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202411011455343.png" alt=""></p>
 <blockquote>
 <p>CDNs are generally used to serve static data and are often pre-warmed before an event, making them unsuitable as an image cache service. Many <code>less popular</code> images do not enter the CDN, leading to the long tail effect.</p>
 </blockquote>
@@ -319,7 +330,7 @@ These notes are not an in-depth analysis of specific details but rather a record
 <li>Read the content of the file</li>
 </ul>
 <p>PhotoStore was used as a caching layer to store some metadata like file handles to speed up the addressing process.</p>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202411011454979.png"></p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202411011454979.png" alt=""></p>
 <p>The NAS-based design did not solve the fundamental issue of excessive metadata that could not be fully cached. When the number of files reaches a certain threshold, disk I/O becomes inevitable.</p>
 <blockquote>
 <p>The fundamental issue is the <strong>one-to-one relationship between files and addressing metadata</strong>, causing the volume of metadata to change with the number of files.</p>
@@ -330,7 +341,7 @@ These notes are not an in-depth analysis of specific details but rather a record
 <blockquote>
 <p>Metadata is maintained only for the aggregated file, and the position of small files within the large file is maintained separately.</p>
 </blockquote>
-<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202411011456020.png"></p>
+<p><img src="https://raw.githubusercontent.com/noneback/images/picgo/202411011456020.png" alt=""></p>
 <h2 id="implementation">Implementation</h2>
 <p>Haystack mainly consists of three components: Haystack Directory, Haystack Cache, and Haystack Store.</p>
 <h3 id="file-mapping-and-storage">File Mapping and Storage</h3>
@@ -369,14 +380,14 @@ These notes are not an in-depth analysis of specific details but rather a record
 <p>The Store layer is responsible for data storage operations.</p>
 <p>The addressing abstraction is: <code>filename + offset =&gt; logical volume id + offset =&gt; data</code>.</p>
 <p>Multiple physical volumes constitute a logical volume. In the Store, small files are encapsulated as <strong>Needles</strong> managed by physical volumes.</p>
-<p><img alt="Needle Abstraction" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg"></p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5oo0mltfj60zs0u0q5j02.jpg" alt="Needle Abstraction"></p>
 <blockquote>
 <p>Needles represent a way to encapsulate small files and manage volume blocks.</p>
 </blockquote>
 <p>Store data is accessed at the Needle level. To speed up addressing, a memory map is used: <code>key/alternate key =&gt; needle's flag/offset/other attributes</code>.</p>
 <p>These maps are persisted in <strong>Index Files</strong> on disk to provide a checkpoint for quick metadata recovery after a crash.</p>
-<p><img alt="Index File" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg"></p>
-<p><img alt="Volume Mapping" src="https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg"></p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5put6m7qj60u40jc0u102.jpg" alt="Index File"></p>
+<p><img src="https://tva1.sinaimg.cn/large/008i3skNly1gv5puqgvgcj60te0dk0ua02.jpg" alt="Volume Mapping"></p>
 <blockquote>
 <p>Each volume maintains its own in-memory mapping and index file.</p>
 </blockquote>
@@ -433,6 +444,22 @@ These notes are not an in-depth analysis of specific details but rather a record
   
 
   
+  
+  <div class="related-resources">
+    <h3>Related Resources</h3>
+    <ul>
+    
+      <li><a href="/blog/mit6.824-bigtable/">MIT6.824 Bigtable</a></li>
+    
+      <li><a href="/blog/mit6.824-gfs/">MIT6.824 GFS</a></li>
+    
+      <li><a href="/blog/mit6.824-mapreduce/">MIT6.824-MapReduce</a></li>
+    
+    </ul>
+  </div>
+  
+
+  
 
 
   
@@ -466,12 +493,16 @@ These notes are not an in-depth analysis of specific details but rather a record
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -492,45 +523,64 @@ These notes are not an in-depth analysis of specific details but rather a record
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = 'Copy';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = 'Copied';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = 'Copy';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

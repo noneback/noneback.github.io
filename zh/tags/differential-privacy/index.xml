@@ -2,18 +2,18 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Differential Privacy on NoneBack</title>
-    <link>https://noneback.github.io/zh/tags/differential-privacy/</link>
+    <link>http://localhost:1314/zh/tags/differential-privacy/</link>
     <description>Recent content in Differential Privacy on NoneBack created by </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
     <copyright>@NoneBack All rights reserved</copyright>
-    <lastBuildDate>Wed, 10 Nov 2021 23:45:27 +0800</lastBuildDate><atom:link href="https://noneback.github.io/zh/tags/differential-privacy/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 10 Nov 2021 23:45:27 +0800</lastBuildDate><atom:link href="http://localhost:1314/zh/tags/differential-privacy/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Kylin概述</title>
-      <link>https://noneback.github.io/zh/blog/zh/kylin%E6%A6%82%E8%BF%B0/</link>
+      <link>http://localhost:1314/zh/blog/zh/kylin%E6%A6%82%E8%BF%B0/</link>
       <pubDate>Wed, 10 Nov 2021 23:45:27 +0800</pubDate>
       
-      <guid>https://noneback.github.io/zh/blog/zh/kylin%E6%A6%82%E8%BF%B0/</guid>
+      <guid>http://localhost:1314/zh/blog/zh/kylin%E6%A6%82%E8%BF%B0/</guid>
       <description>&lt;p&gt;之前就想着能做一个有意思的毕设，奈何周围都没有合适的老师。之前在学院启动选题之前找好了一个感觉不错的老师，但没想到最后把我鸽了。不过之前老师的方向也并不是那么感兴趣，于是也就作罢。 最近学院的毕设流程启动了，也在选题里看到了感兴趣的题目，于是便联系老师接了下来。&lt;/p&gt;
 &lt;p&gt;我选的题目是 &lt;strong&gt;《基于差分隐私的数据库查询算法的设计与实现》&lt;/strong&gt;，方向是Differential Privacy + OLAP，具体一点就是为Kylin添加Differential Privacy的Feature。&lt;/p&gt;
 &lt;p&gt;总的来说就是如此，至于细节，也许在之后的博客中会写到。这是此系列博客的第一篇。&lt;/p&gt;
@@ -56,7 +56,7 @@
 &lt;/ul&gt;
 &lt;h2 id=&#34;架构设计&#34;&gt;架构设计&lt;/h2&gt;
 &lt;p&gt;整个Kylin系统分为&lt;strong&gt;在线查询&lt;/strong&gt;和&lt;strong&gt;离线构建&lt;/strong&gt;两部分。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://i.loli.net/2021/11/10/AoxY4POJHdqLheb.png&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;&lt;strong&gt;离线构建&lt;/strong&gt;：主要有数据源，构建引擎，存储引擎三大抽象。从数据源拉取数据构建Cube在存储到列式存储引擎中。&lt;/p&gt;

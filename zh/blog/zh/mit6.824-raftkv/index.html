@@ -3,7 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIT6.824-RaftKV</title>
     <meta charset="utf-8">
-    <meta name="description" content="Ladder@之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra">
+    <meta name="description" content="Ladder@之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。">
     <meta name="author" content="NoneBack">
     <link rel="canonical" href="https://noneback.github.io/zh/blog/zh/mit6.824-raftkv/">
         <meta name="google-site-verification" content="xxx">
@@ -11,12 +11,10 @@
     <link rel="alternate" type="application/rss+xml" href="https://noneback.github.io//index.xml" title="NoneBack">
 
     
-  
-    
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0SRTJWPEK"></script>
       <script>
         var doNotTrack = false;
-        if ( false ) {
+        if ( true ) {
           var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
           var doNotTrack = (dnt == "1" || dnt == "yes");
         }
@@ -27,32 +25,27 @@
           gtag('config', 'G-H0SRTJWPEK');
         }
       </script>
-    
-  
-
-
 
 
 <script async defer data-website-id="43dc9e5a-7ab8-482e-94df-100975b5d2c8" src="https://umami-blog-pi.vercel.app/noneback-blog"></script>
 
     <meta property="og:url" content="https://noneback.github.io/zh/blog/zh/mit6.824-raftkv/">
-  <meta property="og:site_name" content="NoneBack">
-  <meta property="og:title" content="MIT6.824-RaftKV">
-  <meta property="og:description" content="之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra">
-  <meta property="og:locale" content="zh">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2022-04-15T10:49:57+08:00">
-    <meta property="article:modified_time" content="2022-04-15T10:49:57+08:00">
-    <meta property="article:tag" content="Raft">
-    <meta property="article:tag" content="Distributed System">
-    <meta property="article:tag" content="Consensu">
-    <meta property="article:tag" content="MIT6.824">
+	<meta property="og:site_name" content="NoneBack">
+	<meta property="og:title" content="MIT6.824-RaftKV">
+	<meta property="og:description" content="之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。">
+	<meta property="og:locale" content="zh">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2022-04-15T10:49:57+08:00">
+		<meta property="article:modified_time" content="2022-04-15T10:49:57+08:00">
+		<meta property="article:tag" content="Raft">
+		<meta property="article:tag" content="Distributed System">
+		<meta property="article:tag" content="MIT6.824">
 
 
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="MIT6.824-RaftKV">
-  <meta name="twitter:description" content="之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="MIT6.824-RaftKV">
+	<meta name="twitter:description" content="之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。">
 
 
 <script type="application/ld+json">
@@ -81,7 +74,7 @@
   "@type": "BlogPosting",
   "headline": "MIT6.824-RaftKV",
   "name": "MIT6.824-RaftKV",
-  "description": "之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的Ra",
+  "description": "之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。\n",
   "keywords": [
     "Raft", "Distributed System", "Consensu", "MIT6.824"
   ],
@@ -149,22 +142,30 @@
         });
     });
 </script>
+    
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
 
     
     
-    <link rel="stylesheet" href="/css/main.min.ec28f09e946fc0df77c187fcd0d0ebde58fca6de8efb8e1620f3d45c32d4da88.css" integrity="sha256-7CjwnpRvwN93wYf80NDr3lj8pt6O&#43;44WIPPUXDLU2og=" crossorigin="anonymous" media="screen" />
-
-    
-    <link rel="stylesheet" href="/scss/highlight/github-dark.min.min.66034289ee9a113219a2c4aae0a8bd2095ab255c832a42efcf5863f10814e7a1.css" />
-
-    
-    <script src="/js/highlight.min.min.c607d6febd16934a82eb61d3a896ed9d869f54373cc63ce95864ed5488fe3128.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="stylesheet" href="/css/main.min.c7761ffbc4eeb4dc2576dc866d9dd5c1a135749e992ce73ea87364237bbbb630.css" integrity="sha256-x3Yf&#43;8TutNwldtyGbZ3VwaE1dJ6ZLOc&#43;qHNkI3u7tjA=" crossorigin="anonymous" media="screen" />
 
     <script>(()=>{var t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,e=localStorage.getItem("theme");t&&e===null&&(localStorage.setItem("theme","dark"),document.documentElement.setAttribute("data-dark-mode","")),t&&e==="dark"&&document.documentElement.setAttribute("data-dark-mode",""),e==="dark"&&document.documentElement.setAttribute("data-dark-mode","")})()</script>
-    </head>
+    
+    <style>
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--fg-color, #333);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+    </style>
+    
+</head>
 <body>
       <main class="wrapper"><nav class="navigation">
     <section class="container">
@@ -257,8 +258,6 @@
       
       <a href="https://noneback.github.io/zh/tags/distributed-system/">Distributed System</a>
       
-      <a href="https://noneback.github.io/zh/tags/consensu/">Consensu</a>
-      
       <a href="https://noneback.github.io/zh/tags/mit6.824/">MIT6.824</a>
       
     </small>
@@ -266,7 +265,12 @@
 <p>
 
   <div class="blog-toc">
-    <nav id="TableOfContents">
+    
+<div class="toc-container">
+    <details open>
+        <summary><strong>目录</strong></summary>
+        <div class="toc-content">
+            <nav id="TableOfContents">
   <ul>
     <li><a href="#实验相关">实验相关</a></li>
     <li><a href="#raft-相关">Raft 相关</a>
@@ -279,13 +283,17 @@
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
+        </div>
+    </details>
+</div>
+
   </div>
 
   <section class="blog-content"><p>之前因为想试一试GSOC，所以看了看Casbin-Mesh的代码，这是基于Raft的一个分布式Casbin应用。这个MIT6.824里的RaftKV很类似，所以正好借此机会写下这篇博客。</p>
 <h2 id="实验相关">实验相关</h2>
 <p>Lab03的内容是在Raft基础上构建一个分布式KV服务。我们需要实现此服务的Server和Client。</p>
 <p>RaftKV的结构和各个模块的交互如图所示：</p>
-<p><img alt="image-20220429211429808" src="https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png"></p>
+<p><img src="https://s2.loli.net/2022/04/29/xuQMp28PRH7rheb.png" alt="image-20220429211429808"></p>
 <p>相比于上个实验难度低了不少，实现上可以参考这篇大佬的<a href="https://github.com/OneSizeFitsQuorum/MIT6.824-2021/blob/master/docs/lab3.md">实现</a>，我就不多写了。</p>
 <h2 id="raft-相关">Raft 相关</h2>
 <p>接下来说说Raft中有关客户端交互有关的内容。</p>
@@ -363,12 +371,32 @@
       <span>LevelDB Write</span></a>
     
     
-    <a class="next" href="https://noneback.github.io/zh/blog/zh/leveldb-%E5%90%AF%E5%8A%A8/"><span>LevelDB 启动</span>
+    <a class="next" href="https://noneback.github.io/zh/blog/zh/gsoc/"><span>GSOC 2022 Proposal: Tuple-Storage Engine for Casbin Mesh</span>
       <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M3.77086 21.1546C11.0491 22.698 21.4339 21.7773 21.4339 16.3608V4.63375C21.4339 3.93962 21.3581 3.30535 21.1917 2.76787M3.77086 21.1546C1.9934 20.7777 0.973585 18.7264 1.08749 16.688C1.2668 13.479 1.15721 9.43135 1.00513 6.21507C0.87809 3.52811 3.12891 1.16316 5.51029 1.25008C9.76594 1.40542 15.377 1.20229 18.7912 1.00542C20.0864 0.930734 20.8406 1.63385 21.1917 2.76787M3.77086 21.1546C4.56586 21.4723 5.49168 21.7879 6.5 22.0658M21.1917 2.76787C23.1097 4.18217 23.13 12.4191 22.9004 16.3608C20.8478 24.0194 12.3061 23.6662 6.5 22.0658M21.1917 2.76787C21.7612 4.51192 22.7203 9.67216 22 16.3608C21.2797 23.0494 11.3665 22.9511 6.5 22.0658M12.055 9C12.711 9.61644 14.3679 10.997 15.9519 11.7966C16.0174 11.8297 16.0154 11.9753 15.9494 12.0063C14.945 12.4779 13.0706 13.9264 12.055 15M15.5556 11.9667C13.1345 12.0608 8 12 6 11" stroke="currentColor" stroke-linecap="round"/>
       </svg>
     </a>
     
+  </div>
+  
+
+  
+  
+  <div class="related-resources">
+    <h3>相关系列文章推荐</h3>
+    <ul>
+    
+      <li><a href="/zh/blog/zh/mit6.824-raft/">MIT6.824-Raft</a></li>
+    
+      <li><a href="/zh/blog/zh/mit6.824-mapreduce/">MIT6.824-MapReduce</a></li>
+    
+      <li><a href="/zh/blog/zh/mit6.824-bigtable/">MIT6.824-Bigtable</a></li>
+    
+      <li><a href="/zh/blog/zh/kylin%E6%A6%82%E8%BF%B0/">Kylin概述</a></li>
+    
+      <li><a href="/zh/blog/zh/dfs-haystack/">DFS-Haystack</a></li>
+    
+    </ul>
   </div>
   
 
@@ -406,12 +434,16 @@
 
 
         </div><footer class="footer">
-  <p>&copy; 2025 <a href="https://noneback.github.io/">NoneBack</a>
+  <p>&copy; 2026 <a href="https://noneback.github.io/">NoneBack</a>
     Powered by
     <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>
-    <a href="https://github.com/guangzhengli/hugo-theme-ladder" rel="noopener" target="_blank">Ladder</a>
+    <a href="https://github.com/guangzhengli/hugo-theme-spoon" rel="noopener" target="_blank">Spoon</a>
 ️  </p>
 </footer>
+
+
+<div class="reading-progress" id="reading-progress"></div>
+
 
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -432,45 +464,64 @@
 </script>
 
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
+    document.querySelectorAll('.highlight').forEach((block) => {
+        const pre = block.querySelector('pre');
+        if (!pre) return;
 
         const copybutton = document.createElement('button');
         copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'Copy';
+        copybutton.textContent = '复制';
 
         function copyingDone() {
-            copybutton.innerHTML = 'Copied';
+            copybutton.textContent = '已复制';
             setTimeout(() => {
-                copybutton.innerHTML = 'Copy';
+                copybutton.textContent = '复制';
             }, 2000);
         }
 
-        copybutton.addEventListener('click', (cb) => {
+        copybutton.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
             if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
+                navigator.clipboard.writeText(text).then(copyingDone);
                 return;
             }
-
             const range = document.createRange();
-            range.selectNodeContents(codeblock);
+            range.selectNodeContents(pre);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             try {
                 document.execCommand('copy');
                 copyingDone();
-            } catch (e) { };
+            } catch (e) {}
             selection.removeRange(range);
         });
-        codeblock.parentNode.appendChild(copybutton);
+        block.appendChild(copybutton);
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.0/mermaid.min.js" crossorigin="anonymous"></script>
+
 <script>
-    mermaid.init(undefined, '.language-mermaid');
+    (function() {
+        var progressBar = document.getElementById('reading-progress');
+        if (!progressBar) return;
+        
+        window.addEventListener('scroll', function() {
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var scrolled = document.documentElement.scrollTop;
+            var progress = (scrolled / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+    })();
+</script>
+
+
+<script>
+    
+    document.querySelectorAll('img').forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+    });
 </script></main>
     </body><script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.6/medium-zoom.min.js" integrity="sha512-N9IJRoc3LaP3NDoiGkcPa4gG94kapGpaA5Zq9/Dr04uf5TbLFU5q0o8AbRhLKUUlp8QFS2u7S+Yti0U7QtuZvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
