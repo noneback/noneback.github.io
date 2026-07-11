@@ -8,7 +8,7 @@
 &lt;li&gt;
 &lt;p&gt;&lt;strong&gt;subsystem&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;一组资源控制的模块&lt;/p&gt;
-&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png" alt="image.png"&gt;
+&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png" alt="image.png" loading="lazy" decoding="async"&gt;
 每个 subsystem会关联到定义了相应限制的 cgroup上,并对这个cgroup中的进程做相应的限制和控制。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
@@ -35,6 +35,15 @@
 &lt;ul&gt;
 &lt;li&gt;创建挂载hierarchy，新建子cgroup&lt;/li&gt;
 &lt;/ul&gt;
+&lt;div class="code-block" data-language="bash"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;bash&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkdir cgroup &lt;span class="c1"&gt;# 创建挂载点&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mount -t cgroup -o none,name&lt;span class="o"&gt;=&lt;/span&gt;cgroup-test cgroup-test ./cgroup-test &lt;span class="c1"&gt;# 挂载hierarchy&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mkdir cgroup-1
@@ -57,12 +66,23 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── cgroup.sane_behavior
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── notify_on_release
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── release_agent
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── tasks
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;不同文件的含义&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png" alt="image.png"&gt;&lt;/p&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── tasks&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;不同文件的含义&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png" alt="image.png" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;在cgroup中添加和移动进程（将进程pid移入对应tasks文件中）&lt;/li&gt;
 &lt;/ul&gt;
+&lt;div class="code-block" data-language="bash"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;bash&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo sh -c &lt;span class="s2"&gt;&amp;#34;echo &lt;/span&gt;&lt;span class="nv"&gt;$$&lt;/span&gt;&lt;span class="s2"&gt; &amp;gt;&amp;gt; ./cgroup-1/tasks&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;# 将终端进程移入cgroup-1中&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cat /proc/&lt;span class="nv"&gt;$$&lt;/span&gt;/cgroup
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
@@ -80,17 +100,28 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;3:net_cls,net_prio:/
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2:devices:/user.slice
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1:name&lt;span class="o"&gt;=&lt;/span&gt;systemd:/user.slice/user-1002.slice/session-12331.scope
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0::/user.slice/user-1002.slice/session-12331.scope
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0::/user.slice/user-1002.slice/session-12331.scope&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;通过subsystem限制cgroup中进程的资源&lt;/p&gt;
 &lt;p&gt;首先将hierarchy关联到subsystem，系统默认将hierarchy关联到memory hierarchy&lt;/p&gt;
+&lt;div class="code-block" data-language="bash"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;bash&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 首先,在不做限制的情况下,启动一个占用内存的stress进程&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class="m"&gt;1&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mkdir test-limit-memory &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nb"&gt;cd&lt;/span&gt; test-limit-memory &lt;span class="c1"&gt;# 创建一个cgroup&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo sh -c &lt;span class="s2"&gt;&amp;#34;echo &amp;#34;&lt;/span&gt;100m&lt;span class="s2"&gt;&amp;#34; &amp;gt; memory.limit&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;# 设置最大cgroup占用为100m&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo sh -c &lt;span class="s2"&gt;&amp;#34;echo &lt;/span&gt;&lt;span class="nv"&gt;$$&lt;/span&gt;&lt;span class="s2"&gt; &amp;gt; tasks&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;# 将当前进程移入cgroup&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class="m"&gt;1&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class="m"&gt;1&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h4 id="最后可以观测到进程占用的内存被限制了"&gt;最后可以观测到进程占用的内存被限制了&lt;/h4&gt;</description></item></channel></rss>

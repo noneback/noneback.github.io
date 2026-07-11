@@ -1,17 +1,36 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>LSM on NoneBack</title><link>https://noneback.github.io/tags/lsm/</link><description>Recent content in LSM on NoneBack created by</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>@NoneBack All rights reserved</copyright><lastBuildDate>Tue, 10 May 2022 17:14:14 +0800</lastBuildDate><atom:link href="https://noneback.github.io/tags/lsm/index.xml" rel="self" type="application/rss+xml"/><item><title>LevelDB Write</title><link>https://noneback.github.io/blog/leveldb-write/</link><pubDate>Tue, 10 May 2022 17:14:14 +0800</pubDate><guid>https://noneback.github.io/blog/leveldb-write/</guid><description>&lt;p&gt;This is the second chapter of my notes on reading the LevelDB source code, focusing on the write flow of LevelDB. This article is not a step-by-step source code tutorial, but rather a learning note that records my questions and thoughts.&lt;/p&gt;
 &lt;h2 id="main-process"&gt;Main Process&lt;/h2&gt;
 &lt;p&gt;The main write logic of LevelDB is relatively simple. First, the write operation is encapsulated into a &lt;code&gt;WriteBatch&lt;/code&gt;, and then it is executed.&lt;/p&gt;
+&lt;div class="code-block" data-language="cpp"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;cpp&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;Status&lt;/span&gt; &lt;span class="n"&gt;DB&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;Put&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="n"&gt;WriteOptions&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;opt&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="n"&gt;Slice&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="n"&gt;Slice&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WriteBatch&lt;/span&gt; &lt;span class="n"&gt;batch&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;batch&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Put&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="nf"&gt;Write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;opt&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;batch&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="writebatch"&gt;WriteBatch&lt;/h3&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h3 id="writebatch"&gt;WriteBatch&lt;/h3&gt;
 &lt;p&gt;&lt;code&gt;WriteBatch&lt;/code&gt; is an encapsulation of a group of update operations, which are applied &lt;strong&gt;atomically&lt;/strong&gt; to the state machine. A block of memory is used to save the user&amp;rsquo;s update operations.&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;InMemory Format:
 &lt;code&gt;| seq_num: 8 bytes | count: 4 bytes | list of records{ type + key + value}&lt;/code&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
+&lt;div class="code-block" data-language="cpp"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;cpp&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;WriteBatch&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;...&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// See comment in write_batch.cc for the format of rep_;
@@ -33,11 +52,21 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;rep_&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;push_back&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;static_cast&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;char&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;kTypeValue&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;PutLengthPrefixedSlice&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;rep_&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;PutLengthPrefixedSlice&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;rep_&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="write-flow"&gt;Write Flow&lt;/h2&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h2 id="write-flow"&gt;Write Flow&lt;/h2&gt;
 &lt;p&gt;The write operation mainly consists of four steps:&lt;/p&gt;
 &lt;h3 id="initializing-writer"&gt;Initializing Writer&lt;/h3&gt;
 &lt;p&gt;&lt;code&gt;Writer&lt;/code&gt; actually contains all the information needed for a write operation.&lt;/p&gt;
+&lt;div class="code-block" data-language="cpp"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;cpp&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// Information kept for every waiting writer
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;DBImpl&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;Writer&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;explicit&lt;/span&gt; &lt;span class="nf"&gt;Writer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;port&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;Mutex&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;mu&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
@@ -48,8 +77,9 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;bool&lt;/span&gt; &lt;span class="n"&gt;sync&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;bool&lt;/span&gt; &lt;span class="n"&gt;done&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;port&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;CondVar&lt;/span&gt; &lt;span class="n"&gt;cv&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;};&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="writer-scheduling"&gt;Writer Scheduling&lt;/h3&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;};&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h3 id="writer-scheduling"&gt;Writer Scheduling&lt;/h3&gt;
 &lt;p&gt;LevelDB&amp;rsquo;s write process is a multi-producer, single-consumer model, with multiple threads producing writers and a single thread consuming them. Each writer is produced by one thread but can be consumed by multiple threads.&lt;/p&gt;
 &lt;p&gt;Internally, LevelDB maintains a writer queue. Each thread&amp;rsquo;s write, delete, or update operation appends a writer to the end of the queue, with a lock ensuring data safety. Once a writer is added to the queue, the thread waits until it either reaches the head of the queue (is scheduled) or its operation is completed by another thread.&lt;/p&gt;
 &lt;blockquote&gt;
@@ -74,14 +104,16 @@
 &lt;/blockquote&gt;
 &lt;p&gt;The record types are &lt;code&gt;Zero&lt;/code&gt;, &lt;code&gt;Full&lt;/code&gt;, &lt;code&gt;First&lt;/code&gt;, &lt;code&gt;Middle&lt;/code&gt;, and &lt;code&gt;Last&lt;/code&gt;. &lt;code&gt;Zero&lt;/code&gt; is reserved for preallocated files. Since a key-value pair might be too large and needs to be recorded in several chunks, the other four types are used accordingly.&lt;/p&gt;
 &lt;h5 id="write-flow-1"&gt;Write Flow&lt;/h5&gt;
-&lt;p&gt;&lt;img src="https://s2.loli.net/2022/08/15/3TOkslnhjuMIg9Y.jpg" alt="Write Flow"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://s2.loli.net/2022/08/15/3TOkslnhjuMIg9Y.jpg" alt="Write Flow" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;h4 id="memtable"&gt;Memtable&lt;/h4&gt;
 &lt;p&gt;The core design of &lt;code&gt;memtable&lt;/code&gt; involves two parts: the skip list and the encoding of key-value pairs in the skip list. The skip list ensures the sorted nature of inserted data. For more details, you can refer to my other blog post.&lt;/p&gt;
 &lt;p&gt;The key encoded in &lt;code&gt;memtable&lt;/code&gt; is called the &lt;code&gt;Internal Key&lt;/code&gt;, which is encoded as follows:&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;&lt;code&gt;| Original Key(varstring) + seq num(7 bytes) + type(1 byte) |&lt;/code&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt="Internal Key"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://leveldb-handbook.readthedocs.io/zh/latest/_images/internalkey.jpeg" alt="Internal Key" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;&lt;code&gt;SeqNum&lt;/code&gt; is a monotonically increasing sequence number generated for each update operation, serving as a logical clock to indicate the recency of operations. Based on &lt;code&gt;SeqNum&lt;/code&gt;, snapshot-based reads (versioned reads) can be implemented.&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -93,6 +125,15 @@
 &lt;h2 id="prerequisites"&gt;Prerequisites&lt;/h2&gt;
 &lt;h3 id="database-files"&gt;Database Files&lt;/h3&gt;
 &lt;p&gt;For now, I won&amp;rsquo;t delve into the encoding and naming details of these files (as I haven&amp;rsquo;t reached that part yet). I&amp;rsquo;ll focus on the meaning and role of each file.&lt;/p&gt;
+&lt;div class="code-block" data-language="shell"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;shell&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── 000005.ldb
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── 000008.ldb // sst or ldb are both sst files
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── 000009.log // WAL
@@ -100,8 +141,9 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── LOCK // Empty file, ensures only one DB instance operates on the database
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── LOG // Logs printed by LevelDB
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── LOG.old
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── MANIFEST-000007 // descriptor_file, metadata file
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Some questions worth exploring, which I may write about later:&lt;/p&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── MANIFEST-000007 // descriptor_file, metadata file&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Some questions worth exploring, which I may write about later:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;How does LOCK ensure only one DB instance holds the database?&lt;/li&gt;
 &lt;/ul&gt;
@@ -159,6 +201,15 @@
 &lt;p&gt;The main data structures related to SST-level MVCC are &lt;code&gt;Version&lt;/code&gt;, &lt;code&gt;VersionEdit&lt;/code&gt;, and &lt;code&gt;VersionSet&lt;/code&gt;.&lt;/p&gt;
 &lt;h5 id="version"&gt;Version&lt;/h5&gt;
 &lt;p&gt;Represents the latest data state after startup or compaction.&lt;/p&gt;
+&lt;div class="code-block" data-language="cpp"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;cpp&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Version&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;VersionSet&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;vset_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// VersionSet to which this Version belongs
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;Version&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;next_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Next version in linked list
@@ -177,9 +228,19 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// are initialized by Finalize().
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;double&lt;/span&gt; &lt;span class="n"&gt;compaction_score_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Score represents data imbalance; higher score indicates greater imbalance and compaction need.
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;compaction_level_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h5 id="versionset"&gt;VersionSet&lt;/h5&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h5 id="versionset"&gt;VersionSet&lt;/h5&gt;
 &lt;p&gt;Manages the current runtime state of the entire DB.&lt;/p&gt;
+&lt;div class="code-block" data-language="cpp"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;cpp&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;VersionSet&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;Env&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="n"&gt;env_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt; &lt;span class="n"&gt;dbname_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
@@ -201,9 +262,19 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Per-level key at which the next compaction at that level should start.
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Either an empty string, or a valid InternalKey.
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt; &lt;span class="n"&gt;compact_pointer_&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;kNumLevels&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h5 id="versionedit"&gt;VersionEdit&lt;/h5&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h5 id="versionedit"&gt;VersionEdit&lt;/h5&gt;
 &lt;p&gt;Encapsulates metadata changes. This encapsulation reduces the window for version switching.&lt;/p&gt;
+&lt;div class="code-block" data-language="cpp"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;cpp&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;VersionEdit&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="cm"&gt;/** other code */&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;set&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;pair&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;uint64_t&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;DeletedFileSet&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
@@ -222,11 +293,13 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;vector&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;pair&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;InternalKey&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;compact_pointers_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DeletedFileSet&lt;/span&gt; &lt;span class="n"&gt;deleted_files_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;vector&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;pair&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;FileMetaData&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;new_files_&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;};&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id="manifest-content"&gt;Manifest Content&lt;/h4&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;};&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h4 id="manifest-content"&gt;Manifest Content&lt;/h4&gt;
 &lt;p&gt;As mentioned earlier, the manifest is LevelDB&amp;rsquo;s metadata file that stores the persistent state of the database. During startup, LevelDB may need to restore the previous DB state using existing data files. Additionally, when a version changes, LevelDB generates a &lt;code&gt;VersionEdit&lt;/code&gt;. The metadata changes recorded by &lt;code&gt;VersionEdit&lt;/code&gt; need to be persisted to the manifest to ensure LevelDB&amp;rsquo;s MVCC multi-version state is crash-safe. Thus, the encoding layout inside the manifest is crucial.&lt;/p&gt;
 &lt;p&gt;Internally, metadata is encoded as &lt;code&gt;SnapshotSessionRecord + list of SessionRecords&lt;/code&gt;, essentially &lt;code&gt;initial state + list of applied VersionEdits&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;img src="https://s2.loli.net/2022/04/11/AUusMjdYROz874v.jpg" alt="Manifest Structure"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://s2.loli.net/2022/04/11/AUusMjdYROz874v.jpg" alt="Manifest Structure" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;p&gt;A manifest contains several session records. &lt;strong&gt;The first session record&lt;/strong&gt; stores the &lt;em&gt;full version information&lt;/em&gt; of LevelDB at that time, while subsequent session records only record incremental changes.&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;A session record may contain the following fields:&lt;/p&gt;
@@ -241,14 +314,16 @@
 &lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;h5 id="writing-version-changes-to-the-manifest"&gt;Writing Version Changes to the Manifest&lt;/h5&gt;
-&lt;p&gt;&lt;img src="https://s2.loli.net/2022/04/14/7tlwEMPGgXHIp6s.jpg" alt="Writing to Manifest"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://s2.loli.net/2022/04/14/7tlwEMPGgXHIp6s.jpg" alt="Writing to Manifest" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;p&gt;For LevelDB, adding or deleting some SSTable files needs to be an &lt;strong&gt;atomic operation&lt;/strong&gt; to maintain &lt;strong&gt;database consistency&lt;/strong&gt; before and after the state change.&lt;/p&gt;
 &lt;h6 id="atomicity"&gt;Atomicity&lt;/h6&gt;
 &lt;p&gt;&lt;strong&gt;Atomicity&lt;/strong&gt; means that the operation is complete only when a session record is fully written to the manifest. If the process crashes before completion, the database can be restored to a correct state on restart, and those useless SSTable files will be deleted with compaction resumed.&lt;/p&gt;
 &lt;h6 id="consistency"&gt;Consistency&lt;/h6&gt;
 &lt;p&gt;&lt;strong&gt;Consistency&lt;/strong&gt; is ensured by marking state changes with version updates, which occur at the very end of the process. Thus, the database always transitions from one consistent state to another.&lt;/p&gt;
 &lt;h5 id="restoring-db-from-the-manifest"&gt;Restoring DB from the Manifest&lt;/h5&gt;
-&lt;p&gt;&lt;img src="https://s2.loli.net/2022/04/14/Jk5eyRzUWowi4YH.jpg" alt="Restoring DB from Manifest"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://s2.loli.net/2022/04/14/Jk5eyRzUWowi4YH.jpg" alt="Restoring DB from Manifest" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;p&gt;As LevelDB runs, the number of session records in a manifest grows. Therefore, each time LevelDB restarts, a new manifest is created, and the first session record captures a snapshot of the current version state.&lt;/p&gt;
 &lt;p&gt;Outdated manifests are deleted during the recovery process at the next startup.&lt;/p&gt;
 &lt;blockquote&gt;

@@ -77,7 +77,8 @@
 &lt;p&gt;此处Master和Chunk Server实际上都是逻辑上的概念，实际上对应的只是用户态的一个进程，而非指具体物理机器。&lt;/p&gt;
 &lt;p&gt;单Master设计简化了GFS的设计，但有一定的单点故障的风险，属于设计上的trade_off&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;img src="https://tva1.sinaimg.cn/large/008i3skNly1gu6y6qm5t0j61i40nojuk02.jpg" alt=" image-20210906153847451"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://tva1.sinaimg.cn/large/008i3skNly1gu6y6qm5t0j61i40nojuk02.jpg" alt=" image-20210906153847451" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;p&gt;GFS通过lib的形式提供给业务方使用、接入GFS。&lt;/p&gt;
 &lt;p&gt;文件数据最终以chunk为单位保存在chunk server的磁盘中，并且chunk以replica的形式提供可靠服务。&lt;/p&gt;
 &lt;p&gt;master管理着GFS上所有的元数据（目录树，mapping，chunk metadata，etc）以及相关系统行为（监控，GC，snapshot，etc）。&lt;/p&gt;
@@ -90,7 +91,8 @@ Master-&gt;&gt;Client:chunk handle
 Client -&gt;&gt; ChunkServer:chunk location + chunk id + offset
 }}
 --&gt;
-&lt;p&gt;&lt;img src="https://tva1.sinaimg.cn/large/008i3skNly1gu9234vb9nj61ej0u0gq702.jpg" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://tva1.sinaimg.cn/large/008i3skNly1gu9234vb9nj61ej0u0gq702.jpg" alt="" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;h2 id="组件设计"&gt;组件设计&lt;/h2&gt;
 &lt;h3 id="client"&gt;Client&lt;/h3&gt;
 &lt;p&gt;Client在GFS中实际上只是使用了GFS SDK/LIB的一个应用进程。GFS提供SDK/LIB让业务方接入GFS，并尽可能的屏蔽底层细节，让业务方对GFS无感知。&lt;/p&gt;
@@ -137,13 +139,23 @@ Client -&gt;&gt; ChunkServer:chunk location + chunk id + offset
 &lt;/ul&gt;
 &lt;blockquote&gt;
 &lt;p&gt;chunk handler是一个数据结构，包含&lt;/p&gt;
+&lt;div class="code-block" data-language="cpp"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;cpp&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;ChunkHandler&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;list&lt;/span&gt; &lt;span class="n"&gt;of&lt;/span&gt; &lt;span class="nf"&gt;ChunkLocation&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;v&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="c1"&gt;// 标识replica所在的机器
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;nv&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt; &lt;span class="c1"&gt;// 数据的逻辑时钟，标记数据版本
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;primary&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;v&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt; &lt;span class="c1"&gt;// 用于标记primary chunk，用于分配操作顺序
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;lease&lt;/span&gt; &lt;span class="nf"&gt;expire&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;v&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt; &lt;span class="c1"&gt;// 租约过期时间，防止ChunkServer长期持有primary
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/blockquote&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/blockquote&gt;
 &lt;p&gt;此处的映射实际上就是Master需要维护的数据结构（元信息），其中有一部分是需要持久化保证重启不丢失，以nv（non-volatile)标记。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Table1适合使用HashMap作为索引结构去查询，Table2则更适合使用B+Tree等数据结构做索引，因为其应该会设计范围查询。&lt;/p&gt;
@@ -205,7 +217,8 @@ Client -&gt;&gt; ChunkServer:chunk location + chunk id + offset
 &lt;p&gt;解耦的好处是数据流可以基于网络拓扑规划，提高机器带宽利用率，避免网路欧瓶颈和高延时。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;数据流实际上是以Pipeline的形式推送到所有相关的ChunkServer中的。推送到机器上后，保存在LRU缓存中，再由此机器推送到其他机器，充分利用每一台机器的资源。&lt;/p&gt;
-&lt;p&gt;&lt;img src="https://tva1.sinaimg.cn/large/008i3skNly1gu94bb7jxjj60v90u0tak02.jpg" alt="image-20210908124156337"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://tva1.sinaimg.cn/large/008i3skNly1gu94bb7jxjj60v90u0tak02.jpg" alt="image-20210908124156337" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;h3 id="数据安全性"&gt;数据安全性&lt;/h3&gt;
 &lt;h4 id="数据完整性"&gt;数据完整性&lt;/h4&gt;
 &lt;p&gt;GFS把Chunk分割为64KB大小的Block，每个Block对应一个32位的Chucksum，用于校验数据的完整性。&lt;/p&gt;
@@ -216,7 +229,8 @@ Client -&gt;&gt; ChunkServer:chunk location + chunk id + offset
 &lt;h4 id="冗余存储"&gt;冗余存储&lt;/h4&gt;
 &lt;p&gt;Chunk多副本异架异地存储，单副本丢失不会影响系统可用性。&lt;/p&gt;
 &lt;h4 id="一致性"&gt;一致性&lt;/h4&gt;
-&lt;p&gt;&lt;img src="https://spongecaptain.cool/images/img_paper/image-20200719211636393.png" alt="image-20210908130412123"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://spongecaptain.cool/images/img_paper/image-20200719211636393.png" alt="image-20210908130412123" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;p&gt;我暂时没法很好的理解GFS的一致性模型，于是选择将原文奉上：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;“ &lt;strong&gt;The state of a file region after a data mutation depends on the type of mutation&lt;/strong&gt;, whether it succeeds or fails, and whether there are concurrent mutations.&lt;/p&gt;

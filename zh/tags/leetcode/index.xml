@@ -3,12 +3,22 @@
 &lt;p&gt;题目描述如下：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;假设有打乱顺序的一群人站成一个队列。 每个人由一个整数对(h, k)表示，其中h是这个人的身高，k是排在这个人前面且身高大于或等于h的人数。 编写一个算法来重建这个队列。&lt;/p&gt;
+&lt;div class="code-block" data-language="text"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;text&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;pre tabindex="0"&gt;&lt;code&gt;示例
 输入:
 [[7,0], [4,4], [7,1], [5,0], [6,1], [5,2]]
 输出:
-[[5,0], [7,0], [5,2], [6,1], [4,4], [7,1]]
-&lt;/code&gt;&lt;/pre&gt;&lt;/blockquote&gt;
+[[5,0], [7,0], [5,2], [6,1], [4,4], [7,1]]&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/blockquote&gt;
 &lt;h2 id="分析"&gt;分析&lt;/h2&gt;
 &lt;p&gt;完成这题最主要的就是要明白每个元素顺序对k的影响。&lt;/p&gt;
 &lt;p&gt;1.首先将元素排序。$h$大的放在前面，如果$h$相同，则把$k$大的放前面。&lt;/p&gt;
@@ -19,6 +29,15 @@
 &lt;p&gt;也就是说，当我们放入第 $i$ 个人时，只需要将其插入队列中，使得他的前面恰好有 $k_i$ 个人即可。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h2 id="代码"&gt;代码&lt;/h2&gt;
+&lt;div class="code-block" data-language="go"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;go&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-go" data-lang="go"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt;/*
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * @lc app=leetcode.cn id=406 lang=cpp
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; *
@@ -43,8 +62,9 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;ans&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;};&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// @lc code=end&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="参考"&gt;参考&lt;/h2&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// @lc code=end&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h2 id="参考"&gt;参考&lt;/h2&gt;
 &lt;p&gt;&lt;a href="https://leetcode-cn.com/problems/queue-reconstruction-by-height/solution/gen-ju-shen-gao-zhong-jian-dui-lie-by-leetcode-sol/"&gt;题解&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href="https://leetcode-cn.com/problems/queue-reconstruction-by-height/"&gt;LC406 根据身高重建队列&lt;/a&gt;&lt;/p&gt;</description></item><item><title>LC402 移除K位数字</title><link>https://noneback.github.io/zh/blog/zh/lc402-%E7%A7%BB%E9%99%A4k%E4%BD%8D%E6%95%B0%E5%AD%97/</link><pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate><guid>https://noneback.github.io/zh/blog/zh/lc402-%E7%A7%BB%E9%99%A4k%E4%BD%8D%E6%95%B0%E5%AD%97/</guid><description>&lt;p&gt;今天的每日一题是 LC402 移除 K 位数字,最终看题解完成，记录一下思路。&lt;/p&gt;
 &lt;h2 id="描述"&gt;描述&lt;/h2&gt;
@@ -56,12 +76,22 @@
 &lt;li&gt;
 &lt;p&gt;num 的长度小于 10002 且 ≥ k。
 num 不会包含任何前导零。&lt;/p&gt;
+&lt;div class="code-block" data-language="go"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;go&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-go" data-lang="go"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;示例&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;输入&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;num&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s"&gt;&amp;#34;1432219&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;输出&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s"&gt;&amp;#34;1219&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;解释&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;移除掉三个数字&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;和&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;形成一个新的最小的数字&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1219&lt;/span&gt;&lt;span class="err"&gt;。&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;解释&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;移除掉三个数字&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;和&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;形成一个新的最小的数字&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1219&lt;/span&gt;&lt;span class="err"&gt;。&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/blockquote&gt;
 &lt;h2 id="分析"&gt;分析&lt;/h2&gt;
@@ -93,6 +123,15 @@ num 不会包含任何前导零。&lt;/p&gt;
 &lt;p&gt;最后的结果必然是数字序列单调不降，所以我们使用一个单调栈来保存未被丢弃的数字。&lt;/p&gt;
 &lt;p&gt;如果此时丢弃的数位依旧不足，则丢弃最后的几位数字。&lt;/p&gt;
 &lt;h2 id="代码"&gt;代码&lt;/h2&gt;
+&lt;div class="code-block" data-language="go"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;go&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-go" data-lang="go"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt;/*
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; * @lc app=leetcode.cn id=402 lang=cpp
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cm"&gt; *
@@ -134,8 +173,9 @@ num 不会包含任何前导零。&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;ans&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;==&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&amp;#34;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;?&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s"&gt;&amp;#34;0&amp;#34;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;ans&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;};&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// @lc code=end&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="参考"&gt;参考&lt;/h2&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// @lc code=end&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h2 id="参考"&gt;参考&lt;/h2&gt;
 &lt;p&gt;&lt;a href="https://leetcode-cn.com/problems/remove-k-digits"&gt;LC402&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href="https://leetcode-cn.com/problems/remove-k-digits/solution/yi-diao-kwei-shu-zi-by-leetcode-solution/"&gt;官方题解&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href="https://oi-wiki.org/ds/monotonous-stack/"&gt;单调栈&lt;/a&gt;&lt;/p&gt;</description></item></channel></rss>

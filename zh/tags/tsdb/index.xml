@@ -11,6 +11,15 @@ $$&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;查询使用 ${identifier(metric\ +\ sets\ of\ selected\ labels\ value)}$ 查询得到对应的timeseries&lt;/li&gt;
 &lt;/ol&gt;
+&lt;div class="code-block" data-language="text"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;text&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;pre tabindex="0"&gt;&lt;code&gt;series
 ^
 │ . . . . . . . . . . . . . . . . . . . . . . {__name__=&amp;#34;request_total&amp;#34;, method=&amp;#34;GET&amp;#34;}
@@ -24,8 +33,9 @@ $$&lt;/p&gt;
 │ . . . . . . . . . . . . . . . . . . . ...
 │ . . . . . . . . . . . . . . . . . . . .
 v
-&amp;lt;-------------------- time ---------------------&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;blockquote&gt;
+&amp;lt;-------------------- time ---------------------&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;blockquote&gt;
 &lt;p&gt;identifier 的定义很重要。否则 ts 数据容易膨胀，比如容器重建的场景，如果 label 用的不好很容易膨胀。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h2 id="数据组织方式"&gt;数据组织方式&lt;/h2&gt;
@@ -34,12 +44,23 @@ v
 &lt;li&gt;数据的生命周期短。因为单个容器本身的生命周期就很短（比如扩缩容场景，大量临时任务等场景），timeseries 很容易在一定时间维度上膨胀。&lt;/li&gt;
 &lt;li&gt;垂直写入，水平查询&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010014.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010014.png" alt="" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;p&gt;带着这些问题看看 数据文件的组织方法，如何解决或者避免这些问题。&lt;/p&gt;
 &lt;p&gt;那么首先看看逻辑的结构&lt;/p&gt;
-&lt;p&gt;&lt;img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010031.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231010031.png" alt="" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;p&gt;整个 db 由 blocks + HEAD 组成，block 又可以进一步被拆分成 chunks，HEAD 基本上就是内存数据+wal 保障的读写 buffer 区域。chunks 包含多种 timeseries。&lt;/p&gt;
 &lt;p&gt;对于单个 Block 的磁盘目录结构如下：&lt;/p&gt;
+&lt;div class="code-block" data-language="text"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;text&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;pre tabindex="0"&gt;&lt;code&gt;├── 01BKGV7JC0RY8A6MACW02A2PJD // block 的 ULID
 │ ├── chunks
 │ │ └── 000001
@@ -51,8 +72,9 @@ v
 └── wal
 ├── 000000002
 └── checkpoint.00000001
-└── 00000000
-&lt;/code&gt;&lt;/pre&gt;&lt;ul&gt;
+└── 00000000&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;ul&gt;
 &lt;li&gt;block，一个时间段内（默认 2 小时）的所有数据，只读，用 &lt;a href="https://github.com/oklog/ulid"&gt;ULID&lt;/a&gt; 命名。每一个 block 内主要包括：
 &lt;ul&gt;
 &lt;li&gt;chunks 固定大小（最大 128M）的 chunks 文件&lt;/li&gt;
@@ -83,6 +105,15 @@ v
 &lt;p&gt;block 的一些信息，关键看 compaction 和 minT,maxT。&lt;/p&gt;
 &lt;p&gt;minT,maxT 记录block 的时间访问，查询的时候可以用来做 data skip。&lt;/p&gt;
 &lt;p&gt;companction：记录了block的历史信息，比如经历了几次 compaction(level), 由哪些 block 派生出来(source)。暂时不知道有啥用。可能可以compaction 或者 retention 的时候用到，比如清理重复的 source 里面的 block。&lt;/p&gt;
+&lt;div class="code-block" data-language="text"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;text&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;pre tabindex="0"&gt;&lt;code&gt;{
 &amp;#34;ulid&amp;#34;: &amp;#34;01EM6Q6A1YPX4G9TEB20J22B2R&amp;#34;, #
 &amp;#34;minTime&amp;#34;: 1602237600000,
@@ -100,9 +131,19 @@ v
 ]
 },
 &amp;#34;version&amp;#34;: 1
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;h4 id="chunks"&gt;chunks&lt;/h4&gt;
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;h4 id="chunks"&gt;chunks&lt;/h4&gt;
 &lt;p&gt;普通的数据文件，它的索引都在 index 文件里。需要注意的是一个chunk 只能属于一个 timeseries，一个 timeseries 由多个 chunks组成。&lt;/p&gt;
+&lt;div class="code-block" data-language="text"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;text&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;pre tabindex="0"&gt;&lt;code&gt;┌──────────────────────────────┐
 │ magic(0x85BD40DD) &amp;lt;4 byte&amp;gt; │
 ├──────────────────────────────┤
@@ -121,10 +162,20 @@ v
 Every Chunk:
 ┌───────────────┬───────────────────┬──────────────┬────────────────┐
 │ len &amp;lt;uvarint&amp;gt; │ encoding &amp;lt;1 byte&amp;gt; │ data &amp;lt;bytes&amp;gt; │ CRC32 &amp;lt;4 byte&amp;gt; │
-└───────────────┴───────────────────┴──────────────┴────────────────┘
-&lt;/code&gt;&lt;/pre&gt;&lt;h4 id="tombstone"&gt;tombstone&lt;/h4&gt;
+└───────────────┴───────────────────┴──────────────┴────────────────┘&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;h4 id="tombstone"&gt;tombstone&lt;/h4&gt;
 &lt;p&gt;标记删除，tsdb 有时候会有一些删除操作。比如，短时 Job、容器销毁之后，业务上可能希望删除。标记删除主要是为了用追加写代替原地修改。后续可以通过 Compaction 回收这部分磁盘。&lt;/p&gt;
 &lt;p&gt;当然不删除也没事，会有 TTL 到期删除磁盘过期数据。&lt;/p&gt;
+&lt;div class="code-block" data-language="text"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;text&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;pre tabindex="0"&gt;&lt;code&gt;┌────────────────────────────┬─────────────────────┐
 │ magic(0x0130BA30) &amp;lt;4b&amp;gt; │ version(1) &amp;lt;1 byte&amp;gt; │
 ├────────────────────────────┴─────────────────────┤
@@ -141,8 +192,9 @@ Every Chunk:
 Every Tombstone:
 ┌────────────────────────┬─────────────────┬─────────────────┐
 │ series ref &amp;lt;uvarint64&amp;gt; │ mint &amp;lt;varint64&amp;gt; │ maxt &amp;lt;varint64&amp;gt; │
-└────────────────────────┴─────────────────┴─────────────────┘
-&lt;/code&gt;&lt;/pre&gt;&lt;h4 id="index-文件"&gt;index 文件&lt;/h4&gt;
+└────────────────────────┴─────────────────┴─────────────────┘&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;h4 id="index-文件"&gt;index 文件&lt;/h4&gt;
 &lt;p&gt;包含了读取用到的所有信息。比如倒排索引，timeseries 和 chunks 的映射关系。&lt;/p&gt;
 &lt;p&gt;里面值得注意的是 Series 和 Postings 两类。&lt;/p&gt;
 &lt;p&gt;Series 里面记录了Blocks里所有 series 对应 chunks的信息。&lt;/p&gt;
@@ -150,6 +202,15 @@ Every Tombstone:
 &lt;blockquote&gt;
 &lt;p&gt;对倒排索引的集合操作，可以快速过滤出来符合条件的 timeseries&lt;/p&gt;
 &lt;/blockquote&gt;
+&lt;div class="code-block" data-language="text"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;text&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="复制"&gt;复制&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;pre tabindex="0"&gt;&lt;code&gt;┌────────────────────────────┬─────────────────────┐
 │ magic(0xBAAAD700) &amp;lt;4b&amp;gt; │ version(1) &amp;lt;1 byte&amp;gt; │
 ├────────────────────────────┴─────────────────────┤
@@ -225,16 +286,18 @@ A Postings:
 │ └─────────────────────────────────────┘ │
 ├─────────────────────────────────────────┤
 │ CRC32 &amp;lt;4b&amp;gt; │
-└─────────────────────────────────────────┘
-&lt;/code&gt;&lt;/pre&gt;&lt;h2 id="加速磁盘查询"&gt;加速磁盘查询&lt;/h2&gt;
+└─────────────────────────────────────────┘&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;h2 id="加速磁盘查询"&gt;加速磁盘查询&lt;/h2&gt;
 &lt;p&gt;这里重点讲述一次查询是如何找到符合条件的数据的：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;首先在 Posting Offset Table 中，找到对应 label 的 Postings 位置&lt;/li&gt;
 &lt;li&gt;根据 Postings 中的 series 信息，找到对应的 chunk 位置，即上文中的 series ref&lt;/li&gt;
 &lt;li&gt;根据timeseries 找到对应的 chunks&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png" alt=""&gt;
-&lt;img src="https://github.com/noneback/images/blob/picgo/image.png?raw=true" alt="!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://raw.githubusercontent.com/noneback/images/picgo/20241231005912.png" alt="" loading="lazy" decoding="async"&gt;
+&lt;img src="https://github.com/noneback/images/blob/picgo/image.png?raw=true" alt="!https://img.alicdn.com/imgextra/i4/581166664/O1CN01HsQNy31z6A3HT9l5B_!!581166664.jpg" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;h2 id="compaction"&gt;Compaction&lt;/h2&gt;
 &lt;p&gt;类似 leveldb，也有 major compaction和 minor compaction。在这里叫 Compaction 和 Head Compaction。&lt;/p&gt;
 &lt;p&gt;Head Compaction类似把 Head部分持久化成 Chunk 的过程，在这个过程中，mark delete 的tombstone 会被真的删除（毕竟要读到内存里，顺手删了）。&lt;/p&gt;

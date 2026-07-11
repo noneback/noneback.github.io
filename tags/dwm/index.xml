@@ -46,13 +46,33 @@
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
+&lt;div class="code-block" data-language="shell"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;shell&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;fdisk -l &lt;span class="c1"&gt;# View disk information&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cfdisk /dev/nvme &lt;span class="c1"&gt;# Partition the disk&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id="formatting-partitions"&gt;Formatting Partitions&lt;/h4&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cfdisk /dev/nvme &lt;span class="c1"&gt;# Partition the disk&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h4 id="formatting-partitions"&gt;Formatting Partitions&lt;/h4&gt;
+&lt;div class="code-block" data-language="shell"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;shell&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkfs.ext4 &lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;root&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkswap &lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;swap&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkfs.fat -F &lt;span class="m"&gt;32&lt;/span&gt; &lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;efi&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id="configuring-partitions-and-installing-the-system"&gt;Configuring Partitions and Installing the System&lt;/h4&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkfs.fat -F &lt;span class="m"&gt;32&lt;/span&gt; &lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;efi&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h4 id="configuring-partitions-and-installing-the-system"&gt;Configuring Partitions and Installing the System&lt;/h4&gt;
 &lt;ul&gt;
 &lt;li&gt;Mount Root: &lt;code&gt;mount /dev/${root_partition} /mnt&lt;/code&gt;&lt;/li&gt;
 &lt;li&gt;Mount EFI: &lt;code&gt;mount /dev/${efi_partition} /mnt/boot/efi&lt;/code&gt;&lt;/li&gt;
@@ -65,9 +85,19 @@
 &lt;ul&gt;
 &lt;li&gt;Change root to the new system:&lt;/li&gt;
 &lt;/ul&gt;
+&lt;div class="code-block" data-language="shell"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;shell&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mount /dev/&lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;root_partition&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt; /mnt
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;arch-chroot /mnt
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;arch-chroot /mnt&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;Set timezone and sync time.&lt;/p&gt;
 &lt;/li&gt;
@@ -134,6 +164,15 @@
 &lt;p&gt;I used the Suckless tiling window management suite: &lt;strong&gt;dwm&lt;/strong&gt;, &lt;strong&gt;slock&lt;/strong&gt;, &lt;strong&gt;st&lt;/strong&gt;, &lt;strong&gt;dmenu&lt;/strong&gt;, &lt;strong&gt;slim&lt;/strong&gt;, &lt;strong&gt;slstatus&lt;/strong&gt;.&lt;/p&gt;
 &lt;h4 id="configure-xinitc-and-xprofile"&gt;Configure &lt;code&gt;.xinitc&lt;/code&gt; and &lt;code&gt;.xprofile&lt;/code&gt;&lt;/h4&gt;
 &lt;p&gt;Add to &lt;code&gt;.xinitc&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="code-block" data-language="shell"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;shell&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# .xinitc&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;fcitx5 &lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;xautolock -time &lt;span class="m"&gt;10&lt;/span&gt; -locker slock &lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
@@ -148,8 +187,9 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;export&lt;/span&gt; &lt;span class="nv"&gt;INPUT_METHOD&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;fcitx5
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;export&lt;/span&gt; &lt;span class="nv"&gt;GTK_IM_MODULE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;fcitx5
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;export&lt;/span&gt; &lt;span class="nv"&gt;QT_IM_MODULE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;fcitx5
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;export&lt;/span&gt; &lt;span class="nv"&gt;XMODIFIERS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;@im&lt;span class="o"&gt;=&lt;/span&gt;fcitx5
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id="customization-and-usability"&gt;Customization and Usability&lt;/h4&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;export&lt;/span&gt; &lt;span class="nv"&gt;XMODIFIERS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;@im&lt;span class="o"&gt;=&lt;/span&gt;fcitx5&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h4 id="customization-and-usability"&gt;Customization and Usability&lt;/h4&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;

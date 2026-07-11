@@ -8,7 +8,8 @@
 &lt;li&gt;
 &lt;p&gt;&lt;strong&gt;subsystem&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;A module that controls a set of resources.&lt;/p&gt;
-&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png" alt="Subsystem"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/p4e91XZRFAPBqyW.png" alt="Subsystem" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;p&gt;Each subsystem is linked to a cgroup that defines the respective limits, and the subsystem imposes these limits on the processes in the cgroup.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
@@ -33,6 +34,15 @@ Suppose there is a group of periodic tasks limited by &lt;code&gt;cgroup1&lt;/co
 &lt;ul&gt;
 &lt;li&gt;Create a hierarchy and add sub-cgroups:&lt;/li&gt;
 &lt;/ul&gt;
+&lt;div class="code-block" data-language="bash"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;bash&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkdir cgroup &lt;span class="c1"&gt;# Create mount point&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mount -t cgroup -o none,name&lt;span class="o"&gt;=&lt;/span&gt;cgroup-test cgroup-test ./cgroup-test &lt;span class="c1"&gt;# Mount hierarchy&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mkdir cgroup-1
@@ -55,12 +65,23 @@ Suppose there is a group of periodic tasks limited by &lt;code&gt;cgroup1&lt;/co
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── cgroup.sane_behavior
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── notify_on_release
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── release_agent
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── tasks
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;Meaning of Different Files&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png" alt="File Descriptions"&gt;&lt;/p&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── tasks&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Meaning of Different Files&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://i.loli.net/2021/06/08/LokHKWqXs5SN4cI.png" alt="File Descriptions" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Add and move processes to a cgroup (move process PID into the corresponding &lt;code&gt;tasks&lt;/code&gt; file):&lt;/li&gt;
 &lt;/ul&gt;
+&lt;div class="code-block" data-language="bash"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;bash&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo sh -c &lt;span class="s2"&gt;&amp;#34;echo &lt;/span&gt;&lt;span class="nv"&gt;$$&lt;/span&gt;&lt;span class="s2"&gt; &amp;gt;&amp;gt; ./cgroup-1/tasks&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;# Move terminal process to cgroup-1&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cat /proc/&lt;span class="nv"&gt;$$&lt;/span&gt;/cgroup
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
@@ -78,18 +99,29 @@ Suppose there is a group of periodic tasks limited by &lt;code&gt;cgroup1&lt;/co
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;3:net_cls,net_prio:/
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2:devices:/user.slice
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1:name&lt;span class="o"&gt;=&lt;/span&gt;systemd:/user.slice/user-1002.slice/session-12331.scope
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0::/user.slice/user-1002.slice/session-12331.scope
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0::/user.slice/user-1002.slice/session-12331.scope&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;Limit cgroup resource usage via subsystems:&lt;/p&gt;
 &lt;p&gt;First, link the hierarchy to a subsystem. By default, the system links the hierarchy to a memory subsystem.&lt;/p&gt;
+&lt;div class="code-block" data-language="bash"&gt;
+&lt;div class="code-block-header"&gt;
+&lt;div class="code-block-meta"&gt;
+&lt;span class="code-block-language"&gt;bash&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="code-block-actions"&gt;
+&lt;button class="copy-code" type="button" aria-label="Copy"&gt;Copy&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# Start a memory-intensive stress process without any limitations&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class="m"&gt;1&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo mkdir test-limit-memory &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nb"&gt;cd&lt;/span&gt; test-limit-memory &lt;span class="c1"&gt;# Create a cgroup&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo sh -c &lt;span class="s2"&gt;&amp;#34;echo &amp;#34;&lt;/span&gt;100m&lt;span class="s2"&gt;&amp;#34; &amp;gt; memory.limit&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;# Set max memory usage to 100m&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo sh -c &lt;span class="s2"&gt;&amp;#34;echo &lt;/span&gt;&lt;span class="nv"&gt;$$&lt;/span&gt;&lt;span class="s2"&gt; &amp;gt; tasks&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;# Move current process to cgroup&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class="m"&gt;1&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;stress --vm-bytes 200m --vm-keep -m &lt;span class="m"&gt;1&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h4 id="observation"&gt;Observation&lt;/h4&gt;
 &lt;p&gt;The memory usage of the process is limited by the specified setting.&lt;/p&gt;</description></item></channel></rss>

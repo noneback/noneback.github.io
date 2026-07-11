@@ -2,7 +2,8 @@
 &lt;h2 id="算法简介"&gt;算法简介&lt;/h2&gt;
 &lt;p&gt;共识算法的基础是复制状态机，即&lt;strong&gt;按照相同顺序执行相同的确定性指令最终必然达到一致状态&lt;/strong&gt;。Raft是一种代替Paxos的分布式共识算法，相比Paxos更利于学习与理解。&lt;/p&gt;
 &lt;p&gt;Raft算法核心内容可以分为三个部分： $Leader Election + Log Replication + Satety$ 。&lt;/p&gt;
-&lt;p&gt;&lt;img src="https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png" alt="img"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://s2.loli.net/2022/02/19/9mGfndCtDHzMqe4.png" alt="img" loading="lazy" decoding="async"&gt;
+&lt;/p&gt;
 &lt;p&gt;集群机器初始为Follower，一旦一定时间内未接收到来自Leader的心跳，机器将成为Candidate并触发选举，请求剩下Follower投票。获得半数以上选票的Candidate成为Leader。&lt;/p&gt;
 &lt;p&gt;Raft是一种&lt;strong&gt;强领导人&lt;/strong&gt;的强一致性的分布式共识算法，它使用Term作为逻辑时钟，一个任期中只能有领导人。领导人需要周期性发送心跳以维护其地位，同时需要处理&lt;strong&gt;复制提交&lt;/strong&gt;日志。&lt;/p&gt;
 &lt;p&gt;复制日志时，Leader首先将日志复制到其他Follower上，直到半数以上的Follower成功复制，Leader才会提交此日志。&lt;/p&gt;
